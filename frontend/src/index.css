@@ -1,111 +1,68 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import "tailwindcss";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+/*
+ * Design tokens for the forage marketplace (issue #42).
+ *
+ * Two layers:
+ *   1. Raw palettes (brand, berry) — the source colors.
+ *   2. Semantic tokens (surface, foreground, muted, line, accent) — what
+ *      components actually use. These SWAP values in dark mode (see the
+ *      prefers-color-scheme block below), so components never need `dark:`.
+ *
+ * Values under @theme become utilities automatically, e.g.
+ *   --color-surface    -> bg-surface / text-surface / border-surface
+ *   --color-foreground -> text-foreground
+ * We use plain @theme (not `@theme inline`) so utilities reference
+ * var(--color-*), which is what lets the dark overrides below take effect.
+ */
+@theme {
+  /* Raw palette: forest green */
+  --color-brand-50: #f0f9f2;
+  --color-brand-100: #dcf0e1;
+  --color-brand-200: #bce0c7;
+  --color-brand-300: #8fc9a3;
+  --color-brand-400: #5aab77;
+  --color-brand-500: #388e56;
+  --color-brand-600: #297244;
+  --color-brand-700: #225b39;
+  --color-brand-800: #1d4830;
+  --color-brand-900: #193c29;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Raw palette: berry accent */
+  --color-berry-400: #d6608f;
+  --color-berry-500: #c23b73;
+  --color-berry-600: #a52a5e;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* Semantic tokens (light values) */
+  --color-surface: #ffffff;        /* page / card background */
+  --color-surface-muted: #f5f5f4;  /* subtle background */
+  --color-foreground: #1c1917;     /* primary text */
+  --color-muted: #57534e;          /* secondary text */
+  --color-line: #e7e5e4;           /* borders / dividers */
+  --color-accent: #297244;         /* brand-600 */
+  --color-accent-contrast: #ffffff;/* text on an accent background */
+
+  --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Dark mode: swap semantic token VALUES based on the OS setting.
+   No toggle, no JS — utilities like bg-surface recolor automatically. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+    --color-surface: #16171d;
+    --color-surface-muted: #1f2028;
+    --color-foreground: #f3f4f6;
+    --color-muted: #9ca3af;
+    --color-line: #2e303a;
+    --color-accent: #5aab77;         /* brand-400 — lighter reads better on dark */
+    --color-accent-contrast: #16171d;
   }
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
+/* Minimal base */
 body {
   margin: 0;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+  font-family: var(--font-sans);
+  background-color: var(--color-surface);
+  color: var(--color-foreground);
 }
