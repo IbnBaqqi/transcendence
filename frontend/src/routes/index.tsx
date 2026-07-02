@@ -6,6 +6,8 @@ export default function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/privacy" element={<Home />} />
+        <Route path="/terms" element={<Home />} />
       </Routes>
     </BrowserRouter>
   );
