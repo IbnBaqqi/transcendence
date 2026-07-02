@@ -1,6 +1,5 @@
 # --- Project-specific ---
 PLAN.md
-CLAUDE.md
 
 # --- Environment / secrets ---
 .env
