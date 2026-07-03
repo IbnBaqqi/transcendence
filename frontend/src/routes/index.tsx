@@ -9,9 +9,11 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/privacy" element={<Home />} />
-        <Route path="/terms" element={<Home />} />
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
