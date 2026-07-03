@@ -90,6 +90,17 @@ npm run dev / npm run build / npm run lint
   OS-driven, no toggle).
 - **Git**: work on a feature branch, open a PR to `main` — don't commit to `main`.
 
+## Issue naming
+
+GitHub issue titles are prefixed by area so the backlog stays scannable:
+- **`Backend:`**, **`Frontend:`**, **`DevOps:`** for single-layer work.
+- **`Full-stack:`** for work that genuinely spans both layers — and label it with
+  **both** `backend` and `frontend`.
+
+Default to **splitting** a feature into separate `Backend:` and `Frontend:` issues
+so they can be worked in parallel with separate PRs. Only use `Full-stack:` when
+the work is small and not worth splitting.
+
 ## Explaining code (junior-friendly comments)
 
 - When providing code — in chat code blocks **and** when writing files — add
