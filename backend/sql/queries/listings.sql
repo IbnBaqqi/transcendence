@@ -3,7 +3,7 @@ INSERT INTO listings (seller_id, title, description, category, price, quantity, 
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
--- name: GetListings :one
+-- name: GetListing :one
 SELECT * FROM listings
 WHERE id = $1;
 

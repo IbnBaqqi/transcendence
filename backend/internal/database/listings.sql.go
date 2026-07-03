@@ -62,13 +62,13 @@ func (q *Queries) DeleteListing(ctx context.Context, id int32) error {
 	return err
 }
 
-const getListings = `-- name: GetListings :one
+const getListing = `-- name: GetListing :one
 SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at FROM listings
 WHERE id = $1
 `
 
-func (q *Queries) GetListings(ctx context.Context, id int32) (Listing, error) {
-	row := q.db.QueryRowContext(ctx, getListings, id)
+func (q *Queries) GetListing(ctx context.Context, id int32) (Listing, error) {
+	row := q.db.QueryRowContext(ctx, getListing, id)
 	var i Listing
 	err := row.Scan(
 		&i.ID,
