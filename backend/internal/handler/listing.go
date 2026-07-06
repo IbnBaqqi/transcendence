@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
 // ListingHandler holds dependancies needed by listing endpoints.
@@ -19,26 +20,6 @@ type ListingHandler struct {
 
 func NewListingHandler(db *database.Queries) *ListingHandler {
 	return &ListingHandler{db: db}
-}
-
-// --- Request DTOs ---
-
-type CreateListingInput struct {
-	Title       string  `json:"title"`
-	Description string  `json:"description"`
-	Category    string  `json:"category"`
-	Price       float64 `json:"price"`
-	Quantity    int32   `json:"quantity"`
-	Unit        string  `json:"unit"`
-}
-
-type UpdateListingInput struct {
-	Title       string  `json:"title"`
-	Description string  `json:"description"`
-	Category    string  `json:"category"`
-	Price       float64 `json:"price"`
-	Quantity    int32   `json:"quantity"`
-	Unit        string  `json:"unit"`
 }
 
 // --- Auth Placeholder ---
@@ -91,7 +72,7 @@ func (h *ListingHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input CreateListingInput
+	var input dtos.CreateListingInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		Error(w, http.StatusBadRequest, "invalid request body")
 		return
@@ -166,7 +147,7 @@ func (h *ListingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
  
-	var input UpdateListingInput
+	var input dtos.UpdateListingInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		Error(w, http.StatusBadRequest, "invalid request body")
 		return
