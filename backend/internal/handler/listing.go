@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -9,17 +8,19 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
+	"github.com/IbnBaqqi/transcendence/internal/service"
 )
 
-// ListingHandler holds dependancies needed by listing endpoints.
+// ListingHandler translates HTTP requests into service calls, and
+// service results back into HTTP responses. It contains no business
+// logic itself.
 type ListingHandler struct {
-	db *database.Queries
+	service *service.ListingService
 }
 
-func NewListingHandler(db *database.Queries) *ListingHandler {
-	return &ListingHandler{db: db}
+func NewListingHandler(s *service.ListingService) *ListingHandler {
+	return &ListingHandler{service: s}
 }
 
 // --- Auth Placeholder ---
@@ -42,28 +43,25 @@ func getUserID(r *http.Request) (int32, error) {
 	return int32(id), nil
 }
 
-// --- Validation ---
+// statusFromServiceError maps service-layer error types to HTTP status
+// codes, so the handler doesn't need to know about business rules,
+// only about what kind of error occure.
+func statusFromServiceError(err error) int {
+	var validationErr *service.ValidationError
+	var notFoundErr *service.NotFoundError
+	var forbiddenErr *service.ForbiddenError
 
-func validateListingInput(title, category, unit string, price float64, quantity int32) error {
-	if title == "" || len(title) > 100 {
-		return errors.New("title is required and must be under 100 characters")
+	switch {
+	case errors.As(err, &validationErr):
+		return http.StatusBadRequest
+	case errors.As(err, &notFoundErr):
+		return http.StatusNotFound
+	case errors.As(err, &forbiddenErr):
+		return http.StatusForbidden
+	default:
+		return http.StatusInternalServerError
 	}
-	if category == "" {
-		return errors.New("category is required")
-	}
-	if unit == "" {
-		return errors.New("unit is required")
-	}
-	if price <= 0 {
-		return errors.New("price must be greater than 0")
-	}
-	if quantity <= 0 {
-		return errors.New("quantity must be greater then 0")
-	}
-	return nil
 }
-
-// --- Handlers ---
 
 func (h *ListingHandler) Create(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
@@ -78,22 +76,9 @@ func (h *ListingHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := validateListingInput(input.Title, input.Category, input.Unit, input.Price, input.Quantity); err != nil {
-		Error(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	listing, err := h.db.CreateListing(r.Context(), database.CreateListingParams{
-		SellerID:		userID,
-		Title:			input.Title,
-		Description:	sql.NullString{String: input.Description, Valid: input.Description != ""},
-		Category:		input.Category,
-		Price:			strconv.FormatFloat(input.Price, 'f', 2, 64),
-		Quantity:		input.Quantity,
-		Unit:			input.Unit,
-	})
+	listing, err := h.service.CreateListing(r.Context(), userID, input)
 	if err != nil {
-		Error(w, http.StatusInternalServerError, "could not create listing")
+		Error(w, statusFromServiceError(err), err.Error())
 		return
 	}
 
@@ -101,9 +86,9 @@ func (h *ListingHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ListingHandler) List(w http.ResponseWriter, r *http.Request) {
-	listings, err := h.db.ListListings(r.Context())
+	listings, err := h.service.ListListings(r.Context())
 	if err != nil {
-		Error(w, http.StatusInternalServerError, "could not fetch listings")
+		Error(w, http.StatusInternalServerError, "could not fecth listings")
 		return
 	}
 	JSON(w, http.StatusOK, listings)
@@ -115,9 +100,10 @@ func (h *ListingHandler) Get(w http.ResponseWriter, r *http.Request) {
 		Error(w, http.StatusBadRequest, "invalid listing id")
 		return
 	}
-	listing, err :=h.db.GetListing(r.Context(), id)
+
+	listing, err := h.service.GetListing(r.Context(), id)
 	if err != nil {
-		Error(w, http.StatusNotFound, "listing not found")
+		Error(w, statusFromServiceError(err), err.Error())
 		return
 	}
 
@@ -130,84 +116,51 @@ func (h *ListingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Error(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
- 
+
 	id, err := parseIDParam(r)
 	if err != nil {
 		Error(w, http.StatusBadRequest, "invalid listing id")
 		return
 	}
- 
-	existing, err := h.db.GetListing(r.Context(), id)
-	if err != nil {
-		Error(w, http.StatusNotFound, "listing not found")
-		return
-	}
-	if existing.SellerID != userID {
-		Error(w, http.StatusForbidden, "you do not own this listing")
-		return
-	}
- 
+
 	var input dtos.UpdateListingInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		Error(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
- 
-	if err := validateListingInput(input.Title, input.Category, input.Unit, input.Price, input.Quantity); err != nil {
-		Error(w, http.StatusBadRequest, err.Error())
-		return
-	}
- 
-	updated, err := h.db.UpdateListing(r.Context(), database.UpdateListingParams{
-		ID:          id,
-		Title:       input.Title,
-		Description: sql.NullString{String: input.Description, Valid: input.Description != ""},
-		Category:    input.Category,
-		Price:       strconv.FormatFloat(input.Price, 'f', 2, 64),
-		Quantity:    input.Quantity,
-		Unit:        input.Unit,
-	})
+
+	updated, err := h.service.UpdateListing(r.Context(), userID, id, input)
 	if err != nil {
-		Error(w, http.StatusInternalServerError, "could not update listing")
+		Error(w, statusFromServiceError(err), err.Error())
 		return
 	}
- 
+
 	JSON(w, http.StatusOK, updated)
 }
- 
+
 func (h *ListingHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
 		Error(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
- 
+
 	id, err := parseIDParam(r)
 	if err != nil {
-		Error(w, http.StatusBadRequest, "invalid listing id")
+		Error(w, http.StatusBadRequest, "invalid lisitng id")
 		return
 	}
- 
-	existing, err := h.db.GetListing(r.Context(), id)
-	if err != nil {
-		Error(w, http.StatusNotFound, "listing not found")
+
+	if err := h.service.DeleteListing(r.Context(), userID, id); err != nil {
+		Error(w, statusFromServiceError(err), err.Error())
 		return
 	}
-	if existing.SellerID != userID {
-		Error(w, http.StatusForbidden, "you do not own this listing")
-		return
-	}
- 
-	if err := h.db.DeleteListing(r.Context(), id); err != nil {
-		Error(w, http.StatusInternalServerError, "could not delete listing")
-		return
-	}
- 
+
 	w.WriteHeader(http.StatusNoContent)
 }
- 
+
 // --- Helpers ---
- 
+
 func parseIDParam(r *http.Request) (int32, error) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
