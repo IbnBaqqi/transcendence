@@ -1,0 +1,52 @@
+services:
+  # --- database ---
+  db:
+    image: postgres:16-alpine
+    env_file: .env                                              # loads POSTGRES_* from .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"                                             # expose to host
+    volumes:
+      - postgres_data:/var/lib/postgresql/data                  # data survives restarts
+    healthcheck:                                                # lets backend wait until db is ready
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- backend (Go) ---
+  backend:
+    image: golang:1.26.3-alpine
+    working_dir: /app
+    env_file: .env
+    environment:
+      DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+    command: go run ./cmd/server                              # plain go run (not reload)
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app                                        # live source
+      - go-mod-cache:/go/pkg/mod                              # cache deps between runs
+    depends_on:
+      db:
+        condition: service_healthy                            # wait for the healthcheck above
+
+  # --- frontend (Vite dev server)
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host"     # --host = reachable from your browser
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules                                     # keep the containers node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  go-mod-cache:
