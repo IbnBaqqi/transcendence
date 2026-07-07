@@ -7,17 +7,17 @@ import Terms from "../pages/Terms";
 import NotFound from "../pages/NotFound";
 
 export default function AppRouter() {
-	return (
-		<BrowserRouter>
-		<Routes>
-			<Route element={<Layout />}>
-			<Route path="/" element={<Home />} />
-			<Route path="/privacy" element={<Privacy />} />
-			<Route path="/terms" element={<Terms />} />
-			{/* any unmatched URL renders the 404 inside the shell */}
-			<Route path="*" element={<NotFound />} />
-			</Route>
-		</Routes>
-		</BrowserRouter>
-	);
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          {/* any unmatched URL renders the 404 inside the shell */}
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }

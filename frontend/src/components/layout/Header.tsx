@@ -2,24 +2,24 @@
 // NavLink: a Link that knows if it points to the current page, so you can style the active one differently
 import { Link, NavLink } from "react-router-dom";
 
-const navLinkClass = ({ isActive } : { isActive: boolean }) =>
-	isActive ? "text-foreground" : "text-muted hover:text-foreground";
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  isActive ? "text-foreground" : "text-muted hover:text-foreground";
 
 export default function Header() {
-	return (
-		<header className="sticky top-0 z-10 border-b border-line bg-surface">
-			<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-				<Link to="/" className="text-lg font-bold text-accent">
-					Forage Marketplace
-				</Link>
-				<nav className="flex items-center gap-6 text-sm">
-					{/* {navLinkClass} passes the function istelf and React Router calls it and supplies { isActive } */ }
-					<NavLink to="/" className={navLinkClass}>
-						Home
-					</NavLink>
-					{/* TODO: add Listing (#20) and auth links (#46) when those pages exist */}
-				</nav>
-			</div>
-		</header>
-	);
+  return (
+    <header className="border-line bg-surface sticky top-0 z-10 border-b">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <Link to="/" className="text-accent text-lg font-bold">
+          Forage Marketplace
+        </Link>
+        <nav className="flex items-center gap-6 text-sm">
+          {/* {navLinkClass} passes the function istelf and React Router calls it and supplies { isActive } */}
+          <NavLink to="/" className={navLinkClass}>
+            Home
+          </NavLink>
+          {/* TODO: add Listing (#20) and auth links (#46) when those pages exist */}
+        </nav>
+      </div>
+    </header>
+  );
 }
