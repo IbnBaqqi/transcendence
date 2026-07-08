@@ -5,15 +5,16 @@ export default function Home() {
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    api.get("/health")
-      .then(res => setStatus(res.data))
+    api
+      .get("/health")
+      .then((res) => setStatus(res.data))
       .catch(() => setStatus("Backend not reachable"));
   }, []);
 
   return (
     <div className="mx-auto max-w-2xl p-8">
-      <h1 className="text-3xl font-bold text-accent">Forage Marketplace</h1>
-      <p className="mt-2 text-muted">Backend status: {status}</p>
+      <h1 className="text-accent text-3xl font-bold">Forage Marketplace</h1>
+      <p className="text-muted mt-2">Backend status: {status}</p>
     </div>
   );
 }
