@@ -15,7 +15,7 @@ type Config struct {
 	Server ServerConfig
 	Logger LoggerConfig
 	DB     DBConfig
-	}
+}
 
 type ServerConfig struct {
 	Port         string
@@ -29,9 +29,9 @@ type LoggerConfig struct {
 }
 
 type DBConfig struct {
-	URL            string
-	MaxOpenConns   int
-	MaxIdleConns   int
+	URL             string
+	MaxOpenConns    int
+	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
 }
 
@@ -57,7 +57,7 @@ func Load() (*Config, error) {
 			MaxIdleConns:    getEnvAsInt("DB_MAX_IDLE_CONNS", 10),
 			ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", "5m"),
 		},
-		}
+	}
 
 	return cfg, nil
 }
