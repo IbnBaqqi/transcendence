@@ -13,7 +13,7 @@ func TestLoad(t *testing.T) {
 		os.Unsetenv("ENV")
 		os.Unsetenv("PORT")
 		os.Unsetenv("DB_URL")
-		}()
+	}()
 
 	cfg, err := Load()
 	if err != nil {

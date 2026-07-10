@@ -10,7 +10,7 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/config"
 	_ "github.com/lib/pq"
-	)
+)
 
 // DB wraps the database connection pool & queries
 type DB struct {
@@ -38,9 +38,9 @@ func Connect(ctx context.Context, cfg *config.DBConfig) (*DB, error) {
 		slog.Error("failed to ping database", "error", err)
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
-	
-	dbConn.SetMaxOpenConns(cfg.MaxOpenConns) // 25
-	dbConn.SetMaxIdleConns(cfg.MaxIdleConns) // 5
+
+	dbConn.SetMaxOpenConns(cfg.MaxOpenConns)       // 25
+	dbConn.SetMaxIdleConns(cfg.MaxIdleConns)       // 5
 	dbConn.SetConnMaxLifetime(cfg.ConnMaxLifetime) // 5minutes
 
 	queries := New(dbConn)

@@ -14,7 +14,6 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/config"
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/logger"
-	
 )
 
 func main() {
@@ -36,10 +35,8 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize logger: %w", err)
 	}
-	
 
 	log.Info("starting server", "env", cfg.Env, "port", cfg.Server.Port)
-	
 
 	// Root context
 	ctx := context.Background()
@@ -52,9 +49,8 @@ func run() error {
 	defer func() {
 		if err := database.Close(); err != nil {
 			log.Error("failed to close database connection", "error", err)
-			}
+		}
 	}()
-	
 
 	// apiCfg, err := app.New(cfg, db)
 	// if err != nil {
@@ -62,7 +58,7 @@ func run() error {
 	// }
 
 	// Setup router
-	router := app.NewRouter(log)
+	router := app.NewRouter(log, database.Queries)
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Server.Port,

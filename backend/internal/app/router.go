@@ -1,42 +1,42 @@
 package app
 
 import (
+	"log/slog"
 	"net/http"
 
+	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/handler"
 	mw "github.com/IbnBaqqi/transcendence/internal/middleware"
+	"github.com/IbnBaqqi/transcendence/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"log/slog"
-	)
+)
 
-// TODO(listings): NewRouter currently only takes a logger, but listing
-// routes need a *database.Queries (or *database.DB, which embeds it)
-// to construct ListingHandler. This will require:
-//   1. Changing this signature to NewRouter(log *slog.Logger, db *database.DB)
-//   2. Uncommenting/finishing app.New(cfg, db) in main.go, which already
-//      exists but is commented out
-//   3. Passing db through from main.go into NewRouter(...)
-// Not doing this yet — flagging for team discussion since it touches
-// shared scaffold files (app.go, main.go), not just listing-specific code.
-func NewRouter(log *slog.Logger) http.Handler {
-r := chi.NewRouter()
-	
+// NewRouter takes *database.Queries so it can construct the listing handler
+func NewRouter(log *slog.Logger, queries *database.Queries) http.Handler {
+	r := chi.NewRouter()
+
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(mw.Logger(log))
 	r.Use(mw.Recoverer(log))
 
+	// health stays at the root. it's an infra endpoint, not part of the versioned API
 	healthHandler := handler.NewHealthHandler()
 	r.Get("/health", healthHandler.Check)
 
-	// TODO(listings): once db is available here, wire up:
-	// listingHandler := handler.NewListingHandler(db.Queries)
-	// r.Get("/listings", listingHandler.List)
-	// r.Post("/listings", listingHandler.Create)
-	// r.Get("/listings/{id}", listingHandler.Get)
-	// r.Put("/listings/{id}", listingHandler.Update)
-	// r.Delete("/listings/{id}", listingHandler.Delete)
+	// build the listing feature bottom-up: queries -> service -> handler
+	listingSvc := service.NewListingService(queries)
+	listingHandler := handler.NewListingHandler(listingSvc)
+
+	// all API routes live under /api/v1 r.Route mounts a sub-souter.
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Get("/listings", listingHandler.List)           // GET
+		r.Post("/listings", listingHandler.Create)        // POST
+		r.Get("/listings/{id}", listingHandler.Get)       // GET
+		r.Put("/listings/{id}", listingHandler.Update)    // PUT
+		r.Delete("/listings/{id}", listingHandler.Delete) // DELETE
+	})
 
 	return r
-	}
+}

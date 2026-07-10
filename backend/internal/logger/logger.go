@@ -1,4 +1,3 @@
-
 // Package logger provides structured logging using slog.
 package logger
 
@@ -44,5 +43,3 @@ func parseLogLevel(level string) slog.Level {
 		return slog.LevelInfo
 	}
 }
-
-

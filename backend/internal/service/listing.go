@@ -45,13 +45,13 @@ func (s *ListingService) CreateListing(ctx context.Context, sellerID int32, inpu
 	}
 
 	return s.db.CreateListing(ctx, database.CreateListingParams{
-		SellerID:		sellerID,
-		Title:			input.Title,
-		Description:	sql.NullString{String: input.Description, Valid: input.Description != ""},
-		Category:		input.Category,
-		Price:			strconv.FormatFloat(input.Price, 'f', 2, 64),
-		Quantity:		input.Quantity,
-		Unit:			input.Unit,
+		SellerID:    sellerID,
+		Title:       input.Title,
+		Description: sql.NullString{String: input.Description, Valid: input.Description != ""},
+		Category:    input.Category,
+		Price:       strconv.FormatFloat(input.Price, 'f', 2, 64),
+		Quantity:    input.Quantity,
+		Unit:        input.Unit,
 	})
 }
 
@@ -81,13 +81,13 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID, listingID in
 	}
 
 	return s.db.UpdateListing(ctx, database.UpdateListingParams{
-		ID:				listingID,
-		Title:			input.Title,
-		Description:	sql.NullString{String: input.Description, Valid: input.Description != ""},
-		Category:		input.Category,
-		Price:			strconv.FormatFloat(input.Price, 'f', 2, 64),
-		Quantity:		input.Quantity,
-		Unit:			input.Unit,
+		ID:          listingID,
+		Title:       input.Title,
+		Description: sql.NullString{String: input.Description, Valid: input.Description != ""},
+		Category:    input.Category,
+		Price:       strconv.FormatFloat(input.Price, 'f', 2, 64),
+		Quantity:    input.Quantity,
+		Unit:        input.Unit,
 	})
 }
 
