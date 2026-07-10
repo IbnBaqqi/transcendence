@@ -4,7 +4,7 @@ export const Privacy: Document = {
   title: "Privacy Policy",
   lastUpdated: "July 2026",
   intro: [
-    "Built for a 42 curriculum project at Hive, Helsinki, not a commercial legal service.",
+    "Built for a 42 curriculum project at Hive, Helsinki. Not a commercial legal service.",
   ],
   sections: [
     {
@@ -13,9 +13,9 @@ export const Privacy: Document = {
         "We may collect data technical information needed to operate the service.",
       ],
       bullets: [
-        "Account details — email, display name, optional region/avatar",
-        "Content you create — listings, messages, reviews",
-        "Technical data — auth tokens stored in your browser — no ad trackers",
+        "Account details: email, display name, optional region/avatar",
+        "Content you create: listings, messages, reviews",
+        "Technical data: auth tokens stored in your browser, no ad trackers",
       ],
     },
     {
@@ -34,9 +34,9 @@ export const Privacy: Document = {
     {
       title: "Payments",
       paragraphs: [
-        "Payments on this platform are simulated — no real financial data is collected.",
+        "Payments on this platform are simulated, no real financial data is collected.",
       ],
     },
   ],
-  contactEmail: "privacy@forageapp.fi.",
+  contactEmail: "support@forageapp.fi",
 };

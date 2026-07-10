@@ -1,10 +1,12 @@
-import { privacyPolicy } from "../content/Privacy.ts";
+import { Privacy } from "../content/Privacy.ts";
 
-export default function Privacy() {
+export default function PrivacyPolicy() {
+  const { title, lastUpdated, intro, sections, contactEmail } = Privacy;
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="text-foreground text-2xl font-bold">{Privacy.title}</h1>
-      <p className="text-muted mt-2 text-sm">Last updated: {Privacy.lastupdated}</p>
+      <p className="text-muted mt-2 text-sm">Last updated: {Privacy.lastUpdated}</p>
 
       <div className="text-muted mt-6 space-y-4">
         {intro.map((paragraph) => (

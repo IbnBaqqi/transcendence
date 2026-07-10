@@ -1,78 +1,48 @@
 import type { Document } from "./Types.ts";
 
 export const Terms: Document = {
-  title: "Privacy Policy",
+  title: "Terms of Sevice",
   lastUpdated: "July 2026",
   intro: [
-    "Built for a 42 curriculum project at Hive, Helsinki, not a commercial legal service.",
+    "Built for a 42 curriculum project at Hive, Helsinki. Not a commercial legal service.",
+    "These terms may change over time.",
   ],
   sections: [
     {
-      title: "What we collect",
+      title: "Account responsibilities",
       paragraphs: [
-        "We may collect data technical information needed to operate the service.",
+        "Keep your listings accurate and follow local foraging laws in your area.",
+      ],
+    },
+    {
+      title: "Foraging & food safety",
+      paragraphs: [
+        "Foraged foods carry real risk. Misidentifying mushrooms or plants can be dangerous.",
       ],
       bullets: [
-        "Account details — email, display name, optional region/avatar",
-        "Content you create — listings, messages, reviews",
-        "Technical data — auth tokens stored in your browser — no ad trackers",
+        "Sellers are responsible for correct identification.",
+        "Buyers assume the risk of what they purchase.",
+        "The platform does not verify any goods.",
       ],
     },
     {
-      title: "How it's used & who sees it",
+      title: "Payments & orders",
       paragraphs: [
-        "We use your information to provide and improve the service, maintain security, and communicate important updates.",
-        "Other users can see your profile, listings, and messages you send them.",
+        "All payments and orders on this platform are simulated, no real sales take place.",
       ],
     },
     {
-      title: "Storage & security",
+      title: "Acceptable use",
       paragraphs: [
-        "We retain information only as long as necessary. You may also request access, correction, or deletion of your data at any time. All passwords are hashed.",
+        "No harassment, fraud, or illegal listings. Accounts violating this may be suspended.",
       ],
     },
     {
-      title: "Payments",
+      title: "Disclaimers & liability",
       paragraphs: [
-        "Payments on this platform are simulated — no real financial data is collected.",
-      ],
-    },
-    {
-      title: "Contact",
-      paragraphs: [
-        "Questions? Reach out at",
+        "Provided \"as is,\" with no warranty. Use at your own risk.",
       ],
     },
   ],
-  contactEmail: "privacy@forageapp.fi.",
+  contactEmail: "support@forageapp.fi",
 };
-
-Terms of Service
-
-Last updated: July 2026 · Built for a 42 curriculum project, not a commercial legal service.
-
-Account responsibilities
-
-Keep your listings accurate and follow local foraging laws in your area.
-
-Foraging & food safety
-
-Foraged foods carry real risk. Misidentifying mushrooms or plants can be dangerous.
-
-• Sellers are responsible for correct identification • Buyers assume the risk of what they purchase • The platform does not verify any goods
-
-Payments & orders
-
-All payments and orders on this platform are simulated — no real sales take place.
-
-Acceptable use
-
-No harassment, fraud, or illegal listings. Accounts violating this may be suspended.
-
-Disclaimers & liability
-
-Provided "as is," with no warranty. Use at your own risk.
-
-Changes & contact
-
-These terms may change over time. Questions: hello@forageapp.fi
