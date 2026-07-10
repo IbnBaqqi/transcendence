@@ -32,7 +32,7 @@ function LegalSection({ block }: { block: Block }) {
   );
 }
 
-export function LegalDocument({ document }: { document: Document }) { 
+export function LegalDocument({ document }: { document: Document }) {
   const { title, lastUpdated, intro, blocks, contactEmail } = document;
 
   return (

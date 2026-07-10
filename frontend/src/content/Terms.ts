@@ -10,9 +10,7 @@ export const Terms: Document = {
   blocks: [
     {
       title: "Account responsibilities",
-      paragraphs: [
-        "Keep your listings accurate and follow local foraging laws in your area.",
-      ],
+      paragraphs: ["Keep your listings accurate and follow local foraging laws in your area."],
     },
     {
       title: "Foraging & food safety",
@@ -39,9 +37,7 @@ export const Terms: Document = {
     },
     {
       title: "Disclaimers & liability",
-      paragraphs: [
-        "Provided \"as is,\" with no warranty. Use at your own risk.",
-      ],
+      paragraphs: ['Provided "as is," with no warranty. Use at your own risk.'],
     },
   ],
   contactEmail: "support@forageapp.fi",

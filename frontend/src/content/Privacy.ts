@@ -3,15 +3,11 @@ import type { Document } from "../components/types/DocumentTypes.ts";
 export const Privacy: Document = {
   title: "Privacy Policy",
   lastUpdated: "July 2026",
-  intro: [
-    "Built for a 42 curriculum project at Hive, Helsinki. Not a commercial legal service.",
-  ],
+  intro: ["Built for a 42 curriculum project at Hive, Helsinki. Not a commercial legal service."],
   blocks: [
     {
       title: "What we collect",
-      paragraphs: [
-        "We may collect data technical information needed to operate the service.",
-      ],
+      paragraphs: ["We may collect data technical information needed to operate the service."],
       bullets: [
         "Account details: email, display name, optional region/avatar",
         "Content you create: listings, messages, reviews",
@@ -33,9 +29,7 @@ export const Privacy: Document = {
     },
     {
       title: "Payments",
-      paragraphs: [
-        "Payments on this platform are simulated, no real financial data is collected.",
-      ],
+      paragraphs: ["Payments on this platform are simulated, no real financial data is collected."],
     },
   ],
   contactEmail: "support@forageapp.fi",
