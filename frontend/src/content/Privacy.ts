@@ -6,7 +6,7 @@ export const Privacy: Document = {
   intro: [
     "Built for a 42 curriculum project at Hive, Helsinki. Not a commercial legal service.",
   ],
-  sections: [
+  blocks: [
     {
       title: "What we collect",
       paragraphs: [

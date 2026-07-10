@@ -1,7 +1,12 @@
 import { Privacy } from "../content/Privacy.ts";
+import { LegalDocument } from "../components/text/LegalText.tsx";
 
 export default function PrivacyPolicy() {
-  const { title, lastUpdated, intro, sections, contactEmail } = Privacy;
+  return <LegalDocument document={Privacy} />;
+}
+/*
+export default function PrivacyPolicy() {
+  const { title, lastUpdated, intro, blocks, contactEmail } = Privacy;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -15,7 +20,7 @@ export default function PrivacyPolicy() {
       </div>
 
       <div className="mt-8 space-y-8">
-        {sections.map(({ title, paragraphs, bullets }) => (
+        {blocks.map(({ title, paragraphs, bullets }) => (
           <section key={title}>
             <h2 className="text-foreground text-xl font-semibold">{title}</h2>
 
@@ -47,3 +52,4 @@ export default function PrivacyPolicy() {
     </div>
   );
 }
+*/

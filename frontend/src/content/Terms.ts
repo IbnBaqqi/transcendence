@@ -7,7 +7,7 @@ export const Terms: Document = {
     "Built for a 42 curriculum project at Hive, Helsinki. Not a commercial legal service.",
     "These terms may change over time.",
   ],
-  sections: [
+  blocks: [
     {
       title: "Account responsibilities",
       paragraphs: [
