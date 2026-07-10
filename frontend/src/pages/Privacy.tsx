@@ -1,36 +1,47 @@
-// placeholder. content comes in #50
+import { privacyPolicy } from "../content/Privacy.ts";
+
 export default function Privacy() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">Privacy Policy</h1>
-Privacy Policy
+      <h1 className="text-foreground text-2xl font-bold">{Privacy.title}</h1>
+      <p className="text-muted mt-2 text-sm">Last updated: {Privacy.lastupdated}</p>
 
-Last updated: July 2026 · Built for a 42 curriculum project, not a commercial legal service.
+      <div className="text-muted mt-6 space-y-4">
+        {intro.map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+      </div>
 
-What we collect
+      <div className="mt-8 space-y-8">
+        {sections.map(({ title, paragraphs, bullets }) => (
+          <section key={title}>
+            <h2 className="text-foreground text-xl font-semibold">{title}</h2>
 
-• Account details — email, display name, optional region/avatar • Content you create — listings, messages, reviews • Technical data — auth tokens stored in your browser
+            <div className="text-muted mt-3 space-y-3">
+              {paragraphs.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
 
-How it's used & who sees it
+            {bullets?.length ? (
+              <ul className="text-muted mt-3 list-disc space-y-1 pl-5">
+                {bullets.map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+        ))}
+      </div>
 
-Used to run the marketplace. Other users can see your profile, listings, and messages you send them.
-
-Payments
-
-Payments on this platform are simulated — no real financial data is collected.
-
-Storage & security
-
-Passwords are hashed. You can request access, correction, or deletion of your data at any time.
-
-Cookies & local storage
-
-Used for authentication only — no ad trackers.
-
-Contact
-
-Questions? Reach out at privacy@forageapp.fi
-      <p className="text-muted mt-4">PLACEHOLDER</p>
+      {contactEmail ? (
+        <p className="text-muted mt-10">
+          Questions? Reach out at:{" "}
+          <a href={`mailto:${contactEmail}`} className="text-accent hover:underline">
+            {contactEmail}
+          </a>
+        </p>
+      ) : null}
     </div>
   );
 }
