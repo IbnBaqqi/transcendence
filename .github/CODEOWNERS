@@ -1,0 +1,11 @@
+# Default owner for everything
+*       @ibnbaqqi
+
+# Language-wide default
+*.go            @ibnbaqqi @k-repo-dev
+
+# Specific paths
+/backend/       @ibnbaqqi @k-repo-dev
+/frontend/      @Kiiskii @Yuxin29
+/docs/          @ibnbaqqi
+.github/workflows/  @ibnbaqqi
