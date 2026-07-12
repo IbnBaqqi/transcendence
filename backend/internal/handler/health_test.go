@@ -7,13 +7,14 @@ import (
 )
 
 func TestHealthCheck(t *testing.T) {
-	handler := NewHealthHandler()
+	handler := New(nil, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 
-	handler.Check(w, req)
+	handler.Health(w, req)
 
+	// TODO update test
 	if w.Code != http.StatusOK {
 		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
 	}
