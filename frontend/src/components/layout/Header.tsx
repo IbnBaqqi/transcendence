@@ -13,7 +13,7 @@ export default function Header() {
           Forage Marketplace
         </Link>
         <nav className="flex items-center gap-6 text-sm">
-          {/* {navLinkClass} passes the function istelf and React Router calls it and supplies { isActive } */}
+          {/* {navLinkClass} passes the function itself and React Router calls it and supplies { isActive } */}
           <NavLink to="/" className={navLinkClass}>
             Home
           </NavLink>

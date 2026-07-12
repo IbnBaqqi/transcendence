@@ -1,4 +1,4 @@
-import type { Section } from "../../content/Types.ts";
+import type { Block, Document } from "../../content/DocumentTypes.ts";
 
 function LegalParagraph({ paragraphs }: { paragraphs: string[] }) {
   return (

@@ -1,7 +1,7 @@
 import type { Document } from "../components/types/DocumentTypes.ts";
 
 export const Terms: Document = {
-  title: "Terms of Sevice",
+  title: "Terms of Service",
   lastUpdated: "July 2026",
   intro: [
     "Built for a 42 curriculum project at Hive, Helsinki. Not a commercial legal service.",
