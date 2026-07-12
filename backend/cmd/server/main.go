@@ -42,23 +42,23 @@ func run() error {
 	ctx := context.Background()
 
 	// Initialize database
-	database, err := database.Connect(ctx, &cfg.DB)
+	db, err := database.Connect(ctx, &cfg.DB)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer func() {
-		if err := database.Close(); err != nil {
+		if err := db.Close(); err != nil {
 			log.Error("failed to close database connection", "error", err)
 		}
 	}()
 
-	// apiCfg, err := app.New(cfg, db)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to initialize app services: %w", err)
-	// }
+	appService, err := app.New(cfg, db)
+	if err != nil {
+		return fmt.Errorf("failed to initialize app services: %w", err)
+	}
 
 	// Setup router
-	router := app.NewRouter(log, database.Queries)
+	router := app.NewRouter(log, appService)
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
