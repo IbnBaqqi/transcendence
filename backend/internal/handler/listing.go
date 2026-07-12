@@ -12,17 +12,6 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/service"
 )
 
-// ListingHandler translates HTTP requests into service calls, and
-// service results back into HTTP responses. It contains no business
-// logic itself.
-type ListingHandler struct {
-	service *service.ListingService
-}
-
-func NewListingHandler(s *service.ListingService) *ListingHandler {
-	return &ListingHandler{service: s}
-}
-
 // --- Auth Placeholder ---
 //
 // TODO(auth): Replace this once real middleware exists.
@@ -63,7 +52,7 @@ func statusFromServiceError(err error) int {
 	}
 }
 
-func (h *ListingHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
 		Error(w, http.StatusUnauthorized, "authentication required")
@@ -76,7 +65,7 @@ func (h *ListingHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	listing, err := h.service.CreateListing(r.Context(), userID, input)
+	listing, err := h.Listing.CreateListing(r.Context(), userID, input)
 	if err != nil {
 		Error(w, statusFromServiceError(err), err.Error())
 		return
@@ -85,23 +74,23 @@ func (h *ListingHandler) Create(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusCreated, listing)
 }
 
-func (h *ListingHandler) List(w http.ResponseWriter, r *http.Request) {
-	listings, err := h.service.ListListings(r.Context())
+func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
+	listings, err := h.Listing.ListListings(r.Context())
 	if err != nil {
-		Error(w, http.StatusInternalServerError, "could not fecth listings")
+		Error(w, http.StatusInternalServerError, "could not fetch listings")
 		return
 	}
 	JSON(w, http.StatusOK, listings)
 }
 
-func (h *ListingHandler) Get(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIDParam(r)
 	if err != nil {
 		Error(w, http.StatusBadRequest, "invalid listing id")
 		return
 	}
 
-	listing, err := h.service.GetListing(r.Context(), id)
+	listing, err := h.Listing.GetListing(r.Context(), id)
 	if err != nil {
 		Error(w, statusFromServiceError(err), err.Error())
 		return
@@ -110,7 +99,7 @@ func (h *ListingHandler) Get(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, listing)
 }
 
-func (h *ListingHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
 		Error(w, http.StatusUnauthorized, "authentication required")
@@ -129,7 +118,7 @@ func (h *ListingHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := h.service.UpdateListing(r.Context(), userID, id, input)
+	updated, err := h.Listing.UpdateListing(r.Context(), userID, id, input)
 	if err != nil {
 		Error(w, statusFromServiceError(err), err.Error())
 		return
@@ -138,7 +127,7 @@ func (h *ListingHandler) Update(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, updated)
 }
 
-func (h *ListingHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteListing(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
 		Error(w, http.StatusUnauthorized, "authentication required")
@@ -147,11 +136,11 @@ func (h *ListingHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	id, err := parseIDParam(r)
 	if err != nil {
-		Error(w, http.StatusBadRequest, "invalid lisitng id")
+		Error(w, http.StatusBadRequest, "invalid listing id")
 		return
 	}
 
-	if err := h.service.DeleteListing(r.Context(), userID, id); err != nil {
+	if err := h.Listing.DeleteListing(r.Context(), userID, id); err != nil {
 		Error(w, statusFromServiceError(err), err.Error())
 		return
 	}
