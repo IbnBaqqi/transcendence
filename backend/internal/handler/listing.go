@@ -25,7 +25,7 @@ func getUserID(r *http.Request) (int32, error) {
 	if idStr == "" {
 		return 0, errors.New("missing X-User-ID header")
 	}
-	id, err := strconv.Atoi(idStr)
+	id, err := strconv.ParseInt(idStr, 10, 32)
 	if err != nil {
 		return 0, errors.New("invalid X-User-ID header")
 	}
@@ -152,7 +152,7 @@ func (h *Handler) DeleteListing(w http.ResponseWriter, r *http.Request) {
 
 func parseIDParam(r *http.Request) (int32, error) {
 	idStr := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idStr)
+	id, err := strconv.ParseInt(idStr, 10, 32)
 	if err != nil {
 		return 0, err
 	}
