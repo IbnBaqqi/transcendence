@@ -10,21 +10,31 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, name) VALUES ($1, $2) RETURNING id, email, name, created_at, updated_at
+INSERT INTO users (email, firstname, lastname, password) VALUES ($1, $2, $3, $4) RETURNING id, email, firstname, lastname, password, role, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Email string
-	Name  string
+	Email     string
+	Firstname string
+	Lastname  string
+	Password  string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.Email, arg.Name)
+	row := q.db.QueryRowContext(ctx, createUser,
+		arg.Email,
+		arg.Firstname,
+		arg.Lastname,
+		arg.Password,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
-		&i.Name,
+		&i.Firstname,
+		&i.Lastname,
+		&i.Password,
+		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -41,7 +51,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int32) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, name, created_at, updated_at FROM users WHERE id = $1 LIMIT 1
+SELECT id, email, firstname, lastname, password, role, created_at, updated_at FROM users WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
@@ -50,7 +60,10 @@ func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
-		&i.Name,
+		&i.Firstname,
+		&i.Lastname,
+		&i.Password,
+		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -58,7 +71,7 @@ func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, name, created_at, updated_at FROM users ORDER BY created_at DESC
+SELECT id, email, firstname, lastname, password, role, created_at, updated_at FROM users ORDER BY created_at DESC
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -73,7 +86,10 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Email,
-			&i.Name,
+			&i.Firstname,
+			&i.Lastname,
+			&i.Password,
+			&i.Role,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -91,15 +107,16 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 }
 
 const updateUser = `-- name: UpdateUser :exec
-UPDATE users SET name = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1
+UPDATE users SET firstname = $2, lastname = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $1
 `
 
 type UpdateUserParams struct {
-	ID   int32
-	Name string
+	ID        int32
+	Firstname string
+	Lastname  string
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	_, err := q.db.ExecContext(ctx, updateUser, arg.ID, arg.Name)
+	_, err := q.db.ExecContext(ctx, updateUser, arg.ID, arg.Firstname, arg.Lastname)
 	return err
 }
