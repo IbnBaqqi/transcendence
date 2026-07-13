@@ -26,6 +26,7 @@ type Profile struct {
 	Bio         sql.NullString
 	PhoneNumber sql.NullString
 	DateOfBirth sql.NullTime
+	Location    sql.NullString
 }
 
 type User struct {

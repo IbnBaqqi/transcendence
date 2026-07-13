@@ -26,3 +26,34 @@ RETURNING *;
 -- name: DeleteListing :exec
 DELETE FROM listings
 WHERE id = $1;
+
+-- name: SearchListings :many
+SELECT listings.*
+FROM listings
+LEFT JOIN users ON listings.seller_id = users.id
+LEFT JOIN profiles ON profiles.id = users.id
+WHERE
+    (sqlc.narg('keyword')::text IS NULL OR
+        listings.title ILIKE '%' || sqlc.narg('keyword')::text || '%' OR
+        listings.description ILIKE '%' || sqlc.narg('keyword')::text || '%')
+    AND (sqlc.narg('category')::text IS NULL OR listings.category = sqlc.narg('category')::text)
+    AND (sqlc.narg('min_price')::numeric IS NULL OR listings.price::numeric >= sqlc.narg('min_price')::numeric)
+    AND (sqlc.narg('max_price')::numeric IS NULL OR listings.price::numeric <= sqlc.narg('max_price')::numeric)
+    AND (sqlc.narg('location')::text IS NULL OR profiles.location ILIKE '%' || sqlc.narg('location')::text || '%')
+ORDER BY listings.created_at DESC
+LIMIT sqlc.arg('limit')
+OFFSET sqlc.arg('offset');
+
+-- name: CountSearchListings :one
+SELECT COUNT(*)
+FROM listings
+LEFT JOIN users ON listings.seller_id = users.id
+LEFT JOIN profiles ON profiles.id = users.id
+WHERE
+    (sqlc.narg('keyword')::text IS NULL OR
+        listings.title ILIKE '%' || sqlc.narg('keyword')::text || '%' OR
+        listings.description ILIKE '%' || sqlc.narg('keyword')::text || '%')
+    AND (sqlc.narg('category')::text IS NULL OR listings.category = sqlc.narg('category')::text)
+    AND (sqlc.narg('min_price')::numeric IS NULL OR listings.price::numeric >= sqlc.narg('min_price')::numeric)
+    AND (sqlc.narg('max_price')::numeric IS NULL OR listings.price::numeric <= sqlc.narg('max_price')::numeric)
+    AND (sqlc.narg('location')::text IS NULL OR profiles.location ILIKE '%' || sqlc.narg('location')::text || '%');
