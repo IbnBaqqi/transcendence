@@ -14,11 +14,11 @@ type Response struct {
 func JSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(Response{Success: true, Data: data})
+	_ = json.NewEncoder(w).Encode(Response{Success: true, Data: data})
 }
 
 func Error(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(Response{Success: false, Error: message})
+	_ = json.NewEncoder(w).Encode(Response{Success: false, Error: message})
 }

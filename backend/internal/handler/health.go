@@ -1,15 +1,61 @@
 package handler
 
 import (
+	"context"
+	"encoding/json"
+	"log/slog"
 	"net/http"
+	"time"
 )
 
-type HealthHandler struct{}
-
-func NewHealthHandler() *HealthHandler {
-	return &HealthHandler{}
+// HealthResponse represents the health check response
+type HealthResponse struct {
+	Status string            `json:"status"`
+	Checks map[string]string `json:"checks"`
 }
 
-func (h *HealthHandler) Check(w http.ResponseWriter, r *http.Request) {
-	JSON(w, http.StatusOK, map[string]string{"status": "ok"})
+// Health returns the server and dependencies health status.
+func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+	defer cancel()
+
+	checks := make(map[string]string)
+	allHealthy := true
+
+	// Check database connectivity
+	if err := h.checkDatabase(ctx); err != nil {
+		checks["database"] = "unhealthy"
+		allHealthy = false
+		slog.Error("health check: database unhealthy", "error", err)
+	} else {
+		checks["database"] = "healthy"
+	}
+
+	// Determine overall status
+	status := "healthy"
+	statusCode := http.StatusOK
+	if !allHealthy {
+		status = "unhealthy"
+		statusCode = http.StatusServiceUnavailable
+	}
+
+	response := HealthResponse{
+		Status: status,
+		Checks: checks,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		slog.Error("failed to encode health response", "error", err)
+	}
+}
+
+// checkDatabase verifies database connectivity
+func (h *Handler) checkDatabase(ctx context.Context) error {
+	if h.db == nil {
+		return nil
+	}
+	return h.db.PingContext(ctx)
 }

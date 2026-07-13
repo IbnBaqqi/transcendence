@@ -89,7 +89,7 @@ func getEnvAsInt(key string, defaultValue int) int {
 	if err != nil {
 		slog.Warn("invalid int environment variable, using default",
 			"key", key,
-			"value", valueStr,
+			"value", strconv.Quote(valueStr),
 			"default", defaultValue,
 			"error", err,
 		)
@@ -99,6 +99,7 @@ func getEnvAsInt(key string, defaultValue int) int {
 }
 
 //nolint:unused // kept for future use
+//lint:ignore U1000 kept for future use
 func getEnvAsInt64(key string, defaultValue int64) int64 {
 	valueStr := os.Getenv(key)
 	if valueStr == "" {
@@ -108,7 +109,7 @@ func getEnvAsInt64(key string, defaultValue int64) int64 {
 	if err != nil {
 		slog.Warn("invalid int environment variable, using default",
 			"key", key,
-			"value", valueStr,
+			"value", strconv.Quote(valueStr),
 			"default", defaultValue,
 			"error", err,
 		)
