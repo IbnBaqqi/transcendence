@@ -63,10 +63,10 @@ docker-build:
 	@docker build -t transcendence .
 
 docker-up:
-	@docker-compose up -d
+	@docker compose up -d
 
 docker-down:
-	@docker-compose down
+	@docker compose down
 
 docker-logs:
-	@docker-compose logs -f
+	@docker compose logs -f
