@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"math"
 	"strconv"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
@@ -159,6 +160,9 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 	location := sql.NullString{String: q.Location, Valid: q.Location != ""}
 
 	offset := (page - 1) * limit
+	if offset < 0 || offset > math.MaxInt32 {
+		return dtos.PaginatedListings{}, &ValidationError{Message: "page is too large"}
+	}
 
 	params := database.SearchListingsParams{
 		Keyword:  keyword,
