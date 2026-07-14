@@ -104,9 +104,9 @@ func (s *ListingService) DeleteListing(ctx context.Context, userID, listingID in
 }
 
 const (
-	defaultPage = 1
+	defaultPage  = 1
 	defaultLimit = 20
-	maxLimit = 50
+	maxLimit     = 50
 )
 
 func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearchQuery) (dtos.PaginatedListings, error) {
@@ -161,16 +161,16 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 	offset := (page - 1) * limit
 
 	params := database.SearchListingsParams{
-		Keyword: keyword,
+		Keyword:  keyword,
 		Category: category,
 		MinPrice: minPrice,
 		MaxPrice: maxPrice,
 		Location: location,
-		Offset: int32(offset),
-		Limit: int32(limit),
+		Offset:   int32(offset),
+		Limit:    int32(limit),
 	}
 	countParams := database.CountSearchListingsParams{
-		Keyword: keyword,
+		Keyword:  keyword,
 		Category: category,
 		MinPrice: minPrice,
 		MaxPrice: maxPrice,
@@ -189,10 +189,10 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
 	return dtos.PaginatedListings{
-		Items: items,
-		Total: total,
-		Page: page,
-		Limit: limit,
+		Items:      items,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
 		TotalPages: totalPages,
 	}, nil
 }
