@@ -102,3 +102,97 @@ func (s *ListingService) DeleteListing(ctx context.Context, userID, listingID in
 
 	return s.db.DeleteListing(ctx, listingID)
 }
+
+const (
+	defaultPage = 1
+	defaultLimit = 20
+	maxLimit = 50
+)
+
+func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearchQuery) (dtos.PaginatedListings, error) {
+	page := defaultPage
+	if q.Page != "" {
+		p, err := strconv.Atoi(q.Page)
+		if err != nil || p < 1 {
+			return dtos.PaginatedListings{}, &ValidationError{Message: "page must be a positive integer"}
+		}
+		page = p
+	}
+
+	limit := defaultLimit
+	if q.Limit != "" {
+		l, err := strconv.Atoi(q.Limit)
+		if err != nil || l < 1 {
+			return dtos.PaginatedListings{}, &ValidationError{Message: "limit must be a positive integer"}
+		}
+		limit = l
+	}
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+
+	var minPrice, maxPrice sql.NullString
+	var minVal, maxVal float64
+
+	if q.MinPrice != "" {
+		v, err := strconv.ParseFloat(q.MinPrice, 64)
+		if err != nil || v < 0 {
+			return dtos.PaginatedListings{}, &ValidationError{Message: "min_price must be a non-negative number"}
+		}
+		minVal = v
+		minPrice = sql.NullString{String: strconv.FormatFloat(v, 'f', 2, 64), Valid: true}
+	}
+	if q.MaxPrice != "" {
+		v, err := strconv.ParseFloat(q.MaxPrice, 64)
+		if err != nil || v < 0 {
+			return dtos.PaginatedListings{}, &ValidationError{Message: "max_price must be a non-negative number"}
+		}
+		maxVal = v
+		maxPrice = sql.NullString{String: strconv.FormatFloat(v, 'f', 2, 64), Valid: true}
+	}
+	if minPrice.Valid && maxPrice.Valid && minVal > maxVal {
+		return dtos.PaginatedListings{}, &ValidationError{Message: "min_price must not exceed max_price"}
+	}
+
+	keyword := sql.NullString{String: q.Keyword, Valid: q.Keyword != ""}
+	category := sql.NullString{String: q.Category, Valid: q.Category != ""}
+	location := sql.NullString{String: q.Location, Valid: q.Location != ""}
+
+	offset := (page - 1) * limit
+
+	params := database.SearchListingsParams{
+		Keyword: keyword,
+		Category: category,
+		MinPrice: minPrice,
+		MaxPrice: maxPrice,
+		Location: location,
+		Offset: int32(offset),
+		Limit: int32(limit),
+	}
+	countParams := database.CountSearchListingsParams{
+		Keyword: keyword,
+		Category: category,
+		MinPrice: minPrice,
+		MaxPrice: maxPrice,
+		Location: location,
+	}
+
+	items, err := s.db.SearchListings(ctx, params)
+	if err != nil {
+		return dtos.PaginatedListings{}, err
+	}
+	total, err := s.db.CountSearchListings(ctx, countParams)
+	if err != nil {
+		return dtos.PaginatedListings{}, err
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	return dtos.PaginatedListings{
+		Items: items,
+		Total: total,
+		Page: page,
+		Limit: limit,
+		TotalPages: totalPages,
+	}, nil
+}
