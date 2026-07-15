@@ -9,3 +9,9 @@ export interface Listing {
   quantity: number;
   unit: string;
 }
+
+// the backend wraps every response like { success, data }.
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T | null;
+}
