@@ -1,0 +1,106 @@
+package database
+
+import (
+	"context"
+	"strconv"
+	"strings"
+)
+
+// SearchListingsParams holds already-validated, plain-string filter values.
+// Empty string means "no filter" for that field.
+type SearchListingsParams struct {
+	Keyword  string
+	Category string
+	MinPrice string
+	MaxPrice string
+	Location string
+	Offset   int32
+	Limit    int32
+}
+
+// buildSearchListingsQuery dynamically constructs the SELECT/COUNT query
+// and its positional args based o which filters are set. Every value is
+// passed as a placeholdeer arg - never string-interpolated - to avoid SQL
+// injection.
+func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string, []interface{}) {
+	var b strings.Builder
+	var args []interface{}
+
+	next := func(val interface{}) string {
+		args = append(args, val)
+		return "$" + strconv.Itoa(len(args))
+	}
+
+	if countOnly {
+		b.WriteString("SELECT COUNT(*) FROM listings LEFT JOIN addresses ON addresses.user_id = listings.seller_id WHERE 1=1")
+	} else {
+		b.WriteString(`SELECT listings.id, listings.seller_id, listings.title, listings.description,
+		listings.category, listings.price, listings.quantity, listings.unit,
+		listings.created_at, listings.updated_at
+		FROM listings LEFT JOIN addresses ON addresses.user_id = listings.seller_id WHERE 1=1`)
+	}
+
+	if arg.Keyword != "" {
+		p := next("%" + arg.Keyword + "%")
+		b.WriteString(" AND (listings.title ILIKE " + p + " OR listings.description ILIKE " + p + ")")
+	}
+	if arg.Category != "" {
+		p := next(arg.Category)
+		b.WriteString(" AND listings.category = " + p)
+	}
+	if arg.MinPrice != "" {
+		p := next(arg.MinPrice)
+		b.WriteString(" AND listings.price::numeric >= " + p + "::numeric")
+	}
+
+	if arg.MaxPrice != "" {
+		p := next(arg.MaxPrice)
+		b.WriteString(" AND listings.price::numeric <= " + p + "::numeric")
+	}
+	if arg.Location != "" {
+		p := next("%" + arg.Location + "%")
+		b.WriteString(" AND addresses.location ILIKE " + p)
+	}
+
+	if !countOnly {
+		b.WriteString(" ORDER BY listings.created_at DESC")
+		p := next(arg.Limit)
+		b.WriteString(" LIMIT " + p)
+		p = next(arg.Offset)
+		b.WriteString(" OFFSET " + p)
+	}
+
+	return b.String(), args
+}
+
+func (q *Queries) SearchListingsDynamic(ctx context.Context, arg SearchListingsParams) ([]Listing, error) {
+	query, args := buildSearchListingsQuery(arg, false)
+	rows, err := q.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []Listing
+	for rows.Next() {
+		var i Listing
+		if err := rows.Scan(
+			&i.ID, &i.SellerID, &i.Title, &i.Description, &i.Category,
+			&i.Price, &i.Quantity, &i.Unit, &i.CreatedAt, &i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (q *Queries) CountSearchListingsDynamic(ctx context.Context, arg SearchListingsParams) (int64, error) {
+	query, args := buildSearchListingsQuery(arg, true)
+	var count int64
+	err := q.db.QueryRowContext(ctx, query, args...).Scan(&count)
+	return count, err
+}

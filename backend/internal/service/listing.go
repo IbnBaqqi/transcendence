@@ -155,37 +155,30 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, &ValidationError{Message: "min_price must not exceed max_price"}
 	}
 
-	keyword := sql.NullString{String: q.Keyword, Valid: q.Keyword != ""}
-	category := sql.NullString{String: q.Category, Valid: q.Category != ""}
-	location := sql.NullString{String: q.Location, Valid: q.Location != ""}
-
 	offset := (page - 1) * limit
 	if offset < 0 || offset > math.MaxInt32 {
 		return dtos.PaginatedListings{}, &ValidationError{Message: "page is too large"}
 	}
 
 	params := database.SearchListingsParams{
-		Keyword:  keyword,
-		Category: category,
-		MinPrice: minPrice,
-		MaxPrice: maxPrice,
-		Location: location,
+		Keyword:  q.Keyword,
+		Category: q.Category,
+		Location: q.Location,
 		Offset:   int32(offset),
 		Limit:    int32(limit),
 	}
-	countParams := database.CountSearchListingsParams{
-		Keyword:  keyword,
-		Category: category,
-		MinPrice: minPrice,
-		MaxPrice: maxPrice,
-		Location: location,
+	if minPrice.Valid {
+		params.MinPrice = minPrice.String
+	}
+	if maxPrice.Valid {
+		params.MaxPrice = maxPrice.String
 	}
 
-	items, err := s.db.SearchListings(ctx, params)
+	items, err := s.db.SearchListingsDynamic(ctx, params)
 	if err != nil {
 		return dtos.PaginatedListings{}, err
 	}
-	total, err := s.db.CountSearchListings(ctx, countParams)
+	total, err := s.db.CountSearchListingsDynamic(ctx, params)
 	if err != nil {
 		return dtos.PaginatedListings{}, err
 	}

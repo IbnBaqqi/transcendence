@@ -10,42 +10,6 @@ import (
 	"database/sql"
 )
 
-const countSearchListings = `-- name: CountSearchListings :one
-SELECT COUNT(*)
-FROM listings
-LEFT JOIN users ON listings.seller_id = users.id
-LEFT JOIN profiles ON profiles.id = users.id
-WHERE
-    ($1::text IS NULL OR
-        listings.title ILIKE '%' || $1::text || '%' OR
-        listings.description ILIKE '%' || $1::text || '%')
-    AND ($2::text IS NULL OR listings.category = $2::text)
-    AND ($3::numeric IS NULL OR listings.price::numeric >= $3::numeric)
-    AND ($4::numeric IS NULL OR listings.price::numeric <= $4::numeric)
-    AND ($5::text IS NULL OR profiles.location ILIKE '%' || $5::text || '%')
-`
-
-type CountSearchListingsParams struct {
-	Keyword  sql.NullString
-	Category sql.NullString
-	MinPrice sql.NullString
-	MaxPrice sql.NullString
-	Location sql.NullString
-}
-
-func (q *Queries) CountSearchListings(ctx context.Context, arg CountSearchListingsParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countSearchListings,
-		arg.Keyword,
-		arg.Category,
-		arg.MinPrice,
-		arg.MaxPrice,
-		arg.Location,
-	)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const createListing = `-- name: CreateListing :one
 INSERT INTO listings (seller_id, title, description, category, price, quantity, unit)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -128,76 +92,6 @@ ORDER BY created_at DESC
 
 func (q *Queries) ListListings(ctx context.Context) ([]Listing, error) {
 	rows, err := q.db.QueryContext(ctx, listListings)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Listing
-	for rows.Next() {
-		var i Listing
-		if err := rows.Scan(
-			&i.ID,
-			&i.SellerID,
-			&i.Title,
-			&i.Description,
-			&i.Category,
-			&i.Price,
-			&i.Quantity,
-			&i.Unit,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const searchListings = `-- name: SearchListings :many
-SELECT listings.id, listings.seller_id, listings.title, listings.description, listings.category, listings.price, listings.quantity, listings.unit, listings.created_at, listings.updated_at
-FROM listings
-LEFT JOIN users ON listings.seller_id = users.id
-LEFT JOIN profiles ON profiles.id = users.id
-WHERE
-    ($1::text IS NULL OR
-        listings.title ILIKE '%' || $1::text || '%' OR
-        listings.description ILIKE '%' || $1::text || '%')
-    AND ($2::text IS NULL OR listings.category = $2::text)
-    AND ($3::numeric IS NULL OR listings.price::numeric >= $3::numeric)
-    AND ($4::numeric IS NULL OR listings.price::numeric <= $4::numeric)
-    AND ($5::text IS NULL OR profiles.location ILIKE '%' || $5::text || '%')
-ORDER BY listings.created_at DESC
-LIMIT $7
-OFFSET $6
-`
-
-type SearchListingsParams struct {
-	Keyword  sql.NullString
-	Category sql.NullString
-	MinPrice sql.NullString
-	MaxPrice sql.NullString
-	Location sql.NullString
-	Offset   int32
-	Limit    int32
-}
-
-func (q *Queries) SearchListings(ctx context.Context, arg SearchListingsParams) ([]Listing, error) {
-	rows, err := q.db.QueryContext(ctx, searchListings,
-		arg.Keyword,
-		arg.Category,
-		arg.MinPrice,
-		arg.MaxPrice,
-		arg.Location,
-		arg.Offset,
-		arg.Limit,
-	)
 	if err != nil {
 		return nil, err
 	}
