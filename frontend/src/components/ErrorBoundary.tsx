@@ -7,7 +7,7 @@ interface State {
   hasError: boolean;
 }
 
-export class ErrorBoundary extends Componen<Props, State> {
+export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false };
 
   // a child threw during render -> flip to the fallback UI
@@ -16,7 +16,7 @@ export class ErrorBoundary extends Componen<Props, State> {
   }
 
   // recvieves the actual error -> place for side effects like logging
-  componentDidCatch(error: unkown) {
+  componentDidCatch(error: unknown) {
     console.error("Uncaught error:", error);
   }
 
