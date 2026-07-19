@@ -1,3 +1,6 @@
+include .env
+export
+
 .PHONY: run build test clean dev lint
 
 # Run the application
