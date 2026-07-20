@@ -8,6 +8,14 @@ import (
 	"database/sql"
 )
 
+type Address struct {
+	ID        int32
+	UserID    int32
+	Location  sql.NullString
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+}
+
 type Listing struct {
 	ID          int32
 	SellerID    int32
@@ -21,10 +29,20 @@ type Listing struct {
 	UpdatedAt   sql.NullTime
 }
 
+type Profile struct {
+	ID          int64
+	Bio         sql.NullString
+	PhoneNumber sql.NullString
+	DateOfBirth sql.NullTime
+}
+
 type User struct {
 	ID        int32
 	Email     string
-	Name      string
+	Firstname string
+	Lastname  string
+	Password  string
+	Role      string
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
 }

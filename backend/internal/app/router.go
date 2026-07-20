@@ -29,7 +29,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	r.Get("/health", h.Health)
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Get("/listings", h.GetListings)
+		r.Get("/listings", h.SearchListings)
 		r.Post("/listings", h.CreateListing)
 		r.Get("/listings/{id}", h.GetListing)
 		r.Put("/listings/{id}", h.UpdateListing)
