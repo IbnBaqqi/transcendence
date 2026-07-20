@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -11,5 +12,10 @@ export default defineConfig({
       // browser calls /api/ ... -> forwarded to the backend container
       "/api": { target: "http://backend:8080", changeOrigin: true },
     },
+  },
+  test: {
+    environment: "jsdom", // fake broweser DOM so components can render in Node
+    globals: true, // use test/expect/describe without importing each file
+    setupFiles: "./src/test/setup.ts", // runs before the test files (next step)
   },
 });
