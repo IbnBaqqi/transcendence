@@ -8,6 +8,7 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
+	"github.com/google/uuid"
 )
 
 // ListingService contains the business logic for listings: validation,
@@ -40,7 +41,7 @@ func validateListingInput(title, category, unit string, price float64, quantity 
 	return nil
 }
 
-func (s *ListingService) CreateListing(ctx context.Context, sellerID int32, input dtos.CreateListingInput) (database.Listing, error) {
+func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, input dtos.CreateListingInput) (database.Listing, error) {
 	if err := validateListingInput(input.Title, input.Category, input.Unit, input.Price, input.Quantity); err != nil {
 		return database.Listing{}, err
 	}
@@ -68,7 +69,7 @@ func (s *ListingService) ListListings(ctx context.Context) ([]database.Listing, 
 	return s.db.ListListings(ctx)
 }
 
-func (s *ListingService) UpdateListing(ctx context.Context, userID, listingID int32, input dtos.UpdateListingInput) (database.Listing, error) {
+func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, listingID int32, input dtos.UpdateListingInput) (database.Listing, error) {
 	existing, err := s.db.GetListing(ctx, listingID)
 	if err != nil {
 		return database.Listing{}, &NotFoundError{Message: "listing not found"}
@@ -92,7 +93,7 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID, listingID in
 	})
 }
 
-func (s *ListingService) DeleteListing(ctx context.Context, userID, listingID int32) error {
+func (s *ListingService) DeleteListing(ctx context.Context, userID uuid.UUID, listingID int32) error {
 	existing, err := s.db.GetListing(ctx, listingID)
 	if err != nil {
 		return &NotFoundError{Message: "listing not found"}

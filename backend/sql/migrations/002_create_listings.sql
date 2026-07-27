@@ -1,7 +1,7 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS listings (
-    id SERIAL PRIMARY KEY,
-    seller_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id serial PRIMARY KEY,
+    seller_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(100) NOT NULL,
     description TEXT,
     category VARCHAR(50) NOT NULL,

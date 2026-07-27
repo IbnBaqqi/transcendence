@@ -7,7 +7,9 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
+	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/service"
 )
@@ -20,16 +22,16 @@ import (
 // Once middleware is in place, this should read the user ID from
 // r.Context() instead (set by that middleware after verifying a
 // session/JWT), and this function can likely be deleted entirely.
-func getUserID(r *http.Request) (int32, error) {
+func getUserID(r *http.Request) (uuid.UUID, error) {
 	idStr := r.Header.Get("X-USER-ID")
 	if idStr == "" {
-		return 0, errors.New("missing X-User-ID header")
+		return uuid.Nil, errors.New("missing X-User-ID header")
 	}
-	id, err := strconv.ParseInt(idStr, 10, 32)
+	id, err := uuid.Parse(idStr)
 	if err != nil {
-		return 0, errors.New("invalid X-User-ID header")
+		return uuid.Nil, errors.New("invalid X-User-ID header")
 	}
-	return int32(id), nil
+	return id, nil
 }
 
 // statusFromServiceError maps service-layer error types to HTTP status
@@ -39,6 +41,8 @@ func statusFromServiceError(err error) int {
 	var validationErr *service.ValidationError
 	var notFoundErr *service.NotFoundError
 	var forbiddenErr *service.ForbiddenError
+	var conflictErr *auth.ConflictError
+	var authErr *auth.AuthError
 
 	switch {
 	case errors.As(err, &validationErr):
@@ -47,6 +51,10 @@ func statusFromServiceError(err error) int {
 		return http.StatusNotFound
 	case errors.As(err, &forbiddenErr):
 		return http.StatusForbidden
+	case errors.As(err, &conflictErr):
+		return http.StatusConflict
+	case errors.As(err, &authErr):
+		return http.StatusUnauthorized
 	default:
 		return http.StatusInternalServerError
 	}
@@ -55,93 +63,93 @@ func statusFromServiceError(err error) int {
 func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
-		Error(w, http.StatusUnauthorized, "authentication required")
+		respondWithError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
 
 	var input dtos.CreateListingInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		Error(w, http.StatusBadRequest, "invalid request body")
+		respondWithError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	listing, err := h.Listing.CreateListing(r.Context(), userID, input)
 	if err != nil {
-		Error(w, statusFromServiceError(err), err.Error())
+		respondWithError(w, statusFromServiceError(err), err.Error())
 		return
 	}
 
-	JSON(w, http.StatusCreated, listing)
+	respondWithJSON(w, http.StatusCreated, listing)
 }
 
 func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
 	listings, err := h.Listing.ListListings(r.Context())
 	if err != nil {
-		Error(w, http.StatusInternalServerError, "could not fetch listings")
+		respondWithError(w, http.StatusInternalServerError, "could not fetch listings")
 		return
 	}
-	JSON(w, http.StatusOK, listings)
+	respondWithJSON(w, http.StatusOK, listings)
 }
 
 func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIDParam(r)
 	if err != nil {
-		Error(w, http.StatusBadRequest, "invalid listing id")
+		respondWithError(w, http.StatusBadRequest, "invalid listing id")
 		return
 	}
 
 	listing, err := h.Listing.GetListing(r.Context(), id)
 	if err != nil {
-		Error(w, statusFromServiceError(err), err.Error())
+		respondWithError(w, statusFromServiceError(err), err.Error())
 		return
 	}
 
-	JSON(w, http.StatusOK, listing)
+	respondWithJSON(w, http.StatusOK, listing)
 }
 
 func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
-		Error(w, http.StatusUnauthorized, "authentication required")
+		respondWithError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
 
 	id, err := parseIDParam(r)
 	if err != nil {
-		Error(w, http.StatusBadRequest, "invalid listing id")
+		respondWithError(w, http.StatusBadRequest, "invalid listing id")
 		return
 	}
 
 	var input dtos.UpdateListingInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		Error(w, http.StatusBadRequest, "invalid request body")
+		respondWithError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	updated, err := h.Listing.UpdateListing(r.Context(), userID, id, input)
 	if err != nil {
-		Error(w, statusFromServiceError(err), err.Error())
+		respondWithError(w, statusFromServiceError(err), err.Error())
 		return
 	}
 
-	JSON(w, http.StatusOK, updated)
+	respondWithJSON(w, http.StatusOK, updated)
 }
 
 func (h *Handler) DeleteListing(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
-		Error(w, http.StatusUnauthorized, "authentication required")
+		respondWithError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
 
 	id, err := parseIDParam(r)
 	if err != nil {
-		Error(w, http.StatusBadRequest, "invalid listing id")
+		respondWithError(w, http.StatusBadRequest, "invalid listing id")
 		return
 	}
 
 	if err := h.Listing.DeleteListing(r.Context(), userID, id); err != nil {
-		Error(w, statusFromServiceError(err), err.Error())
+		respondWithError(w, statusFromServiceError(err), err.Error())
 		return
 	}
 
@@ -162,11 +170,11 @@ func (h *Handler) SearchListings(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.Listing.SearchListings(r.Context(), query)
 	if err != nil {
-		Error(w, statusFromServiceError(err), err.Error())
+		respondWithError(w, statusFromServiceError(err), err.Error())
 		return
 	}
 
-	JSON(w, http.StatusOK, result)
+	respondWithJSON(w, http.StatusOK, result)
 }
 
 // --- Helpers ---

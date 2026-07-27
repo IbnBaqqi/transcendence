@@ -9,10 +9,12 @@ func TestLoad(t *testing.T) {
 	os.Setenv("ENV", "test")
 	os.Setenv("PORT", "9090")
 	os.Setenv("DB_URL", "test://localhost")
+	os.Setenv("JWT_SECRET", "test-secret")
 	defer func() {
 		os.Unsetenv("ENV")
 		os.Unsetenv("PORT")
 		os.Unsetenv("DB_URL")
+		os.Unsetenv("JWT_SECRET")
 	}()
 
 	cfg, err := Load()

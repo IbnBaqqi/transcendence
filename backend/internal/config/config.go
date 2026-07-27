@@ -15,6 +15,11 @@ type Config struct {
 	Server ServerConfig
 	Logger LoggerConfig
 	DB     DBConfig
+	Auth   AuthConfig
+}
+
+type AuthConfig struct {
+	JWTSecret string
 }
 
 type ServerConfig struct {
@@ -56,6 +61,10 @@ func Load() (*Config, error) {
 			MaxOpenConns:    getEnvAsInt("DB_MAX_OPEN_CONNS", 25),
 			MaxIdleConns:    getEnvAsInt("DB_MAX_IDLE_CONNS", 10),
 			ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", "5m"),
+		},
+
+		Auth: AuthConfig{
+			JWTSecret: mustGetEnv("JWT_SECRET"),
 		},
 	}
 
