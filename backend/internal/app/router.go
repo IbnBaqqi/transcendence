@@ -14,26 +14,40 @@ import (
 func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	r := chi.NewRouter()
 
+	// Create handlers with injected dependencies
+	h := handler.New(
+		appService.DB,
+		appService.Auth,
+		appService.Listing,
+	)
+
 	r.Use(middleware.RequestID)
 	r.Use(middleware.ClientIPFromRemoteAddr)
 	// r.Use(middleware.ClientIPFromHeader("X-Real-IP")) we switch to this after nginx proxy is setup
 	r.Use(mw.Logger(log))
 	r.Use(mw.Recoverer(log))
 
-	// Create handlers with injected dependencies
-	h := handler.New(
-		appService.DB,
-		appService.Listing,
-	)
+	authenticate := mw.Authenticate(appService.JWT)
 
 	r.Get("/health", h.Health)
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Get("/listings", h.GetListings)
-		r.Post("/listings", h.CreateListing)
-		r.Get("/listings/{id}", h.GetListing)
-		r.Put("/listings/{id}", h.UpdateListing)
-		r.Delete("/listings/{id}", h.DeleteListing)
+		r.Post("/auth/signup", h.Signup)
+		r.Post("/auth/login", h.Login)
+		r.Post("/auth/logout", h.Logout)
+
+		r.Group(func(r chi.Router) {
+			r.Use(authenticate) // checks token, sets user in context
+
+			r.Get("/listings", h.GetListings)
+			r.Post("/listings", h.CreateListing)
+			r.Get("/listings/{id}", h.GetListing)
+			r.Put("/listings/{id}", h.UpdateListing)
+			r.Delete("/listings/{id}", h.DeleteListing)
+
+			// r.Get("/dashboard", dashboardHandler)
+			// r.Get("/profile", profileHandler)
+		})
 	})
 
 	return r
