@@ -5,20 +5,26 @@ import (
 	"net/http"
 )
 
-type Response struct {
-	Success bool        `json:"success"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
+type errorResponse struct {
+	Error   string            `json:"error"`
+	Details map[string]string `json:"details,omitempty"`
 }
 
-func JSON(w http.ResponseWriter, status int, data interface{}) {
+func respondWithJSON(w http.ResponseWriter, status int, paylaod interface{}) {
 	w.Header().Set("Content-Type", "application/json")
+	data, err := json.Marshal(paylaod)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(Response{Success: true, Data: data})
+	_, _ = w.Write(data)
+	// _ = json.NewEncoder(w).Encode(Response{Success: true, Data: data})
 }
 
-func Error(w http.ResponseWriter, status int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(Response{Success: false, Error: message})
+func respondWithError(w http.ResponseWriter, status int, message string) {
+	respondWithJSON(w, status, errorResponse{
+		Error:   message,
+		Details: nil, // fix after error refactor
+	})
 }
