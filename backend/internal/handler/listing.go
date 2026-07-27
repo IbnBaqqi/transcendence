@@ -170,11 +170,11 @@ func (h *Handler) SearchListings(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.Listing.SearchListings(r.Context(), query)
 	if err != nil {
-		Error(w, statusFromServiceError(err), err.Error())
+		respondWithError(w, statusFromServiceError(err), err.Error())
 		return
 	}
 
-	JSON(w, http.StatusOK, result)
+	respondWithJSON(w, http.StatusOK, result)
 }
 
 // --- Helpers ---
