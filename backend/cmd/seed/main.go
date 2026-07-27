@@ -11,15 +11,15 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/config"
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/logger"
+	"github.com/google/uuid"
 )
 
 // seedUser is just a plain data holder (no methods) describing one seller
 // account we want to insert. Struct literals like this are a common Go way
 // to define a small "shape" of data.
 type seedUser struct {
-	Email     string
-	Firstname string
-	Lastname  string
+	Email    string
+	Username string
 }
 
 // seedListing describes one listing to insert. SellerIdx points at the
@@ -38,9 +38,9 @@ type seedListing struct {
 // var ... = []T{...} is a package-level slice literal: the sample data
 // itself lives here so it's easy to find and tweak later.
 var seedUsers = []seedUser{
-	{Email: "willow.creek@example.com", Firstname: "Willow", Lastname: "Creek"},
-	{Email: "moss.harlan@example.com", Firstname: "Moss", Lastname: "Harlan"},
-	{Email: "river.thorne@example.com", Firstname: "River", Lastname: "Thorne"},
+	{Email: "willow.creek@example.com", Username: "willow-creek"},
+	{Email: "moss.harlan@example.com", Username: "moss-harlan"},
+	{Email: "river.thorne@example.com", Username: "river-thorne"},
 }
 
 var seedListings = []seedListing{
@@ -107,13 +107,12 @@ func run() error {
 	// Insert each seed user, and remember the real DB id Postgres
 	// assigned it (sellerIDs[0] is willow's id, etc.) so listings below
 	// can reference the right seller.
-	sellerIDs := make([]int32, 0, len(seedUsers))
+	sellerIDs := make([]uuid.UUID, 0, len(seedUsers))
 	for _, u := range seedUsers {
 		user, err := db.Queries.CreateUser(ctx, database.CreateUserParams{
-			Email:     u.Email,
-			Firstname: u.Firstname,
-			Lastname:  u.Lastname,
-			Password:  "seed-placeholder-password", // auth/hashing isn't built yet (#32/#33)
+			Email:    u.Email,
+			Username: u.Username,
+			Password: "seed-placeholder-password", // auth/hashing isn't built yet (#32/#33)
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create seed user %s: %w", u.Email, err)
