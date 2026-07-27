@@ -10,6 +10,14 @@ import (
 	"github.com/google/uuid"
 )
 
+type Address struct {
+	ID        int32
+	UserID    int32
+	Location  sql.NullString
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+}
+
 type Listing struct {
 	ID          int32
 	SellerID    uuid.UUID

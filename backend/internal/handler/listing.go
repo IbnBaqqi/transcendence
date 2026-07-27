@@ -156,6 +156,27 @@ func (h *Handler) DeleteListing(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *Handler) SearchListings(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	query := dtos.ListingSearchQuery{
+		Keyword:  q.Get("keyword"),
+		Category: q.Get("category"),
+		MinPrice: q.Get("min_price"),
+		MaxPrice: q.Get("max_price"),
+		Location: q.Get("location"),
+		Page:     q.Get("page"),
+		Limit:    q.Get("limit"),
+	}
+
+	result, err := h.Listing.SearchListings(r.Context(), query)
+	if err != nil {
+		Error(w, statusFromServiceError(err), err.Error())
+		return
+	}
+
+	JSON(w, http.StatusOK, result)
+}
+
 // --- Helpers ---
 
 func parseIDParam(r *http.Request) (int32, error) {

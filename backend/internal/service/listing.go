@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"math"
 	"strconv"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
@@ -102,4 +103,94 @@ func (s *ListingService) DeleteListing(ctx context.Context, userID uuid.UUID, li
 	}
 
 	return s.db.DeleteListing(ctx, listingID)
+}
+
+const (
+	defaultPage  = 1
+	defaultLimit = 20
+	maxLimit     = 50
+)
+
+func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearchQuery) (dtos.PaginatedListings, error) {
+	page := defaultPage
+	if q.Page != "" {
+		p, err := strconv.Atoi(q.Page)
+		if err != nil || p < 1 {
+			return dtos.PaginatedListings{}, &ValidationError{Message: "page must be a positive integer"}
+		}
+		page = p
+	}
+
+	limit := defaultLimit
+	if q.Limit != "" {
+		l, err := strconv.Atoi(q.Limit)
+		if err != nil || l < 1 {
+			return dtos.PaginatedListings{}, &ValidationError{Message: "limit must be a positive integer"}
+		}
+		limit = l
+	}
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+
+	var minPrice, maxPrice sql.NullString
+	var minVal, maxVal float64
+
+	if q.MinPrice != "" {
+		v, err := strconv.ParseFloat(q.MinPrice, 64)
+		if err != nil || v < 0 {
+			return dtos.PaginatedListings{}, &ValidationError{Message: "min_price must be a non-negative number"}
+		}
+		minVal = v
+		minPrice = sql.NullString{String: strconv.FormatFloat(v, 'f', 2, 64), Valid: true}
+	}
+	if q.MaxPrice != "" {
+		v, err := strconv.ParseFloat(q.MaxPrice, 64)
+		if err != nil || v < 0 {
+			return dtos.PaginatedListings{}, &ValidationError{Message: "max_price must be a non-negative number"}
+		}
+		maxVal = v
+		maxPrice = sql.NullString{String: strconv.FormatFloat(v, 'f', 2, 64), Valid: true}
+	}
+	if minPrice.Valid && maxPrice.Valid && minVal > maxVal {
+		return dtos.PaginatedListings{}, &ValidationError{Message: "min_price must not exceed max_price"}
+	}
+
+	offset := (page - 1) * limit
+	if offset < 0 || offset > math.MaxInt32 {
+		return dtos.PaginatedListings{}, &ValidationError{Message: "page is too large"}
+	}
+
+	params := database.SearchListingsParams{
+		Keyword:  q.Keyword,
+		Category: q.Category,
+		Location: q.Location,
+		Offset:   int32(offset),
+		Limit:    int32(limit),
+	}
+	if minPrice.Valid {
+		params.MinPrice = minPrice.String
+	}
+	if maxPrice.Valid {
+		params.MaxPrice = maxPrice.String
+	}
+
+	items, err := s.db.SearchListingsDynamic(ctx, params)
+	if err != nil {
+		return dtos.PaginatedListings{}, err
+	}
+	total, err := s.db.CountSearchListingsDynamic(ctx, params)
+	if err != nil {
+		return dtos.PaginatedListings{}, err
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	return dtos.PaginatedListings{
+		Items:      items,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	}, nil
 }
