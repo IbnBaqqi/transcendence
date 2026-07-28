@@ -12,7 +12,7 @@ import (
 
 type Address struct {
 	ID        int32
-	UserID    int32
+	UserID    uuid.UUID
 	Location  sql.NullString
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
@@ -29,6 +29,19 @@ type Listing struct {
 	Unit        string
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
+}
+
+type Order struct {
+	ID         int32
+	ListingID  int32
+	BuyerID    uuid.UUID
+	SellerID   uuid.UUID
+	Quantity   int32
+	UnitPrice  string
+	TotalPrice string
+	Status     string
+	CreatedAt  sql.NullTime
+	UpdatedAt  sql.NullTime
 }
 
 type Profile struct {
