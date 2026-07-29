@@ -78,6 +78,10 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, li
 		return database.Listing{}, &ForbiddenError{Message: "you do not own this listing"}
 	}
 
+	if existing.Quantity == 0 {
+		return database.Listing{}, &ConflictError{Message: "listing is sold out and can no longer be edited; create new listing"}
+	}
+
 	if err := validateListingInput(input.Title, input.Category, input.Unit, input.Price, input.Quantity); err != nil {
 		return database.Listing{}, err
 	}
