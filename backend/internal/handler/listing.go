@@ -42,16 +42,19 @@ func statusFromServiceError(err error) int {
 	var notFoundErr *service.NotFoundError
 	var forbiddenErr *service.ForbiddenError
 	var conflictErr *auth.ConflictError
+
+	var authValidationErr *auth.ValidationError
+	var authConflictErr *auth.ConflictError
 	var authErr *auth.AuthError
 
 	switch {
-	case errors.As(err, &validationErr):
+	case errors.As(err, &validationErr), errors.As(err, &authValidationErr):
 		return http.StatusBadRequest
 	case errors.As(err, &notFoundErr):
 		return http.StatusNotFound
 	case errors.As(err, &forbiddenErr):
 		return http.StatusForbidden
-	case errors.As(err, &conflictErr):
+	case errors.As(err, &conflictErr), errors.As(err, &authConflictErr):
 		return http.StatusConflict
 	case errors.As(err, &authErr):
 		return http.StatusUnauthorized

@@ -3,10 +3,10 @@ package middleware
 import (
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/IbnBaqqi/transcendence/internal/auth"
+	"github.com/google/uuid"
 )
 
 // sanitizeLog strips newlines and carriage returns from a string to
@@ -35,7 +35,7 @@ func Authenticate(authService *auth.JwtService) func(http.Handler) http.Handler 
 			}
 
 			// Parse user ID from claims
-			id, err := strconv.ParseInt(claims.Subject, 10, 64)
+			id, err := uuid.Parse(claims.Subject)
 			if err != nil {
 				slog.Error("invalid user ID in token", "subject", sanitizeLog(claims.Subject), "error", err.Error()) // #nosec G706 -- subject sanitized by sanitizeLog
 				next.ServeHTTP(w, r)

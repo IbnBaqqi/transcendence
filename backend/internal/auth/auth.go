@@ -14,7 +14,7 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/golang-jwt/jwt/v5"
-	// "github.com/google/uuid"
+	"github.com/google/uuid"
 )
 
 // CustomClaims represents custom JWT claims.
@@ -32,7 +32,7 @@ type JwtService struct {
 
 // User represents an authenticated User.
 type User struct {
-	ID   int64
+	ID   uuid.UUID
 	Role string
 	Name string
 }
