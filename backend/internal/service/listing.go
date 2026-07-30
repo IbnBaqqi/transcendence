@@ -187,7 +187,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
 	return dtos.PaginatedListings{
-		Items:      items,
+		Items:      dtos.ToListingResponses(items),
 		Total:      total,
 		Page:       page,
 		Limit:      limit,
