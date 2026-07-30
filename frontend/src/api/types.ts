@@ -10,8 +10,6 @@ export interface Listing {
   unit: string;
 }
 
-// the backend wraps every response like { success, data }.
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T | null;
-}
+// NOTE: there is no response envelope. endpoints return the payload directly
+// and signal success/failure through the HTTP status code. errors come back as
+// { error, details } - the interceptor is where this will be normalised
