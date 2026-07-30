@@ -1,9 +1,10 @@
 package dtos
 
 import (
-	"time"
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"time"
 )
+
 // --- Request DTOs ---
 
 // CreateOrderInput is the JSON body for POST /orders.
@@ -16,7 +17,7 @@ type CreateOrderInput struct {
 	// `json:"..."` tags tell encoding/json which field maps to which
 	// key in the request body (Go field names are capitalised, JSON keys aren't).
 	ListingID int32 `json:"listing_id"`
-	Quantity int32 `json:"quantity"`
+	Quantity  int32 `json:"quantity"`
 }
 
 // --- Response DTOs ---
@@ -27,16 +28,16 @@ type CreateOrderInput struct {
 // maps to string precisely because money in a float64 rounds badly. Parsing
 // them into floats here would throw away the guarantee NUMERIC exists to give.
 type OrderResponse struct {
-	ID			int32		`json:"id"`
-	ListingID	int32		`json:"listing_id"`
-	BuyerID		string		`json:"buyer_id"`
-	SellerID	string		`json:"seller_id"`
-	Quantity	int32		`json:"quantity"`
-	UnitPrice	string		`json:"unit_price"`
-	TotalPrice	string		`json:"total_price"`
-	Status		string		`json:"status"`
-	CreatedAt	time.Time	`json:"created_at"`
-	UpdatedAt	time.Time	`json:"updated_at"`
+	ID         int32     `json:"id"`
+	ListingID  int32     `json:"listing_id"`
+	BuyerID    string    `json:"buyer_id"`
+	SellerID   string    `json:"seller_id"`
+	Quantity   int32     `json:"quantity"`
+	UnitPrice  string    `json:"unit_price"`
+	TotalPrice string    `json:"total_price"`
+	Status     string    `json:"status"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 // NewOrderResponse converts one database row into the API shape.
@@ -44,16 +45,16 @@ type OrderResponse struct {
 // never have to think about sql.NullTime.
 func NewOrderResponse(o database.Order) OrderResponse {
 	return OrderResponse{
-		ID:			o.ID,
-		ListingID:	o.ListingID,
-		BuyerID:	o.BuyerID.String(),
-		SellerID:	o.SellerID.String(),
-		Quantity:	o.Quantity,
-		UnitPrice:	o.UnitPrice,
-		TotalPrice:	o.TotalPrice,
-		Status:		o.Status,
-		CreatedAt:	o.CreatedAt.Time,
-		UpdatedAt:	o.UpdatedAt.Time,
+		ID:         o.ID,
+		ListingID:  o.ListingID,
+		BuyerID:    o.BuyerID.String(),
+		SellerID:   o.SellerID.String(),
+		Quantity:   o.Quantity,
+		UnitPrice:  o.UnitPrice,
+		TotalPrice: o.TotalPrice,
+		Status:     o.Status,
+		CreatedAt:  o.CreatedAt.Time,
+		UpdatedAt:  o.UpdatedAt.Time,
 	}
 }
 
