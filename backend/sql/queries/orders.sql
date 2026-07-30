@@ -18,3 +18,8 @@ SET status = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING *;
+
+-- name: GetOrderForUpdate :one
+SELECT * FROM orders
+WHERE id = $1
+FOR UPDATE;

@@ -39,3 +39,10 @@ SET quantity = quantity - $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND quantity >= $2
 RETURNING *;
+
+-- name: IncrementListingQuantity :one
+UPDATE listings
+SET quantity = quantity + $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING *;

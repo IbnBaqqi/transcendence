@@ -142,6 +142,37 @@ func (q *Queries) GetListingForUpdate(ctx context.Context, id int32) (Listing, e
 	return i, err
 }
 
+const incrementListingQuantity = `-- name: IncrementListingQuantity :one
+UPDATE listings
+SET quantity = quantity + $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at
+`
+
+type IncrementListingQuantityParams struct {
+	ID       int32
+	Quantity int32
+}
+
+func (q *Queries) IncrementListingQuantity(ctx context.Context, arg IncrementListingQuantityParams) (Listing, error) {
+	row := q.db.QueryRowContext(ctx, incrementListingQuantity, arg.ID, arg.Quantity)
+	var i Listing
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Title,
+		&i.Description,
+		&i.Category,
+		&i.Price,
+		&i.Quantity,
+		&i.Unit,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listListings = `-- name: ListListings :many
 SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at FROM listings
 WHERE quantity > 0

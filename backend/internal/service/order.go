@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
+	"slices"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
@@ -123,4 +125,170 @@ func (s *OrderService) GetOrder(ctx context.Context, userID uuid.UUID, orderID i
 // The query handles both sides, so "my purchases" and "my sales" are one list.
 func (s *OrderService) ListOrders(ctx context.Context, userID uuid.UUID) ([]database.Order, error) {
 	return s.db.ListOrdersForUser(ctx, userID)
+}
+
+// --- Status state machine ---
+//
+// The whole lifecycle is described by the data below rather than by a pile of
+// if-statements. Adding a `refunded` state later means adding one orderAction
+// value plus one CHECK constraint - no new logic.
+
+// orderActor says which side of the order may perform a move.
+type orderActor int
+
+// iota, just auto-numbers these 0, 1, 2 - tha values don't matter, only that
+// they're distinct. It's Go's version of an enum.
+const (
+	actorSeller orderActor = iota
+	actorBuyer
+	actorEither
+)
+
+// orderAction is one edge of the state machine
+type orderAction struct {
+	name          string   // used in error messages: "cannot pay an order that is pending"
+	from          []string // statuses this move is legal from
+	to            string   // status it lands on
+	actor         orderActor
+	restoresStock bool // hand the reserved quantity back to the listing
+}
+
+// The transition table - this IS the lifecycle.
+var (
+	actionConfirm = orderAction{
+		name:  "confirm",
+		from:  []string{"pending"},
+		to:    "confirmed",
+		actor: actorSeller,
+	}
+	actionPay = orderAction{
+		name:  "pay",
+		from:  []string{"confirmed"},
+		to:    "paid",
+		actor: actorBuyer,
+	}
+	actionComplete = orderAction{
+		name:  "complete",
+		from:  []string{"paid"},
+		to:    "completed",
+		actor: actorSeller,
+	}
+	actionCancel = orderAction{
+		name:  "cancel",
+		from:  []string{"pending", "confirmed"}, // deliberately NOT "paid" - that needs a refund flow
+		to:    "cancelled",
+		actor: actorEither,
+		// CreateOrder took this quantity out of the listing, so cancelling must
+		// put it back or the stock is destroyed forever.
+		restoresStock: true,
+	}
+)
+
+// The four public methods are debliberately thin - every one of them is the same
+// operation with a different row from the table above.
+func (s *OrderService) ConfirmOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
+	return s.applyAction(ctx, userID, orderID, actionConfirm)
+}
+
+func (s *OrderService) PayOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
+	return s.applyAction(ctx, userID, orderID, actionPay)
+}
+
+func (s *OrderService) CompleteOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
+	return s.applyAction(ctx, userID, orderID, actionComplete)
+}
+
+func (s *OrderService) CancelOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
+	return s.applyAction(ctx, userID, orderID, actionCancel)
+}
+
+// applyAction is the referee: it loads the order, checks who's asking and what
+// state it's in, then moves it. Every move runs in a transaction so that a
+// cancel's stock restore and its status change can't come apart.
+func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderID int32, action orderAction) (database.Order, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return database.Order{}, err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			slog.Error("order status transaction rollback failed", "error", err)
+		}
+	}()
+
+	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	// FOR UPDATE locks the ORDER row (not the listing) until commit. Two
+	// simultaneous cancels would otherwise both read "pending", both pass the
+	// check below, and both restore the stock - inventing quantity from nowhere.
+	order, err := qtx.GetOrderForUpdate(ctx, orderID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return database.Order{}, &NotFoundError{Message: "order not found"}
+		}
+		return database.Order{}, err
+	}
+
+	// Two separate failures, two separate codes: wrong PERSON is 403,
+	// wrong STATE is 409. Check the person first - someone with no business
+	// here shouldn't learn what state the order is in.
+	if err := checkOrderActor(order, userID, action); err != nil {
+		return database.Order{}, err
+	}
+
+	// slices.Contains reports whether the current status is in the allowed list.
+	if !slices.Contains(action.from, order.Status) {
+		return database.Order{}, &ConflictError{
+			Message: fmt.Sprintf("cannot %s an order that is %s", action.name, order.Status),
+		}
+	}
+
+	if action.restoresStock {
+		if _, err := qtx.IncrementListingQuantity(ctx, database.IncrementListingQuantityParams{
+			ID:       order.ListingID,
+			Quantity: order.Quantity,
+		}); err != nil {
+			return database.Order{}, err
+		}
+	}
+
+	updated, err := qtx.UpdateOrderStatus(ctx, database.UpdateOrderStatusParams{
+		ID:     order.ID,
+		Status: action.to,
+	})
+	if err != nil {
+		return database.Order{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return database.Order{}, err
+	}
+
+	return updated, nil
+}
+
+// checkOrderActor enforces the "who may travel this edge" guard.
+func checkOrderActor(order database.Order, userID uuid.UUID, action orderAction) error {
+	isBuyer := order.BuyerID == userID
+	isSeller := order.SellerID == userID
+
+	// Matches GetOrder's behaviour: strangers get 403, not 404.
+	if !isBuyer && !isSeller {
+		return &ForbiddenError{Message: "you are not part of this order"}
+	}
+
+	switch action.actor {
+	case actorSeller:
+		if !isSeller {
+			return &ForbiddenError{Message: "only the seller can " + action.name + " this order"}
+		}
+	case actorBuyer:
+		if !isBuyer {
+			return &ForbiddenError{Message: "only the buyer can " + action.name + " this order"}
+		}
+	case actorEither:
+		// already covered by the isBuyer/isSeller check above
+	}
+
+	return nil
 }
