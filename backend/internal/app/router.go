@@ -19,6 +19,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.DB,
 		appService.Auth,
 		appService.Listing,
+		appService.Order,
 	)
 
 	r.Use(middleware.RequestID)
@@ -45,6 +46,9 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Put("/listings/{id}", h.UpdateListing)
 			r.Delete("/listings/{id}", h.DeleteListing)
 
+			r.Post("/orders", h.CreateOrder)
+			r.Get("/orders", h.GetOrders)
+			r.Get("/orders/{id}", h.GetOrder)
 			// r.Get("/dashboard", dashboardHandler)
 			// r.Get("/profile", profileHandler)
 		})

@@ -14,6 +14,7 @@ type api struct {
 	JWT     *auth.JwtService
 	Auth    *auth.Service
 	Listing *service.ListingService
+	Order   *service.OrderService
 }
 
 // New initializes all services and returns a pointer to api
@@ -21,11 +22,13 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 	jwtService := auth.NewJwtService(cfg.Auth.JWTSecret)
 	authService := auth.NewService(db.Queries, jwtService)
 	listingService := service.NewListingService(db.Queries)
+	orderService := service.NewOrderService(db) // needs *DB for transaction
 
 	return &api{
 		DB:      db,
 		JWT:     jwtService,
 		Auth:    authService,
 		Listing: listingService,
+		Order:   orderService,
 	}, nil
 }

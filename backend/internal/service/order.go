@@ -21,7 +21,11 @@ type OrderService struct {
 	db *database.DB
 }
 
-// CreateOrder places an order and reservs the stoc, atomically.
+func NewOrderService(db *database.DB) *OrderService {
+	return &OrderService{db: db}
+}
+
+// CreateOrder places an order and reserves the stock, atomically.
 func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input dtos.CreateOrderInput) (database.Order, error) {
 	// Validate the only two things the client is trusted for.
 	if input.ListingID <= 0 {
@@ -71,8 +75,8 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 	// slipped past the check above matches no rows and errors out, rather than
 	// driving stock negative. Defence in depth.
 	if _, err := qtx.DecrementListingQuantity(ctx, database.DecrementListingQuantityParams{
-		ID:			listing.ID,
-		Quantity: 	input.Quantity,
+		ID:       listing.ID,
+		Quantity: input.Quantity,
 	}); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return database.Order{}, &ConflictError{Message: "not enough stock available"}
@@ -84,11 +88,11 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 	// listing.Price is a string because the column is NUMERIC(10,2) - pass it
 	// straight through; the query computes total_price as unit_price * quantity.
 	order, err := qtx.CreateOrder(ctx, database.CreateOrderParams{
-		ListingID:	listing.ID,
-		BuyerID:	buyerID,
-		SellerID:	listing.SellerID,
-		Quantity:	input.Quantity,
-		UnitPrice:	listing.Price,
+		ListingID: listing.ID,
+		BuyerID:   buyerID,
+		SellerID:  listing.SellerID,
+		Quantity:  input.Quantity,
+		UnitPrice: listing.Price,
 	})
 	if err != nil {
 		return database.Order{}, err
