@@ -11,6 +11,19 @@ import (
 	"github.com/google/uuid"
 )
 
+const countOrdersForListing = `-- name: CountOrdersForListing :one
+SELECT COUNT(*) FROM orders
+WHERE listing_id = $1
+`
+
+// Used by DeleteListing to refuse deleting a listing that has order history.
+func (q *Queries) CountOrdersForListing(ctx context.Context, listingID int32) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countOrdersForListing, listingID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (listing_id, buyer_id, seller_id, quantity, unit_price, total_price)
 VALUES ($1, $2, $3, $4, $5, $5::numeric * $4::integer)

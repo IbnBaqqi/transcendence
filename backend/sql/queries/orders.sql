@@ -24,6 +24,11 @@ SELECT * FROM orders
 WHERE id = $1
 FOR UPDATE;
 
+-- Used by DeleteListing to refuse deleting a listing that has order history.
+-- name: CountOrdersForListing :one
+SELECT COUNT(*) FROM orders
+WHERE listing_id = $1;
+
 -- Two separate queries rather than one parameterised by column name: sqlc
 -- generates from static SQL, so a column can't be a parameter.
 

@@ -21,8 +21,8 @@ type api struct {
 func New(cfg *config.Config, db *database.DB) (*api, error) {
 	jwtService := auth.NewJwtService(cfg.Auth.JWTSecret)
 	authService := auth.NewService(db.Queries, jwtService)
-	listingService := service.NewListingService(db.Queries)
-	orderService := service.NewOrderService(db) // needs *DB for transaction
+	listingService := service.NewListingService(db) // needs *DB for transaction
+	orderService := service.NewOrderService(db)     // needs *DB for transaction
 
 	return &api{
 		DB:      db,
