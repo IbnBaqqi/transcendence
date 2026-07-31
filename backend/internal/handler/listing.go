@@ -41,7 +41,7 @@ func statusFromServiceError(err error) int {
 	var validationErr *service.ValidationError
 	var notFoundErr *service.NotFoundError
 	var forbiddenErr *service.ForbiddenError
-	var conflictErr *auth.ConflictError
+	var conflictErr *service.ConflictError
 
 	var authValidationErr *auth.ValidationError
 	var authConflictErr *auth.ConflictError

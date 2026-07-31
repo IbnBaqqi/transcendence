@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/google/uuid"
+
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
@@ -91,4 +93,101 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	// NewOrderResponses (plural) guarantees `[]` intead of `null` for a user
 	// with no orders yet, so the frontend can always call .map() on it.
 	respondWithJSON(w, http.StatusOK, dtos.NewOrderResponses(orders))
+}
+
+// --- Status transition endpoints ---
+//
+// All four are the same six steps: identify the caller, parse {id}, call the
+// matching service method, map the error, return the updated order. The service
+// owns every rule about who may do what from which state; these handlers
+// stay dumb on purpose.
+
+// parseOrderRequest pulls out the two things every status endpoint needs and
+// writes the error response itself if either is missin.
+//
+// It returns a bool rather than an error because the caller has nothing left to
+// decide: `ok == false` means "a response was already sent, just return".
+// Tha keeps each handler below to a single early-exit line.
+func parseOrderRequest(w http.ResponseWriter, r *http.Request) (uuid.UUID, int32, bool) {
+	userID, err := getUserID(r)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "authentication required")
+		return uuid.Nil, 0, false
+	}
+
+	id, err := parseIDParam(r)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid order id")
+		return uuid.Nil, 0, false
+	}
+
+	return userID, id, true
+}
+
+// ConfirmOrder handles POST /api/v1/orders/{id}/confirm - seller accepts.
+// pending -> confirm
+func (h *Handler) ConfirmOrder(w http.ResponseWriter, r *http.Request) {
+	userID, id, ok := parseOrderRequest(w, r)
+	if !ok {
+		return
+	}
+
+	order, err := h.Order.ConfirmOrder(r.Context(), userID, id)
+	if err != nil {
+		respondWithError(w, statusFromServiceError(err), err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.NewOrderResponse(order))
+}
+
+// PayOrder handles POST /api/v1/orders/{id}/pay - buyer pays (simulated).
+// confirm -> paid
+func (h *Handler) PayOrder(w http.ResponseWriter, r *http.Request) {
+	userID, id, ok := parseOrderRequest(w, r)
+	if !ok {
+		return
+	}
+
+	order, err := h.Order.PayOrder(r.Context(), userID, id)
+	if err != nil {
+		respondWithError(w, statusFromServiceError(err), err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.NewOrderResponse(order))
+}
+
+// CompleteOrder handles POST /api/v1/orders/{id}/complete - seller marks it
+// handed over. paid -> completed (terminal)
+func (h *Handler) CompleteOrder(w http.ResponseWriter, r *http.Request) {
+	userID, id, ok := parseOrderRequest(w, r)
+	if !ok {
+		return
+	}
+
+	order, err := h.Order.CompleteOrder(r.Context(), userID, id)
+	if err != nil {
+		respondWithError(w, statusFromServiceError(err), err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.NewOrderResponse(order))
+}
+
+// CancelOrder handles POST /api/v1/orders/{id}/cancel - either side backs out.
+// pending|confirmed -> cancelled (terminal, and restores the listings's stock)
+func (h *Handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
+	userID, id, ok := parseOrderRequest(w, r)
+	if !ok {
+		return
+	}
+
+	order, err := h.Order.CancelOrder(r.Context(), userID, id)
+	if err != nil {
+		respondWithError(w, statusFromServiceError(err), err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.NewOrderResponse(order))
 }

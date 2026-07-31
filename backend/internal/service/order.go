@@ -41,7 +41,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 	// because FOR UPDATE gives us the locking we actually need.
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		slog.Error("order transaction rollback failed", "error", err)
+		return database.Order{}, err
 	}
 	// `defer` runs when the function exits, by ANY path (early return or not).
 	defer func() {
