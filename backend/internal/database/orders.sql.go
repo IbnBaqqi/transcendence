@@ -14,7 +14,7 @@ import (
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (listing_id, buyer_id, seller_id, quantity, unit_price, total_price)
 VALUES ($1, $2, $3, $4, $5, $5::numeric * $4::integer)
-RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at
+RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at
 `
 
 type CreateOrderParams struct {
@@ -45,12 +45,14 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SellerHandedOverAt,
+		&i.BuyerReceivedAt,
 	)
 	return i, err
 }
 
 const getOrder = `-- name: GetOrder :one
-SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at FROM orders
+SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at FROM orders
 WHERE id = $1
 `
 
@@ -68,12 +70,14 @@ func (q *Queries) GetOrder(ctx context.Context, id int32) (Order, error) {
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SellerHandedOverAt,
+		&i.BuyerReceivedAt,
 	)
 	return i, err
 }
 
 const getOrderForUpdate = `-- name: GetOrderForUpdate :one
-SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at FROM orders
+SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at FROM orders
 WHERE id = $1
 FOR UPDATE
 `
@@ -92,12 +96,14 @@ func (q *Queries) GetOrderForUpdate(ctx context.Context, id int32) (Order, error
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SellerHandedOverAt,
+		&i.BuyerReceivedAt,
 	)
 	return i, err
 }
 
 const listOrdersForUser = `-- name: ListOrdersForUser :many
-SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at FROM orders
+SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at FROM orders
 WHERE buyer_id = $1 OR seller_id = $1
 ORDER BY created_at DESC
 `
@@ -122,6 +128,8 @@ func (q *Queries) ListOrdersForUser(ctx context.Context, buyerID uuid.UUID) ([]O
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SellerHandedOverAt,
+			&i.BuyerReceivedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -136,12 +144,71 @@ func (q *Queries) ListOrdersForUser(ctx context.Context, buyerID uuid.UUID) ([]O
 	return items, nil
 }
 
+const markOrderHandedOver = `-- name: MarkOrderHandedOver :one
+
+UPDATE orders
+SET seller_handed_over_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at
+`
+
+// Two separate queries rather than one parameterised by column name: sqlc
+// generates from static SQL, so a column can't be a parameter.
+func (q *Queries) MarkOrderHandedOver(ctx context.Context, id int32) (Order, error) {
+	row := q.db.QueryRowContext(ctx, markOrderHandedOver, id)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.ListingID,
+		&i.BuyerID,
+		&i.SellerID,
+		&i.Quantity,
+		&i.UnitPrice,
+		&i.TotalPrice,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SellerHandedOverAt,
+		&i.BuyerReceivedAt,
+	)
+	return i, err
+}
+
+const markOrderReceived = `-- name: MarkOrderReceived :one
+UPDATE orders
+SET buyer_received_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at
+`
+
+func (q *Queries) MarkOrderReceived(ctx context.Context, id int32) (Order, error) {
+	row := q.db.QueryRowContext(ctx, markOrderReceived, id)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.ListingID,
+		&i.BuyerID,
+		&i.SellerID,
+		&i.Quantity,
+		&i.UnitPrice,
+		&i.TotalPrice,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SellerHandedOverAt,
+		&i.BuyerReceivedAt,
+	)
+	return i, err
+}
+
 const updateOrderStatus = `-- name: UpdateOrderStatus :one
 UPDATE orders
 SET status = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at
+RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at
 `
 
 type UpdateOrderStatusParams struct {
@@ -163,6 +230,8 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SellerHandedOverAt,
+		&i.BuyerReceivedAt,
 	)
 	return i, err
 }

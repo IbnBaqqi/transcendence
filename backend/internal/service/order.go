@@ -144,13 +144,28 @@ const (
 	actorEither
 )
 
+// handshakeMark says which side's confirmation a move records.
+//
+// Most moves record nothing (markNone) and simply change the status. The two
+// handover moves are different: they stamp one side's timestamp, and the status
+// only advances once BOTH sides have stamped theirs. That's what makes
+// 'completed' something neither party can declare on their own.
+type handshakeMark int
+
+const (
+	markNone handshakeMark = iota
+	markSeller
+	markBuyer
+)
+
 // orderAction is one edge of the state machine
 type orderAction struct {
-	name          string   // used in error messages: "cannot pay an order that is pending"
+	name          string   // used in error messages: "cannot hand over an order that is pending"
 	from          []string // statuses this move is legal from
 	to            string   // status it lands on
 	actor         orderActor
-	restoresStock bool // hand the reserved quantity back to the listing
+	restoresStock bool          // hand the reserved quantity back to the listing
+	mark          handshakeMark // which side's confirmation this records, if any
 }
 
 // The transition table - this IS the lifecycle.
@@ -161,21 +176,27 @@ var (
 		to:    "confirmed",
 		actor: actorSeller,
 	}
-	actionPay = orderAction{
-		name:  "pay",
+	// The two halves of the handover handshake. Either side may go first, and
+	// neither one alone completes the order - `to` is only applied once both
+	// timestamps are set. Payment happens between the two people off-platform;
+	// we record that the exchange happened, never the money.
+	actionHandover = orderAction{
+		name:  "hand over",
 		from:  []string{"confirmed"},
-		to:    "paid",
-		actor: actorBuyer,
-	}
-	actionComplete = orderAction{
-		name:  "complete",
-		from:  []string{"paid"},
 		to:    "completed",
 		actor: actorSeller,
+		mark:  markSeller,
+	}
+	actionReceive = orderAction{
+		name:  "confirm receipt of",
+		from:  []string{"confirmed"},
+		to:    "completed",
+		actor: actorBuyer,
+		mark:  markBuyer,
 	}
 	actionCancel = orderAction{
 		name:  "cancel",
-		from:  []string{"pending", "confirmed"}, // deliberately NOT "paid" - that needs a refund flow
+		from:  []string{"pending", "confirmed"},
 		to:    "cancelled",
 		actor: actorEither,
 		// CreateOrder took this quantity out of the listing, so cancelling must
@@ -184,18 +205,20 @@ var (
 	}
 )
 
-// The four public methods are debliberately thin - every one of them is the same
+// The four public methods are deliberately thin - every one of them is the same
 // operation with a different row from the table above.
 func (s *OrderService) ConfirmOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
 	return s.applyAction(ctx, userID, orderID, actionConfirm)
 }
 
-func (s *OrderService) PayOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
-	return s.applyAction(ctx, userID, orderID, actionPay)
+// HandoverOrder records the SELLER's half of the handshake.
+func (s *OrderService) HandoverOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
+	return s.applyAction(ctx, userID, orderID, actionHandover)
 }
 
-func (s *OrderService) CompleteOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
-	return s.applyAction(ctx, userID, orderID, actionComplete)
+// ReceiveOrder records the BUYER's half of the handshake.
+func (s *OrderService) ReceiveOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
+	return s.applyAction(ctx, userID, orderID, actionReceive)
 }
 
 func (s *OrderService) CancelOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
@@ -252,6 +275,23 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 		}
 	}
 
+	// Handshake moves record one side's confirmation rather than moving the
+	// status straight away.
+	if action.mark != markNone {
+		marked, err := markHandshake(ctx, qtx, order, action)
+		if err != nil {
+			return database.Order{}, err
+		}
+		// One side alone doesn't complete anything. Commit the stamp and stop
+		// here - the order stays 'confirmed' until the other side marks too.
+		if !bothSidesMarked(marked) {
+			if err := tx.Commit(); err != nil {
+				return database.Order{}, err
+			}
+			return marked, nil
+		}
+	}
+
 	updated, err := qtx.UpdateOrderStatus(ctx, database.UpdateOrderStatusParams{
 		ID:     order.ID,
 		Status: action.to,
@@ -265,6 +305,31 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 	}
 
 	return updated, nil
+}
+
+// markHandshake stamps one side's confirmation, refusing a second stamp from
+// the same side so a double-click can't look like progress.
+func markHandshake(ctx context.Context, qtx *database.Queries, order database.Order, action orderAction) (database.Order, error) {
+	switch action.mark {
+	case markSeller:
+		if order.SellerHandedOverAt.Valid {
+			return database.Order{}, &ConflictError{Message: "you have already marked this order as handed over"}
+		}
+		return qtx.MarkOrderHandedOver(ctx, order.ID)
+	case markBuyer:
+		if order.BuyerReceivedAt.Valid {
+			return database.Order{}, &ConflictError{Message: "you have already confirmed receipt of this order"}
+		}
+		return qtx.MarkOrderReceived(ctx, order.ID)
+	}
+	return order, nil
+}
+
+// bothSidesMarked reports whether the handshake is finished. This is what makes
+// 'completed' a CONSEQUENCE of the two records rather than something either
+// party can set on their own.
+func bothSidesMarked(o database.Order) bool {
+	return o.SellerHandedOverAt.Valid && o.BuyerReceivedAt.Valid
 }
 
 // checkOrderActor enforces the "who may travel this edge" guard.

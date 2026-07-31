@@ -23,3 +23,20 @@ RETURNING *;
 SELECT * FROM orders
 WHERE id = $1
 FOR UPDATE;
+
+-- Two separate queries rather than one parameterised by column name: sqlc
+-- generates from static SQL, so a column can't be a parameter.
+
+-- name: MarkOrderHandedOver :one
+UPDATE orders
+SET seller_handed_over_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING *;
+
+-- name: MarkOrderReceived :one
+UPDATE orders
+SET buyer_received_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING *;

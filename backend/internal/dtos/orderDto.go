@@ -1,8 +1,10 @@
 package dtos
 
 import (
-	"github.com/IbnBaqqi/transcendence/internal/database"
+	"database/sql"
 	"time"
+
+	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
 // --- Request DTOs ---
@@ -28,16 +30,20 @@ type CreateOrderInput struct {
 // maps to string precisely because money in a float64 rounds badly. Parsing
 // them into floats here would throw away the guarantee NUMERIC exists to give.
 type OrderResponse struct {
-	ID         int32     `json:"id"`
-	ListingID  int32     `json:"listing_id"`
-	BuyerID    string    `json:"buyer_id"`
-	SellerID   string    `json:"seller_id"`
-	Quantity   int32     `json:"quantity"`
-	UnitPrice  string    `json:"unit_price"`
-	TotalPrice string    `json:"total_price"`
-	Status     string    `json:"status"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID         int32  `json:"id"`
+	ListingID  int32  `json:"listing_id"`
+	BuyerID    string `json:"buyer_id"`
+	SellerID   string `json:"seller_id"`
+	Quantity   int32  `json:"quantity"`
+	UnitPrice  string `json:"unit_price"`
+	TotalPrice string `json:"total_price"`
+	Status     string `json:"status"`
+	// Null until that side confirms. While status is still "confirmed", these
+	// two tell the UI whether it's waiting on the buyer or on the seller.
+	SellerHandedOverAt *time.Time `json:"seller_handed_over_at"`
+	BuyerReceivedAt    *time.Time `json:"buyer_received_at"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 // NewOrderResponse converts one database row into the API shape.
@@ -45,17 +51,31 @@ type OrderResponse struct {
 // never have to think about sql.NullTime.
 func NewOrderResponse(o database.Order) OrderResponse {
 	return OrderResponse{
-		ID:         o.ID,
-		ListingID:  o.ListingID,
-		BuyerID:    o.BuyerID.String(),
-		SellerID:   o.SellerID.String(),
-		Quantity:   o.Quantity,
-		UnitPrice:  o.UnitPrice,
-		TotalPrice: o.TotalPrice,
-		Status:     o.Status,
-		CreatedAt:  o.CreatedAt.Time,
-		UpdatedAt:  o.UpdatedAt.Time,
+		ID:                 o.ID,
+		ListingID:          o.ListingID,
+		BuyerID:            o.BuyerID.String(),
+		SellerID:           o.SellerID.String(),
+		Quantity:           o.Quantity,
+		UnitPrice:          o.UnitPrice,
+		TotalPrice:         o.TotalPrice,
+		Status:             o.Status,
+		SellerHandedOverAt: nullTimeToPtr(o.SellerHandedOverAt),
+		BuyerReceivedAt:    nullTimeToPtr(o.BuyerReceivedAt),
+		CreatedAt:          o.CreatedAt.Time,
+		UpdatedAt:          o.UpdatedAt.Time,
 	}
+}
+
+// nullTimeToPtr converts sqlc's sql.NullTime into a *time.Time.
+//
+// A pointer marshals to a real timestamp or to JSON `null`, whereas passing
+// sql.NullTime straight through would leak its internals as
+// {"Time":"0001-01-01T00:00:00Z","Valid":false}.
+func nullTimeToPtr(nt sql.NullTime) *time.Time {
+	if !nt.Valid {
+		return nil
+	}
+	return &nt.Time
 }
 
 // NewOrderResponse converts a whole list.

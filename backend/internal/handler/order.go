@@ -141,32 +141,36 @@ func (h *Handler) ConfirmOrder(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, dtos.NewOrderResponse(order))
 }
 
-// PayOrder handles POST /api/v1/orders/{id}/pay - buyer pays (simulated).
-// confirm -> paid
-func (h *Handler) PayOrder(w http.ResponseWriter, r *http.Request) {
+// HandoverOrder handles POST /api/v1/orders/{id}/handover - the seller records
+// that they handed the goods over. The order stays "confirmed" until the buyer
+// confirms receipt too, at which point it becomes "completed".
+func (h *Handler) HandoverOrder(w http.ResponseWriter, r *http.Request) {
 	userID, id, ok := parseOrderRequest(w, r)
 	if !ok {
 		return
 	}
 
-	order, err := h.Order.PayOrder(r.Context(), userID, id)
+	order, err := h.Order.HandoverOrder(r.Context(), userID, id)
 	if err != nil {
 		respondWithError(w, statusFromServiceError(err), err.Error())
 		return
 	}
 
+	// 200 whether this completed the order or is still waiting on the buyer -
+	// the status in the response body tells the client which happened.
 	respondWithJSON(w, http.StatusOK, dtos.NewOrderResponse(order))
 }
 
-// CompleteOrder handles POST /api/v1/orders/{id}/complete - seller marks it
-// handed over. paid -> completed (terminal)
-func (h *Handler) CompleteOrder(w http.ResponseWriter, r *http.Request) {
+// ReceiveOrder handles POST /api/v1/orders/{id}/receive - the buyer records
+// that they got the goods. Completes the order once the seller has marked the
+// handover too.
+func (h *Handler) ReceiveOrder(w http.ResponseWriter, r *http.Request) {
 	userID, id, ok := parseOrderRequest(w, r)
 	if !ok {
 		return
 	}
 
-	order, err := h.Order.CompleteOrder(r.Context(), userID, id)
+	order, err := h.Order.ReceiveOrder(r.Context(), userID, id)
 	if err != nil {
 		respondWithError(w, statusFromServiceError(err), err.Error())
 		return

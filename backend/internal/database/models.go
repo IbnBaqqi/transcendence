@@ -32,16 +32,18 @@ type Listing struct {
 }
 
 type Order struct {
-	ID         int32
-	ListingID  int32
-	BuyerID    uuid.UUID
-	SellerID   uuid.UUID
-	Quantity   int32
-	UnitPrice  string
-	TotalPrice string
-	Status     string
-	CreatedAt  sql.NullTime
-	UpdatedAt  sql.NullTime
+	ID                 int32
+	ListingID          int32
+	BuyerID            uuid.UUID
+	SellerID           uuid.UUID
+	Quantity           int32
+	UnitPrice          string
+	TotalPrice         string
+	Status             string
+	CreatedAt          sql.NullTime
+	UpdatedAt          sql.NullTime
+	SellerHandedOverAt sql.NullTime
+	BuyerReceivedAt    sql.NullTime
 }
 
 type Profile struct {
