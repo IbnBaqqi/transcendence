@@ -70,16 +70,16 @@ func ToListingResponse(l database.Listing) ListingResponse {
 	price, _ := strconv.ParseFloat(l.Price, 64)
 
 	return ListingResponse{
-		ID:       l.ID,
-		SellerID: l.SellerID,
-		Title:    l.Title,
+		ID:          l.ID,
+		SellerID:    l.SellerID,
+		Title:       l.Title,
 		Description: l.Description.String,
 		Category:    l.Category,
 		Price:       price,
 		Quantity:    l.Quantity,
 		Unit:        l.Unit,
-		CreatedAt: l.CreatedAt.Time,
-		UpdatedAt: l.UpdatedAt.Time,
+		CreatedAt:   l.CreatedAt.Time,
+		UpdatedAt:   l.UpdatedAt.Time,
 	}
 }
 
