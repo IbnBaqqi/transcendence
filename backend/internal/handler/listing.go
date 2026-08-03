@@ -26,7 +26,7 @@ func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, listing)
+	respondWithJSON(w, http.StatusCreated, dtos.ToListingResponse(listing))
 }
 
 func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +35,7 @@ func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "could not fetch listings")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, listings)
+	respondWithJSON(w, http.StatusOK, dtos.ToListingResponses(listings))
 }
 
 func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +51,7 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, listing)
+	respondWithJSON(w, http.StatusOK, dtos.ToListingResponse(listing))
 }
 
 func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +79,7 @@ func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, updated)
+	respondWithJSON(w, http.StatusOK, dtos.ToListingResponse(updated))
 }
 
 func (h *Handler) DeleteListing(w http.ResponseWriter, r *http.Request) {
