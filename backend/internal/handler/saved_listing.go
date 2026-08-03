@@ -61,7 +61,7 @@ func (h *Handler) GetSavedListings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	listings, err := h.Saved, ListSaved(r.Context(), userID)
+	listings, err := h.Saved.ListSaved(r.Context(), userID)
 	if err != nil {
 		// A DB failure here isn't the caller's fault, so don't leak err.Error()
 		// into the response - log-worthy, not client-worthy.
