@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users
     role       varchar(20) default 'USER'  not null,
     created_at timestamp   default current_timestamp,
     updated_at timestamp   default current_timestamp,
-    constraint users_email_uq unique (email)
+    constraint users_email_uq unique (email),
 	constraint users_username_uq unique (username)
 );
 

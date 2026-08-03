@@ -40,6 +40,8 @@ func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string,
 		FROM listings LEFT JOIN addresses ON addresses.user_id = listings.seller_id WHERE 1=1`)
 	}
 
+	b.WriteString(" AND listings.quantity > 0")
+
 	if arg.Keyword != "" {
 		p := next("%" + arg.Keyword + "%")
 		b.WriteString(" AND (listings.title ILIKE " + p + " OR listings.description ILIKE " + p + ")")

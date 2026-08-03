@@ -3,10 +3,10 @@ package middleware
 import (
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/IbnBaqqi/transcendence/internal/auth"
+	"github.com/google/uuid"
 )
 
 // sanitizeLog strips newlines and carriage returns from a string to
@@ -35,7 +35,7 @@ func Authenticate(authService *auth.JwtService) func(http.Handler) http.Handler 
 			}
 
 			// Parse user ID from claims
-			id, err := strconv.ParseInt(claims.Subject, 10, 64)
+			id, err := uuid.Parse(claims.Subject)
 			if err != nil {
 				slog.Error("invalid user ID in token", "subject", sanitizeLog(claims.Subject), "error", err.Error()) // #nosec G706 -- subject sanitized by sanitizeLog
 				next.ServeHTTP(w, r)
@@ -53,4 +53,27 @@ func Authenticate(authService *auth.JwtService) func(http.Handler) http.Handler 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// RequiredAuth blocks the request unless Authenticate already attached a user.
+//
+// Why two middlewares and not one: Authenticate is deliberately "optional auth"
+// - it attaches a user when there's a valid token and quietly continues when
+// there isn't. That's what public pages want /browse listings logged out, but
+// personalise if logged in). The catch is that Authenticate ALONE never rejects
+// anyone, so every non-public route has to be wrapped in this as well.
+func RequiredAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// ok is false when no valid token was presented, so no user was stored.
+		if _, ok := auth.UserFromContext(r.Context()); !ok {
+			// Written out by hand rather than reusing the handler package's
+			// respondWithError: middleware sits underneath handler and importing
+			// it upward would tangle the two. The JSON shape matches errorRespones.
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"error":"authentication required"}`))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
