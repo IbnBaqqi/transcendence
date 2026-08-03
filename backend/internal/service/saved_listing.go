@@ -31,7 +31,7 @@ func (s *SavedListingService) SaveListing(ctx context.Context, userID uuid.UUID,
 	// A repeat save is deliberately NOT an error: the query's ON CONFLICT DO
 	// NOTHING makes this idempotent, so double-clicking the heart is harmless.
 	return s.db.SaveListing(ctx, database.SaveListingParams{
-		UserID: userID,
+		UserID:    userID,
 		ListingID: listingID,
 	})
 }
@@ -41,7 +41,7 @@ func (s *SavedListingService) UnsaveListing(ctx context.Context, userID uuid.UUI
 	// rows is the affected-row count that :execrow gives us. 0 means the
 	// DELETE matched nothing - the user never saved this listing.
 	rows, err := s.db.UnsaveListing(ctx, database.UnsaveListingParams{
-		UserID: userID,
+		UserID:    userID,
 		ListingID: listingID,
 	})
 	if err != nil {
