@@ -16,7 +16,6 @@ SELECT COUNT(*) FROM orders
 WHERE listing_id = $1
 `
 
-// Used by DeleteListing to refuse deleting a listing that has order history.
 func (q *Queries) CountOrdersForListing(ctx context.Context, listingID int32) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countOrdersForListing, listingID)
 	var count int64
@@ -164,7 +163,6 @@ func (q *Queries) ListOrdersForUser(ctx context.Context, buyerID uuid.UUID) ([]O
 }
 
 const markOrderHandedOver = `-- name: MarkOrderHandedOver :one
-
 UPDATE orders
 SET seller_handed_over_at = CURRENT_TIMESTAMP,
     updated_at = CURRENT_TIMESTAMP
@@ -172,8 +170,6 @@ WHERE id = $1
 RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title
 `
 
-// Two separate queries rather than one parameterised by column name: sqlc
-// generates from static SQL, so a column can't be a parameter.
 func (q *Queries) MarkOrderHandedOver(ctx context.Context, id int32) (Order, error) {
 	row := q.db.QueryRowContext(ctx, markOrderHandedOver, id)
 	var i Order

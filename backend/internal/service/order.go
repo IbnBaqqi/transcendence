@@ -113,7 +113,6 @@ const (
 )
 
 // handshakeMark says which side's confirmation a move records.
-
 type handshakeMark int
 
 const (
@@ -209,14 +208,16 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 	if err := checkOrderActor(order, userID, action); err != nil {
 		return database.Order{}, err
 	}
-	if err := checkHandshakeLock(order, action); err != nil {
-		return database.Order{}, err
-	}
-
+	// Status first, so an order in the wrong state reports that plainly rather
+	// than blaming the handshake.
 	if !slices.Contains(action.from, order.Status) {
 		return database.Order{}, &ConflictError{
 			Message: fmt.Sprintf("cannot %s an order that is %s", action.name, order.Status),
 		}
+	}
+
+	if err := checkHandshakeLock(order, action); err != nil {
+		return database.Order{}, err
 	}
 
 	if action.restoresStock {

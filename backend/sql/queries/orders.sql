@@ -24,6 +24,7 @@ SELECT * FROM orders
 WHERE id = $1
 FOR UPDATE;
 
+-- name: CountOrdersForListing :one
 SELECT COUNT(*) FROM orders
 WHERE listing_id = $1;
 

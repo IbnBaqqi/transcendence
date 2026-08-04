@@ -11,15 +11,15 @@ import (
 	"github.com/google/uuid"
 )
 
-const listSaveListings = `-- name: ListSaveListings :many
+const listSavedListings = `-- name: ListSavedListings :many
 SELECT l.id, l.seller_id, l.title, l.description, l.category, l.price, l.quantity, l.unit, l.created_at, l.updated_at FROM saved_listings s
 JOIN listings l ON l.id = s.listing_id
 WHERE s.user_id = $1
 ORDER BY s.created_at DESC
 `
 
-func (q *Queries) ListSaveListings(ctx context.Context, userID uuid.UUID) ([]Listing, error) {
-	rows, err := q.db.QueryContext(ctx, listSaveListings, userID)
+func (q *Queries) ListSavedListings(ctx context.Context, userID uuid.UUID) ([]Listing, error) {
+	rows, err := q.db.QueryContext(ctx, listSavedListings, userID)
 	if err != nil {
 		return nil, err
 	}

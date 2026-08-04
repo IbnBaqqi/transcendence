@@ -53,15 +53,23 @@ deps:
 	@echo "✓ Dependencies updated"
 
 # Migrations
+# .env is optional (-include at the top), so every goose target checks DB_URL
+# itself - otherwise goose gets an empty connection string and fails with a
+# confusing driver error instead of saying what's actually missing.
+require-db-url = @test -n "$(DB_URL)" || { echo "DB_URL not set - copy .env.example to .env"; exit 1; }
+
 migrate-up:
-	@test -n "$(DB_URL)" || { echo "DB_URL not set - copy .env.example to .env"; exit 1; }
+	$(require-db-url)
 	@goose -dir sql/migrations postgres "$(DB_URL)" up
 
 migrate-down:
+	$(require-db-url)
 	@goose -dir sql/migrations postgres "$(DB_URL)" down
 
 migrate-status:
+	$(require-db-url)
 	@goose -dir sql/migrations postgres "$(DB_URL)" status
+
 # Docker
 docker-build:
 	@docker build -t transcendence .

@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/google/uuid"
@@ -19,7 +21,10 @@ func NewSavedListingService(db *database.Queries) *SavedListingService {
 // SaveListing bookmarks a listing for a user.
 func (s *SavedListingService) SaveListing(ctx context.Context, userID uuid.UUID, listingID int32) error {
 	if _, err := s.db.GetListing(ctx, listingID); err != nil {
-		return &NotFoundError{Message: "listing not found"}
+		if errors.Is(err, sql.ErrNoRows) {
+			return &NotFoundError{Message: "listing not found"}
+		}
+		return err
 	}
 
 	return s.db.SaveListing(ctx, database.SaveListingParams{
@@ -28,7 +33,7 @@ func (s *SavedListingService) SaveListing(ctx context.Context, userID uuid.UUID,
 	})
 }
 
-// UnsaveListing removes a bookmark, reporting 404 when there wasn't ine.
+// UnsaveListing removes a bookmark, reporting 404 when there wasn't one.
 func (s *SavedListingService) UnsaveListing(ctx context.Context, userID uuid.UUID, listingID int32) error {
 	rows, err := s.db.UnsaveListing(ctx, database.UnsaveListingParams{
 		UserID:    userID,
@@ -43,7 +48,7 @@ func (s *SavedListingService) UnsaveListing(ctx context.Context, userID uuid.UUI
 	return nil
 }
 
-// ListSaved restuns the user's wishlist, most recently saved first.
+// ListSaved returns the user's wishlist, most recently saved first.
 func (s *SavedListingService) ListSaved(ctx context.Context, userID uuid.UUID) ([]database.Listing, error) {
-	return s.db.ListSaveListings(ctx, userID)
+	return s.db.ListSavedListings(ctx, userID)
 }

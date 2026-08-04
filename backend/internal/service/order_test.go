@@ -2,6 +2,7 @@ package service
 
 import (
 	"database/sql"
+	"errors"
 	"testing"
 	"time"
 
@@ -30,11 +31,22 @@ func TestCheckOrderActor(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			err := checkOrderActor(order, tt.userID, tt.action)
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("checkOrderAction() error %v, wantErr %v", err, tt.wantErr)
+
+			if !tt.wantErr {
+				if err != nil {
+					t.Fatalf("checkOrderActor() unexpected error = %v", err)
+				}
+				return
+			}
+
+			// errors.As checks the CONCRETE type, not just "some error came
+			// back" - a plain error or the wrong kind would fail here, which
+			// matters because the handler maps each type to its own status.
+			var forbidden *ForbiddenError
+			if !errors.As(err, &forbidden) {
+				t.Fatalf("checkOrderActor() error = %v, want *ForbiddenError", err)
 			}
 		})
 	}
@@ -71,11 +83,20 @@ func TestCheckHandshakeLock(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			err := checkHandshakeLock(tt.order, tt.action)
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("checkHandshakeLock() error = %v, wantErr %v", err, tt.wantErr)
+
+			if !tt.wantErr {
+				if err != nil {
+					t.Fatalf("checkHandshakeLock() unexpected error = %v", err)
+				}
+				return
+			}
+
+			// ConflictError is what the handler turns into a 409.
+			var conflict *ConflictError
+			if !errors.As(err, &conflict) {
+				t.Fatalf("checkHandshakeLock() error = %v, want *ConflictError", err)
 			}
 		})
 	}
