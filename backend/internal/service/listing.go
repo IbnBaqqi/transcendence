@@ -14,13 +14,7 @@ import (
 )
 
 // ListingService contains the business logic for listings: validation,
-// ownership rules, and orchestration of database calls. It knows
-// nothing about HTTP.
-//
-// It takes *database.DB rather than *database.Queries because UpdateListing
-// needs a transaction (BeginTx), which only DB can start. DB embeds *Queries,
-// so the simple non-transactional calls like s.db.GetListing(...) still work
-// exactly as before.
+// ownership rules, and orchestration of database calls.
 type ListingService struct {
 	db *database.DB
 }
@@ -77,15 +71,7 @@ func (s *ListingService) ListListings(ctx context.Context) ([]database.Listing, 
 }
 
 // UpdateListing edits a listing the caller owns.
-//
-// The whole read-check-write runs inside ONE transaction holding SELECT ... FOR
-// UPDATE on the row, for the same reason CreateOrder does: `quantity` is live
-// stock that orders decrement and cancellations restore. Reading it unlocked
-// and writing it back afterwards is a classic lost update - an order that
-// commits in between gets silently overwritten, and the sold-out check below
-// can pass on a value that is already stale.
 func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, listingID int32, input dtos.UpdateListingInput) (database.Listing, error) {
-	// Validate first: bad input should never take a row lock.
 	if err := validateListingInput(input.Title, input.Category, input.Unit, input.Price, input.Quantity); err != nil {
 		return database.Listing{}, err
 	}
@@ -95,8 +81,6 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, li
 		return database.Listing{}, err
 	}
 	defer func() {
-		// A committed transaction returns ErrTxDone here, which is the happy
-		// path - only log a rollback that actually went wrong.
 		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
 			slog.Error("listing update transaction rollback failed", "error", err)
 		}
@@ -104,8 +88,6 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, li
 
 	qtx := s.db.Queries.WithTx(tx.Tx)
 
-	// FOR UPDATE holds this row until we commit, so a concurrent CreateOrder or
-	// CancelOrder queues behind us rather than interleaving with our write.
 	existing, err := qtx.GetListingForUpdate(ctx, listingID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -118,8 +100,6 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, li
 		return database.Listing{}, &ForbiddenError{Message: "you do not own this listing"}
 	}
 
-	// Checked against the LOCKED row. Unlocked, this could read 1 while an order
-	// in flight was taking it to 0, letting a sold-out listing be edited anyway.
 	if existing.Quantity == 0 {
 		return database.Listing{}, &ConflictError{Message: "listing is sold out and can no longer be edited; create new listing"}
 	}
@@ -145,17 +125,6 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, li
 }
 
 // DeleteListing removes a listing the caller owns.
-//
-// Locked and transactional for the same reason as UpdateListing, plus one extra
-// rule: a listing that any order references cannot be deleted at all. Orders are
-// historical records - a buyer's completed order must not vanish because the
-// seller tidied up their listings. The foreign key is ON DELETE RESTRICT
-// (migration 008) as a backstop, so even a code path that skips this check
-// cannot destroy order history.
-//
-// Holding FOR UPDATE across the count and the delete is what stops a new order
-// slipping in between them: CreateOrder takes the same lock, so it queues behind
-// us instead of racing.
 func (s *ListingService) DeleteListing(ctx context.Context, userID uuid.UUID, listingID int32) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

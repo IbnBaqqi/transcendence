@@ -12,21 +12,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/service"
 )
 
-// Helpers shared by every file in the handler package.
-//
-// They started life in listing.go, but order.go and handler_auth.go use them
-// too - a helper three features depend on shouldn't be owned by one feature's
-// file. Same idea as response.go, which already holds respondWithJSON and
-// respondWithError. Everything here is lowercase (unexported), so it's visible
-// inside package handler and nowhere else.
-
 // getUserID returns the id of the authenticated caller.
-//
-// The user is placed in the context by the Authenticate middleware *after* it
-// has verified the JWT signature, so this value is trustworthy.
-//
-// It returns an error rather than assuming success: a route that forgot
-// mw.RequireAuth would otherwise silently run as uuid.Nil.
 func getUserID(r *http.Request) (uuid.UUID, error) {
 	user, ok := auth.UserFromContext(r.Context())
 	if !ok {
@@ -36,9 +22,6 @@ func getUserID(r *http.Request) (uuid.UUID, error) {
 }
 
 // parseIDParam reads the {id} segment out of the URL and converts it to int32.
-//
-// chi.URLParam pulls the named piece out of the route pattern; ParseInt's
-// bitSize of 32 makes sure the value actually fits in an int32 before we cast.
 func parseIDParam(r *http.Request) (int32, error) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 32)
@@ -48,12 +31,6 @@ func parseIDParam(r *http.Request) (int32, error) {
 	return int32(id), nil
 }
 
-// statusFromServiceError maps service-layer error types to HTTP status codes,
-// so handlers don't need to know about business rules - only about what kind
-// of error occurred.
-//
-// errors.As walks the error chain looking for one that matches the target's
-// type, which is why wrapped errors still map correctly.
 func statusFromServiceError(err error) int {
 	var validationErr *service.ValidationError
 	var notFoundErr *service.NotFoundError
