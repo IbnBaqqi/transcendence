@@ -54,6 +54,37 @@ func (q *Queries) CreateListing(ctx context.Context, arg CreateListingParams) (L
 	return i, err
 }
 
+const decrementListingQuantity = `-- name: DecrementListingQuantity :one
+UPDATE listings
+SET quantity = quantity - $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND quantity >= $2
+RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at
+`
+
+type DecrementListingQuantityParams struct {
+	ID       int32
+	Quantity int32
+}
+
+func (q *Queries) DecrementListingQuantity(ctx context.Context, arg DecrementListingQuantityParams) (Listing, error) {
+	row := q.db.QueryRowContext(ctx, decrementListingQuantity, arg.ID, arg.Quantity)
+	var i Listing
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Title,
+		&i.Description,
+		&i.Category,
+		&i.Price,
+		&i.Quantity,
+		&i.Unit,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const deleteListing = `-- name: DeleteListing :exec
 DELETE FROM listings
 WHERE id = $1
@@ -87,8 +118,64 @@ func (q *Queries) GetListing(ctx context.Context, id int32) (Listing, error) {
 	return i, err
 }
 
+const getListingForUpdate = `-- name: GetListingForUpdate :one
+SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at FROM listings
+WHERE id = $1
+FOR UPDATE
+`
+
+func (q *Queries) GetListingForUpdate(ctx context.Context, id int32) (Listing, error) {
+	row := q.db.QueryRowContext(ctx, getListingForUpdate, id)
+	var i Listing
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Title,
+		&i.Description,
+		&i.Category,
+		&i.Price,
+		&i.Quantity,
+		&i.Unit,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const incrementListingQuantity = `-- name: IncrementListingQuantity :one
+UPDATE listings
+SET quantity = quantity + $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at
+`
+
+type IncrementListingQuantityParams struct {
+	ID       int32
+	Quantity int32
+}
+
+func (q *Queries) IncrementListingQuantity(ctx context.Context, arg IncrementListingQuantityParams) (Listing, error) {
+	row := q.db.QueryRowContext(ctx, incrementListingQuantity, arg.ID, arg.Quantity)
+	var i Listing
+	err := row.Scan(
+		&i.ID,
+		&i.SellerID,
+		&i.Title,
+		&i.Description,
+		&i.Category,
+		&i.Price,
+		&i.Quantity,
+		&i.Unit,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listListings = `-- name: ListListings :many
 SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at FROM listings
+WHERE quantity > 0
 ORDER BY created_at DESC
 `
 

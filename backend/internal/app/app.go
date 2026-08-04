@@ -14,6 +14,7 @@ type api struct {
 	JWT     *auth.JwtService
 	Auth    *auth.Service
 	Listing *service.ListingService
+	Order   *service.OrderService
 	Saved   *service.SavedListingService
 }
 
@@ -21,7 +22,8 @@ type api struct {
 func New(cfg *config.Config, db *database.DB) (*api, error) {
 	jwtService := auth.NewJwtService(cfg.Auth.JWTSecret)
 	authService := auth.NewService(db.Queries, jwtService)
-	listingService := service.NewListingService(db.Queries)
+	listingService := service.NewListingService(db) // needs *DB for transaction
+	orderService := service.NewOrderService(db)
 	savedService := service.NewSavedListingService(db.Queries)
 
 	return &api{
@@ -29,6 +31,7 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 		JWT:     jwtService,
 		Auth:    authService,
 		Listing: listingService,
+		Order:   orderService,
 		Saved:   savedService,
 	}, nil
 }
