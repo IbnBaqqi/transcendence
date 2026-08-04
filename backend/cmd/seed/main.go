@@ -101,8 +101,8 @@ func run() error {
 	listingCount := 0
 	for _, l := range seedListings {
 		_, err := db.Queries.CreateListing(ctx, database.CreateListingParams{
-			SellerID: sellerIDs[l.SellerIdx],
-			Title:    l.Title,
+			SellerID:    sellerIDs[l.SellerIdx],
+			Title:       l.Title,
 			Description: sql.NullString{String: l.Description, Valid: true},
 			Category:    l.Category,
 			Price:       l.Price,
