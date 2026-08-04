@@ -18,10 +18,6 @@ type SearchListingsParams struct {
 	Limit    int32
 }
 
-// buildSearchListingsQuery dynamically constructs the SELECT/COUNT query
-// and its positional args based o which filters are set. Every value is
-// passed as a placeholdeer arg - never string-interpolated - to avoid SQL
-// injection.
 func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string, []interface{}) {
 	var b strings.Builder
 	var args []interface{}
