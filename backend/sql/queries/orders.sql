@@ -1,6 +1,6 @@
 -- name: CreateOrder :one
-INSERT INTO orders (listing_id, buyer_id, seller_id, quantity, unit_price, total_price)
-VALUES ($1, $2, $3, $4, $5, $5::numeric * $4::integer)
+INSERT INTO orders (listing_id, buyer_id, seller_id, quantity, unit_price, total_price, listing_title)
+VALUES ($1, $2, $3, $4, $5, $5::numeric * $4::integer, $6)
 RETURNING *;
 
 -- name: GetOrder :one

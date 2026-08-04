@@ -44,6 +44,7 @@ type Order struct {
 	UpdatedAt          sql.NullTime
 	SellerHandedOverAt sql.NullTime
 	BuyerReceivedAt    sql.NullTime
+	ListingTitle       string
 }
 
 type Profile struct {

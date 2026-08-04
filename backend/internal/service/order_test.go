@@ -59,9 +59,9 @@ func TestCheckHandshakeLock(t *testing.T) {
 	marked := sql.NullTime{Time: time.Now(), Valid: true}
 
 	tests := []struct {
-		name string
-		order database.Order
-		action orderAction
+		name    string
+		order   database.Order
+		action  orderAction
 		wantErr bool
 	}{
 		{"cancel allowed when nothing marked", database.Order{}, actionCancel, false},

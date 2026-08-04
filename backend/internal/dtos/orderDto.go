@@ -17,6 +17,7 @@ type CreateOrderInput struct {
 type OrderResponse struct {
 	ID                 int32      `json:"id"`
 	ListingID          int32      `json:"listing_id"`
+	ListingTitle       string     `json:"listing_title"`
 	BuyerID            string     `json:"buyer_id"`
 	SellerID           string     `json:"seller_id"`
 	Quantity           int32      `json:"quantity"`
@@ -34,6 +35,7 @@ func NewOrderResponse(o database.Order) OrderResponse {
 	return OrderResponse{
 		ID:                 o.ID,
 		ListingID:          o.ListingID,
+		ListingTitle:       o.ListingTitle,
 		BuyerID:            o.BuyerID.String(),
 		SellerID:           o.SellerID.String(),
 		Quantity:           o.Quantity,

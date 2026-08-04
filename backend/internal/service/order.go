@@ -68,11 +68,12 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 	}
 
 	order, err := qtx.CreateOrder(ctx, database.CreateOrderParams{
-		ListingID: listing.ID,
-		BuyerID:   buyerID,
-		SellerID:  listing.SellerID,
-		Quantity:  input.Quantity,
-		UnitPrice: listing.Price,
+		ListingID:    listing.ID,
+		BuyerID:      buyerID,
+		SellerID:     listing.SellerID,
+		Quantity:     input.Quantity,
+		UnitPrice:    listing.Price,
+		ListingTitle: listing.Title,
 	})
 	if err != nil {
 		return database.Order{}, err
@@ -305,9 +306,9 @@ func checkOrderActor(order database.Order, userID uuid.UUID, action orderAction)
 func checkHandshakeLock(order database.Order, action orderAction) error {
 	if action.blockedAfterMark &&
 		(order.SellerHandedOverAt.Valid || order.BuyerReceivedAt.Valid) {
-			return &ConflictError{
-				Message: "cannot cancel an order once handover has started",
-			}
+		return &ConflictError{
+			Message: "cannot cancel an order once handover has started",
 		}
+	}
 	return nil
 }

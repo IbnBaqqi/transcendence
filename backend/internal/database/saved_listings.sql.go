@@ -18,10 +18,6 @@ WHERE s.user_id = $1
 ORDER BY s.created_at DESC
 `
 
-// Joins the link table back to listings and selects l.* so sqlc reuses the
-// existing Listing struct - no new type, and dtos.ToListingResponses still
-// applies. Order by when it was SAVED (s.created_at), not when the listing
-// was posted (l.created_at) - that's what makes it read like a wishlist.
 func (q *Queries) ListSaveListings(ctx context.Context, userID uuid.UUID) ([]Listing, error) {
 	rows, err := q.db.QueryContext(ctx, listSaveListings, userID)
 	if err != nil {
@@ -67,9 +63,6 @@ type SaveListingParams struct {
 	ListingID int32
 }
 
-// ON CONFLICT DO NOTHING makes this idempotent: saving the same listing twice
-// is a no-op instead of a unique-violation error. The (user_id, listing_id)
-// named in the conflict clause is the composite PK from migration 009.
 func (q *Queries) SaveListing(ctx context.Context, arg SaveListingParams) error {
 	_, err := q.db.ExecContext(ctx, saveListing, arg.UserID, arg.ListingID)
 	return err
@@ -85,8 +78,6 @@ type UnsaveListingParams struct {
 	ListingID int32
 }
 
-// :execrows (not :exec) so Go gets the rows-aaffected count back and can tell
-// "removed it" (1) from "there was nothing removed" (0) -> honest 404.
 func (q *Queries) UnsaveListing(ctx context.Context, arg UnsaveListingParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, unsaveListing, arg.UserID, arg.ListingID)
 	if err != nil {
