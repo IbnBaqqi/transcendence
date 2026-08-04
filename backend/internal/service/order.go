@@ -22,7 +22,6 @@ func NewOrderService(db *database.DB) *OrderService {
 	return &OrderService{db: db}
 }
 
-
 func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input dtos.CreateOrderInput) (database.Order, error) {
 	if input.ListingID <= 0 {
 		return database.Order{}, &ValidationError{Message: "listing_id is required"}
@@ -124,12 +123,13 @@ const (
 
 // orderAction is one edge of the state machine
 type orderAction struct {
-	name          string
-	from          []string
-	to            string
-	actor         orderActor
-	restoresStock bool
-	mark          handshakeMark
+	name             string
+	from             []string
+	to               string
+	actor            orderActor
+	restoresStock    bool
+	mark             handshakeMark
+	blockedAfterMark bool
 }
 
 // The transition table - this IS the lifecycle.
@@ -155,11 +155,12 @@ var (
 		mark:  markBuyer,
 	}
 	actionCancel = orderAction{
-		name:  "cancel",
-		from:  []string{"pending", "confirmed"},
-		to:    "cancelled",
-		actor: actorEither,
-		restoresStock: true,
+		name:             "cancel",
+		from:             []string{"pending", "confirmed"},
+		to:               "cancelled",
+		actor:            actorEither,
+		restoresStock:    true,
+		blockedAfterMark: true,
 	}
 )
 
@@ -205,6 +206,9 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 	}
 
 	if err := checkOrderActor(order, userID, action); err != nil {
+		return database.Order{}, err
+	}
+	if err := checkHandshakeLock(order, action); err != nil {
 		return database.Order{}, err
 	}
 
@@ -295,5 +299,15 @@ func checkOrderActor(order database.Order, userID uuid.UUID, action orderAction)
 	case actorEither:
 	}
 
+	return nil
+}
+
+func checkHandshakeLock(order database.Order, action orderAction) error {
+	if action.blockedAfterMark &&
+		(order.SellerHandedOverAt.Valid || order.BuyerReceivedAt.Valid) {
+			return &ConflictError{
+				Message: "cannot cancel an order once handover has started",
+			}
+		}
 	return nil
 }

@@ -12,12 +12,11 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
-
 func TestToListingResponseJSON(t *testing.T) {
 	row := database.Listing{
-		ID:       1,
-		SellerID: uuid.MustParse("3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34"),
-		Title:    "Golden Chanterelles",
+		ID:          1,
+		SellerID:    uuid.MustParse("3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34"),
+		Title:       "Golden Chanterelles",
 		Description: sql.NullString{},
 		Category:    "mushrooms",
 		Price:       "18.00",

@@ -15,14 +15,14 @@ type CreateOrderInput struct {
 
 // OrderResponse is the shape we send back to clients.
 type OrderResponse struct {
-	ID         int32  `json:"id"`
-	ListingID  int32  `json:"listing_id"`
-	BuyerID    string `json:"buyer_id"`
-	SellerID   string `json:"seller_id"`
-	Quantity   int32  `json:"quantity"`
-	UnitPrice  string `json:"unit_price"`
-	TotalPrice string `json:"total_price"`
-	Status     string `json:"status"`
+	ID                 int32      `json:"id"`
+	ListingID          int32      `json:"listing_id"`
+	BuyerID            string     `json:"buyer_id"`
+	SellerID           string     `json:"seller_id"`
+	Quantity           int32      `json:"quantity"`
+	UnitPrice          string     `json:"unit_price"`
+	TotalPrice         string     `json:"total_price"`
+	Status             string     `json:"status"`
 	SellerHandedOverAt *time.Time `json:"seller_handed_over_at"`
 	BuyerReceivedAt    *time.Time `json:"buyer_received_at"`
 	CreatedAt          time.Time  `json:"created_at"`

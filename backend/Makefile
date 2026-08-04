@@ -1,4 +1,4 @@
-include .env
+-include .env
 export
 
 .PHONY: run build test clean dev lint
@@ -54,6 +54,7 @@ deps:
 
 # Migrations
 migrate-up:
+	@test -n "$(DB_URL)" || { echo "DB_URL not set - copy .env.example to .env"; exit 1; }
 	@goose -dir sql/migrations postgres "$(DB_URL)" up
 
 migrate-down:
