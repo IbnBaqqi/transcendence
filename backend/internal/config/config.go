@@ -75,8 +75,8 @@ func Load() (*Config, error) {
 		},
 
 		Upload: UploadConfig{
-			Dir: getEnv("UPLOAD_DIR", "./uploads"),
-			MaxBytes: getEnvAsInt64("MAX_UPLOAD_BYTES", 5<<20),
+			Dir:           getEnv("UPLOAD_DIR", "./uploads"),
+			MaxBytes:      getEnvAsInt64("MAX_UPLOAD_BYTES", 5<<20),
 			MaxPerListing: getEnvAsInt("MAX_IMAGES_PER_LISTING", 5),
 		},
 	}
