@@ -16,7 +16,6 @@ SELECT COUNT(*) FROM orders
 WHERE listing_id = $1
 `
 
-// Used by DeleteListing to refuse deleting a listing that has order history.
 func (q *Queries) CountOrdersForListing(ctx context.Context, listingID int32) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countOrdersForListing, listingID)
 	var count int64
@@ -25,17 +24,18 @@ func (q *Queries) CountOrdersForListing(ctx context.Context, listingID int32) (i
 }
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (listing_id, buyer_id, seller_id, quantity, unit_price, total_price)
-VALUES ($1, $2, $3, $4, $5, $5::numeric * $4::integer)
-RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at
+INSERT INTO orders (listing_id, buyer_id, seller_id, quantity, unit_price, total_price, listing_title)
+VALUES ($1, $2, $3, $4, $5, $5::numeric * $4::integer, $6)
+RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title
 `
 
 type CreateOrderParams struct {
-	ListingID int32
-	BuyerID   uuid.UUID
-	SellerID  uuid.UUID
-	Quantity  int32
-	UnitPrice string
+	ListingID    int32
+	BuyerID      uuid.UUID
+	SellerID     uuid.UUID
+	Quantity     int32
+	UnitPrice    string
+	ListingTitle string
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -45,6 +45,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.SellerID,
 		arg.Quantity,
 		arg.UnitPrice,
+		arg.ListingTitle,
 	)
 	var i Order
 	err := row.Scan(
@@ -60,12 +61,13 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.UpdatedAt,
 		&i.SellerHandedOverAt,
 		&i.BuyerReceivedAt,
+		&i.ListingTitle,
 	)
 	return i, err
 }
 
 const getOrder = `-- name: GetOrder :one
-SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at FROM orders
+SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title FROM orders
 WHERE id = $1
 `
 
@@ -85,12 +87,13 @@ func (q *Queries) GetOrder(ctx context.Context, id int32) (Order, error) {
 		&i.UpdatedAt,
 		&i.SellerHandedOverAt,
 		&i.BuyerReceivedAt,
+		&i.ListingTitle,
 	)
 	return i, err
 }
 
 const getOrderForUpdate = `-- name: GetOrderForUpdate :one
-SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at FROM orders
+SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title FROM orders
 WHERE id = $1
 FOR UPDATE
 `
@@ -111,12 +114,13 @@ func (q *Queries) GetOrderForUpdate(ctx context.Context, id int32) (Order, error
 		&i.UpdatedAt,
 		&i.SellerHandedOverAt,
 		&i.BuyerReceivedAt,
+		&i.ListingTitle,
 	)
 	return i, err
 }
 
 const listOrdersForUser = `-- name: ListOrdersForUser :many
-SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at FROM orders
+SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title FROM orders
 WHERE buyer_id = $1 OR seller_id = $1
 ORDER BY created_at DESC
 `
@@ -143,6 +147,7 @@ func (q *Queries) ListOrdersForUser(ctx context.Context, buyerID uuid.UUID) ([]O
 			&i.UpdatedAt,
 			&i.SellerHandedOverAt,
 			&i.BuyerReceivedAt,
+			&i.ListingTitle,
 		); err != nil {
 			return nil, err
 		}
@@ -158,16 +163,13 @@ func (q *Queries) ListOrdersForUser(ctx context.Context, buyerID uuid.UUID) ([]O
 }
 
 const markOrderHandedOver = `-- name: MarkOrderHandedOver :one
-
 UPDATE orders
 SET seller_handed_over_at = CURRENT_TIMESTAMP,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at
+RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title
 `
 
-// Two separate queries rather than one parameterised by column name: sqlc
-// generates from static SQL, so a column can't be a parameter.
 func (q *Queries) MarkOrderHandedOver(ctx context.Context, id int32) (Order, error) {
 	row := q.db.QueryRowContext(ctx, markOrderHandedOver, id)
 	var i Order
@@ -184,6 +186,7 @@ func (q *Queries) MarkOrderHandedOver(ctx context.Context, id int32) (Order, err
 		&i.UpdatedAt,
 		&i.SellerHandedOverAt,
 		&i.BuyerReceivedAt,
+		&i.ListingTitle,
 	)
 	return i, err
 }
@@ -193,7 +196,7 @@ UPDATE orders
 SET buyer_received_at = CURRENT_TIMESTAMP,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at
+RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title
 `
 
 func (q *Queries) MarkOrderReceived(ctx context.Context, id int32) (Order, error) {
@@ -212,6 +215,7 @@ func (q *Queries) MarkOrderReceived(ctx context.Context, id int32) (Order, error
 		&i.UpdatedAt,
 		&i.SellerHandedOverAt,
 		&i.BuyerReceivedAt,
+		&i.ListingTitle,
 	)
 	return i, err
 }
@@ -221,7 +225,7 @@ UPDATE orders
 SET status = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at
+RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title
 `
 
 type UpdateOrderStatusParams struct {
@@ -245,6 +249,7 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 		&i.UpdatedAt,
 		&i.SellerHandedOverAt,
 		&i.BuyerReceivedAt,
+		&i.ListingTitle,
 	)
 	return i, err
 }

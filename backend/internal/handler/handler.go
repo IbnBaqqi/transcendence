@@ -11,6 +11,7 @@ type Handler struct {
 	Auth    *auth.Service
 	Listing *service.ListingService
 	Order   *service.OrderService
+	Saved   *service.SavedListingService
 }
 
 func New(
@@ -18,11 +19,13 @@ func New(
 	authService *auth.Service,
 	listingService *service.ListingService,
 	orderService *service.OrderService,
+	savedService *service.SavedListingService,
 ) *Handler {
 	return &Handler{
 		db:      db,
 		Auth:    authService,
 		Listing: listingService,
 		Order:   orderService,
+		Saved:   savedService,
 	}
 }

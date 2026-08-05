@@ -44,6 +44,7 @@ type Order struct {
 	UpdatedAt          sql.NullTime
 	SellerHandedOverAt sql.NullTime
 	BuyerReceivedAt    sql.NullTime
+	ListingTitle       string
 }
 
 type Profile struct {
@@ -53,6 +54,12 @@ type Profile struct {
 	Bio         sql.NullString
 	PhoneNumber sql.NullString
 	DateOfBirth sql.NullTime
+}
+
+type SavedListing struct {
+	UserID    uuid.UUID
+	ListingID int32
+	CreatedAt sql.NullTime
 }
 
 type User struct {

@@ -56,19 +56,9 @@ func Authenticate(authService *auth.JwtService) func(http.Handler) http.Handler 
 }
 
 // RequiredAuth blocks the request unless Authenticate already attached a user.
-//
-// Why two middlewares and not one: Authenticate is deliberately "optional auth"
-// - it attaches a user when there's a valid token and quietly continues when
-// there isn't. That's what public pages want /browse listings logged out, but
-// personalise if logged in). The catch is that Authenticate ALONE never rejects
-// anyone, so every non-public route has to be wrapped in this as well.
 func RequiredAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// ok is false when no valid token was presented, so no user was stored.
 		if _, ok := auth.UserFromContext(r.Context()); !ok {
-			// Written out by hand rather than reusing the handler package's
-			// respondWithError: middleware sits underneath handler and importing
-			// it upward would tangle the two. The JSON shape matches errorRespones.
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = w.Write([]byte(`{"error":"authentication required"}`))
