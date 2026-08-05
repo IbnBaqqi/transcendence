@@ -16,6 +16,13 @@ type Config struct {
 	Logger LoggerConfig
 	DB     DBConfig
 	Auth   AuthConfig
+	Upload UploadConfig
+}
+
+type UploadConfig struct {
+	Dir           string
+	MaxBytes      int64
+	MaxPerListing int
 }
 
 type AuthConfig struct {
@@ -66,6 +73,12 @@ func Load() (*Config, error) {
 		Auth: AuthConfig{
 			JWTSecret: mustGetEnv("JWT_SECRET"),
 		},
+
+		Upload: UploadConfig{
+			Dir: getEnv("UPLOAD_DIR", "./uploads"),
+			MaxBytes: getEnvAsInt64("MAX_UPLOAD_BYTES", 5<<20),
+			MaxPerListing: getEnvAsInt("MAX_IMAGES_PER_LISTING", 5),
+		},
 	}
 
 	return cfg, nil
@@ -107,8 +120,6 @@ func getEnvAsInt(key string, defaultValue int) int {
 	return value
 }
 
-//nolint:unused // kept for future use
-//lint:ignore U1000 kept for future use
 func getEnvAsInt64(key string, defaultValue int64) int64 {
 	valueStr := os.Getenv(key)
 	if valueStr == "" {
