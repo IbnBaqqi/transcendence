@@ -63,7 +63,7 @@ func (s *ListingImageService) AddImage(
 	if err != nil {
 		return database.ListingImage{}, err
 	}
-	if int(count) >= s.maxPerListing {
+	if count >= int64(s.maxPerListing) {
 		return database.ListingImage{}, &ConflictError{
 			Message: fmt.Sprintf("a listing can have at most %d images", s.maxPerListing),
 		}
@@ -77,7 +77,6 @@ func (s *ListingImageService) AddImage(
 	img, err := s.db.CreateListingImage(ctx, database.CreateListingImageParams{
 		ListingID: listingID,
 		Filename:  filename,
-		Position:  int32(count),
 	})
 	if err != nil {
 		if delErr := s.files.Delete(filename); delErr != nil {

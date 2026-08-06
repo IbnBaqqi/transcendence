@@ -25,18 +25,21 @@ func (q *Queries) CountListingImages(ctx context.Context, listingID int32) (int6
 
 const createListingImage = `-- name: CreateListingImage :one
 INSERT INTO listing_images (listing_id, filename, position)
-VALUES ($1, $2, $3)
+VALUES (
+    $1,
+    $2,
+    COALESCE((SELECT MAX(position) + 1 FROM listing_images WHERE listing_id = $1), 0)
+)
 RETURNING id, listing_id, filename, position, created_at
 `
 
 type CreateListingImageParams struct {
 	ListingID int32
 	Filename  string
-	Position  int32
 }
 
 func (q *Queries) CreateListingImage(ctx context.Context, arg CreateListingImageParams) (ListingImage, error) {
-	row := q.db.QueryRowContext(ctx, createListingImage, arg.ListingID, arg.Filename, arg.Position)
+	row := q.db.QueryRowContext(ctx, createListingImage, arg.ListingID, arg.Filename)
 	var i ListingImage
 	err := row.Scan(
 		&i.ID,

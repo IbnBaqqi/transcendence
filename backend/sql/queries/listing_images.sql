@@ -1,6 +1,10 @@
 -- name: CreateListingImage :one
 INSERT INTO listing_images (listing_id, filename, position)
-VALUES ($1, $2, $3)
+VALUES (
+    $1,
+    $2,
+    COALESCE((SELECT MAX(position) + 1 FROM listing_images WHERE listing_id = $1), 0)
+)
 RETURNING *;
 
 -- name: ListListingImages :many
