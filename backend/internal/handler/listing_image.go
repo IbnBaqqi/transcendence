@@ -57,7 +57,7 @@ func (h *Handler) UploadListingImage(w http.ResponseWriter, r *http.Request) {
 	}
 	head = head[:n]
 
-	ext, ok := allowedImageTypes[http.DetectContentType(head)]
+	ext, ok := detectImageExt(head)
 	if !ok {
 		respondWithError(w, http.StatusUnsupportedMediaType, "only JPEG, PNG and WebP images are allowed")
 		return
@@ -125,4 +125,11 @@ func (h *Handler) DeleteListingImage(w http.ResponseWriter, r *http.Request) {
 func isTooLarge(err error) bool {
 	var maxErr *http.MaxBytesError
 	return errors.As(err, &maxErr)
+}
+
+// detectImageExt decides which extension a file is stored under., based on its
+// leading bytes.
+func detectImageExt(head []byte) (string, bool) {
+	ext, ok := allowedImageTypes[http.DetectContentType(head)]
+	return ext, ok
 }
