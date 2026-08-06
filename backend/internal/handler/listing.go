@@ -35,7 +35,19 @@ func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "could not fetch listings")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, dtos.ToListingResponses(listings))
+
+	ids := make([]int32, 0, len(listings))
+	for _, l := range listings {
+		ids = append(ids, l.ID)
+	}
+
+	byListing, err := h.ListingImage.ImagesByListing(r.Context(), ids)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToListingResponsesWithImages(listings, byListing))
 }
 
 func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +63,13 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.ToListingResponse(listing))
+	imgs, err := h.ListingImage.ListImages(r.Context(), id)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToListingResponseWithImages(listing, imgs))
 }
 
 func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
