@@ -49,6 +49,11 @@ func (l *Local) Save(r io.Reader, ext string) (string, error) {
 		return "", fmt.Errorf("write file: %w", err)
 	}
 
+	if err := f.Close(); err != nil {
+		os.Remove(path)
+		return "", fmt.Errorf("close file: %w", err)
+	}
+
 	return name, nil
 }
 

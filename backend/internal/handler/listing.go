@@ -97,7 +97,13 @@ func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.ToListingResponse(updated))
+	imgs, err := h.ListingImage.ListImages(r.Context(), id)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToListingResponseWithImages(updated, imgs))
 }
 
 func (h *Handler) DeleteListing(w http.ResponseWriter, r *http.Request) {

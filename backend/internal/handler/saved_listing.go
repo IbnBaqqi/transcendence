@@ -61,5 +61,16 @@ func (h *Handler) GetSavedListings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.ToListingResponses(listings))
+	ids := make([]int32, 0, len(listings))
+	for _, l := range listings {
+		ids = append(ids, l.ID)
+	}
+
+	byListing, err := h.ListingImage.ImagesByListing(r.Context(), ids)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToListingResponsesWithImages(listings, byListing))
 }

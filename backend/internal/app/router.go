@@ -35,7 +35,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 	r.Get("/health", h.Health)
 
-	r.Handle("/uploads/*", http.StripPrefix("/uploads/", uploadFileServer(appService.Files.Dir())))
+	r.Handle("/uploads/*", uploadFileServer(appService.Files.Dir()))
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authenticate)
@@ -76,12 +76,13 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	return r
 }
 
-// uploadFileServer serves the upload directory with two guards.
+// uploadFileServer serves stored files by bare filename, with no directory listing.
 func uploadFileServer(dir string) http.Handler {
-	fs := http.FileServer(http.Dir(dir))
+	fs := http.StripPrefix("/uploads/", http.FileServer(http.Dir(dir)))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/") {
+		name := strings.TrimPrefix(r.URL.Path, "/uploads/")
+		if name == "" || strings.Contains(name, "/") {
 			http.NotFound(w, r)
 			return
 		}
