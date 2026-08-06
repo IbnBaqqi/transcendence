@@ -3,6 +3,7 @@ package app
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/IbnBaqqi/transcendence/internal/handler"
 	mw "github.com/IbnBaqqi/transcendence/internal/middleware"
@@ -20,6 +21,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.Listing,
 		appService.Order,
 		appService.Saved,
+		appService.ListingImage,
+		appService.Upload.MaxBytes,
 	)
 
 	r.Use(middleware.RequestID)
@@ -32,6 +35,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 	r.Get("/health", h.Health)
 
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", uploadFileServer(appService.Files.Dir())))
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authenticate)
 
@@ -41,6 +46,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 		r.Get("/listings", h.GetListings)
 		r.Get("/listings/{id}", h.GetListing)
+		r.Get("/listings/{id}/images", h.GetListingImages)
 
 		r.Group(func(r chi.Router) {
 			r.Use(mw.RequiredAuth)
@@ -51,6 +57,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/listings/{id}/save", h.SaveListing)
 			r.Delete("/listings/{id}/save", h.UnsaveListing)
 			r.Get("/me/saved", h.GetSavedListings)
+			r.Post("/listings/{id}/images", h.UploadListingImage)
+			r.Delete("/listings/{id}/images/{imageID}", h.DeleteListingImage)
 
 			r.Post("/orders", h.CreateOrder)
 			r.Get("/orders", h.GetOrders)
@@ -66,4 +74,20 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	})
 
 	return r
+}
+
+// uploadFileServer serves the upload directory with two guards.
+func uploadFileServer(dir string) http.Handler {
+	fs := http.FileServer(http.Dir(dir))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+
+		fs.ServeHTTP(w, r)
+	})
 }
