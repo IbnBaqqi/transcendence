@@ -16,7 +16,7 @@ INSERT INTO users (username, email, password)
 VALUES (
 	$1, $2, $3
 )
-RETURNING id, email, username, password, role, created_at, updated_at
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status
 `
 
 type CreateUserParams struct {
@@ -36,6 +36,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastSeenAt,
+		&i.ShowOnlineStatus,
 	)
 	return i, err
 }
@@ -51,7 +53,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, username, password, role, created_at, updated_at FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status FROM users
 WHERE id = $1
 LIMIT 1
 `
@@ -67,12 +69,14 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastSeenAt,
+		&i.ShowOnlineStatus,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, username, password, role, created_at, updated_at FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status FROM users
 WHERE email = $1
 LIMIT 1
 `
@@ -88,12 +92,14 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LastSeenAt,
+		&i.ShowOnlineStatus,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, username, password, role, created_at, updated_at FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status FROM users
 ORDER BY created_at DESC
 `
 
@@ -114,6 +120,8 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Role,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.LastSeenAt,
+			&i.ShowOnlineStatus,
 		); err != nil {
 			return nil, err
 		}
