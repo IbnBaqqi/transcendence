@@ -20,11 +20,11 @@ CREATE TABLE IF NOT EXISTS messages (
     conversation_id integer NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
     sender_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     body text NOT NULL CHECK (length(btrim(body)) > 0),
-    ready_at timestamp,
+    read_at timestamp,
     created_at timestamp DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
+CREATE INDEX idx_messages_conversation_id ON messages(conversation_id, id);
 
 -- +goose Down
 DROP TABLE IF EXISTS messages;
