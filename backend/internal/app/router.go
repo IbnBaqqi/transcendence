@@ -40,6 +40,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		r.Post("/auth/logout", h.Logout)
 
 		r.Get("/listings", h.GetListings)
+		r.Get("/listings/search", h.SearchListings)
 		r.Get("/listings/{id}", h.GetListing)
 
 		r.Group(func(r chi.Router) {
