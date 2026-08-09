@@ -44,6 +44,12 @@ func SortOptions() []string {
 	return keys
 }
 
+var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+
+func escapeLike(value string) string {
+	return likeEscaper.Replace(value)
+}
+
 func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string, []interface{}) {
 	var b strings.Builder
 	var args []interface{}
@@ -65,8 +71,8 @@ func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string,
 	b.WriteString(" AND listings.quantity > 0")
 
 	if arg.Keyword != "" {
-		p := next("%" + arg.Keyword + "%")
-		b.WriteString(" AND (listings.title ILIKE " + p + " OR listings.description ILIKE " + p + ")")
+		p := next("%" + escapeLike(arg.Keyword) + "%")
+		b.WriteString(" AND (listings.title ILIKE " + p + " ESCAPE '\\' OR listings.description ILIKE " + p + " ESCAPE '\\')")
 	}
 	if arg.Category != "" {
 		p := next(arg.Category)
@@ -82,8 +88,8 @@ func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string,
 		b.WriteString(" AND listings.price::numeric <= " + p + "::numeric")
 	}
 	if arg.Location != "" {
-		p := next("%" + arg.Location + "%")
-		b.WriteString(" AND addresses.location ILIKE " + p)
+		p := next("%" + escapeLike(arg.Location) + "%")
+		b.WriteString(" AND addresses.location ILIKE " + p + " ESCAPE '\\'")
 	}
 
 	if !countOnly {

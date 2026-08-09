@@ -68,6 +68,40 @@ func TestCountQueryDoesNotSort(t *testing.T) {
 	}
 }
 
+func TestLikeWildcardsAreEscaped(t *testing.T) {
+	query, args := buildSearchListingsQuery(SearchListingsParams{Keyword: "50% off_now", Limit: 20}, false)
+
+	if !strings.Contains(query, "ESCAPE '\\'") {
+		t.Errorf("keyword clause has no ESCAPE: %s", query)
+	}
+	if args[0] != `%50\% off\_now%` {
+		t.Errorf("bound keyword = %q, want %q", args[0], `%50\% off\_now%`)
+	}
+
+	query, args = buildSearchListingsQuery(SearchListingsParams{Location: `a\b%`, Limit: 20}, false)
+	if !strings.Contains(query, "addresses.location ILIKE $1 ESCAPE '\\'") {
+		t.Errorf("location clause has no ESCAPE: %s", query)
+	}
+	if args[0] != `%a\\b\%%` {
+		t.Errorf("bound location = %q, want %q", args[0], `%a\\b\%%`)
+	}
+}
+
+func TestEscapeLike(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"chanterelle", "chanterelle"},
+		{"50%", `50\%`},
+		{"wild_garlic", `wild\_garlic`},
+		{`back\slash`, `back\\slash`},
+	}
+
+	for _, tt := range tests {
+		if got := escapeLike(tt.in); got != tt.want {
+			t.Errorf("escapeLike(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
 func TestIsValidSort(t *testing.T) {
 	for _, key := range SortOptions() {
 		if !IsValidSort(key) {
