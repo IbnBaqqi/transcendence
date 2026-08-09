@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -14,8 +15,33 @@ type SearchListingsParams struct {
 	MinPrice string
 	MaxPrice string
 	Location string
+	Sort     string
 	Offset   int32
 	Limit    int32
+}
+
+var sortOptions = map[string]string{
+	"newest":     "listings.created_at DESC",
+	"oldest":     "listings.created_at ASC",
+	"price_asc":  "listings.price ASC",
+	"price_desc": "listings.price DESC",
+	// "rating_desc": "listings.rating DESC" — one line, once ratings exist
+}
+
+const DefaultSort = "newest"
+
+func IsValidSort(key string) bool {
+	_, ok := sortOptions[key]
+	return ok
+}
+
+func SortOptions() []string {
+	keys := make([]string, 0, len(sortOptions))
+	for key := range sortOptions {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string, []interface{}) {
@@ -61,7 +87,12 @@ func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string,
 	}
 
 	if !countOnly {
-		b.WriteString(" ORDER BY listings.created_at DESC")
+		order, ok := sortOptions[arg.Sort]
+		if !ok {
+			order = sortOptions[DefaultSort]
+		}
+		b.WriteString(" ORDER BY " + order + ", listings.id DESC")
+
 		p := next(arg.Limit)
 		b.WriteString(" LIMIT " + p)
 		p = next(arg.Offset)
