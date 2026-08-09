@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/google/uuid"
@@ -44,6 +45,10 @@ func checkParticipant(c database.Conversation, userID uuid.UUID) error {
 
 // checkCanDecide guards accept/decline: seller only, pending only.
 func checkCanDecide(c database.Conversation, userID uuid.UUID) error {
+	if err := checkParticipant(c, userID); err != nil {
+		return err
+	}
+
 	if c.SellerID != userID {
 		return &ForbiddenError{Message: "only the seller can answer a chat request"}
 	}
@@ -74,7 +79,7 @@ func validateMessageBody(body string) (string, error) {
 	if trimmed == "" {
 		return "", &ValidationError{Message: "message cannot be empty"}
 	}
-	if len(trimmed) > maxMessageLength {
+	if utf8.RuneCountInString(trimmed) > maxMessageLength {
 		return "", &ValidationError{Message: "message is too long"}
 	}
 	return trimmed, nil
@@ -237,7 +242,7 @@ func (s *ConversationService) SendMessage(
 
 	qtx := s.db.Queries.WithTx(tx.Tx)
 
-	conv, err := qtx.GetConversation(ctx, conversationID)
+	conv, err := qtx.GetConversationForUpdate(ctx, conversationID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return database.Message{}, &NotFoundError{Message: "conversation not found"}

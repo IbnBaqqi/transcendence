@@ -86,7 +86,7 @@ func TestCheckCanDecide(t *testing.T) {
 	}{
 		{"seller decides a pending request", conv(StatusPending), seller, errNone},
 		{"buyer may not decide", conv(StatusPending), buyer, errForbidden},
-		{"stranger may not decide", conv(StatusPending), stranger, errForbidden},
+		{"stranger sees a 404, not a 403", conv(StatusPending), stranger, errNotFound},
 		{"already accepted", conv(StatusAccepted), seller, errConflict},
 		{"already declined", conv(StatusDeclined), seller, errConflict},
 	}
@@ -109,6 +109,8 @@ func TestValidateMessageBody(t *testing.T) {
 		{"whitespace only", "   \n\t ", errValidation},
 		{"at the limit", strings.Repeat("a", maxMessageLength), errNone},
 		{"over the limit", strings.Repeat("a", maxMessageLength+1), errValidation},
+		{"non-ASCII at the limit", strings.Repeat("ä", maxMessageLength), errNone},
+		{"non-ASCII over the limit", strings.Repeat("ä", maxMessageLength+1), errValidation},
 	}
 
 	for _, tt := range tests {
