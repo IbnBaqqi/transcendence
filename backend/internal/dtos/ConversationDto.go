@@ -72,6 +72,10 @@ type ConversationListItem struct {
 	UpdatedAt    time.Time        `json:"updated_at"`
 }
 
+type UnreadCountResponse struct {
+	UnreadCount int64 `json:"unread_count"`
+}
+
 func toPresence(lastSeen sql.NullTime, showOnlineStatus bool) PresenceResponse {
 	if !showOnlineStatus || !lastSeen.Valid {
 		return PresenceResponse{}

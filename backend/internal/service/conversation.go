@@ -342,3 +342,31 @@ func (s *ConversationService) MarkRead(ctx context.Context, userID uuid.UUID, co
 func (s *ConversationService) CountUnread(ctx context.Context, userID uuid.UUID) (int64, error) {
 	return s.db.CountUnreadForUser(ctx, userID)
 }
+
+func (s *ConversationService) GetConversationDetail(
+	ctx context.Context,
+	userID uuid.UUID,
+	conversationID int32,
+) (database.Conversation, database.Listing, database.User, error) {
+	conv, err := s.GetConversation(ctx, userID, conversationID)
+	if err != nil {
+		return database.Conversation{}, database.Listing{}, database.User{}, err
+	}
+
+	listing, err := s.db.GetListing(ctx, conv.ListingID)
+	if err != nil {
+		return database.Conversation{}, database.Listing{}, database.User{}, err
+	}
+
+	otherID := conv.SellerID
+	if conv.SellerID == userID {
+		otherID = conv.BuyerID
+	}
+
+	other, err := s.db.GetUser(ctx, otherID)
+	if err != nil {
+		return database.Conversation{}, database.Listing{}, database.User{}, err
+	}
+
+	return conv, listing, other, nil
+}
