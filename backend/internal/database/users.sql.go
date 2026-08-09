@@ -136,6 +136,47 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const touchLastSeen = `-- name: TouchLastSeen :exec
+UPDATE users
+SET last_seen_at = CURRENT_TIMESTAMP
+WHERE id = $1
+`
+
+func (q *Queries) TouchLastSeen(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, touchLastSeen, id)
+	return err
+}
+
+const updateShowOnlineStatus = `-- name: UpdateShowOnlineStatus :one
+UPDATE users
+SET show_online_status = $2,
+  updated_at = now()
+WHERE id = $1
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status
+`
+
+type UpdateShowOnlineStatusParams struct {
+	ID               uuid.UUID
+	ShowOnlineStatus bool
+}
+
+func (q *Queries) UpdateShowOnlineStatus(ctx context.Context, arg UpdateShowOnlineStatusParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateShowOnlineStatus, arg.ID, arg.ShowOnlineStatus)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LastSeenAt,
+		&i.ShowOnlineStatus,
+	)
+	return i, err
+}
+
 const updateUser = `-- name: UpdateUser :exec
 UPDATE users
 SET username = $2,

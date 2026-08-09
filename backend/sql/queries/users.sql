@@ -29,3 +29,15 @@ WHERE id = $1;
 -- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1;
+
+-- name: TouchLastSeen :exec
+UPDATE users
+SET last_seen_at = CURRENT_TIMESTAMP
+WHERE id = $1;
+
+-- name: UpdateShowOnlineStatus :one
+UPDATE users
+SET show_online_status = $2,
+  updated_at = now()
+WHERE id = $1
+RETURNING *;
