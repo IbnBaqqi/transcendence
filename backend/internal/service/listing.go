@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
@@ -215,6 +216,16 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, &ValidationError{Message: "min_price must not exceed max_price"}
 	}
 
+	sortKey := q.Sort
+	if sortKey == "" {
+		sortKey = database.DefaultSort
+	}
+	if !database.IsValidSort(sortKey) {
+		return dtos.PaginatedListings{}, &ValidationError{
+			Message: "sort must be one of: " + strings.Join(database.SortOptions(), ", "),
+		}
+	}
+
 	offset := (page - 1) * limit
 	if offset < 0 || offset > math.MaxInt32 {
 		return dtos.PaginatedListings{}, &ValidationError{Message: "page is too large"}
@@ -224,6 +235,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		Keyword:  q.Keyword,
 		Category: q.Category,
 		Location: q.Location,
+		Sort:     sortKey,
 		Offset:   int32(offset),
 		Limit:    int32(limit),
 	}
