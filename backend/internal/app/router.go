@@ -3,12 +3,15 @@ package app
 import (
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/IbnBaqqi/transcendence/internal/handler"
 	mw "github.com/IbnBaqqi/transcendence/internal/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
+
+const presenceInterval = time.Minute
 
 // NewRouter takes *database.Queries so it can construct the listing handler
 func NewRouter(log *slog.Logger, appService *api) http.Handler {
@@ -20,6 +23,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.Listing,
 		appService.Order,
 		appService.Saved,
+		appService.Conversation,
+		appService.User,
 	)
 
 	r.Use(middleware.RequestID)
@@ -34,6 +39,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authenticate)
+		r.Use(mw.TouchLastSeen(appService.DB.Queries, presenceInterval))
 
 		r.Post("/auth/signup", h.Signup)
 		r.Post("/auth/login", h.Login)
@@ -51,6 +57,19 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/listings/{id}/save", h.SaveListing)
 			r.Delete("/listings/{id}/save", h.UnsaveListing)
 			r.Get("/me/saved", h.GetSavedListings)
+
+			r.Post("/conversations", h.StartConversation)
+			r.Get("/conversations", h.GetConversations)
+			r.Get("/conversations/{id}", h.GetConversation)
+			r.Post("/conversations/{id}/accept", h.AcceptConversation)
+			r.Post("/conversations/{id}/decline", h.DeclineConversation)
+			r.Get("/conversations/{id}/messages", h.GetMessages)
+			r.Post("/conversations/{id}/messages", h.SendMessage)
+			r.Post("/conversations/{id}/read", h.MarkConversationRead)
+
+			r.Get("/me/settings", h.GetSettings)
+			r.Patch("/me/settings", h.UpdateSettings)
+			r.Get("/me/unread", h.GetUnreadCount)
 
 			r.Post("/orders", h.CreateOrder)
 			r.Get("/orders", h.GetOrders)
