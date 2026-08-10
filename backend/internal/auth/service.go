@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -11,15 +12,12 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
-// Service contains all authentication business logic: input
-// validation, password hashing, credential verification, and token
-// issuance. It knows nothing about HTTP.
 type Service struct {
-	db  *database.Queries
+	db  *database.DB
 	jwt *JwtService
 }
 
-func NewService(db *database.Queries, jwt *JwtService) *Service {
+func NewService(db *database.DB, jwt *JwtService) *Service {
 	return &Service{
 		db:  db,
 		jwt: jwt,
@@ -61,12 +59,32 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 		return SignupResponse{}, errors.New("could not create user")
 	}
 
-	user, err := s.db.CreateUser(ctx, database.CreateUserParams{
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return SignupResponse{}, errors.New("could not create user")
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			slog.Error("signup transaction rollback failed", "error", err)
+		}
+	}()
+
+	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	user, err := qtx.CreateUser(ctx, database.CreateUserParams{
 		Username: input.Username,
 		Email:    input.Email,
 		Password: string(hashed),
 	})
 	if err != nil {
+		return SignupResponse{}, errors.New("could not create user")
+	}
+
+	if err := qtx.EnsureProfile(ctx, user.ID); err != nil {
+		return SignupResponse{}, errors.New("could not create user")
+	}
+
+	if err := tx.Commit(); err != nil {
 		return SignupResponse{}, errors.New("could not create user")
 	}
 
@@ -110,8 +128,6 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 		User:         toUserInfo(user),
 	}, nil
 }
-
-// --- Helpers ---
 
 func validateSignupInput(input dtos.CreateUserRequest) error {
 	if input.Username == "" {
