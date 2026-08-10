@@ -9,13 +9,14 @@
 // Zod is the default suggestion), and whoever does #47 will retrofit this.
 export default function Profile() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">Profile & settings</h1>
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <h1 className="text-foreground text-3xl font-bold">Profile & Settings</h1>
       <p className="text-muted mt-2">
         {/* TODO(#24): display name + bio form. The backend doesn't create a
             profiles row on signup yet, so there's nothing to load - hardcode
             values for now. */}
-        Profile & settings - not built yet (#24).
+        Under construction (#24).
+        <svg><use href="/icons.svg#profile-icon" width="32" height="32"/></svg>
       </p>
     </div>
   );
