@@ -95,6 +95,11 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("failed to create seed user %s: %w", u.Email, err)
 		}
+
+		if err := db.Queries.EnsureProfile(ctx, user.ID); err != nil {
+			return fmt.Errorf("failed to create seed profile for %s: %w", u.Email, err)
+		}
+
 		sellerIDs = append(sellerIDs, user.ID)
 	}
 
