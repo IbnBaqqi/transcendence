@@ -22,8 +22,8 @@ RETURNING id, firstname, lastname, bio, phone_number, date_of_birth
 
 type CreateProfileParams struct {
 	ID          uuid.UUID
-	Firstname   string
-	Lastname    string
+	Firstname   sql.NullString
+	Lastname    sql.NullString
 	Bio         sql.NullString
 	PhoneNumber sql.NullString
 	DateOfBirth sql.NullTime
@@ -57,6 +57,17 @@ WHERE id = $1
 
 func (q *Queries) DeleteProfile(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteProfile, id)
+	return err
+}
+
+const ensureProfile = `-- name: EnsureProfile :exec
+INSERT INTO profiles (id)
+VALUES ($1)
+ON CONFLICT (id) DO NOTHING
+`
+
+func (q *Queries) EnsureProfile(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, ensureProfile, id)
 	return err
 }
 
@@ -127,8 +138,8 @@ WHERE id = $1
 
 type UpdateProfileParams struct {
 	ID          uuid.UUID
-	Firstname   string
-	Lastname    string
+	Firstname   sql.NullString
+	Lastname    sql.NullString
 	Bio         sql.NullString
 	PhoneNumber sql.NullString
 	DateOfBirth sql.NullTime

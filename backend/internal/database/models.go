@@ -49,8 +49,8 @@ type Order struct {
 
 type Profile struct {
 	ID          uuid.UUID
-	Firstname   string
-	Lastname    string
+	Firstname   sql.NullString
+	Lastname    sql.NullString
 	Bio         sql.NullString
 	PhoneNumber sql.NullString
 	DateOfBirth sql.NullTime
