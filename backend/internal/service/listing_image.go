@@ -74,15 +74,63 @@ func (s *ListingImageService) AddImage(
 		return database.ListingImage{}, err
 	}
 
-	img, err := s.db.CreateListingImage(ctx, database.CreateListingImageParams{
-		ListingID: listingID,
-		Filename:  filename,
-	})
+	img, err := s.createImageRow(ctx, listingID, filename)
 	if err != nil {
 		if delErr := s.files.Delete(filename); delErr != nil {
 			slog.Error("orphaned upload: file written but row insert failed",
 				"filename", filename, "error", delErr)
 		}
+		return database.ListingImage{}, err
+	}
+
+	return img, nil
+}
+
+// createImageRow locks the listing so concurrent uploads can't read the same
+// position or slip past the per-listing cap.
+func (s *ListingImageService) createImageRow(
+	ctx context.Context,
+	listingID int32,
+	filename string,
+) (database.ListingImage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return database.ListingImage{}, err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			slog.Error("add image transaction rollback failed", "error", err)
+		}
+	}()
+
+	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	if _, err := qtx.GetListingForUpdate(ctx, listingID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return database.ListingImage{}, &NotFoundError{Message: "listing not found"}
+		}
+		return database.ListingImage{}, err
+	}
+
+	count, err := qtx.CountListingImages(ctx, listingID)
+	if err != nil {
+		return database.ListingImage{}, err
+	}
+	if count >= int64(s.maxPerListing) {
+		return database.ListingImage{}, &ConflictError{
+			Message: fmt.Sprintf("a listing can have at most %d images", s.maxPerListing),
+		}
+	}
+
+	img, err := qtx.CreateListingImage(ctx, database.CreateListingImageParams{
+		ListingID: listingID,
+		Filename:  filename,
+	})
+	if err != nil {
+		return database.ListingImage{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return database.ListingImage{}, err
 	}
 

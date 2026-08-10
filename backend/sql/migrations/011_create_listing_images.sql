@@ -4,7 +4,10 @@ CREATE TABLE IF NOT EXISTS listing_images (
     listing_id integer NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
     filename text NOT NULL UNIQUE,
     position integer NOT NULL DEFAULT 0,
-    created_at timestamp DEFAULT CURRENT_TIMESTAMP
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT listing_images_listing_position_uq
+        UNIQUE (listing_id, position) DEFERRABLE INITIALLY DEFERRED
 );
 
 CREATE INDEX idx_listing_images_listing_id ON listing_images(listing_id);
