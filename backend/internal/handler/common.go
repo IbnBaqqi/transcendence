@@ -21,14 +21,19 @@ func getUserID(r *http.Request) (uuid.UUID, error) {
 	return user.ID, nil
 }
 
-// parseIDParam reads the {id} segment out of the URL and converts it to int32.
-func parseIDParam(r *http.Request) (int32, error) {
-	idStr := chi.URLParam(r, "id")
+// parseInt32Param reads a named URL segment and converts it to int32.
+func parseInt32Param(r *http.Request, name string) (int32, error) {
+	idStr := chi.URLParam(r, name)
 	id, err := strconv.ParseInt(idStr, 10, 32)
 	if err != nil {
 		return 0, err
 	}
 	return int32(id), nil
+}
+
+// parseIDParam reads the {id} segment out of the URL and converts it to int32.
+func parseIDParam(r *http.Request) (int32, error) {
+	return parseInt32Param(r, "id")
 }
 
 func statusFromServiceError(err error) int {
