@@ -11,6 +11,8 @@ export default defineConfig({
     proxy: {
       // browser calls /api/ ... -> forwarded to the backend container
       "/api": { target: "http://backend:8080", changeOrigin: true },
+      // uploaded images live on the backend too
+      "/uploads": { target: "http://backend:8080", changeOrigin: true },
     },
   },
   test: {

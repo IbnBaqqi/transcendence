@@ -35,7 +35,8 @@ func TestToListingResponseJSON(t *testing.T) {
 	want := `{"id":1,"seller_id":"3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34",` +
 		`"title":"Golden Chanterelles","description":"","category":"mushrooms",` +
 		`"price":18,"quantity":4,"unit":"kg",` +
-		`"created_at":"1970-01-01T00:00:00Z","updated_at":"1970-01-01T00:00:00Z"}`
+		`"created_at":"1970-01-01T00:00:00Z","updated_at":"1970-01-01T00:00:00Z",` +
+		`"images":[]}`
 
 	if got != want {
 		t.Errorf("JSON shape changed\n got: %s\nwant: %s", got, want)

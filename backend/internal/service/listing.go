@@ -18,11 +18,12 @@ import (
 // ListingService contains the business logic for listings: validation,
 // ownership rules, and orchestration of database calls.
 type ListingService struct {
-	db *database.DB
+	db    *database.DB
+	files fileStore
 }
 
-func NewListingService(db *database.DB) *ListingService {
-	return &ListingService{db: db}
+func NewListingService(db *database.DB, files fileStore) *ListingService {
+	return &ListingService{db: db, files: files}
 }
 
 func validateListingInput(title, category, unit string, price float64, quantity int32) error {
@@ -159,11 +160,26 @@ func (s *ListingService) DeleteListing(ctx context.Context, userID uuid.UUID, li
 		return &ConflictError{Message: "this listing has orders and cannot be deleted; its order history has to be kept"}
 	}
 
+	filenames, err := qtx.DeleteImagesForListing(ctx, listingID)
+	if err != nil {
+		return err
+	}
+
 	if err := qtx.DeleteListing(ctx, listingID); err != nil {
 		return err
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	for _, name := range filenames {
+		if err := s.files.Delete(name); err != nil {
+			slog.Error("failed to delete image file", "filename", name, "error", err)
+		}
+	}
+
+	return nil
 }
 
 const (

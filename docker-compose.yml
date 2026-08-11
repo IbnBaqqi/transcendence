@@ -24,11 +24,13 @@ services:
     env_file: .env
     environment:
       DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      UPLOAD_DIR: /app/uploads
     command: go run ./cmd/server                              # plain go run (not reload)
     ports:
       - "8080:8080"
     volumes:
       - ./backend:/app                                        # live source
+      - uploads:/app/uploads                                  # images survive rebuilds
       - go-mod-cache:/go/pkg/mod                              # cache deps between runs
     depends_on:
       db:
@@ -50,3 +52,4 @@ services:
 volumes:
   postgres_data:
   go-mod-cache:
+  uploads:

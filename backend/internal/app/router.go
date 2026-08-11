@@ -3,7 +3,9 @@ package app
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
+	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/handler"
 	mw "github.com/IbnBaqqi/transcendence/internal/middleware"
 	"github.com/go-chi/chi/v5"
@@ -20,6 +22,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.Listing,
 		appService.Order,
 		appService.Saved,
+		appService.ListingImage,
+		appService.Upload.MaxBytes,
 	)
 
 	r.Use(middleware.RequestID)
@@ -32,6 +36,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 	r.Get("/health", h.Health)
 
+	r.Handle(dtos.UploadURLPrefix+"*", uploadFileServer(appService.Files.Dir()))
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authenticate)
 
@@ -42,6 +48,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		r.Get("/listings", h.GetListings)
 		r.Get("/listings/search", h.SearchListings)
 		r.Get("/listings/{id}", h.GetListing)
+		r.Get("/listings/{id}/images", h.GetListingImages)
 
 		r.Group(func(r chi.Router) {
 			r.Use(mw.RequiredAuth)
@@ -52,6 +59,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/listings/{id}/save", h.SaveListing)
 			r.Delete("/listings/{id}/save", h.UnsaveListing)
 			r.Get("/me/saved", h.GetSavedListings)
+			r.Post("/listings/{id}/images", h.UploadListingImage)
+			r.Delete("/listings/{id}/images/{imageID}", h.DeleteListingImage)
 
 			r.Post("/orders", h.CreateOrder)
 			r.Get("/orders", h.GetOrders)
@@ -67,4 +76,21 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	})
 
 	return r
+}
+
+// uploadFileServer serves stored files by bare filename, with no directory listing.
+func uploadFileServer(dir string) http.Handler {
+	fs := http.StripPrefix(dtos.UploadURLPrefix, http.FileServer(http.Dir(dir)))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		name := strings.TrimPrefix(r.URL.Path, dtos.UploadURLPrefix)
+		if name == "" || strings.Contains(name, "/") {
+			http.NotFound(w, r)
+			return
+		}
+
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+
+		fs.ServeHTTP(w, r)
+	})
 }
