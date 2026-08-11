@@ -31,6 +31,14 @@ type Listing struct {
 	UpdatedAt   sql.NullTime
 }
 
+type ListingImage struct {
+	ID        int32
+	ListingID int32
+	Filename  string
+	Position  int32
+	CreatedAt sql.NullTime
+}
+
 type Order struct {
 	ID                 int32
 	ListingID          int32
