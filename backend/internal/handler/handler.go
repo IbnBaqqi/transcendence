@@ -7,13 +7,14 @@ import (
 )
 
 type Handler struct {
-	db           *database.DB
-	Auth         *auth.Service
-	Listing      *service.ListingService
-	Order        *service.OrderService
-	Saved        *service.SavedListingService
-	Conversation *service.ConversationService
-	User         *service.UserService
+	db             *database.DB
+	Auth           *auth.Service
+	Listing        *service.ListingService
+	Order          *service.OrderService
+	Saved          *service.SavedListingService
+	ListingImage   *service.ListingImageService
+	maxUploadBytes int64
+  User         *service.UserService
 }
 
 func New(
@@ -22,6 +23,8 @@ func New(
 	listingService *service.ListingService,
 	orderService *service.OrderService,
 	savedService *service.SavedListingService,
+  listingImageService *service.ListingImageService,
+	maxUploadBytes int64,
 	conversationService *service.ConversationService,
 	userService *service.UserService,
 ) *Handler {
@@ -33,5 +36,7 @@ func New(
 		Saved:        savedService,
 		Conversation: conversationService,
 		User:         userService,
+    ListingImage:   listingImageService,
+		maxUploadBytes: maxUploadBytes,
 	}
 }

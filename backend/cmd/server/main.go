@@ -56,6 +56,11 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize app services: %w", err)
 	}
+	defer func() {
+		if err := appService.Files.Close(); err != nil {
+			log.Error("failed to close upload directory", "error", err)
+		}
+	}()
 
 	// Setup router
 	router := app.NewRouter(log, appService)

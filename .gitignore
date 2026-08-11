@@ -17,6 +17,7 @@ bin/
 *.test
 coverage.out
 coverage.html
+backend/uploads/
 
 # --- Node / frontend ---
 node_modules/

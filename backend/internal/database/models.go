@@ -48,6 +48,12 @@ type Message struct {
 	Body           string
 	ReadAt         sql.NullTime
 	CreatedAt      sql.NullTime
+type ListingImage struct {
+	ID        int32
+	ListingID int32
+	Filename  string
+	Position  int32
+	CreatedAt sql.NullTime
 }
 
 type Order struct {
