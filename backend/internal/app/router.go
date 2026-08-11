@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/handler"
 	mw "github.com/IbnBaqqi/transcendence/internal/middleware"
 	"github.com/go-chi/chi/v5"
@@ -35,7 +36,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 	r.Get("/health", h.Health)
 
-	r.Handle("/uploads/*", uploadFileServer(appService.Files.Dir()))
+	r.Handle(dtos.UploadURLPrefix+"*", uploadFileServer(appService.Files.Dir()))
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authenticate)
@@ -78,10 +79,10 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 // uploadFileServer serves stored files by bare filename, with no directory listing.
 func uploadFileServer(dir string) http.Handler {
-	fs := http.StripPrefix("/uploads/", http.FileServer(http.Dir(dir)))
+	fs := http.StripPrefix(dtos.UploadURLPrefix, http.FileServer(http.Dir(dir)))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		name := strings.TrimPrefix(r.URL.Path, "/uploads/")
+		name := strings.TrimPrefix(r.URL.Path, dtos.UploadURLPrefix)
 		if name == "" || strings.Contains(name, "/") {
 			http.NotFound(w, r)
 			return

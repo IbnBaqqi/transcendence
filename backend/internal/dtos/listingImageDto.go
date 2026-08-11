@@ -2,7 +2,7 @@ package dtos
 
 import "github.com/IbnBaqqi/transcendence/internal/database"
 
-// UpLoadURLPrefix is the public path the router serves uploaded files from.
+// UploadURLPrefix is the public path the router serves uploaded files from.
 const UploadURLPrefix = "/uploads/"
 
 // ListingImageResponse is the public JSON for one poto.

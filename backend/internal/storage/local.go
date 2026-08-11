@@ -40,6 +40,11 @@ func (l *Local) Dir() string {
 	return l.dir
 }
 
+// Close releases the directory handle opened by NewLocal.
+func (l *Local) Close() error {
+	return l.root.Close()
+}
+
 // Save streams r into a new file and returns the generated name.
 func (l *Local) Save(r io.Reader, ext string) (string, error) {
 	name := uuid.NewString() + ext
