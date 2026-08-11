@@ -292,10 +292,20 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, err
 	}
 
+	ids := make([]int32, 0, len(items))
+	for _, item := range items {
+		ids = append(ids, item.ID)
+	}
+
+	byListing, err := imagesByListing(ctx, s.db.Queries, ids)
+	if err != nil {
+		return dtos.PaginatedListings{}, err
+	}
+
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
 	return dtos.PaginatedListings{
-		Items:      dtos.ToListingResponses(items),
+		Items:      dtos.ToListingResponsesWithImages(items, byListing),
 		Total:      total,
 		Page:       page,
 		Limit:      limit,

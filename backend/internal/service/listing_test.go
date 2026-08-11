@@ -77,7 +77,7 @@ func TestSearchListingsRejectsBadInput(t *testing.T) {
 		{"location has a null byte", dtos.ListingSearchQuery{Location: "hel\x00sinki"}},
 	}
 
-	svc := NewListingService(nil)
+	svc := NewListingService(nil, nil)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
