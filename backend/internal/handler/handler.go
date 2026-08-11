@@ -12,9 +12,10 @@ type Handler struct {
 	Listing        *service.ListingService
 	Order          *service.OrderService
 	Saved          *service.SavedListingService
+	Conversation   *service.ConversationService
+	User           *service.UserService
 	ListingImage   *service.ListingImageService
 	maxUploadBytes int64
-  User         *service.UserService
 }
 
 func New(
@@ -23,20 +24,20 @@ func New(
 	listingService *service.ListingService,
 	orderService *service.OrderService,
 	savedService *service.SavedListingService,
-  listingImageService *service.ListingImageService,
-	maxUploadBytes int64,
 	conversationService *service.ConversationService,
 	userService *service.UserService,
+	listingImageService *service.ListingImageService,
+	maxUploadBytes int64,
 ) *Handler {
 	return &Handler{
-		db:           db,
-		Auth:         authService,
-		Listing:      listingService,
-		Order:        orderService,
-		Saved:        savedService,
-		Conversation: conversationService,
-		User:         userService,
-    ListingImage:   listingImageService,
+		db:             db,
+		Auth:           authService,
+		Listing:        listingService,
+		Order:          orderService,
+		Saved:          savedService,
+		Conversation:   conversationService,
+		User:           userService,
+		ListingImage:   listingImageService,
 		maxUploadBytes: maxUploadBytes,
 	}
 }

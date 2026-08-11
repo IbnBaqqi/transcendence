@@ -3,8 +3,8 @@ package app
 import (
 	"log/slog"
 	"net/http"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/handler"
