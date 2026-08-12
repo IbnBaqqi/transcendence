@@ -98,6 +98,36 @@ func TestCheckCanDecide(t *testing.T) {
 	}
 }
 
+func TestCheckCanSend(t *testing.T) {
+	buyer, seller, stranger := uuid.New(), uuid.New(), uuid.New()
+
+	conv := func(status string) database.Conversation {
+		return database.Conversation{BuyerID: buyer, SellerID: seller, Status: status}
+	}
+
+	tests := []struct {
+		name   string
+		conv   database.Conversation
+		userID uuid.UUID
+		want   string
+	}{
+		{"buyer sends in an accepted thread", conv(StatusAccepted), buyer, errNone},
+		{"seller sends in an accepted thread", conv(StatusAccepted), seller, errNone},
+		{"nobody sends while pending", conv(StatusPending), buyer, errConflict},
+		{"seller cannot send while pending either", conv(StatusPending), seller, errConflict},
+		{"declined stays closed", conv(StatusDeclined), buyer, errConflict},
+		{"declined stays closed for the seller too", conv(StatusDeclined), seller, errConflict},
+		{"stranger is hidden even when accepted", conv(StatusAccepted), stranger, errNotFound},
+		{"stranger is hidden while pending", conv(StatusPending), stranger, errNotFound},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertErrorKind(t, checkCanSend(tt.conv, tt.userID), tt.want)
+		})
+	}
+}
+
 func TestValidateMessageBody(t *testing.T) {
 	tests := []struct {
 		name string

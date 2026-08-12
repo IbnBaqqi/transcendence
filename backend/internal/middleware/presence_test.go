@@ -89,6 +89,30 @@ func TestTouchLastSeenWritesAgainAfterInterval(t *testing.T) {
 	}
 }
 
+// The throttle's real workload: presence fires on every request, so many can
+// hit shouldTouch at once. Run with -race — without the mutex around the map
+// this fails, and without the "reserve the slot while locked" behaviour the
+// count comes back higher than 1.
+func TestTouchLastSeenThrottlesUnderConcurrency(t *testing.T) {
+	store := &fakeStore{}
+	h := TouchLastSeen(store, time.Minute)(okHandler())
+	user := auth.User{ID: uuid.New()}
+
+	var wg sync.WaitGroup
+	for range 50 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			serve(h, &user)
+		}()
+	}
+	wg.Wait()
+
+	if got := store.count(); got != 1 {
+		t.Errorf("writes = %d, want 1 — 50 concurrent requests must still touch once", got)
+	}
+}
+
 func TestTouchLastSeenIgnoresAnonymous(t *testing.T) {
 	store := &fakeStore{}
 	h := TouchLastSeen(store, time.Minute)(okHandler())
