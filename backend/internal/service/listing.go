@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"math"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
@@ -184,13 +186,43 @@ const (
 	defaultPage  = 1
 	defaultLimit = 20
 	maxLimit     = 50
+
+	maxSearchTextLength = 200
 )
 
+func resolveSort(sortKey string) (string, error) {
+	if sortKey == "" {
+		return database.DefaultSort, nil
+	}
+	if !database.IsValidSort(sortKey) {
+		return "", &ValidationError{
+			Message: "sort must be one of: " + strings.Join(database.SortOptions(), ", "),
+		}
+	}
+	return sortKey, nil
+}
+
+func validateSearchText(values ...string) error {
+	for _, value := range values {
+		if !utf8.ValidString(value) || strings.ContainsRune(value, 0) {
+			return &ValidationError{Message: "search text must be valid UTF-8 without null bytes"}
+		}
+		if utf8.RuneCountInString(value) > maxSearchTextLength {
+			return &ValidationError{Message: "search text is too long"}
+		}
+	}
+	return nil
+}
+
 func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearchQuery) (dtos.PaginatedListings, error) {
+	if err := validateSearchText(q.Keyword, q.Category, q.Location); err != nil {
+		return dtos.PaginatedListings{}, err
+	}
+
 	page := defaultPage
 	if q.Page != "" {
 		p, err := strconv.Atoi(q.Page)
-		if err != nil || p < 1 {
+		if err != nil || p < 1 || p > math.MaxInt32 {
 			return dtos.PaginatedListings{}, &ValidationError{Message: "page must be a positive integer"}
 		}
 		page = p
@@ -213,7 +245,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 
 	if q.MinPrice != "" {
 		v, err := strconv.ParseFloat(q.MinPrice, 64)
-		if err != nil || v < 0 {
+		if err != nil || v < 0 || math.IsNaN(v) || math.IsInf(v, 0) {
 			return dtos.PaginatedListings{}, &ValidationError{Message: "min_price must be a non-negative number"}
 		}
 		minVal = v
@@ -221,7 +253,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 	}
 	if q.MaxPrice != "" {
 		v, err := strconv.ParseFloat(q.MaxPrice, 64)
-		if err != nil || v < 0 {
+		if err != nil || v < 0 || math.IsNaN(v) || math.IsInf(v, 0) {
 			return dtos.PaginatedListings{}, &ValidationError{Message: "max_price must be a non-negative number"}
 		}
 		maxVal = v
@@ -229,6 +261,11 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 	}
 	if minPrice.Valid && maxPrice.Valid && minVal > maxVal {
 		return dtos.PaginatedListings{}, &ValidationError{Message: "min_price must not exceed max_price"}
+	}
+
+	sortKey, err := resolveSort(q.Sort)
+	if err != nil {
+		return dtos.PaginatedListings{}, err
 	}
 
 	offset := (page - 1) * limit
@@ -240,6 +277,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		Keyword:  q.Keyword,
 		Category: q.Category,
 		Location: q.Location,
+		Sort:     sortKey,
 		Offset:   int32(offset),
 		Limit:    int32(limit),
 	}
@@ -259,10 +297,20 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, err
 	}
 
+	ids := make([]int32, 0, len(items))
+	for _, item := range items {
+		ids = append(ids, item.ID)
+	}
+
+	byListing, err := imagesByListing(ctx, s.db.Queries, ids)
+	if err != nil {
+		return dtos.PaginatedListings{}, err
+	}
+
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
 	return dtos.PaginatedListings{
-		Items:      dtos.ToListingResponses(items),
+		Items:      dtos.ToListingResponsesWithImages(items, byListing),
 		Total:      total,
 		Page:       page,
 		Limit:      limit,

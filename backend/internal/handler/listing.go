@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
@@ -135,13 +136,20 @@ func (h *Handler) SearchListings(w http.ResponseWriter, r *http.Request) {
 		MinPrice: q.Get("min_price"),
 		MaxPrice: q.Get("max_price"),
 		Location: q.Get("location"),
+		Sort:     q.Get("sort"),
 		Page:     q.Get("page"),
 		Limit:    q.Get("limit"),
 	}
 
 	result, err := h.Listing.SearchListings(r.Context(), query)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		status := statusFromServiceError(err)
+		if status >= http.StatusInternalServerError {
+			slog.Error("listing search failed", "error", err)
+			respondWithError(w, status, "could not search listings")
+			return
+		}
+		respondWithError(w, status, err.Error())
 		return
 	}
 
