@@ -36,7 +36,7 @@ export default function User() {
     <div className="mx-auto max-w-3xl px-4 py-8 space-y-5">
       <h1 className="text-foreground text-3xl font-bold">User Profile</h1>
       <div className="flex flex-row gap-4">
-        <div><Avatar size="md" initials="OR" /></div>
+        <div><Avatar size="lg" initials="OR" /></div>
         <div className="flex flex-col text-accent text-1xl">
           <div className="font-bold">Oscar Roff</div>
           {/* TODO(#): Hide email depending on preferences */}

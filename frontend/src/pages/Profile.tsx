@@ -23,7 +23,7 @@ export default function Profile() {
       <h1 className="text-foreground text-3xl font-bold">Profile & Settings</h1>
       {/* TODO(#): The backend doesn't create a profiles row on signup yet, so there's nothing to load - hardcoded values for now. */}
       <div className="flex flex-row gap-4">
-        <div><Avatar size="md" initials="OR" /></div>
+        <div><Avatar size="lg" initials="OR" editable /></div>
         <div className="flex flex-col text-accent text-1xl">
           <div className="font-bold">Oscar Roff</div>
           <div className="font-normal">oscarroff@gmail.com</div>
