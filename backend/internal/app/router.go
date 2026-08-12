@@ -4,16 +4,14 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/handler"
 	mw "github.com/IbnBaqqi/transcendence/internal/middleware"
+	"github.com/IbnBaqqi/transcendence/internal/presence"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
-
-const presenceInterval = time.Minute
 
 // NewRouter takes *database.Queries so it can construct the listing handler
 func NewRouter(log *slog.Logger, appService *api) http.Handler {
@@ -45,7 +43,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authenticate)
-		r.Use(mw.TouchLastSeen(appService.DB.Queries, presenceInterval))
+		r.Use(mw.TouchLastSeen(appService.DB.Queries, presence.Interval))
 
 		r.Post("/auth/signup", h.Signup)
 		r.Post("/auth/login", h.Login)

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/presence"
 	"github.com/google/uuid"
 )
 
@@ -83,7 +84,7 @@ func TestPresenceVisible(t *testing.T) {
 		},
 		{
 			name:       "just outside the window",
-			lastSeen:   sql.NullTime{Time: time.Now().Add(-onlineWindow - time.Second), Valid: true},
+			lastSeen:   sql.NullTime{Time: time.Now().Add(-presence.Window - time.Second), Valid: true},
 			wantOnline: false,
 			wantStamp:  true,
 		},

@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/presence"
 	"github.com/google/uuid"
 )
-
-const onlineWindow = 2 * time.Minute
 
 const (
 	RoleBuyer  = "buyer"
@@ -83,7 +82,7 @@ func toPresence(lastSeen sql.NullTime, showOnlineStatus bool) PresenceResponse {
 
 	seenAt := lastSeen.Time
 	return PresenceResponse{
-		IsOnline:   time.Since(seenAt) < onlineWindow,
+		IsOnline:   presence.IsOnline(seenAt, time.Now()),
 		LastSeenAt: &seenAt,
 	}
 }
