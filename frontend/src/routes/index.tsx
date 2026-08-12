@@ -22,6 +22,10 @@ export default function AppRouter() {
           <Route path="/search" element={<Search />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/user" element={<User />} />
+          {/*
+            /user is just a placeholder for now, we will replace with profileId
+            <Route path="/profile/:profileId" element={<User />} />
+          */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />

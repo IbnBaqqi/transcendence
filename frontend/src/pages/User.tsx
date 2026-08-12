@@ -3,12 +3,33 @@
 // Currently accessible at localhost:5173/user but needs to exist at a unique
 // URL for each user
 
+import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import Avatar from "../components/Avatar.tsx"
 import Mailto from "../components/Mailto.tsx"
 import { useListings } from "../api/listings";
 import { ListingCard } from "../components/ListingCard";
 
 export default function User() {
+  {/*
+    Following code for unqiue profile page URLs
+
+    const { profileId } = useParams<{ profileId: string }>();
+
+    // "jane-doe-a1b2c3" -> "a1b2c3"
+    const id = profileId?.split("-").pop();
+
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+      fetch(`/api/users/${id}`)
+        .then((res) => res.json())
+        .then(setUser);
+    }, [id]);
+
+    if (!user) return <div>Loading...</div>;
+  */}
+
   {/* TODO(#): Placeholder, needs to pull only user's listings */}
   const { data: listings, isPending, isError } = useListings();
   return (
