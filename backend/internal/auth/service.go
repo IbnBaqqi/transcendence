@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -11,15 +12,12 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
-// Service contains all authentication business logic: input
-// validation, password hashing, credential verification, and token
-// issuance. It knows nothing about HTTP.
 type Service struct {
-	db  *database.Queries
+	db  *database.DB
 	jwt *JwtService
 }
 
-func NewService(db *database.Queries, jwt *JwtService) *Service {
+func NewService(db *database.DB, jwt *JwtService) *Service {
 	return &Service{
 		db:  db,
 		jwt: jwt,
@@ -40,6 +38,12 @@ type LoginResult struct {
 	User         dtos.UserInfo
 }
 
+// signupFailed logs why signup failed and returns the message the client sees.
+func signupFailed(step string, err error) error {
+	slog.Error("signup failed", "step", step, "error", err)
+	return errors.New("could not create user")
+}
+
 // Signup validates input, checks for duplicate email, hashes the
 // password, creates the user, and issues tokens.
 func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (SignupResponse, error) {
@@ -53,25 +57,46 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 		return SignupResponse{}, &ConflictError{Message: "email already in use"}
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
-		return SignupResponse{}, errors.New("could not create user")
+		return SignupResponse{}, signupFailed("look up email", err)
 	}
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return SignupResponse{}, errors.New("could not create user")
+		return SignupResponse{}, signupFailed("hash password", err)
 	}
 
-	user, err := s.db.CreateUser(ctx, database.CreateUserParams{
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return SignupResponse{}, signupFailed("begin transaction", err)
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			slog.Error("signup transaction rollback failed", "error", err)
+		}
+	}()
+
+	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	user, err := qtx.CreateUser(ctx, database.CreateUserParams{
 		Username: input.Username,
 		Email:    input.Email,
 		Password: string(hashed),
 	})
 	if err != nil {
-		return SignupResponse{}, errors.New("could not create user")
+		return SignupResponse{}, signupFailed("create user", err)
+	}
+
+	if err := qtx.EnsureProfile(ctx, user.ID); err != nil {
+		return SignupResponse{}, signupFailed("create profile", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return SignupResponse{}, signupFailed("commit", err)
 	}
 
 	accessToken, err := s.jwt.IssueAccessToken(user)
 	if err != nil {
+		slog.Error("signup failed", "step", "issue token", "error", err)
 		return SignupResponse{}, errors.New("could not issue token")
 	}
 
@@ -90,8 +115,6 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 
 	user, err := s.db.GetUserByEmail(ctx, input.Email)
 	if err != nil {
-		// Deliberate: same message for unknown email and wrong password
-		// to avoid leaking which emails are registered.
 		return LoginResult{}, &AuthError{Message: "invalid email or password"}
 	}
 
@@ -101,6 +124,7 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 
 	accessToken, err := s.jwt.IssueAccessToken(user)
 	if err != nil {
+		slog.Error("login failed", "step", "issue token", "error", err)
 		return LoginResult{}, errors.New("could not issue token")
 	}
 
@@ -110,8 +134,6 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 		User:         toUserInfo(user),
 	}, nil
 }
-
-// --- Helpers ---
 
 func validateSignupInput(input dtos.CreateUserRequest) error {
 	if input.Username == "" {

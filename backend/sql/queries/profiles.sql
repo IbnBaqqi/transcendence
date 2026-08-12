@@ -26,3 +26,8 @@ WHERE id = $1;
 -- name: DeleteProfile :exec
 DELETE FROM profiles
 WHERE id = $1;
+
+-- name: EnsureProfile :exec
+INSERT INTO profiles (id)
+VALUES ($1)
+ON CONFLICT (id) DO NOTHING;
