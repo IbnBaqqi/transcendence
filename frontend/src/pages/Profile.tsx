@@ -1,4 +1,4 @@
-// Stub for #24.
+// Hard coded profile & settings page #24
 //
 // Scope reminder (also on the issue): display name + bio are buildable now.
 // Avatar upload needs #14, password change needs auth (#32/#33), payout
@@ -8,17 +8,20 @@
 // Don't add a form library here: #47 hasn't picked one yet (React Hook Form +
 // Zod is the default suggestion), and whoever does #47 will retrofit this.
 //
+// N.B. This page is only viewable for the logged in user of the same profile
+// To view another user's profile we have User.tsx
 import Avatar from "../components/Avatar.tsx"
 import Button from "../components/Button.tsx"
+import Toggle from "../components/Toggle.tsx"
+import { useState } from "react";
 
 export default function Profile() {
+  const [marketing, setMarketing] = useState(false);
+  const [hideDetails, setHideDetails] = useState(false);
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 space-y-5">
       <h1 className="text-foreground text-3xl font-bold">Profile & Settings</h1>
-      {/* TODO(#24): display name + bio form. The backend doesn't create a
-          profiles row on signup yet, so there's nothing to load - hardcode
-          values for now. */}
-      {/* Tailwind alternative to inline-block is flex */}
+      {/* TODO(#): The backend doesn't create a profiles row on signup yet, so there's nothing to load - hardcoded values for now. */}
       <div className="flex flex-row gap-4">
         <div><Avatar size="md" initials="OR" /></div>
         <div className="flex flex-col text-accent text-1xl">
@@ -29,15 +32,28 @@ export default function Profile() {
       <div className="space-y-1">
         <h2 className="text-foreground text-1.5xl font-bold">Contact Details</h2>
         <div className="flex flex-row gap-4">
-          <div>First Name</div>
-          <div>Last Name</div>
-          <div>Telephone Number</div>
-          <div>Location</div>
+          <div className="flex flex-col">
+            <div className="text-muted">First Name</div>
+            <div>Oscar</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-muted">Last Name</div>
+            <div>Roff</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-muted">Telephone</div>
+            <div>1234567890</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-muted">Location</div>
+            <div>Open Maps integration?</div>
+          </div>
         </div>
         <div className="flex flex-row gap-2">
           <Button variant="primary" onClick={() => console.log("edit!")}>
             Edit Details
           </Button>
+          {/* TODO(#): Using states, once forms are live we can make cancel only appear if user is in edit mode */}
           <Button variant="secondary" onClick={() => console.log("cancel!")}>
             Cancel
           </Button>
@@ -71,9 +87,24 @@ export default function Profile() {
           </Button>
         </div>
       </div>
-        {/*<svg><use href="/icons.svg#profile-icon" width="32" height="32"/></svg>*/}
-      <p className="text-muted mt-2">
-      </p>
+      <div className="space-y-1">
+        <h2 className="text-foreground text-1.5xl font-bold">Preferences</h2>
+        <div className="flex flex-row gap-6">
+          <Toggle checked={marketing} onChange={setMarketing} label="Receive marketing emails from us" />
+          <Toggle checked={hideDetails} onChange={setHideDetails} label="Show only first name and initials to other users" />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <h2 className="text-foreground text-1.5xl font-bold">Account Deletion</h2>
+        <div className="flex flex-row gap-2">
+          <Button variant="primary" onClick={() => console.log("edit!")}>
+            Delete Account
+          </Button>
+          <Button variant="secondary" onClick={() => console.log("cancel!")}>
+            Cancel
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
