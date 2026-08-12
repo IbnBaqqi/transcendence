@@ -5,6 +5,7 @@ import Home from "../pages/Home";
 import ListingDetail from "../pages/ListingDetail";
 import Search from "../pages/Search";
 import Profile from "../pages/Profile";
+import User from "../pages/User";
 import Dashboard from "../pages/Dashboard";
 import Privacy from "../pages/Privacy";
 import Terms from "../pages/Terms";
@@ -20,6 +21,7 @@ export default function AppRouter() {
           <Route path="/listings/:id" element={<ListingDetail />} />
           <Route path="/search" element={<Search />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/user" element={<User />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />

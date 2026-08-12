@@ -1,0 +1,74 @@
+// This is a stub for #
+//
+// Currently accessible at localhost:5173/user but needs to exist at a unique
+// URL for each user
+
+import Avatar from "../components/Avatar.tsx"
+import Mailto from "../components/Mailto.tsx"
+import { useListings } from "../api/listings";
+import { ListingCard } from "../components/ListingCard";
+
+export default function User() {
+  {/* TODO(#): Placeholder, needs to pull only user's listings */}
+  const { data: listings, isPending, isError } = useListings();
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8 space-y-5">
+      <h1 className="text-foreground text-3xl font-bold">User Profile</h1>
+      <div className="flex flex-row gap-4">
+        <div><Avatar size="md" initials="OR" /></div>
+        <div className="flex flex-col text-accent text-1xl">
+          <div className="font-bold">Oscar Roff</div>
+          {/* TODO(#): Hide email depending on preferences */}
+          <Mailto label="oscarroff@example.com" mailto="mailto:oscarroff@example.com" />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <h2 className="text-foreground text-1.5xl font-bold">Contact Details</h2>
+        <div className="flex flex-row gap-4">
+          <div className="flex flex-col">
+            <div className="text-muted">First Name</div>
+            <div>Oscar</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-muted">Last Name</div>
+            <div>Roff</div>
+          </div>
+          {/* TODO(#): Hide remaining details depending on preferences */}
+          <div className="flex flex-col">
+            <div className="text-muted">Telephone</div>
+            <div>1234567890</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-muted">Location</div>
+            {/* TODO(#): Open Maps integration? */}
+            <div>Helsinki</div>
+          </div>
+        </div>
+        <div className="flex flex-row gap-2">
+        </div>
+      </div>
+      <div className="space-y-1">
+        <h2 className="text-foreground text-1.5xl font-bold">Bio</h2>
+        <div className="">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Fusce auctor at fringilla aliquam massa iaculis et ad potenti cras purus. Curabitur himenaeos maximus viverra iaculis consectetur a enim. Magna in augue viverra primis aenean magna magna donec et quisque hendrerit etiam. Ullamcorper fames varius elementum sagittis elementum vitae eu inceptos quam imperdiet. A conubia aliquet libero molestie ultricies sagittis quam nostra cubilia elementum amet porta.
+        </div>
+      </div>
+      <div className="space-y-1">
+        <h2 className="text-foreground text-1.5xl font-bold">Listings</h2>
+        {/* TODO(#): Placeholder, format, length etc. to be decided later */}
+        <p role="status" aria-live="polite" className="text-muted mt-4">
+          {isPending && "Loading..."}
+          {isError && "Couldn't load listings. Try again."}
+          {listings?.length === 0 && "No listings yet!"}
+        </p>
+        {listings && listings.length > 0 && (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {listings.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
