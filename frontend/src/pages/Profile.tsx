@@ -20,7 +20,7 @@ export default function Profile() {
           values for now. */}
       {/* Tailwind alternative to inline-block is flex */}
       <div className="flex flex-row gap-4">
-        <div><Avatar /></div>
+        <div><Avatar size="md" initials="OR" /></div>
         <div className="flex flex-col text-accent text-1xl">
           <div className="font-bold">Oscar Roff</div>
           <div className="font-normal">oscarroff@gmail.com</div>
