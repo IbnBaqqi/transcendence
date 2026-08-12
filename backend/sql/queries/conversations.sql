@@ -1,6 +1,6 @@
 -- name: CreateConversation :one
-INSERT INTO conversations (listing_id, buyer_id, seller_id)
-VALUES ($1, $2, $3)
+INSERT INTO conversations (listing_id, listing_title, buyer_id, seller_id)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- name: GetConversation :one
@@ -26,8 +26,7 @@ WHERE id = $1;
 
 -- name: ListConversationsForUser :many
 SELECT
-    c.id, c.listing_id, c.buyer_id, c.seller_id, c.status, c.created_at, c.updated_at,
-    l.title                 AS listing_title,
+    c.id, c.listing_id, c.listing_title, c.buyer_id, c.seller_id, c.status, c.created_at, c.updated_at,
     u.id                    AS other_user_id,
     u.username              AS other_username,
     u.last_seen_at          AS other_last_seen_at,
@@ -40,7 +39,6 @@ SELECT
           AND m.sender_id <> sqlc.arg(user_id)
           AND m.read_at IS NULL) AS unread_count
 FROM conversations c
-JOIN listings l ON l.id = c.listing_id
 JOIN users u ON u.id = CASE WHEN c.buyer_id = sqlc.arg(user_id)
                             THEN c.seller_id
                             ELSE c.buyer_id END

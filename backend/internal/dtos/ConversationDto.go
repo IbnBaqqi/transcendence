@@ -51,7 +51,7 @@ type MessagePreview struct {
 
 type ConversationResponse struct {
 	ID           int32            `json:"id"`
-	ListingID    int32            `json:"listing_id"`
+	ListingID    *int32           `json:"listing_id"`
 	ListingTitle string           `json:"listing_title"`
 	Status       string           `json:"status"`
 	Role         string           `json:"role"`
@@ -62,7 +62,7 @@ type ConversationResponse struct {
 
 type ConversationListItem struct {
 	ID           int32            `json:"id"`
-	ListingID    int32            `json:"listing_id"`
+	ListingID    *int32           `json:"listing_id"`
 	ListingTitle string           `json:"listing_title"`
 	Status       string           `json:"status"`
 	Role         string           `json:"role"`
@@ -95,6 +95,14 @@ func roleFor(buyerID, viewerID uuid.UUID) string {
 	return RoleSeller
 }
 
+func nullInt32Ptr(v sql.NullInt32) *int32 {
+	if !v.Valid {
+		return nil
+	}
+	id := v.Int32
+	return &id
+}
+
 func nullTimePtr(t sql.NullTime) *time.Time {
 	if !t.Valid {
 		return nil
@@ -124,14 +132,13 @@ func ToMessageResponses(rows []database.Message) []MessageResponse {
 
 func ToConversationResponse(
 	c database.Conversation,
-	listingTitle string,
 	other database.User,
 	viewerID uuid.UUID,
 ) ConversationResponse {
 	return ConversationResponse{
 		ID:           c.ID,
-		ListingID:    c.ListingID,
-		ListingTitle: listingTitle,
+		ListingID:    nullInt32Ptr(c.ListingID),
+		ListingTitle: c.ListingTitle,
 		Status:       c.Status,
 		Role:         roleFor(c.BuyerID, viewerID),
 		OtherUser: ChatUserResponse{
@@ -147,7 +154,7 @@ func ToConversationResponse(
 func ToConversationListItem(row database.ListConversationsForUserRow, viewerID uuid.UUID) ConversationListItem {
 	item := ConversationListItem{
 		ID:           row.ID,
-		ListingID:    row.ListingID,
+		ListingID:    nullInt32Ptr(row.ListingID),
 		ListingTitle: row.ListingTitle,
 		Status:       row.Status,
 		Role:         roleFor(row.BuyerID, viewerID),

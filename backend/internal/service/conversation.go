@@ -134,9 +134,10 @@ func (s *ConversationService) StartConversation(
 	}
 
 	conv, err := qtx.CreateConversation(ctx, database.CreateConversationParams{
-		ListingID: listingID,
-		BuyerID:   buyerID,
-		SellerID:  listing.SellerID,
+		ListingID:    sql.NullInt32{Int32: listingID, Valid: true},
+		ListingTitle: listing.Title,
+		BuyerID:      buyerID,
+		SellerID:     listing.SellerID,
 	})
 	if err != nil {
 		if isUniqueViolation(err, "conversations_listing_buyer_uq") {
@@ -352,15 +353,10 @@ func (s *ConversationService) GetConversationDetail(
 	ctx context.Context,
 	userID uuid.UUID,
 	conversationID int32,
-) (database.Conversation, database.Listing, database.User, error) {
+) (database.Conversation, database.User, error) {
 	conv, err := s.GetConversation(ctx, userID, conversationID)
 	if err != nil {
-		return database.Conversation{}, database.Listing{}, database.User{}, err
-	}
-
-	listing, err := s.db.GetListing(ctx, conv.ListingID)
-	if err != nil {
-		return database.Conversation{}, database.Listing{}, database.User{}, err
+		return database.Conversation{}, database.User{}, err
 	}
 
 	otherID := conv.SellerID
@@ -370,8 +366,8 @@ func (s *ConversationService) GetConversationDetail(
 
 	other, err := s.db.GetUser(ctx, otherID)
 	if err != nil {
-		return database.Conversation{}, database.Listing{}, database.User{}, err
+		return database.Conversation{}, database.User{}, err
 	}
 
-	return conv, listing, other, nil
+	return conv, other, nil
 }

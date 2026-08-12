@@ -23,13 +23,14 @@ func userWithPresence(lastSeen sql.NullTime, show bool) database.User {
 func conversationFor(buyer, seller uuid.UUID) database.Conversation {
 	now := sql.NullTime{Time: time.Unix(0, 0).UTC(), Valid: true}
 	return database.Conversation{
-		ID:        1,
-		ListingID: 7,
-		BuyerID:   buyer,
-		SellerID:  seller,
-		Status:    "accepted",
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:           1,
+		ListingID:    sql.NullInt32{Int32: 7, Valid: true},
+		ListingTitle: "Chanterelles",
+		BuyerID:      buyer,
+		SellerID:     seller,
+		Status:       "accepted",
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 }
 
@@ -39,7 +40,6 @@ func TestPresenceHiddenLeavesNoTimestampInJSON(t *testing.T) {
 
 	res := ToConversationResponse(
 		conversationFor(buyer, seller),
-		"Chanterelles",
 		userWithPresence(seenNow, false),
 		buyer,
 	)
@@ -99,7 +99,6 @@ func TestPresenceVisible(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res := ToConversationResponse(
 				conversationFor(buyer, seller),
-				"Chanterelles",
 				userWithPresence(tt.lastSeen, true),
 				buyer,
 			)
@@ -114,15 +113,39 @@ func TestPresenceVisible(t *testing.T) {
 	}
 }
 
+func TestConversationSurvivesADeletedListing(t *testing.T) {
+	buyer, seller := uuid.New(), uuid.New()
+
+	conv := conversationFor(buyer, seller)
+	conv.ListingID = sql.NullInt32{}
+
+	res := ToConversationResponse(conv, userWithPresence(sql.NullTime{}, true), buyer)
+
+	if res.ListingID != nil {
+		t.Errorf("listing_id = %v, want nil", *res.ListingID)
+	}
+	if res.ListingTitle != "Chanterelles" {
+		t.Errorf("listing_title = %q, want the snapshot to survive", res.ListingTitle)
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+	if !strings.Contains(string(b), `"listing_id":null`) {
+		t.Errorf("want listing_id null, got %s", b)
+	}
+}
+
 func TestConversationRoleFollowsViewer(t *testing.T) {
 	buyer, seller := uuid.New(), uuid.New()
 	conv := conversationFor(buyer, seller)
 	other := userWithPresence(sql.NullTime{}, true)
 
-	if got := ToConversationResponse(conv, "t", other, buyer).Role; got != RoleBuyer {
+	if got := ToConversationResponse(conv, other, buyer).Role; got != RoleBuyer {
 		t.Errorf("role = %q, want %q", got, RoleBuyer)
 	}
-	if got := ToConversationResponse(conv, "t", other, seller).Role; got != RoleSeller {
+	if got := ToConversationResponse(conv, other, seller).Role; got != RoleSeller {
 		t.Errorf("role = %q, want %q", got, RoleSeller)
 	}
 }

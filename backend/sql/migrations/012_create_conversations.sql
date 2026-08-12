@@ -1,7 +1,8 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS conversations (
     id serial PRIMARY KEY,
-    listing_id integer NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+    listing_id integer REFERENCES listings(id) ON DELETE SET NULL,
+    listing_title text NOT NULL,
     buyer_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     seller_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     status text NOT NULL DEFAULT 'pending'

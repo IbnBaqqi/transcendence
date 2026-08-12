@@ -13,23 +13,30 @@ import (
 )
 
 const createConversation = `-- name: CreateConversation :one
-INSERT INTO conversations (listing_id, buyer_id, seller_id)
-VALUES ($1, $2, $3)
-RETURNING id, listing_id, buyer_id, seller_id, status, created_at, updated_at
+INSERT INTO conversations (listing_id, listing_title, buyer_id, seller_id)
+VALUES ($1, $2, $3, $4)
+RETURNING id, listing_id, listing_title, buyer_id, seller_id, status, created_at, updated_at
 `
 
 type CreateConversationParams struct {
-	ListingID int32
-	BuyerID   uuid.UUID
-	SellerID  uuid.UUID
+	ListingID    sql.NullInt32
+	ListingTitle string
+	BuyerID      uuid.UUID
+	SellerID     uuid.UUID
 }
 
 func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversationParams) (Conversation, error) {
-	row := q.db.QueryRowContext(ctx, createConversation, arg.ListingID, arg.BuyerID, arg.SellerID)
+	row := q.db.QueryRowContext(ctx, createConversation,
+		arg.ListingID,
+		arg.ListingTitle,
+		arg.BuyerID,
+		arg.SellerID,
+	)
 	var i Conversation
 	err := row.Scan(
 		&i.ID,
 		&i.ListingID,
+		&i.ListingTitle,
 		&i.BuyerID,
 		&i.SellerID,
 		&i.Status,
@@ -40,7 +47,7 @@ func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversation
 }
 
 const getConversation = `-- name: GetConversation :one
-SELECT id, listing_id, buyer_id, seller_id, status, created_at, updated_at FROM conversations
+SELECT id, listing_id, listing_title, buyer_id, seller_id, status, created_at, updated_at FROM conversations
 WHERE id = $1
 `
 
@@ -50,6 +57,7 @@ func (q *Queries) GetConversation(ctx context.Context, id int32) (Conversation, 
 	err := row.Scan(
 		&i.ID,
 		&i.ListingID,
+		&i.ListingTitle,
 		&i.BuyerID,
 		&i.SellerID,
 		&i.Status,
@@ -60,7 +68,7 @@ func (q *Queries) GetConversation(ctx context.Context, id int32) (Conversation, 
 }
 
 const getConversationForUpdate = `-- name: GetConversationForUpdate :one
-SELECT id, listing_id, buyer_id, seller_id, status, created_at, updated_at FROM conversations
+SELECT id, listing_id, listing_title, buyer_id, seller_id, status, created_at, updated_at FROM conversations
 WHERE id = $1
 FOR UPDATE
 `
@@ -71,6 +79,7 @@ func (q *Queries) GetConversationForUpdate(ctx context.Context, id int32) (Conve
 	err := row.Scan(
 		&i.ID,
 		&i.ListingID,
+		&i.ListingTitle,
 		&i.BuyerID,
 		&i.SellerID,
 		&i.Status,
@@ -82,8 +91,7 @@ func (q *Queries) GetConversationForUpdate(ctx context.Context, id int32) (Conve
 
 const listConversationsForUser = `-- name: ListConversationsForUser :many
 SELECT
-    c.id, c.listing_id, c.buyer_id, c.seller_id, c.status, c.created_at, c.updated_at,
-    l.title                 AS listing_title,
+    c.id, c.listing_id, c.listing_title, c.buyer_id, c.seller_id, c.status, c.created_at, c.updated_at,
     u.id                    AS other_user_id,
     u.username              AS other_username,
     u.last_seen_at          AS other_last_seen_at,
@@ -96,7 +104,6 @@ SELECT
           AND m.sender_id <> $1
           AND m.read_at IS NULL) AS unread_count
 FROM conversations c
-JOIN listings l ON l.id = c.listing_id
 JOIN users u ON u.id = CASE WHEN c.buyer_id = $1
                             THEN c.seller_id
                             ELSE c.buyer_id END
@@ -113,13 +120,13 @@ ORDER BY c.updated_at DESC NULLS LAST
 
 type ListConversationsForUserRow struct {
 	ID                    int32
-	ListingID             int32
+	ListingID             sql.NullInt32
+	ListingTitle          string
 	BuyerID               uuid.UUID
 	SellerID              uuid.UUID
 	Status                string
 	CreatedAt             sql.NullTime
 	UpdatedAt             sql.NullTime
-	ListingTitle          string
 	OtherUserID           uuid.UUID
 	OtherUsername         string
 	OtherLastSeenAt       sql.NullTime
@@ -141,12 +148,12 @@ func (q *Queries) ListConversationsForUser(ctx context.Context, userID uuid.UUID
 		if err := rows.Scan(
 			&i.ID,
 			&i.ListingID,
+			&i.ListingTitle,
 			&i.BuyerID,
 			&i.SellerID,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.ListingTitle,
 			&i.OtherUserID,
 			&i.OtherUsername,
 			&i.OtherLastSeenAt,
@@ -184,7 +191,7 @@ UPDATE conversations
 SET status = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, listing_id, buyer_id, seller_id, status, created_at, updated_at
+RETURNING id, listing_id, listing_title, buyer_id, seller_id, status, created_at, updated_at
 `
 
 type UpdateConversationStatusParams struct {
@@ -198,6 +205,7 @@ func (q *Queries) UpdateConversationStatus(ctx context.Context, arg UpdateConver
 	err := row.Scan(
 		&i.ID,
 		&i.ListingID,
+		&i.ListingTitle,
 		&i.BuyerID,
 		&i.SellerID,
 		&i.Status,

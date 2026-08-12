@@ -19,13 +19,14 @@ type Address struct {
 }
 
 type Conversation struct {
-	ID        int32
-	ListingID int32
-	BuyerID   uuid.UUID
-	SellerID  uuid.UUID
-	Status    string
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	ID           int32
+	ListingID    sql.NullInt32
+	ListingTitle string
+	BuyerID      uuid.UUID
+	SellerID     uuid.UUID
+	Status       string
+	CreatedAt    sql.NullTime
+	UpdatedAt    sql.NullTime
 }
 
 type Listing struct {

@@ -187,13 +187,13 @@ func (h *Handler) respondWithConversation(
 	conversationID int32,
 	status int,
 ) {
-	conv, listing, other, err := h.Conversation.GetConversationDetail(r.Context(), userID, conversationID)
+	conv, other, err := h.Conversation.GetConversationDetail(r.Context(), userID, conversationID)
 	if err != nil {
 		respondWithError(w, statusFromServiceError(err), err.Error())
 		return
 	}
 
-	respondWithJSON(w, status, dtos.ToConversationResponse(conv, listing.Title, other, userID))
+	respondWithJSON(w, status, dtos.ToConversationResponse(conv, other, userID))
 }
 
 func parseOptionalInt32(raw string) (int32, error) {
