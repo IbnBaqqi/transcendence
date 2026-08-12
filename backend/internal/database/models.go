@@ -18,6 +18,17 @@ type Address struct {
 	UpdatedAt sql.NullTime
 }
 
+type Conversation struct {
+	ID           int32
+	ListingID    sql.NullInt32
+	ListingTitle string
+	BuyerID      uuid.UUID
+	SellerID     uuid.UUID
+	Status       string
+	CreatedAt    sql.NullTime
+	UpdatedAt    sql.NullTime
+}
+
 type Listing struct {
 	ID          int32
 	SellerID    uuid.UUID
@@ -37,6 +48,15 @@ type ListingImage struct {
 	Filename  string
 	Position  int32
 	CreatedAt sql.NullTime
+}
+
+type Message struct {
+	ID             int32
+	ConversationID int32
+	SenderID       uuid.UUID
+	Body           string
+	ReadAt         sql.NullTime
+	CreatedAt      sql.NullTime
 }
 
 type Order struct {
@@ -71,11 +91,13 @@ type SavedListing struct {
 }
 
 type User struct {
-	ID        uuid.UUID
-	Email     string
-	Username  string
-	Password  string
-	Role      string
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	ID               uuid.UUID
+	Email            string
+	Username         string
+	Password         string
+	Role             string
+	CreatedAt        sql.NullTime
+	UpdatedAt        sql.NullTime
+	LastSeenAt       sql.NullTime
+	ShowOnlineStatus bool
 }

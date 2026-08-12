@@ -8,6 +8,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/handler"
 	mw "github.com/IbnBaqqi/transcendence/internal/middleware"
+	"github.com/IbnBaqqi/transcendence/internal/presence"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -22,6 +23,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.Listing,
 		appService.Order,
 		appService.Saved,
+		appService.Conversation,
+		appService.User,
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
 	)
@@ -40,6 +43,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authenticate)
+		r.Use(mw.TouchLastSeen(appService.DB.Queries, presence.Interval))
 
 		r.Post("/auth/signup", h.Signup)
 		r.Post("/auth/login", h.Login)
@@ -61,6 +65,19 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Get("/me/saved", h.GetSavedListings)
 			r.Post("/listings/{id}/images", h.UploadListingImage)
 			r.Delete("/listings/{id}/images/{imageID}", h.DeleteListingImage)
+
+			r.Post("/conversations", h.StartConversation)
+			r.Get("/conversations", h.GetConversations)
+			r.Get("/conversations/{id}", h.GetConversation)
+			r.Post("/conversations/{id}/accept", h.AcceptConversation)
+			r.Post("/conversations/{id}/decline", h.DeclineConversation)
+			r.Get("/conversations/{id}/messages", h.GetMessages)
+			r.Post("/conversations/{id}/messages", h.SendMessage)
+			r.Post("/conversations/{id}/read", h.MarkConversationRead)
+
+			r.Get("/me/settings", h.GetSettings)
+			r.Patch("/me/settings", h.UpdateSettings)
+			r.Get("/me/unread", h.GetUnreadCount)
 
 			r.Post("/orders", h.CreateOrder)
 			r.Get("/orders", h.GetOrders)
