@@ -144,12 +144,18 @@ func (s *ListingImageService) ListImages(ctx context.Context, listingID int32) (
 
 // ImagesByListing groups photos for MANY listings using a single query.
 func (s *ListingImageService) ImagesByListing(ctx context.Context, listingIDs []int32) (map[int32][]database.ListingImage, error) {
+	return imagesByListing(ctx, s.db.Queries, listingIDs)
+}
+
+// imagesByListing groups one batch query's rows by listing, so any service can
+// attach photos to a page of listings without an N+1.
+func imagesByListing(ctx context.Context, db *database.Queries, listingIDs []int32) (map[int32][]database.ListingImage, error) {
 	out := make(map[int32][]database.ListingImage, len(listingIDs))
 	if len(listingIDs) == 0 {
 		return out, nil
 	}
 
-	rows, err := s.db.ListImagesForListings(ctx, listingIDs)
+	rows, err := db.ListImagesForListings(ctx, listingIDs)
 	if err != nil {
 		return nil, err
 	}
