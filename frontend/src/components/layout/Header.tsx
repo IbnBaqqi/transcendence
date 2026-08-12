@@ -1,6 +1,7 @@
 // Link: normal navigation link (no "am I active?" info)
 // NavLink: a Link that knows if it points to the current page, so you can style the active one differently
 import { Link, NavLink } from "react-router-dom";
+import Avatar from "../Avatar.tsx"
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "text-foreground" : "text-muted hover:text-foreground";
@@ -17,6 +18,9 @@ export default function Header() {
           <NavLink to="/" className={navLinkClass}>
             Home
           </NavLink>
+          <Link to="/profile">
+            <Avatar size="sm" initials="OR" /> {/* OR just a placeholder for now */}
+          </Link>
           {/* TODO: add Listing (#20) and auth links (#46) when those pages exist */}
         </nav>
       </div>
