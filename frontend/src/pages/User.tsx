@@ -1,10 +1,11 @@
-// This is a stub for #
+// This is a stub for #105
 //
 // Currently accessible at localhost:5173/user but needs to exist at a unique
 // URL for each user
 
-import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+// Imports for unique URLs when we add them
+// import { useParams } from "react-router-dom";
+// import { useEffect, useState } from "react";
 import Avatar from "../components/Avatar.tsx"
 import Mailto from "../components/Mailto.tsx"
 import { useListings } from "../api/listings";
