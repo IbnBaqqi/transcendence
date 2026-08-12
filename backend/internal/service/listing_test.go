@@ -48,16 +48,26 @@ func TestValidateSearchText(t *testing.T) {
 		t.Errorf("valid text rejected: %v", err)
 	}
 
-	for _, name := range []string{"invalid utf-8", "null byte"} {
-		value := "\xff"
-		if name == "null byte" {
-			value = "a\x00b"
-		}
+	tests := []struct {
+		name  string
+		value string
+		want  bool
+	}{
+		{"invalid utf-8", "\xff", true},
+		{"null byte", "a\x00b", true},
+		{"at the limit", strings.Repeat("a", maxSearchTextLength), false},
+		{"over the limit", strings.Repeat("a", maxSearchTextLength+1), true},
+		{"non-ASCII at the limit", strings.Repeat("ä", maxSearchTextLength), false},
+		{"non-ASCII over the limit", strings.Repeat("ä", maxSearchTextLength+1), true},
+	}
 
-		t.Run(name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateSearchText(tt.value)
+
 			var validation *ValidationError
-			if err := validateSearchText(value); !errors.As(err, &validation) {
-				t.Fatalf("err = %v, want *ValidationError", err)
+			if got := errors.As(err, &validation); got != tt.want {
+				t.Fatalf("rejected = %v, want %v (err = %v)", got, tt.want, err)
 			}
 		})
 	}
@@ -75,6 +85,7 @@ func TestSearchListingsRejectsBadInput(t *testing.T) {
 		{"max price infinite", dtos.ListingSearchQuery{MaxPrice: "inf"}},
 		{"keyword is not utf-8", dtos.ListingSearchQuery{Keyword: "\xff"}},
 		{"location has a null byte", dtos.ListingSearchQuery{Location: "hel\x00sinki"}},
+		{"keyword is too long", dtos.ListingSearchQuery{Keyword: strings.Repeat("a", maxSearchTextLength+1)}},
 	}
 
 	svc := NewListingService(nil, nil)

@@ -186,6 +186,8 @@ const (
 	defaultPage  = 1
 	defaultLimit = 20
 	maxLimit     = 50
+
+	maxSearchTextLength = 200
 )
 
 func resolveSort(sortKey string) (string, error) {
@@ -204,6 +206,9 @@ func validateSearchText(values ...string) error {
 	for _, value := range values {
 		if !utf8.ValidString(value) || strings.ContainsRune(value, 0) {
 			return &ValidationError{Message: "search text must be valid UTF-8 without null bytes"}
+		}
+		if utf8.RuneCountInString(value) > maxSearchTextLength {
+			return &ValidationError{Message: "search text is too long"}
 		}
 	}
 	return nil
