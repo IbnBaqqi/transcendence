@@ -1,5 +1,6 @@
 type AvatarProps = {
   size?: "sm" | "md" | "lg";
+  onClick?: () => void; // Insert event handler here
   initials?: string;
   editable?: boolean;
 };
@@ -14,7 +15,7 @@ export default function Avatar({
   size = "md",
   initials = "?",
   editable = false,
-  onEditClick,
+  onClick,
 }: AvatarProps) {
   const { circle, label } = sizeStyles[size];
 
@@ -37,7 +38,7 @@ export default function Avatar({
     return (
       <button
         type="button"
-        onClick={onEditClick}
+        onClick={onClick}
         aria-label="Edit profile picture"
         className={`relative ${circle} ring-line bg-accent hover:bg-accent-hover active:bg-accent-active focus:ring-brand-300 overflow-hidden rounded-full opacity-90 ring-2 transition-colors duration-150 select-none hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none`}
       >
