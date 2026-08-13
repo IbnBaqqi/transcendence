@@ -20,12 +20,12 @@ export default function Avatar({
 
   const content = (
     <>
-      <div className="flex items-center justify-center w-full h-full bg-accent text-accent-contrast font-semibold">
+      <div className="bg-accent text-accent-contrast flex h-full w-full items-center justify-center font-semibold">
         {initials}
       </div>
       {editable && (
         <div
-          className={`absolute bottom-0 left-0 right-0 flex items-center justify-center ${label} bg-black/60 text-white font-medium`}
+          className={`absolute right-0 bottom-0 left-0 flex items-center justify-center ${label} bg-black/60 font-medium text-white`}
         >
           Edit
         </div>
@@ -39,11 +39,7 @@ export default function Avatar({
         type="button"
         onClick={onEditClick}
         aria-label="Edit profile picture"
-        className={`relative ${circle} rounded-full overflow-hidden ring-2 ring-line select-none
-          bg-accent hover:bg-accent-hover active:bg-accent-active
-          opacity-90 hover:opacity-100
-          transition-colors duration-150
-          focus:outline-none focus:ring-2 focus:ring-brand-300 focus:ring-offset-2`}
+        className={`relative ${circle} ring-line bg-accent hover:bg-accent-hover active:bg-accent-active focus:ring-brand-300 overflow-hidden rounded-full opacity-90 ring-2 transition-colors duration-150 select-none hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none`}
       >
         {content}
       </button>
@@ -51,7 +47,7 @@ export default function Avatar({
   }
 
   return (
-    <div className={`relative ${circle} rounded-full overflow-hidden ring-2 ring-line select-none`}>
+    <div className={`relative ${circle} ring-line overflow-hidden rounded-full ring-2 select-none`}>
       {content}
     </div>
   );

@@ -29,26 +29,20 @@ export default function Toggle({
   const { track, thumb, translate } = sizeStyles[size];
 
   return (
-    <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+    <label className="inline-flex cursor-pointer items-center gap-2 select-none">
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex ${track} items-center rounded-full
-          transition-colors duration-200
-          ${checked ? "bg-accent" : "bg-slate-300"}
-          disabled:opacity-50 disabled:cursor-not-allowed
-          focus:outline-none focus:ring-2 focus:ring-line focus:ring-offset-2`}
+        className={`relative inline-flex ${track} items-center rounded-full transition-colors duration-200 ${checked ? "bg-accent" : "bg-slate-300"} focus:ring-line focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50`}
       >
         <span
-          className={`inline-block ${thumb} transform rounded-full bg-white shadow
-            transition-transform duration-200
-            ${checked ? translate : "translate-x-0.5"}`}
+          className={`inline-block ${thumb} transform rounded-full bg-white shadow transition-transform duration-200 ${checked ? translate : "translate-x-0.5"}`}
         />
       </button>
-      {label && <span className="text-base text-muted">{label}</span>}
+      {label && <span className="text-muted text-base">{label}</span>}
     </label>
   );
 }

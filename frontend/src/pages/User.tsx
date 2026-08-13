@@ -6,13 +6,15 @@
 // Imports for unique URLs when we add them
 // import { useParams } from "react-router-dom";
 // import { useEffect, useState } from "react";
-import Avatar from "../components/Avatar.tsx"
-import Mailto from "../components/Mailto.tsx"
+import NotFound from "../pages/NotFound";
+import Avatar from "../components/Avatar.tsx";
+import Mailto from "../components/Mailto.tsx";
 import { useListings } from "../api/listings";
 import { ListingCard } from "../components/ListingCard";
 
 export default function User() {
-  {/*
+  {
+    /*
     Following code for unqiue profile page URLs
 
     const { profileId } = useParams<{ profileId: string }>();
@@ -21,24 +23,35 @@ export default function User() {
     const id = profileId?.split("-").pop();
 
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+      setLoading(true);
       fetch(`/api/users/${id}`)
-        .then((res) => res.json())
-        .then(setUser);
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          setUser(data);
+          setLoading(false);
+        });
     }, [id]);
 
-    if (!user) return <div>Loading...</div>;
-  */}
+    if (loading) return <div>Loading...</div>;
+    if (!user) return <NotFound />;
+  */
+  }
 
-  {/* TODO(#): Placeholder, needs to pull only user's listings */}
+  {
+    /* TODO(#): Placeholder, needs to pull only user's listings */
+  }
   const { data: listings, isPending, isError } = useListings();
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 space-y-5">
+    <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
       <h1 className="text-foreground text-3xl font-bold">User Profile</h1>
       <div className="flex flex-row gap-4">
-        <div><Avatar size="lg" initials="OR" /></div>
-        <div className="flex flex-col text-accent text-1xl">
+        <div>
+          <Avatar size="lg" initials="OR" />
+        </div>
+        <div className="text-accent text-1xl flex flex-col">
           <div className="font-bold">Oscar Roff</div>
           {/* TODO(#): Hide email depending on preferences */}
           <Mailto label="oscarroff@example.com" mailto="mailto:oscarroff@example.com" />
@@ -66,13 +79,17 @@ export default function User() {
             <div>Helsinki</div>
           </div>
         </div>
-        <div className="flex flex-row gap-2">
-        </div>
+        <div className="flex flex-row gap-2"></div>
       </div>
       <div className="space-y-1">
         <h2 className="text-foreground text-1.5xl font-bold">Bio</h2>
         <div className="">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Fusce auctor at fringilla aliquam massa iaculis et ad potenti cras purus. Curabitur himenaeos maximus viverra iaculis consectetur a enim. Magna in augue viverra primis aenean magna magna donec et quisque hendrerit etiam. Ullamcorper fames varius elementum sagittis elementum vitae eu inceptos quam imperdiet. A conubia aliquet libero molestie ultricies sagittis quam nostra cubilia elementum amet porta.
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
+          ut labore et dolore magna aliqua. Fusce auctor at fringilla aliquam massa iaculis et ad
+          potenti cras purus. Curabitur himenaeos maximus viverra iaculis consectetur a enim. Magna
+          in augue viverra primis aenean magna magna donec et quisque hendrerit etiam. Ullamcorper
+          fames varius elementum sagittis elementum vitae eu inceptos quam imperdiet. A conubia
+          aliquet libero molestie ultricies sagittis quam nostra cubilia elementum amet porta.
         </div>
       </div>
       <div className="space-y-1">
