@@ -6,7 +6,7 @@
 // Imports for unique URLs when we add them
 // import { useParams } from "react-router-dom";
 // import { useEffect, useState } from "react";
-import NotFound from "../pages/NotFound";
+// import NotFound from "../pages/NotFound";
 import Avatar from "../components/Avatar.tsx";
 import Mailto from "../components/Mailto.tsx";
 import { useListings } from "../api/listings";
