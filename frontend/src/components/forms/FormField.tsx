@@ -5,21 +5,30 @@ type FormFieldProps = {
   name: string;
   type?: string;
   placeholder?: string;
+  isEditing: boolean;
 };
 
-export function FormField({ label, name, type = "text", placeholder }: FormFieldProps) {
+export function FormField({ label, name, type = "text", placeholder, isEditing }: FormFieldProps) {
   const {
     register,
+    watch,
     formState: { errors },
   } = useFormContext();
 
   const error = errors[name];
+  const value = watch(name);
 
   return (
-    <div className="form-field">
+    <div className="">
       <label htmlFor={name}>{label}</label>
-      <input id={name} type={type} placeholder={placeholder} {...register(name)} />
-      {error && <span className="form-error">{error.message as string}</span>}
+      {isEditing ? (
+        <>
+          <input id={name} type={type} placeholder={placeholder} {...register(name)} />
+          {error && <span className="">{error.message as string}</span>}
+        </>
+      ) : (
+        <span>{value}</span>
+      )}
     </div>
   );
 }

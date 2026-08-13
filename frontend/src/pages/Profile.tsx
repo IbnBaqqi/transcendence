@@ -17,7 +17,6 @@ import { ContactDetailsSection } from "../components/forms/ContactDetails.tsx";
 import { useState } from "react";
 
 export default function Profile() {
-  const [isEditingContact, setEditingContact] = useState(false);
   const [marketing, setMarketing] = useState(false);
   const [hideDetails, setHideDetails] = useState(false);
   return (
@@ -36,22 +35,6 @@ export default function Profile() {
       <div className="space-y-1">
         <h2 className="text-foreground text-1.5xl font-bold">Contact Details</h2>
         <ContactDetailsSection />
-          {/* <div className="flex flex-col"> */}
-          {/*   <div className="text-muted">First Name</div> */}
-          {/*   <div>Oscar</div> */}
-          {/* </div> */}
-          {/* <div className="flex flex-col"> */}
-          {/*   <div className="text-muted">Last Name</div> */}
-          {/*   <div>Roff</div> */}
-          {/* </div> */}
-          {/* <div className="flex flex-col"> */}
-          {/*   <div className="text-muted">Telephone</div> */}
-          {/*   <div>1234567890</div> */}
-          {/* </div> */}
-          {/* <div className="flex flex-col"> */}
-          {/*   <div className="text-muted">Location</div> */}
-          {/*   <div>Open Maps integration?</div> */}
-          {/* </div> */}
       </div>
       <div className="space-y-1">
         <h2 className="text-foreground text-1.5xl font-bold">Password</h2>
