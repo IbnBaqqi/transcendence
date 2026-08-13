@@ -114,3 +114,26 @@ export interface UserSettings {
 export interface UnreadCount {
   unread_count: number;
 }
+
+// Auth Foundation additions
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  user: User;
+}
+
+// TODO: add an ApiError interface? e.g.
+// export interface ApiError {
+//   error: string;
+//   details?: string;
+// }
+
+// NOTE: there is no response envelope. endpoints return the payload directly
+// and signal success/failure through the HTTP status code. errors come back as
+// { error, details } - the interceptor is where this will be normalised

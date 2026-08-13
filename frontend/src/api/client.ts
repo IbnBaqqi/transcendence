@@ -35,6 +35,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// response: central place to handle errors, to be fleshed out later
 api.interceptors.response.use(
   (res) => res,
   (error: AxiosError<ErrorBody>) => Promise.reject(toApiError(error)),
