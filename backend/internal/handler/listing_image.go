@@ -71,7 +71,7 @@ func (h *Handler) UploadListingImage(w http.ResponseWriter, r *http.Request) {
 			respondWithError(w, http.StatusRequestEntityTooLarge, "image is too large")
 			return
 		}
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -113,7 +113,7 @@ func (h *Handler) DeleteListingImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.ListingImage.DeleteImage(r.Context(), userID, listingID, imageID); err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 

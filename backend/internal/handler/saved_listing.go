@@ -20,7 +20,7 @@ func (h *Handler) SaveListing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Saved.SaveListing(r.Context(), userID, listingID); err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -41,7 +41,7 @@ func (h *Handler) UnsaveListing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Saved.UnsaveListing(r.Context(), userID, listingID); err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 

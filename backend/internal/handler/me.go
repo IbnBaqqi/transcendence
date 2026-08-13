@@ -19,7 +19,7 @@ func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.User.Get(r.Context(), userID)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -46,7 +46,7 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.User.SetShowOnlineStatus(r.Context(), userID, *input.ShowOnlineStatus)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 

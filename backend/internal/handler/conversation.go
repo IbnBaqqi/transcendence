@@ -24,7 +24,7 @@ func (h *Handler) StartConversation(w http.ResponseWriter, r *http.Request) {
 
 	conv, _, err := h.Conversation.StartConversation(r.Context(), userID, input.ListingID, input.Body)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -90,7 +90,7 @@ func (h *Handler) decideConversation(w http.ResponseWriter, r *http.Request, acc
 		_, err = h.Conversation.Decline(r.Context(), userID, id)
 	}
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -124,7 +124,7 @@ func (h *Handler) GetMessages(w http.ResponseWriter, r *http.Request) {
 
 	messages, err := h.Conversation.ListMessages(r.Context(), userID, id, afterID, limit)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -152,7 +152,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 
 	msg, err := h.Conversation.SendMessage(r.Context(), userID, id, input.Body)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -173,7 +173,7 @@ func (h *Handler) MarkConversationRead(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := h.Conversation.MarkRead(r.Context(), userID, id); err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -189,7 +189,7 @@ func (h *Handler) respondWithConversation(
 ) {
 	conv, other, err := h.Conversation.GetConversationDetail(r.Context(), userID, conversationID)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
