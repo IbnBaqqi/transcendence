@@ -10,9 +10,9 @@
 //
 // N.B. This page is only viewable for the logged in user of the same profile
 // To view another user's profile we have User.tsx
-import Avatar from "../components/Avatar.tsx";
-import Button from "../components/Button.tsx";
-import Toggle from "../components/Toggle.tsx";
+import Avatar from "../components/objects/Avatar.tsx";
+import Button from "../components/objects/Button.tsx";
+import Toggle from "../components/objects/Toggle.tsx";
 import { useState } from "react";
 
 export default function Profile() {

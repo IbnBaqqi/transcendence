@@ -7,10 +7,10 @@
 // import { useParams } from "react-router-dom";
 // import { useEffect, useState } from "react";
 // import NotFound from "../pages/NotFound";
-import Avatar from "../components/Avatar.tsx";
-import Mailto from "../components/Mailto.tsx";
+import Avatar from "../components/objects/Avatar.tsx";
+import Mailto from "../components/objects/Mailto.tsx";
 import { useListings } from "../api/listings";
-import { ListingCard } from "../components/ListingCard";
+import { ListingCard } from "../components/objects/ListingCard";
 
 export default function User() {
   {

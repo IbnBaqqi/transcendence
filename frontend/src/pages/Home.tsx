@@ -1,5 +1,5 @@
 import { useListings } from "../api/listings";
-import { ListingCard } from "../components/ListingCard";
+import { ListingCard } from "../components/objects/ListingCard";
 
 export default function Home() {
   // useListings() gives us the query's state: the data plus loading/error flags.
