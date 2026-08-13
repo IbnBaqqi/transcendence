@@ -1,7 +1,7 @@
 // Link: normal navigation link (no "am I active?" info)
 // NavLink: a Link that knows if it points to the current page, so you can style the active one differently
 import { Link, NavLink } from "react-router-dom";
-import Avatar from "../Avatar.tsx"
+import Avatar from "../Avatar.tsx";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "text-foreground" : "text-muted hover:text-foreground";
