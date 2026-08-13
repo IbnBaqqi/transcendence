@@ -1,0 +1,20 @@
+import { useState } from "react";
+
+export function useFormSubmit<T>(submitFN: (data: T) => Promise<void>) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async (data: T) => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await submitFn(data);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { handleSubmit, isSubmitting, submitError };
+}
