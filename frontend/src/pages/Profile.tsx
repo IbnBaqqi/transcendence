@@ -13,7 +13,7 @@
 import Avatar from "../components/objects/Avatar.tsx";
 import Button from "../components/objects/Button.tsx";
 import Toggle from "../components/objects/Toggle.tsx";
-import ContactDetailsSection from "../components/forms/ContactDetails.tsx";
+import { ContactDetailsSection } from "../components/forms/ContactDetails.tsx";
 import { useState } from "react";
 
 export default function Profile() {
@@ -35,34 +35,23 @@ export default function Profile() {
       </div>
       <div className="space-y-1">
         <h2 className="text-foreground text-1.5xl font-bold">Contact Details</h2>
-        <div className="flex flex-row gap-4">
-          <ContactDetailsSection />
-          <div className="flex flex-col">
-            <div className="text-muted">First Name</div>
-            <div>Oscar</div>
-          </div>
-          <div className="flex flex-col">
-            <div className="text-muted">Last Name</div>
-            <div>Roff</div>
-          </div>
-          <div className="flex flex-col">
-            <div className="text-muted">Telephone</div>
-            <div>1234567890</div>
-          </div>
-          <div className="flex flex-col">
-            <div className="text-muted">Location</div>
-            <div>Open Maps integration?</div>
-          </div>
-        </div>
-        <div className="flex flex-row gap-2">
-          <Button variant="primary" onClick={() => console.log("edit!")}>
-            Edit Details
-          </Button>
-          {/* TODO(#): Using states, once forms are live we can make cancel only appear if user is in edit mode */}
-          <Button variant="secondary" onClick={() => console.log("cancel!")}>
-            Cancel
-          </Button>
-        </div>
+        <ContactDetailsSection />
+          {/* <div className="flex flex-col"> */}
+          {/*   <div className="text-muted">First Name</div> */}
+          {/*   <div>Oscar</div> */}
+          {/* </div> */}
+          {/* <div className="flex flex-col"> */}
+          {/*   <div className="text-muted">Last Name</div> */}
+          {/*   <div>Roff</div> */}
+          {/* </div> */}
+          {/* <div className="flex flex-col"> */}
+          {/*   <div className="text-muted">Telephone</div> */}
+          {/*   <div>1234567890</div> */}
+          {/* </div> */}
+          {/* <div className="flex flex-col"> */}
+          {/*   <div className="text-muted">Location</div> */}
+          {/*   <div>Open Maps integration?</div> */}
+          {/* </div> */}
       </div>
       <div className="space-y-1">
         <h2 className="text-foreground text-1.5xl font-bold">Password</h2>
