@@ -68,7 +68,7 @@ func TestSignupRollsBackWhenProfileFails(t *testing.T) {
 	before := countUsers(t, db)
 
 	if _, err := svc.Signup(context.Background(), signupInput("ghost")); err == nil {
-		t.Fatalf("signup succeeded despite the profile inser failing")
+		t.Fatalf("signup succeeded despite the profile insert failing")
 	}
 
 	if after := countUsers(t, db); after != before {
@@ -80,7 +80,7 @@ func TestSignupRejectsADuplicateEmail(t *testing.T) {
 	svc, _ := newService(t)
 
 	if _, err := svc.Signup(context.Background(), signupInput("first")); err != nil {
-		t.Fatalf("fist signup failed: %v", err)
+		t.Fatalf("first signup failed: %v", err)
 	}
 
 	second := signupInput("second")

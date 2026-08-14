@@ -28,7 +28,7 @@ jobs:
         # The job starts as soon as the container does, which is before
         # Postgres accepts connections — this makes it wait for pg_isready.
         options: >-
-          --health-cmd "pg_isready -U postgres"
+          --health-cmd "pg_isready -U postgres -d postgres -h 127.0.0.1"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10

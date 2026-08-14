@@ -24,8 +24,8 @@ docker compose up -d db
 **Tests that need Postgres are skipped unless `TEST_DB_URL` is set.** That keeps
 `make test` green on a machine without Docker, but it means a skipped test still
 prints `ok` — so use `make test-db` when you want to know the database paths
-actually pass. It reads `TEST_DB_URL` from your `.env` (copy `.env.example`) and
-fails with a clear message if it isn't set.
+actually pass. It reads `TEST_DB_URL` from `backend/.env` (copy
+`backend/.env.example`) and fails with a clear message if it isn't set.
 
 Each of those tests gets **its own database**, created fresh, migrated from
 `sql/migrations`, and dropped when the test finishes. Nothing is shared between

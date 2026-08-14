@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -20,6 +21,9 @@ import (
 )
 
 const EnvURL = "TEST_DB_URL"
+
+// goose's dialect and logger are package globals; set them exactly once.
+var gooseSetup sync.Once
 
 // New returns a connection to a fresh database with every migration applied.
 func New(t *testing.T) *database.DB {
@@ -87,11 +91,14 @@ func open(t *testing.T, dbURL string) *database.DB {
 func migrate(t *testing.T, db *sql.DB) {
 	t.Helper()
 
-	if err := goose.SetDialect("postgres"); err != nil {
-		t.Fatalf("goose dialect: %v", err)
+	var dialectErr error
+	gooseSetup.Do(func() {
+		dialectErr = goose.SetDialect("postgres")
+		goose.SetLogger(goose.NopLogger())
+	})
+	if dialectErr != nil {
+		t.Fatalf("goose dialect: %v", dialectErr)
 	}
-
-	goose.SetLogger(goose.NopLogger())
 
 	if err := goose.Up(db, migrationsDir(t)); err != nil {
 		t.Fatalf("running migrations: %v", err)

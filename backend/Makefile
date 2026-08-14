@@ -1,6 +1,12 @@
 -include .env
 export
 
+# ...but NOT the test database URL. `export` above would hand it to every
+# recipe, so `make test` would silently run the database tests instead of
+# skipping them — and fail on a machine with no Postgres. test-db passes it
+# explicitly instead.
+unexport TEST_DB_URL
+
 .PHONY: run build test test-db clean dev lint
 
 # Run the application
@@ -27,7 +33,7 @@ test:
 # The URL names the `postgres` maintenance database — each test makes its own.
 test-db:
 	$(require-test-db-url)
-	@TEST_DB_URL="$(TEST_DB_URL)" go test -v ./...
+	@TEST_DB_URL="$(TEST_DB_URL)" go test -count=1 -v ./...
 
 # Run tests with coverage
 test-coverage:
