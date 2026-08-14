@@ -18,13 +18,14 @@ export default function Button({
 
   const variantStyles = {
     primary:
-      "bg-accent text-accent-contrast hover:bg-accent-hover active:bg-accent-active focus:ring-line",
+      "bg-accent text-accent-contrast hover:bg-accent-hover active:bg-accent-active focus:ring-accent",
     secondary:
-      "bg-soft text-soft-contrast border border-line hover:bg-soft-hover active:bg-soft-active focus:ring-line",
+      "bg-soft text-soft-contrast border border-line hover:bg-soft-hover active:bg-soft-active focus:ring-accent",
   };
 
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       className={`${baseStyles} ${variantStyles[variant]}`}

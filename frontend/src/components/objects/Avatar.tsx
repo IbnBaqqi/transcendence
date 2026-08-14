@@ -40,7 +40,7 @@ export default function Avatar({
         type="button"
         onClick={onClick}
         aria-label="Edit profile picture"
-        className={`relative ${circle} ring-line bg-accent hover:bg-accent-hover active:bg-accent-active focus:ring-brand-300 overflow-hidden rounded-full opacity-90 ring-2 transition-colors duration-150 select-none hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none`}
+        className={`relative ${circle} ring-line bg-accent hover:bg-accent-hover active:bg-accent-active focus:ring-surface-accent overflow-hidden rounded-full opacity-90 ring-2 transition-colors duration-150 select-none hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none`}
       >
         {content}
       </button>

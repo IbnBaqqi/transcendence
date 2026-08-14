@@ -14,34 +14,7 @@ import { ListingCard } from "../components/objects/ListingCard";
 
 export default function User() {
   {
-    /*
-    Following code for unqiue profile page URLs
-
-    const { profileId } = useParams<{ profileId: string }>();
-
-    // "jane-doe-a1b2c3" -> "a1b2c3"
-    const id = profileId?.split("-").pop();
-
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-      setLoading(true);
-      fetch(`/api/users/${id}`)
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          setUser(data);
-          setLoading(false);
-        });
-    }, [id]);
-
-    if (loading) return <div>Loading...</div>;
-    if (!user) return <NotFound />;
-  */
-  }
-
-  {
-    /* TODO(#): Placeholder, needs to pull only user's listings */
+    /* Placeholder, needs to pull only user's listings */
   }
   const { data: listings, isPending, isError } = useListings();
   return (
@@ -51,14 +24,14 @@ export default function User() {
         <div>
           <Avatar size="lg" initials="OR" />
         </div>
-        <div className="text-accent text-1xl flex flex-col">
-          <div className="font-bold">Oscar Roff</div>
-          {/* TODO(#): Hide email depending on preferences */}
-          <Mailto label="oscarroff@example.com" mailto="mailto:oscarroff@example.com" />
+        <div className="text-accent text-base flex flex-col">
+          <div className="font-bold">Oscar Rogers</div>
+          {/* Hide email depending on preferences */}
+          <Mailto label="oscarroff@example.com" mailto="oscarrogers@example.com" />
         </div>
       </div>
       <div className="space-y-1">
-        <h2 className="text-foreground text-1.5xl font-bold">Contact Details</h2>
+        <h2 className="text-foreground text-lg font-bold">Contact Details</h2>
         <div className="flex flex-row gap-4">
           <div className="flex flex-col">
             <div className="text-muted">First Name</div>
@@ -66,23 +39,23 @@ export default function User() {
           </div>
           <div className="flex flex-col">
             <div className="text-muted">Last Name</div>
-            <div>Roff</div>
+            <div>Rogers</div>
           </div>
-          {/* TODO(#): Hide remaining details depending on preferences */}
+          {/* Hide remaining details depending on preferences */}
           <div className="flex flex-col">
             <div className="text-muted">Telephone</div>
             <div>1234567890</div>
           </div>
           <div className="flex flex-col">
             <div className="text-muted">Location</div>
-            {/* TODO(#): Open Maps integration? */}
+            {/* Open Maps integration? */}
             <div>Helsinki</div>
           </div>
         </div>
         <div className="flex flex-row gap-2"></div>
       </div>
       <div className="space-y-1">
-        <h2 className="text-foreground text-1.5xl font-bold">Bio</h2>
+        <h2 className="text-foreground text-lg font-bold">Bio</h2>
         <div className="">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
           ut labore et dolore magna aliqua. Fusce auctor at fringilla aliquam massa iaculis et ad
@@ -93,8 +66,8 @@ export default function User() {
         </div>
       </div>
       <div className="space-y-1">
-        <h2 className="text-foreground text-1.5xl font-bold">Listings</h2>
-        {/* TODO(#): Placeholder, format, length etc. to be decided later */}
+        <h2 className="text-foreground text-lg font-bold">Listings</h2>
+        {/* Placeholder, format, length etc. to be decided later */}
         <p role="status" aria-live="polite" className="text-muted mt-4">
           {isPending && "Loading..."}
           {isError && "Couldn't load listings. Try again."}

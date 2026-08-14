@@ -14,6 +14,8 @@ import Avatar from "../components/objects/Avatar.tsx";
 import Button from "../components/objects/Button.tsx";
 import Toggle from "../components/objects/Toggle.tsx";
 import { ContactDetailsSection } from "../components/forms/ContactDetails.tsx";
+import { ChangePasswordSection } from "../components/forms/ChangePassword.tsx";
+import { BioSection } from "../components/forms/Bio.tsx";
 import { useState } from "react";
 
 export default function Profile() {
@@ -22,53 +24,30 @@ export default function Profile() {
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
       <h1 className="text-foreground text-3xl font-bold">Profile & Settings</h1>
-      {/* TODO(#): The backend doesn't create a profiles row on signup yet, so there's nothing to load - hardcoded values for now. */}
+      {/* TODO: blocked by #109 nothing to load - hardcoded values for now. */}
       <div className="flex flex-row gap-4">
         <div>
           <Avatar size="lg" initials="OR" editable />
         </div>
-        <div className="text-accent text-1xl flex flex-col">
-          <div className="font-bold">Oscar Roff</div>
-          <div className="font-normal">oscarroff@gmail.com</div>
+        <div className="text-accent text-base flex flex-col">
+          <div className="font-bold">Oscar Rogers</div>
+          <div className="font-normal">oscarrogers@example.com</div>
         </div>
       </div>
       <div className="space-y-1">
-        <h2 className="text-foreground text-1.5xl font-bold">Contact Details</h2>
+        <h2 className="text-foreground text-lg font-bold">Contact Details</h2>
         <ContactDetailsSection />
       </div>
       <div className="space-y-1">
-        <h2 className="text-foreground text-1.5xl font-bold">Password</h2>
-        <div className="">************</div>
-        <div className="flex flex-row gap-2">
-          <Button variant="primary" onClick={() => console.log("edit!")}>
-            Edit Password
-          </Button>
-          <Button variant="secondary" onClick={() => console.log("cancel!")}>
-            Cancel
-          </Button>
-        </div>
+        <h2 className="text-foreground text-lg font-bold">Password</h2>
+        <ChangePasswordSection />
       </div>
       <div className="space-y-1">
-        <h2 className="text-foreground text-1.5xl font-bold">Bio</h2>
-        <div className="">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-          ut labore et dolore magna aliqua. Fusce auctor at fringilla aliquam massa iaculis et ad
-          potenti cras purus. Curabitur himenaeos maximus viverra iaculis consectetur a enim. Magna
-          in augue viverra primis aenean magna magna donec et quisque hendrerit etiam. Ullamcorper
-          fames varius elementum sagittis elementum vitae eu inceptos quam imperdiet. A conubia
-          aliquet libero molestie ultricies sagittis quam nostra cubilia elementum amet porta.
-        </div>
-        <div className="flex flex-row gap-2">
-          <Button variant="primary" onClick={() => console.log("edit!")}>
-            Edit Bio
-          </Button>
-          <Button variant="secondary" onClick={() => console.log("cancel!")}>
-            Cancel
-          </Button>
-        </div>
+        <h2 className="text-foreground text-lg font-bold">Bio</h2>
+        <BioSection />
       </div>
       <div className="space-y-1">
-        <h2 className="text-foreground text-1.5xl font-bold">Preferences</h2>
+        <h2 className="text-foreground text-lg font-bold">Preferences</h2>
         <div className="flex flex-row gap-6">
           <Toggle
             checked={marketing}
@@ -83,13 +62,10 @@ export default function Profile() {
         </div>
       </div>
       <div className="space-y-1">
-        <h2 className="text-foreground text-1.5xl font-bold">Account Deletion</h2>
+        <h2 className="text-foreground text-lg font-bold">Account Deletion</h2>
         <div className="flex flex-row gap-2">
-          <Button variant="primary" onClick={() => console.log("edit!")}>
+          <Button variant="secondary" onClick={() => console.log("delete!")}>
             Delete Account
-          </Button>
-          <Button variant="secondary" onClick={() => console.log("cancel!")}>
-            Cancel
           </Button>
         </div>
       </div>

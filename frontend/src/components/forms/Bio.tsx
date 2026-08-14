@@ -1,44 +1,31 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "./Form";
-import { FormField } from "./FormField";
-import { contactDetailsSchema, type ContactDetailsFormValues } from "../../schemas/contactDetails";
+import { FormTextArea } from "./FormTextArea";
+import { bioSchema, type BioFormValues } from "../../schemas/common";
 import Button from "../objects/Button.tsx";
 import { useState } from "react";
 
-export function ContactDetailsSection() {
+export function BioSection() {
   const [isEditing, setEditing] = useState(false);
 
-  const form = useForm<ContactDetailsFormValues>({
-    resolver: zodResolver(contactDetailsSchema),
+  const form = useForm<BioFormValues>({
+    resolver: zodResolver(bioSchema),
     // TODO: blocked by #109 Add hooks to fetch data from backend (or maybe local frontend e.g. from Profile.tsx?)
-    // defaultValues: {
-    //   firstName: user.firstName ?? "",
-    //   lastName: user.lastName ?? "",
-    //   phone: user.phone ?? "",
-    //   city: user.city ?? "",
-    // },
   });
 
-  const handleSubmit = (data: ContactDetailsFormValues) => {
+  const handleSubmit = (data: BioFormValues) => {
     console.log(data);
     // TODO: blocked by #109 Save to API here
     setEditing(false);
   };
   // TODO: blocked by #109 Add hooks to save data to backend
-  // const { handleSubmit: handleSave, isSubmitting, submitError } = useFormSubmit<ContactDetailsFormValues>(
-  // async (data) => {
-  //   await api.updateContactDetails(data); // whatever your API call looks like
-  // }
 
   return (
     <Form form={form} onSubmit={handleSubmit}>
       <div className="space-y-2">
         <div className="flex flex-row gap-4">
-          <FormField label="First name" name="firstName" isEditing={isEditing} />
-          <FormField label="Last name" name="lastName" isEditing={isEditing} />
-          <FormField label="Phone" name="phone" type="tel" isEditing={isEditing} />
-          <FormField label="City" name="city" isEditing={isEditing} />
+          <FormTextArea name="bio" isEditing={isEditing} />
         </div>
         <div className="flex flex-row gap-2">
           {isEditing ? (
@@ -58,11 +45,16 @@ export function ContactDetailsSection() {
             </>
           ) : (
             <Button variant="primary" type="button" onClick={() => setEditing(true)}>
-              Edit Details
+              Edit Text
             </Button>
           )}
         </div>
       </div>
+      {/* <button type="submit">Save</button> */}
+      {/* Also need to update this once hooks in place */}
+      {/* <button type="submit" disabled={isSubmitting}> */}
+      {/*   {isSubmitting? "Saving..." : "Save"} */}
+      {/* </button> */}
     </Form>
   );
 }

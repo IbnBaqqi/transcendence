@@ -21,9 +21,12 @@ export const citySchema = z
   .min(1, "City is required")
   .max(64, "City name is too long")
   .regex(/^[\p{L}\s.'-]+$/u, "Invalid city name");
-export const bioSchema = z
-  .string()
-  .max(1024, "Bio must be less than 1024 characters");
 // NOTE: If we want real geodata then we will need to link to an API such as OpenMaps
 
 // TODO: Add schemas for listing data
+
+// NOTE: Exports for common schemas that are directly used without wrapper objects
+export const bioSchema = z
+  .string()
+  .max(1024, "Bio must be less than 1024 characters");
+export type BioFormValues = z.infer<typeof bioSchema>;

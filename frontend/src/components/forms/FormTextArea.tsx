@@ -1,0 +1,48 @@
+import { useFormContext } from "react-hook-form";
+
+type FormTextAreaProps = {
+  label?: string;
+  name: string;
+  placeholder?: string;
+  maxLength?: number;
+  isEditing: boolean;
+};
+
+export function FormTextArea({ label, name, placeholder, maxLength = 1024, isEditing }: FormTextAreaProps) {
+  const {
+    register,
+    watch,
+    formState: { errors },
+  } = useFormContext();
+
+  const error = errors[name];
+  const value = watch(name) ?? "";
+
+  return (
+    <div className="">
+      {label && ( 
+        <label htmlFor={name}>
+          {label}
+        </label>
+      )}
+      {isEditing ? (
+        <>
+          <textarea
+            className="field-sizing-content min-w-64 w-full resize-none overflow-y-auto rounded border p-2 focus:outline-none"
+            id={name}
+            rows={3}
+            maxLength={maxLength}
+            placeholder={placeholder}
+            {...register(name)}
+          />
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>{error && <span className="text-red-500">{error.message as string}</span>}</span>
+            <span>{value.length} / {maxLength}</span>
+          </div>
+        </>
+      ) : (
+        <span>{value}</span>
+      )}
+    </div>
+  );
+}

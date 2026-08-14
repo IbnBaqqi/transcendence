@@ -1,7 +1,7 @@
 import { useFormContext } from "react-hook-form";
 
 type FormFieldProps = {
-  label: string;
+  label?: string;
   name: string;
   type?: string;
   placeholder?: string;
@@ -16,15 +16,23 @@ export function FormField({ label, name, type = "text", placeholder, isEditing }
   } = useFormContext();
 
   const error = errors[name];
-  const value = watch(name);
+  const value = watch(name) ?? "";
 
   return (
     <div className="">
-      <label htmlFor={name}>{label}</label>
+      {label && ( 
+        <label htmlFor={name}>{label}</label>
+      )}
       {isEditing ? (
         <>
-          <input id={name} type={type} placeholder={placeholder} {...register(name)} />
-          {error && <span className="">{error.message as string}</span>}
+          <input
+            className="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+            id={name}
+            type={type}
+            placeholder={placeholder}
+            {...register(name)}
+          />
+          {error && <span className="text-berry-500">{error.message as string}</span>}
         </>
       ) : (
         <span>{value}</span>

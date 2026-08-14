@@ -45,7 +45,7 @@
   --color-accent-hover: #225b39; /* brand-700 */
   --color-accent-active: #1d4830; /* brand-800 */
   --color-soft: #bce0c7; /* brand-200 */
-  --color-soft-contrast: #1d4830; /* text on an accent background */
+  --color-soft-contrast: #1d4830; /* brand-800 */
   --color-soft-hover: #8fc9a3; /* brand-300 */
   --color-soft-active: #5aab77; /* brand-400 */
 
@@ -63,13 +63,13 @@
     --color-muted: #9ca3af;
     --color-line: #2e303a;
     --color-accent: #5aab77; /* brand-400 — lighter reads better on dark */
-    --color-accent-contrast: #16171d;
+    --color-accent-contrast: #16171d; /* off-black */
     --color-accent-hover: #8fc9a3; /* brand-300 */
     --color-accent-active: #bce0c7; /* brand-200 */
     --color-soft: #1d4830; /* brand-800 */
-    --color-soft-contrast: #000000; /* text on an accent background */
-    --color-soft-hover: #225b39; /* brand-300 */
-    --color-soft-active: #297244; /* brand-400 */
+    --color-soft-contrast: #f3f4f6; /* off-white */
+    --color-soft-hover: #225b39; /* brand-700 */
+    --color-soft-active: #297244; /* brand-600 */
   }
 }
 
