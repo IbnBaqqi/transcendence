@@ -1,0 +1,236 @@
+# The OpenAPI version this document is written in - not our API's version.
+# 3.1 is the JSON-Schema-aligned one; Swagger UI 5.x renders it.
+openapi: 3.1.0
+
+# Who/what this API is. Swagger UI shows this block at the top of the page.
+info:
+  title: Foraged goods marketplace API
+  version: 0.1.0
+  # "|" keeps the newlines - the description renders as Markdown in the UI.
+  description: |
+    A marketplace for foraged goods — berries, mushrooms, herbs. Sellers post
+    listings, buyers browse, message them and place orders. Payments are
+    simulated; no money changes hands.
+
+    ## Authentication
+
+    Most endpoints need a bearer token from `POST /auth/signup` or
+    `POST /auth/login`:
+
+        Authorization: Bearer <access_token>
+
+    Public endpoints (browsing listings, search, images) work without one.
+
+    ## Errors
+
+    Every error response is the same shape: `{"error": "..."}`. Messages on
+    4xx describe what the caller did wrong; 5xx always returns a fixed
+    "something went wrong" and the detail goes to the server log, tagged with
+    the `X-Request-ID` returned on every response.
+
+# The base URL every path in this file is relative to. Because /api/v1 lives
+# here, paths below can be written as /listings instead of /api/v1/listings.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+
+# Tags are just grouping labels; each operation names one and Swagger UI
+# renders one collapsible section per tag.
+tags:
+  - name: auth
+    description: Signup, login, logout
+  - name: listings
+    description: Browsing, searching and managing listings
+  - name: images
+    description: Listing photos
+  - name: wishlist
+    description: Saved listings
+  - name: orders
+    description: The simulated order lifecycle
+  - name: chat
+    description: Buyer/seller conversations
+  - name: me
+    description: The authenticated user's own resources
+
+# The default for the whole API: send a bearer token. Individual public
+# operations switch it off with an empty "security: []" of their own.
+security:
+  - bearerAuth: []
+
+# "components" is the reusable-definitions section. Nothing in here appears in
+# the docs on its own - it only shows up where something $refs it.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT # documentation only; no tool verifies the format
+      description: |
+        Access token issued by signup or login. Expired and missing tokens are
+        both answered with 401.
+
+  schemas:
+    # Matches handler.errorResponse exactly: Error string `json:"error"`,
+    # Details map[string]string `json:"details,omitempty"`.
+    Error:
+      type: object
+      required: [error] # "details" is omitempty in Go, so it is not required
+      properties:
+        error:
+          type: string
+          description: |
+            Safe to show a user on 4xx. On 5xx this is always
+            "something went wrong" — the cause is in the server log.
+          examples: ["listing not found"]
+        details:
+          type: object
+          # "any key, string value" - the YAML spelling of map[string]string.
+          additionalProperties:
+            type: string
+          description: Reserved for field-level validation errors; absent today.
+
+    ListingImage:
+      type: object
+      required: [id, url, position]
+      properties:
+        id:
+          type: integer
+          format: int32 # int32 in Go; "format" is a hint, not a constraint
+          examples: [7]
+        url:
+          type: string
+          description: Path served by the API, e.g. for use in an `img` tag.
+          examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
+        position:
+          type: integer
+          format: int32
+          description: Display order, ascending. Unique per listing.
+          examples: [0]
+
+    Listing:
+      type: object
+      # Every field without omitempty in ListingResponse is always present.
+      required:
+        [
+          id,
+          seller_id,
+          title,
+          description,
+          category,
+          price,
+          quantity,
+          unit,
+          created_at,
+          updated_at,
+          images,
+        ]
+      properties:
+        id:
+          type: integer
+          format: int32
+          examples: [23]
+        seller_id:
+          type: string
+          format: uuid # Go uuid.UUID marshals to a string
+        title:
+          type: string
+          maxLength: 100
+          examples: ["Golden Chanterelles"]
+        description:
+          type: string
+          description: Empty string when the seller left it blank.
+        category:
+          type: string
+          examples: ["mushrooms"]
+        price:
+          type: number
+          format: double
+          description: Price per unit. Stored as NUMERIC(10,2).
+          examples: [18.5]
+        quantity:
+          type: integer
+          format: int32
+          description: Remaining quantity; 0 means sold out.
+          examples: [4]
+        unit:
+          type: string
+          examples: ["kg"]
+        created_at:
+          type: string
+          format: date-time # Go time.Time marshals to RFC 3339
+        updated_at:
+          type: string
+          format: date-time
+        images:
+          type: array
+          description: Always present; empty when the listing has no photos.
+          items:
+            # $ref = "reuse that definition here". This is why schemas exist.
+            $ref: "#/components/schemas/ListingImage"
+
+    PaginatedListings:
+      type: object
+      required: [items, total, page, limit, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Listing"
+        total:
+          type: integer
+          format: int64
+          description: Matching listings across all pages.
+        page:
+          type: integer
+          description: Echoes the requested page, even past the last one.
+        limit:
+          type: integer
+          description: Clamped to 50.
+        total_pages:
+          type: integer
+
+  # Whole reusable responses, not just schemas - status code descriptions we
+  # would otherwise retype on all 35 operations.
+  responses:
+    BadRequest:
+      description: The request was malformed or failed validation.
+      content:
+        application/json: # the media type the body is sent as
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: No token, or a token that is expired or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Authenticated, but this resource belongs to someone else.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: |
+        No such resource — also returned when a resource exists but the caller
+        is not a participant, so its existence is not revealed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: The request clashes with the resource's current state.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServerError:
+      description: Something failed on our side; the cause is in the log.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+# Required key, filled in by steps 2 and 3. "{}" is an empty map - leaving the
+# key out entirely makes the document invalid.
+paths: {}
