@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"golang.org/x/crypto/bcrypt"
@@ -38,10 +39,11 @@ type LoginResult struct {
 	User         dtos.UserInfo
 }
 
-// signupFailed logs why signup failed and returns the message the client sees.
+// signupFailed labels the cause with the step that failed. It deliberately does
+// NOT log: the handler logs every 5xx exactly once with the request id attached,
+// and a second line here would put the detail and the id on different lines.
 func signupFailed(step string, err error) error {
-	slog.Error("signup failed", "step", step, "error", err)
-	return errors.New("could not create user")
+	return fmt.Errorf("signup: %s: %w", step, err)
 }
 
 // Signup validates input, checks for duplicate email, hashes the
@@ -96,8 +98,7 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 
 	accessToken, err := s.jwt.IssueAccessToken(user)
 	if err != nil {
-		slog.Error("signup failed", "step", "issue token", "error", err)
-		return SignupResponse{}, errors.New("could not issue token")
+		return SignupResponse{}, fmt.Errorf("signup: issue token: %w", err)
 	}
 
 	return SignupResponse{
@@ -124,8 +125,7 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 
 	accessToken, err := s.jwt.IssueAccessToken(user)
 	if err != nil {
-		slog.Error("login failed", "step", "issue token", "error", err)
-		return LoginResult{}, errors.New("could not issue token")
+		return LoginResult{}, fmt.Errorf("login: issue token: %w", err)
 	}
 
 	return LoginResult{

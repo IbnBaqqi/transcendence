@@ -2,10 +2,12 @@ package handler
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 
 	"github.com/IbnBaqqi/transcendence/internal/auth"
@@ -60,4 +62,23 @@ func statusFromServiceError(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+// respondWithServiceError turns a service error into a response, choosing the
+// audience by status.
+func respondWithServiceError(w http.ResponseWriter, r *http.Request, err error) {
+	status := statusFromServiceError(err)
+
+	if status >= http.StatusInternalServerError {
+		slog.Error("unhandled error",
+			"request_id", middleware.GetReqID(r.Context()),
+			"method", r.Method,
+			"path", r.URL.Path,
+			"error", err)
+
+		respondWithError(w, status, "something went wrong")
+		return
+	}
+
+	respondWithError(w, status, err.Error())
 }

@@ -25,7 +25,7 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.Order.CreateOrder(r.Context(), userID, input)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -48,7 +48,7 @@ func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.Order.GetOrder(r.Context(), userID, id)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -66,7 +66,7 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 
 	orders, err := h.Order.ListOrders(r.Context(), userID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch orders")
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -101,7 +101,7 @@ func (h *Handler) ConfirmOrder(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.Order.ConfirmOrder(r.Context(), userID, id)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -118,7 +118,7 @@ func (h *Handler) HandoverOrder(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.Order.HandoverOrder(r.Context(), userID, id)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -135,7 +135,7 @@ func (h *Handler) ReceiveOrder(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.Order.ReceiveOrder(r.Context(), userID, id)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -152,7 +152,7 @@ func (h *Handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.Order.CancelOrder(r.Context(), userID, id)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
