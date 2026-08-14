@@ -1,7 +1,7 @@
 -include .env
 export
 
-.PHONY: run build test clean dev lint
+.PHONY: run build test test-db clean dev lint
 
 # Run the application
 run:
@@ -20,6 +20,14 @@ build:
 # Run tests
 test:
 	@go test -v ./...
+
+# Run every test, including the ones that need Postgres.
+# TEST_DB_URL is separate from DB_URL on purpose: these tests CREATE and DROP
+# databases, and pointing them at a development database would be destructive.
+# The URL names the `postgres` maintenance database — each test makes its own.
+test-db:
+	$(require-test-db-url)
+	@TEST_DB_URL="$(TEST_DB_URL)" go test -v ./...
 
 # Run tests with coverage
 test-coverage:
@@ -57,6 +65,10 @@ deps:
 # itself - otherwise goose gets an empty connection string and fails with a
 # confusing driver error instead of saying what's actually missing.
 require-db-url = @test -n "$(DB_URL)" || { echo "DB_URL not set - copy .env.example to .env"; exit 1; }
+
+# Same idea for the test database: without it `go test` silently SKIPS every
+# database test and still prints ok, which reads like success.
+require-test-db-url = @test -n "$(TEST_DB_URL)" || { echo "TEST_DB_URL not set - see .env.example"; exit 1; }
 
 migrate-up:
 	$(require-db-url)
