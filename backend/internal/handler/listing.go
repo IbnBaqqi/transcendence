@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
@@ -23,7 +22,7 @@ func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 
 	listing, err := h.Listing.CreateListing(r.Context(), userID, input)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -33,7 +32,7 @@ func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
 	listings, err := h.Listing.ListListings(r.Context())
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch listings")
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -44,7 +43,7 @@ func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
 
 	byListing, err := h.ListingImage.ImagesByListing(r.Context(), ids)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -60,13 +59,13 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 
 	listing, err := h.Listing.GetListing(r.Context(), id)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
 	imgs, err := h.ListingImage.ListImages(r.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -94,13 +93,13 @@ func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
 
 	updated, err := h.Listing.UpdateListing(r.Context(), userID, id, input)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
 	imgs, err := h.ListingImage.ListImages(r.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -121,7 +120,7 @@ func (h *Handler) DeleteListing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Listing.DeleteListing(r.Context(), userID, id); err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -143,13 +142,7 @@ func (h *Handler) SearchListings(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.Listing.SearchListings(r.Context(), query)
 	if err != nil {
-		status := statusFromServiceError(err)
-		if status >= http.StatusInternalServerError {
-			slog.Error("listing search failed", "error", err)
-			respondWithError(w, status, "could not search listings")
-			return
-		}
-		respondWithError(w, status, err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 

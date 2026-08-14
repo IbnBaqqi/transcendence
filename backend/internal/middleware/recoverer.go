@@ -15,7 +15,9 @@ func Recoverer(log *slog.Logger) func(http.Handler) http.Handler {
 						"error", err,
 						"stack", string(debug.Stack()),
 					)
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusInternalServerError)
+					_, _ = w.Write([]byte(`{"error":"something went wrong"}`))
 				}
 			}()
 			next.ServeHTTP(w, r)

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 )
 
@@ -10,21 +11,28 @@ type errorResponse struct {
 	Details map[string]string `json:"details,omitempty"`
 }
 
-func respondWithJSON(w http.ResponseWriter, status int, paylaod interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	data, err := json.Marshal(paylaod)
+// respondWithJSON marshals FIRST and only then writes. Once a status line is
+// out it can't be taken back, so a marshal failure after that point leaves a
+// response that promises JSON and delivers nothing.
+func respondWithJSON(w http.ResponseWriter, status int, payload any) {
+	data, err := json.Marshal(payload)
 	if err != nil {
-		w.WriteHeader(500)
+		slog.Error("failed to marshal response", "error", err)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"something went wrong"}`))
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_, _ = w.Write(data)
-	// _ = json.NewEncoder(w).Encode(Response{Success: true, Data: data})
 }
 
 func respondWithError(w http.ResponseWriter, status int, message string) {
 	respondWithJSON(w, status, errorResponse{
 		Error:   message,
-		Details: nil, // fix after error refactor
+		Details: nil,
 	})
 }

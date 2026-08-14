@@ -23,7 +23,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.Auth.Signup(r.Context(), input)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -49,7 +49,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.Auth.Login(r.Context(), req)
 	if err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
