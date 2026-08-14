@@ -20,7 +20,7 @@ func (h *Handler) SaveListing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Saved.SaveListing(r.Context(), userID, listingID); err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -41,7 +41,7 @@ func (h *Handler) UnsaveListing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.Saved.UnsaveListing(r.Context(), userID, listingID); err != nil {
-		respondWithError(w, statusFromServiceError(err), err.Error())
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -57,7 +57,7 @@ func (h *Handler) GetSavedListings(w http.ResponseWriter, r *http.Request) {
 
 	listings, err := h.Saved.ListSaved(r.Context(), userID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch saved listings")
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -68,7 +68,7 @@ func (h *Handler) GetSavedListings(w http.ResponseWriter, r *http.Request) {
 
 	byListing, err := h.ListingImage.ImagesByListing(r.Context(), ids)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		respondWithServiceError(w, r, err)
 		return
 	}
 
