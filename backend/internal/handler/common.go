@@ -72,6 +72,7 @@ func respondWithServiceError(w http.ResponseWriter, r *http.Request, err error) 
 	if status >= http.StatusInternalServerError {
 		slog.Error("unhandled error",
 			"request_id", middleware.GetReqID(r.Context()),
+			"method", r.Method,
 			"path", r.URL.Path,
 			"error", err)
 
