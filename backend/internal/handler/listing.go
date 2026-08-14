@@ -32,7 +32,7 @@ func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
 	listings, err := h.Listing.ListListings(r.Context())
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch listings")
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -43,7 +43,7 @@ func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
 
 	byListing, err := h.ListingImage.ImagesByListing(r.Context(), ids)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -65,7 +65,7 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 
 	imgs, err := h.ListingImage.ListImages(r.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		respondWithServiceError(w, r, err)
 		return
 	}
 
@@ -99,7 +99,7 @@ func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
 
 	imgs, err := h.ListingImage.ListImages(r.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		respondWithServiceError(w, r, err)
 		return
 	}
 

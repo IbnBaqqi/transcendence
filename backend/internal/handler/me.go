@@ -62,7 +62,7 @@ func (h *Handler) GetUnreadCount(w http.ResponseWriter, r *http.Request) {
 
 	count, err := h.Conversation.CountUnread(r.Context(), userID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not count unread messages")
+		respondWithServiceError(w, r, err)
 		return
 	}
 

@@ -40,7 +40,7 @@ func (h *Handler) GetConversations(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := h.Conversation.ListConversations(r.Context(), userID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch conversations")
+		respondWithServiceError(w, r, err)
 		return
 	}
 

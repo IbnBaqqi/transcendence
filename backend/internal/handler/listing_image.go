@@ -87,7 +87,7 @@ func (h *Handler) GetListingImages(w http.ResponseWriter, r *http.Request) {
 
 	imgs, err := h.ListingImage.ListImages(r.Context(), listingID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch images")
+		respondWithServiceError(w, r, err)
 		return
 	}
 	respondWithJSON(w, http.StatusOK, dtos.ToListingImageResponses(imgs))

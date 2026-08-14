@@ -11,6 +11,9 @@ type errorResponse struct {
 	Details map[string]string `json:"details,omitempty"`
 }
 
+// respondWithJSON marshals FIRST and only then writes. Once a status line is
+// out it can't be taken back, so a marshal failure after that point leaves a
+// response that promises JSON and delivers nothing.
 func respondWithJSON(w http.ResponseWriter, status int, payload any) {
 	data, err := json.Marshal(payload)
 	if err != nil {
@@ -22,7 +25,7 @@ func respondWithJSON(w http.ResponseWriter, status int, payload any) {
 		return
 	}
 
-	w.Header().Set("Contnet-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_, _ = w.Write(data)
 }

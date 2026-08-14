@@ -66,7 +66,7 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 
 	orders, err := h.Order.ListOrders(r.Context(), userID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not fetch orders")
+		respondWithServiceError(w, r, err)
 		return
 	}
 
