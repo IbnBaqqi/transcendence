@@ -31,3 +31,8 @@ WHERE id = $1;
 INSERT INTO profiles (id)
 VALUES ($1)
 ON CONFLICT (id) DO NOTHING;
+
+-- name: GetProfileForUpdate :one
+SELECT * FROM profiles
+WHERE id = $1
+FOR UPDATE;

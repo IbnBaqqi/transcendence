@@ -91,6 +91,26 @@ func (q *Queries) GetProfile(ctx context.Context, id uuid.UUID) (Profile, error)
 	return i, err
 }
 
+const getProfileForUpdate = `-- name: GetProfileForUpdate :one
+SELECT id, firstname, lastname, bio, phone_number, date_of_birth FROM profiles
+WHERE id = $1
+FOR UPDATE
+`
+
+func (q *Queries) GetProfileForUpdate(ctx context.Context, id uuid.UUID) (Profile, error) {
+	row := q.db.QueryRowContext(ctx, getProfileForUpdate, id)
+	var i Profile
+	err := row.Scan(
+		&i.ID,
+		&i.Firstname,
+		&i.Lastname,
+		&i.Bio,
+		&i.PhoneNumber,
+		&i.DateOfBirth,
+	)
+	return i, err
+}
+
 const listProfiles = `-- name: ListProfiles :many
 SELECT id, firstname, lastname, bio, phone_number, date_of_birth FROM profiles
 ORDER BY id
