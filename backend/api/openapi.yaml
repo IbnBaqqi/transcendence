@@ -387,6 +387,218 @@ components:
         The database CHECK also permits `paid`, but no transition produces it.
       enum: [pending, confirmed, completed, cancelled]
 
+    # --- chat & settings ------------------------------------------------------
+
+    StartConversationInput:
+      type: object
+      required: [listing_id, body]
+      properties:
+        listing_id:
+          type: integer
+          format: int32
+        body:
+          type: string
+          maxLength: 2000
+          description: |
+            The opening message. Trimmed of surrounding whitespace; a body
+            that is empty after trimming is a 400.
+
+    SendMessageInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          maxLength: 2000
+
+    Presence:
+      type: object
+      required: [is_online]
+      description: |
+        `is_online` means "seen within the last 2 minutes" (twice the
+        heartbeat interval, so one missed beat is not read as offline).
+
+        When the other user has switched online status off, this is
+        `{"is_online": false}` with no `last_seen_at` — deliberately identical
+        to a user who is simply offline, so hiding cannot be detected.
+      properties:
+        is_online:
+          type: boolean
+        last_seen_at:
+          # OMITTED, not null, when unknown or hidden - the Go tag is omitempty.
+          type: string
+          format: date-time
+
+    ChatUser:
+      type: object
+      required: [id, username, presence]
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        presence:
+          $ref: "#/components/schemas/Presence"
+
+    Message:
+      type: object
+      required: [id, conversation_id, sender_id, body, created_at]
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Ascending; also the cursor for the `after` parameter.
+        conversation_id:
+          type: integer
+          format: int32
+        sender_id:
+          type: string
+          format: uuid
+        body:
+          type: string
+        read_at:
+          # Absent while unread. Contrast Order, whose timestamps are null.
+          type: string
+          format: date-time
+          description: Absent until the recipient marks the conversation read.
+        created_at:
+          type: string
+          format: date-time
+
+    MessagePreview:
+      type: object
+      required: [body, created_at]
+      properties:
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ConversationStatus:
+      type: string
+      description: |
+        `pending` until the seller answers. The buyer's opening message is
+        already stored, but neither side can send another until it is
+        `accepted`; `declined` closes it for good.
+      enum: [pending, accepted, declined]
+
+    ConversationRole:
+      type: string
+      description: Your side of THIS conversation, not a site-wide role.
+      enum: [buyer, seller]
+
+    Conversation:
+      type: object
+      required:
+        [
+          id,
+          listing_id,
+          listing_title,
+          status,
+          role,
+          other_user,
+          created_at,
+          updated_at,
+        ]
+      properties:
+        id:
+          type: integer
+          format: int32
+        listing_id:
+          # Nullable: the FK is ON DELETE SET NULL, so a deleted listing leaves
+          # the conversation intact with listing_id null.
+          type: [integer, "null"]
+          format: int32
+        listing_title:
+          type: string
+          description: |
+            Snapshotted when the chat started, so the thread still says what
+            it was about after the listing is edited or deleted.
+        status:
+          $ref: "#/components/schemas/ConversationStatus"
+        role:
+          $ref: "#/components/schemas/ConversationRole"
+        other_user:
+          $ref: "#/components/schemas/ChatUser"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ConversationListItem:
+      type: object
+      # The list shape is NOT the detail shape: it swaps created_at for a
+      # preview and an unread count, which the list view needs and the
+      # detail view does not.
+      required:
+        [
+          id,
+          listing_id,
+          listing_title,
+          status,
+          role,
+          other_user,
+          last_message,
+          unread_count,
+          updated_at,
+        ]
+      properties:
+        id:
+          type: integer
+          format: int32
+        listing_id:
+          type: [integer, "null"]
+          format: int32
+        listing_title:
+          type: string
+        status:
+          $ref: "#/components/schemas/ConversationStatus"
+        role:
+          $ref: "#/components/schemas/ConversationRole"
+        other_user:
+          $ref: "#/components/schemas/ChatUser"
+        last_message:
+          # Null, not absent - no omitempty on this one.
+          oneOf:
+            - $ref: "#/components/schemas/MessagePreview"
+            - type: "null"
+          description: Null on a conversation with no messages.
+        unread_count:
+          type: integer
+          format: int64
+          description: Unread messages from the other user in this thread.
+        updated_at:
+          type: string
+          format: date-time
+
+    UnreadCount:
+      type: object
+      required: [unread_count]
+      properties:
+        unread_count:
+          type: integer
+          format: int64
+
+    UserSettings:
+      type: object
+      required: [show_online_status]
+      properties:
+        show_online_status:
+          type: boolean
+
+    UpdateSettingsInput:
+      type: object
+      # Required because the Go field is a *bool specifically to tell
+      # "false" apart from "not sent" - and "not sent" is a 400.
+      required: [show_online_status]
+      properties:
+        show_online_status:
+          type: boolean
+
   # Whole reusable responses, not just schemas - status code descriptions we
   # would otherwise retype on all 35 operations.
   responses:
@@ -1253,5 +1465,371 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  # ---------------------------------------------------------------------------
+  # chat
+  # ---------------------------------------------------------------------------
+  /conversations:
+    post:
+      tags: [chat]
+      summary: Ask a seller about a listing
+      operationId: startConversation
+      description: |
+        Creates the conversation as `pending` and stores your opening message
+        in the same transaction. One conversation per (listing, buyer): asking
+        twice about the same listing is a 409, not a second thread.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartConversationInput"
+      responses:
+        "201":
+          description: Created, awaiting the seller's answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "400":
+          description: |
+            Bad body, an empty message, or your own listing — you cannot start
+            a chat with yourself.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: You have already contacted this seller about this listing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    get:
+      tags: [chat]
+      summary: List your conversations
+      operationId: getConversations
+      description: |
+        Both sides, newest activity first. Each item carries a preview and an
+        unread count, so the inbox needs one request rather than one per thread.
+      responses:
+        "200":
+          description: Your conversations.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConversationListItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /conversations/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    get:
+      tags: [chat]
+      summary: Get one conversation
+      operationId: getConversation
+      description: |
+        404 rather than 403 if you are not a participant, so this cannot be
+        used to discover which conversations exist.
+      responses:
+        "200":
+          description: The conversation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /conversations/{id}/accept:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    post:
+      tags: [chat]
+      summary: Seller accepts a chat request
+      operationId: acceptConversation
+      description: "`pending` → `accepted`. Seller only. No request body."
+      responses:
+        "200":
+          description: The conversation, now `accepted`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Only the seller can answer a chat request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: This request has already been answered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /conversations/{id}/decline:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    post:
+      tags: [chat]
+      summary: Seller declines a chat request
+      operationId: declineConversation
+      description: |
+        `pending` → `declined`, which is final: neither side can send again,
+        and the buyer cannot re-open by asking about the same listing.
+      responses:
+        "200":
+          description: The conversation, now `declined`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Only the seller can answer a chat request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: This request has already been answered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /conversations/{id}/messages:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    get:
+      tags: [chat]
+      summary: Read a conversation's messages
+      operationId: getMessages
+      description: |
+        Always ascending by id. Two modes:
+
+        - **no `after`** — the most recent `limit` messages (opening a thread).
+        - **`after=<id>`** — everything newer than that id (the polling loop:
+          keep the highest id you have seen and pass it back).
+
+        Readable while the conversation is still `pending`, even though
+        sending is not.
+      parameters:
+        - name: after
+          in: query
+          description: Return only messages with an id greater than this.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+        - name: limit
+          in: query
+          description: Values above 100 are clamped to 100 rather than rejected.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Messages, oldest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags: [chat]
+      summary: Send a message
+      operationId: sendMessage
+      description: |
+        Only once the conversation is `accepted`. While it is `pending` the
+        buyer's opening message is the only one allowed, so this is a 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageInput"
+      responses:
+        "201":
+          description: Sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Bad body, empty after trimming, or over 2000 characters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Not accepted yet, or the request was declined.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /conversations/{id}/read:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    post:
+      tags: [chat]
+      summary: Mark the other side's messages as read
+      operationId: markConversationRead
+      description: |
+        Stamps `read_at` on the other user's unread messages, which is what
+        clears this thread from `/me/unread`. Idempotent, and no request body.
+      responses:
+        "204":
+          description: Marked. No body.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  # ---------------------------------------------------------------------------
+  # me
+  # ---------------------------------------------------------------------------
+  /me/settings:
+    get:
+      tags: [me]
+      summary: Get your settings
+      operationId: getSettings
+      responses:
+        "200":
+          description: Your settings.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    patch:
+      tags: [me]
+      summary: Update your settings
+      operationId: updateSettings
+      description: |
+        Turning `show_online_status` off makes you look permanently offline to
+        everyone else — your presence stops being reported, not just hidden.
+        Omitting the field entirely is a 400, not a no-op.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsInput"
+      responses:
+        "200":
+          description: The settings after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /me/unread:
+    get:
+      tags: [me, chat]
+      summary: Your total unread message count
+      operationId: getUnreadCount
+      description: Across every conversation — for a badge in the header.
+      responses:
+        "200":
+          description: The count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadCount"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/ServerError"
