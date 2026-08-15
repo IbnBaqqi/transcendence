@@ -119,3 +119,29 @@ func TestLoginAcceptsTheSignupPassword(t *testing.T) {
 		t.Fatalf("err = %v, want *AuthError", err)
 	}
 }
+
+func TestSignupRejectsADuplicateUsername(t *testing.T) {
+	svc, db := newService(t)
+
+	if _, err := svc.Signup(context.Background(), signupInput("taken")); err != nil {
+		t.Fatalf("first signup failed: %v", err)
+	}
+
+	before := countUsers(t, db)
+
+	second := signupInput("taken")
+	second.Email = "someone.else@example.test"
+
+	_, err := svc.Signup(context.Background(), second)
+
+	var conflict *ConflictError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("err = %v, want *ConflictError", err)
+	}
+	if conflict.Message != "username already taken" {
+		t.Errorf("message = %q, want %q", conflict.Message, "username already taken")
+	}
+	if after := countUsers(t, db); after != before {
+		t.Errorf("users = %d, want %d - the rejected signup left a row behind", after, before)
+	}
+}
