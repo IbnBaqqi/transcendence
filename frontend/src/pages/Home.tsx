@@ -25,7 +25,7 @@ export default function Home() {
       {/* </p> */}
       {isPending && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-56 w-full" />
           ))}
         </div>
@@ -42,7 +42,7 @@ export default function Home() {
         <Skeleton
           variant="error"
           className="mt-6 h-56 w-full"
-          message="No listings yet!"
+          message="No listings yet."
           onRetry={() => refetch()}
         />
       )}

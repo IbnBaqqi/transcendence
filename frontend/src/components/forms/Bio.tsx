@@ -37,7 +37,6 @@ export function BioSection() {
               {/* TODO: blocked by #109 Using states, once forms are live we can make cancel only appear if user is in edit mode */}
               <Button
                 variant="secondary"
-                type="button"
                 onClick={() => {
                   form.reset();
                   setEditing(false);
@@ -47,7 +46,7 @@ export function BioSection() {
               </Button>
             </>
           ) : (
-            <Button variant="primary" type="button" onClick={() => setEditing(true)}>
+            <Button variant="primary" onClick={() => setEditing(true)}>
               Edit Text
             </Button>
           )}

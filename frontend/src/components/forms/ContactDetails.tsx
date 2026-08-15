@@ -43,7 +43,7 @@ export function ContactDetailsSection() {
         <div className="flex flex-row gap-2">
           {isEditing ? (
             <>
-              <Button variant="primary">
+              <Button variant="primary" type="submit">
                 {/* TODO: blocked by #109 Insert API here */}
                 Save
               </Button>

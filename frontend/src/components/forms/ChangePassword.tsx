@@ -27,9 +27,24 @@ export function ChangePasswordSection() {
         {isEditing ? (
           <>
             <div className="flex flex-row gap-4">
-              <FormField label="Current password" name="currentPassword" isEditing={isEditing} />
-              <FormField label="New password" name="newPassword" isEditing={isEditing} />
-              <FormField label="Confirm password" name="confirmPassword" isEditing={isEditing} />
+              <FormField
+                label="Current password"
+                name="currentPassword"
+                type="password"
+                isEditing={isEditing}
+              />
+              <FormField
+                label="New password"
+                name="newPassword"
+                type="password"
+                isEditing={isEditing}
+              />
+              <FormField
+                label="Confirm password"
+                name="confirmPassword"
+                type="password"
+                isEditing={isEditing}
+              />
             </div>
             <div className="flex flex-row gap-2">
               <Button variant="primary" type="submit">
@@ -39,7 +54,6 @@ export function ChangePasswordSection() {
               {/* TODO: blocked by #109 Using states, once forms are live we can make cancel only appear if user is in edit mode */}
               <Button
                 variant="secondary"
-                type="button"
                 onClick={() => {
                   form.reset();
                   setEditing(false);
@@ -52,7 +66,7 @@ export function ChangePasswordSection() {
         ) : (
           <>
             <div>********</div>
-            <Button variant="primary" type="button" onClick={() => setEditing(true)}>
+            <Button variant="primary" onClick={() => setEditing(true)}>
               Edit Password
             </Button>
           </>

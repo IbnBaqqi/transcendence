@@ -77,18 +77,21 @@
 
 /*
  * Skeleton loading block.
- * A diagonal highlight band is baked into the background as a gradient,
- * then swept across by animating background-position. Base fill uses
- * the existing surface-soft token so it already matches light/dark mode;
- * the highlight itself is a plain white/black overlay since it's a
- * pure lighting effect, not a semantic color.
+ * The highlight is baked into the block's own background as a single soft
+ * wave: surface-soft at both ends, highlight in the middle, ramp spanning
+ * the whole block. background-size doubles the width so the visible slice
+ * is always one full base->peak->base wave; panned with background-position
+ * (alternate) the wave travels across without ever leaving a flat region or
+ * a hard edge behind. Base fill uses the existing surface-soft token so it
+ * matches light/dark mode; the highlight intensity lives in
+ * --skeleton-shimmer.
  */
 @keyframes skeleton-shimmer {
   0% {
-    background-position: -150% -150%;
+    background-position: 0% 0;
   }
   100% {
-    background-position: 150% 150%;
+    background-position: 100% 0;
   }
 }
 
@@ -96,22 +99,18 @@
   background-color: var(--color-surface-soft);
   background-image: linear-gradient(
     115deg,
-    transparent 25%,
-    rgb(255 255 255 / 0.45) 50%,
-    transparent 75%
+    rgb(255 255 255 / 0) 0%,
+    var(--skeleton-shimmer) 50%,
+    rgb(255 255 255 / 0) 100%
   );
-  background-size: 250% 250%;
-  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1s ease-in-out infinite alternate;
+  --skeleton-shimmer: rgb(255 255 255 / 0.45);
 }
 
 @media (prefers-color-scheme: dark) {
   .skeleton {
-    background-image: linear-gradient(
-      115deg,
-      transparent 25%,
-      rgb(255 255 255 / 0.08) 50%,
-      transparent 75%
-    );
+    --skeleton-shimmer: rgb(255 255 255 / 0.08);
   }
 }
 
