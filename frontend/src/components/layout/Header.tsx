@@ -1,7 +1,7 @@
 // Link: normal navigation link (no "am I active?" info)
 // NavLink: a Link that knows if it points to the current page, so you can style the active one differently
 import { useState } from "react";
-import { useModal } from "../../providers/ModalProvider";
+import { useModal } from "../../providers/modalContext";
 import { Link, NavLink } from "react-router-dom";
 import Avatar from "../objects/Avatar.tsx";
 
@@ -32,7 +32,7 @@ export default function Header() {
               <Avatar size="sm" initials="OR" /> {/* OR just a placeholder for now */}
             </Link>
           ) : (
-            <button onClick={() => openModal("login")}>
+            <button type="button" onClick={() => openModal("login")}>
               <Avatar size="sm" initials="?" />
             </button>
           )}

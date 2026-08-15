@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useSyncExternalStore } from "react";
 
 export function Modal({
   onClose,
@@ -11,8 +11,11 @@ export function Modal({
   className?: string;
 }) {
   // avoid SSR mismatch — document.body only exists client-side
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => e.key === "Escape" && onClose();

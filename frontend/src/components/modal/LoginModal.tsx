@@ -4,7 +4,7 @@ import { Form } from "../forms/Form";
 import { FormField } from "../forms/FormField";
 import { loginSchema, type LoginFormSchema } from "../../schemas/login";
 import Button from "../objects/Button.tsx";
-import { useModal } from "../../providers/ModalProvider";
+import { useModal } from "../../providers/modalContext";
 
 export function LoginModal() {
   const { closeModal } = useModal();

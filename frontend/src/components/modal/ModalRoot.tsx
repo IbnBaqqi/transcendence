@@ -1,4 +1,4 @@
-import { useModal } from "../../providers/ModalProvider";
+import { useModal } from "../../providers/modalContext";
 import { Modal } from "./Modal";
 import { LoginModal } from "./LoginModal";
 import { ChatModal } from "./ChatModal";
