@@ -266,6 +266,127 @@ components:
             type: string
           examples: [{ "database": "healthy" }]
 
+    # --- listings & orders (authenticated) -----------------------------------
+
+    ListingInput:
+      type: object
+      # Create and update take the identical body, so they share this schema.
+      # PUT is a full replace: every field is required on both.
+      required: [title, category, price, quantity, unit]
+      properties:
+        title:
+          type: string
+          maxLength: 100
+          examples: ["Golden Chanterelles"]
+        description:
+          type: string
+          description: The only optional field.
+        category:
+          type: string
+          examples: ["mushrooms"]
+        price:
+          type: number
+          format: double
+          exclusiveMinimum: 0 # "price must be greater than 0"
+          examples: [18.5]
+        quantity:
+          type: integer
+          format: int32
+          exclusiveMinimum: 0
+          examples: [4]
+        unit:
+          type: string
+          examples: ["kg"]
+
+    CreateOrderInput:
+      type: object
+      required: [listing_id, quantity]
+      properties:
+        listing_id:
+          type: integer
+          format: int32
+        quantity:
+          type: integer
+          format: int32
+          exclusiveMinimum: 0
+
+    Order:
+      type: object
+      required:
+        [
+          id,
+          listing_id,
+          listing_title,
+          buyer_id,
+          seller_id,
+          quantity,
+          unit_price,
+          total_price,
+          status,
+          seller_handed_over_at,
+          buyer_received_at,
+          created_at,
+          updated_at,
+        ]
+      properties:
+        id:
+          type: integer
+          format: int32
+        listing_id:
+          type: integer
+          format: int32
+        listing_title:
+          type: string
+          description: |
+            Snapshotted when the order was placed, so the order still reads
+            correctly after the listing is edited or deleted.
+        buyer_id:
+          type: string
+          format: uuid
+        seller_id:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          format: int32
+        unit_price:
+          # A STRING, unlike Listing.price. NUMERIC comes out of the driver as
+          # a string and the order code keeps it that way to avoid float error.
+          type: string
+          examples: ["18.50"]
+        total_price:
+          type: string
+          examples: ["74.00"]
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        seller_handed_over_at:
+          # "null OR a timestamp" - the Go field is *time.Time.
+          type: [string, "null"]
+          format: date-time
+          description: Set when the seller marked handover; null until then.
+        buyer_received_at:
+          type: [string, "null"]
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    OrderStatus:
+      type: string
+      description: |
+        The lifecycle: `pending` → `confirmed` → `completed`, or `cancelled`
+        from either of the first two.
+
+        `completed` needs BOTH sides: the seller calls `/handover` and the
+        buyer calls `/receive`. Whichever comes first only stamps its own
+        timestamp and leaves the status at `confirmed`.
+
+        The database CHECK also permits `paid`, but no transition produces it.
+      enum: [pending, confirmed, completed, cancelled]
+
   # Whole reusable responses, not just schemas - status code descriptions we
   # would otherwise retype on all 35 operations.
   responses:
@@ -431,6 +552,34 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
+    post:
+      tags: [listings]
+      summary: Create a listing
+      operationId: createListing
+      # No "security" override here: the document default (bearer token)
+      # applies, which is exactly what this endpoint needs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListingInput"
+      responses:
+        "201":
+          description: |
+            Created. `images` is always `[]` here — upload photos afterwards
+            with `POST /listings/{id}/images`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /listings/search:
     get:
       tags: [listings]
@@ -540,6 +689,61 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
+    put:
+      tags: [listings]
+      summary: Replace a listing
+      operationId: updateListing
+      description: |
+        A full replace, not a patch: every required field must be sent, and an
+        omitted `description` is stored as empty. Sellers only — and a listing
+        whose quantity has reached 0 can no longer be edited.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListingInput"
+      responses:
+        "200":
+          description: The updated listing, with its photos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The listing is sold out; create a new one instead.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags: [listings]
+      summary: Delete a listing
+      operationId: deleteListing
+      responses:
+        "204":
+          description: Deleted. No body.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /listings/{id}/images:
     parameters:
       - name: id
@@ -567,6 +771,68 @@ paths:
                   $ref: "#/components/schemas/ListingImage"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    post:
+      tags: [images]
+      summary: Upload a photo
+      operationId: uploadListingImage
+      description: |
+        `multipart/form-data` with one file field named `image`. The type is
+        decided by sniffing the file's first 512 bytes, not by the filename or
+        the client's Content-Type — so a `.png` that is really a PDF is a 415.
+
+        Limits come from the environment: `MAX_UPLOAD_BYTES` (default 5 MiB)
+        and `MAX_IMAGES_PER_LISTING` (default 5).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary # "this field is a file", not text
+      responses:
+        "201":
+          description: Stored. `position` is the next free slot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingImage"
+        "400":
+          description: Not a multipart form, or no `image` field in it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: This listing already has the maximum number of images.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: The upload exceeded `MAX_UPLOAD_BYTES`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "415":
+          description: Not a JPEG, PNG or WebP.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -633,3 +899,359 @@ paths:
           description: No such file. Plain text, not the JSON error envelope.
           content:
             text/plain: {}
+
+  /listings/{id}/images/{imageID}:
+    # Two path parameters. Note the casing: chi's route says {imageID}, so the
+    # spec has to say {imageID} too.
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: imageID
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    delete:
+      tags: [images]
+      summary: Delete a photo
+      operationId: deleteListingImage
+      description: |
+        Removes the row and the file. Remaining photos keep their positions;
+        gaps are allowed.
+      responses:
+        "204":
+          description: Deleted. No body.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  # ---------------------------------------------------------------------------
+  # wishlist
+  # ---------------------------------------------------------------------------
+  /listings/{id}/save:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    post:
+      tags: [wishlist]
+      summary: Save a listing
+      operationId: saveListing
+      description: |
+        Idempotent — saving a listing you already saved is still a 204, not a
+        409 (the insert is `ON CONFLICT DO NOTHING`).
+      responses:
+        "204":
+          description: Saved. No body.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags: [wishlist]
+      summary: Remove a listing from the wishlist
+      operationId: unsaveListing
+      description: |
+        NOT idempotent, unlike save: removing something you had not saved is a
+        404 ("listing was not saved").
+      responses:
+        "204":
+          description: Removed. No body.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /me/saved:
+    get:
+      tags: [wishlist, me]
+      summary: List your saved listings
+      operationId: getSavedListings
+      description: Unpaginated. Photos are attached in one batch query.
+      responses:
+        "200":
+          description: Your wishlist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Listing"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  # ---------------------------------------------------------------------------
+  # orders (simulated - no real money moves)
+  # ---------------------------------------------------------------------------
+  /orders:
+    post:
+      tags: [orders]
+      summary: Place an order
+      operationId: createOrder
+      description: |
+        Decrements the listing's stock in the same transaction, so two buyers
+        racing for the last item cannot both succeed. Starts as `pending`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderInput"
+      responses:
+        "201":
+          description: Order placed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: |
+            Bad body, non-positive quantity, or your own listing — you cannot
+            buy from yourself.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Not enough stock available.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    get:
+      tags: [orders]
+      summary: List your orders
+      operationId: getOrders
+      description: Every order where you are the buyer OR the seller.
+      responses:
+        "200":
+          description: Your orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /orders/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    get:
+      tags: [orders]
+      summary: Get one order
+      operationId: getOrder
+      responses:
+        "200":
+          description: The order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /orders/{id}/confirm:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    post:
+      tags: [orders]
+      summary: Seller accepts the order
+      operationId: confirmOrder
+      description: "`pending` → `confirmed`. Seller only."
+      responses:
+        "200":
+          description: The order, now `confirmed`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The order is not `pending`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /orders/{id}/handover:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    post:
+      tags: [orders]
+      summary: Seller marks the goods handed over
+      operationId: handoverOrder
+      description: |
+        Half of the two-sided handshake. Stamps `seller_handed_over_at`; the
+        status only becomes `completed` once the buyer has called `/receive`
+        as well. Calling it twice is a 409.
+      responses:
+        "200":
+          description: |
+            The order — `completed` if the buyer already confirmed receipt,
+            otherwise still `confirmed` with the timestamp now set.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Wrong status, or you already marked handover.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /orders/{id}/receive:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    post:
+      tags: [orders]
+      summary: Buyer confirms receipt
+      operationId: receiveOrder
+      description: |
+        The other half of the handshake. Stamps `buyer_received_at`; the
+        status becomes `completed` only once the seller has handed over too.
+      responses:
+        "200":
+          description: The order, `completed` if both sides have now marked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Wrong status, or you already confirmed receipt.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /orders/{id}/cancel:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    post:
+      tags: [orders]
+      summary: Cancel an order
+      operationId: cancelOrder
+      description: |
+        Either side, while the order is `pending` or `confirmed`. The reserved
+        stock goes back to the listing. Once either side has marked the
+        handshake, cancelling is refused.
+      responses:
+        "200":
+          description: The order, now `cancelled`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Already finished, or handover has started.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
