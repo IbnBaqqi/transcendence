@@ -19,6 +19,9 @@ import { BioSection } from "../components/forms/Bio.tsx";
 import { useState } from "react";
 
 export default function Profile() {
+  {
+    /* These two states are just placeholders until we pull from backend with auth */
+  }
   const [marketing, setMarketing] = useState(false);
   const [hideDetails, setHideDetails] = useState(false);
   return (
