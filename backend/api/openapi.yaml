@@ -23,10 +23,14 @@ info:
 
     ## Errors
 
-    Every error response is the same shape: `{"error": "..."}`. Messages on
-    4xx describe what the caller did wrong; 5xx always returns a fixed
-    "something went wrong" and the detail goes to the server log, tagged with
-    the `X-Request-ID` returned on every response.
+    Errors from the endpoints below are all the same shape:
+    `{"error": "..."}`. Messages on 4xx describe what the caller did wrong;
+    5xx always returns a fixed "something went wrong" and the detail goes to
+    the server log, tagged with the `X-Request-ID` returned on every response.
+
+    Two cases bypass that envelope, because they never reach a handler: an
+    unrouted path returns a plain-text 404, and a routed path called with the
+    wrong method returns an empty 405.
 
 # The base URL every path in this file is relative to. Because /api/v1 lives
 # here, paths below can be written as /listings instead of /api/v1/listings.
@@ -200,6 +204,7 @@ components:
         username:
           type: string
           maxLength: 50
+          description: Counted in bytes, not characters.
           examples: ["forager42"]
         email:
           type: string
@@ -209,7 +214,9 @@ components:
           type: string
           format: password
           minLength: 8
-          description: Hashed with bcrypt before storage; never returned.
+          description: |
+            Counted in bytes, not characters. Hashed with bcrypt before
+            storage; never returned.
 
     LoginRequest:
       type: object
@@ -239,7 +246,7 @@ components:
           format: email
         role:
           type: string
-          examples: ["user"]
+          examples: ["USER"]
 
     AuthResponse:
       type: object
@@ -277,6 +284,9 @@ components:
         title:
           type: string
           maxLength: 100
+          description: |
+            The server counts BYTES, so accented characters use up more than
+            one of the 100.
           examples: ["Golden Chanterelles"]
         description:
           type: string
@@ -305,6 +315,7 @@ components:
         listing_id:
           type: integer
           format: int32
+          exclusiveMinimum: 0
         quantity:
           type: integer
           format: int32
@@ -339,7 +350,7 @@ components:
           type: string
           description: |
             Snapshotted when the order was placed, so the order still reads
-            correctly after the listing is edited or deleted.
+            correctly after the listing is edited.
         buyer_id:
           type: string
           format: uuid
@@ -384,7 +395,7 @@ components:
         buyer calls `/receive`. Whichever comes first only stamps its own
         timestamp and leaves the status at `confirmed`.
 
-        The database CHECK also permits `paid`, but no transition produces it.
+        An earlier schema had a `paid` status; migration 007 removed it.
       enum: [pending, confirmed, completed, cancelled]
 
     # --- chat & settings ------------------------------------------------------
@@ -628,12 +639,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
-    Conflict:
-      description: The request clashes with the resource's current state.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
     ServerError:
       description: Something failed on our side; the cause is in the log.
       content:
@@ -746,14 +751,18 @@ paths:
   /listings:
     get:
       tags: [listings]
-      summary: List every listing
+      summary: List the available listings
       operationId: getListings
       security: []
       description: |
+        Newest first, and **sold-out listings are excluded** (`quantity > 0`).
+        A sold-out listing is still reachable through `/listings/{id}` and
+        still appears in `/me/saved`.
+
         Unpaginated — use `/listings/search` for filtering, sorting and pages.
       responses:
         "200":
-          description: Every listing, each with its photos attached.
+          description: The available listings, each with its photos attached.
           content:
             application/json:
               schema:
@@ -799,9 +808,12 @@ paths:
       operationId: searchListings
       security: []
       description: |
-        Every parameter is optional; omitting one means "no filter". Text
-        filters match case-insensitively on a substring, and `%` or `_` in the
-        input are treated literally rather than as SQL wildcards.
+        Every parameter is optional; omitting one means "no filter". Sold-out
+        listings are excluded, as in `GET /listings`.
+
+        `keyword` and `location` match case-insensitively on a substring, with
+        `%` or `_` in the input treated literally rather than as SQL
+        wildcards. `category` is an exact, case-SENSITIVE match.
       parameters:
         # in: query = ?keyword=... . Optional unless "required: true".
         - name: keyword
@@ -823,6 +835,9 @@ paths:
               value: mushrooms
         - name: location
           in: query
+          description: |
+            Matches the seller's address, not the listing — a listing whose
+            seller has no address is never returned by this filter.
           schema:
             type: string
             maxLength: 200
@@ -858,7 +873,6 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 50
             default: 20
       responses:
         "200":
@@ -942,6 +956,9 @@ paths:
       tags: [listings]
       summary: Delete a listing
       operationId: deleteListing
+      description: |
+        Refused once the listing has orders — the order history has to keep
+        pointing at something, so the foreign key is ON DELETE RESTRICT.
       responses:
         "204":
           description: Deleted. No body.
@@ -953,6 +970,12 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          description: The listing has orders and cannot be deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -1673,18 +1696,21 @@ paths:
       parameters:
         - name: after
           in: query
-          description: Return only messages with an id greater than this.
+          description: |
+            Return only messages with an id greater than this. `0` and an
+            omitted value both mean "no cursor".
           schema:
             type: integer
             format: int32
             minimum: 0
         - name: limit
           in: query
-          description: Values above 100 are clamped to 100 rather than rejected.
+          description: |
+            Values above 100 are clamped to 100 rather than rejected, and 0
+            means "use the default".
           schema:
             type: integer
-            minimum: 1
-            maximum: 100
+            minimum: 0
             default: 50
       responses:
         "200":
@@ -1786,6 +1812,8 @@ paths:
                 $ref: "#/components/schemas/UserSettings"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/ServerError"
     patch:
@@ -1813,6 +1841,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/ServerError"
 

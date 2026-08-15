@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	specPath = "/api/openapi.yaml"
-	docsPath = "/api/docs"
+	specPath  = "/api/openapi.yaml"
+	docsPath  = "/api/docs"
+	docsTitle = "Foraged goods marketplace API"
 )
 
 // mountDocs serves the spec and a Swagger UI that reads it.
@@ -21,10 +22,6 @@ func mountDocs(r chi.Router) {
 
 	r.Mount(docsPath, swgui.NewHandler(docsTitle, specPath, docsPath))
 }
-
-// docsTitle is what the browser tab says; keep it in step with the spec's
-// info.title.
-const docsTitle = "Foraged goods marketplace API"
 
 func serveSpec(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/yaml")
