@@ -24,7 +24,7 @@ export default function User() {
         <div>
           <Avatar size="lg" initials="OR" />
         </div>
-        <div className="text-accent text-base flex flex-col">
+        <div className="text-accent flex flex-col text-base">
           <div className="font-bold">Oscar Rogers</div>
           {/* Hide email depending on preferences */}
           <Mailto label="oscarroff@example.com" mailto="oscarrogers@example.com" />

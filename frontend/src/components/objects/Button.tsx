@@ -3,6 +3,7 @@ type ButtonProps = {
   onClick?: () => void; // Insert event handler here
   disabled?: boolean; // Start true or false
   variant?: "primary" | "secondary"; // Variants for main buttons and secondaries
+  type?: "button" | "submit" | "reset"; // Native button type, defaults to "button"
 };
 
 export default function Button({
@@ -10,6 +11,7 @@ export default function Button({
   onClick,
   disabled = false,
   variant = "primary",
+  type = "button",
 }: ButtonProps) {
   const baseStyles =
     "px-4 py-2 rounded-full font-medium transition-colors duration-150 " +
@@ -25,7 +27,7 @@ export default function Button({
 
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
       disabled={disabled}
       className={`${baseStyles} ${variantStyles[variant]}`}

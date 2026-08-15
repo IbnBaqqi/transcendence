@@ -20,13 +20,11 @@ export function FormField({ label, name, type = "text", placeholder, isEditing }
 
   return (
     <div className="">
-      {label && ( 
-        <label htmlFor={name}>{label}</label>
-      )}
+      {label && <label htmlFor={name}>{label}</label>}
       {isEditing ? (
         <>
           <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+            className="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight shadow focus:outline-none"
             id={name}
             type={type}
             placeholder={placeholder}

@@ -8,7 +8,13 @@ type FormTextAreaProps = {
   isEditing: boolean;
 };
 
-export function FormTextArea({ label, name, placeholder, maxLength = 1024, isEditing }: FormTextAreaProps) {
+export function FormTextArea({
+  label,
+  name,
+  placeholder,
+  maxLength = 1024,
+  isEditing,
+}: FormTextAreaProps) {
   const {
     register,
     watch,
@@ -20,15 +26,11 @@ export function FormTextArea({ label, name, placeholder, maxLength = 1024, isEdi
 
   return (
     <div className="">
-      {label && ( 
-        <label htmlFor={name}>
-          {label}
-        </label>
-      )}
+      {label && <label htmlFor={name}>{label}</label>}
       {isEditing ? (
         <>
           <textarea
-            className="field-sizing-content min-w-64 w-full resize-none overflow-y-auto rounded border p-2 focus:outline-none"
+            className="field-sizing-content w-full min-w-64 resize-none overflow-y-auto rounded border p-2 focus:outline-none"
             id={name}
             rows={3}
             maxLength={maxLength}
@@ -37,7 +39,9 @@ export function FormTextArea({ label, name, placeholder, maxLength = 1024, isEdi
           />
           <div className="flex justify-between text-xs text-gray-400">
             <span>{error && <span className="text-red-500">{error.message as string}</span>}</span>
-            <span>{value.length} / {maxLength}</span>
+            <span>
+              {value.length} / {maxLength}
+            </span>
           </div>
         </>
       ) : (

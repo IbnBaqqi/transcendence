@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export function useFormSubmit<T>(submitFN: (data: T) => Promise<void>) {
+export function useFormSubmit<T>(submitFn: (data: T) => Promise<void>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 

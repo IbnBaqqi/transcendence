@@ -26,7 +26,7 @@ export const citySchema = z
 // TODO: Add schemas for listing data
 
 // NOTE: Exports for common schemas that are directly used without wrapper objects
-export const bioSchema = z
-  .string()
-  .max(1024, "Bio must be less than 1024 characters");
+export const bioSchema = z.object({
+  bio: z.string().max(1024, "Bio must be less than 1024 characters"),
+});
 export type BioFormValues = z.infer<typeof bioSchema>;

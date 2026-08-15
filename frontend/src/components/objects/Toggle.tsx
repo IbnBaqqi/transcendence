@@ -36,7 +36,7 @@ export default function Toggle({
         aria-checked={checked}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex ${track} items-center rounded-full transition-colors duration-200 ${checked ? "bg-accent" : "bg-slate-300"} focus:ring-line focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50`}
+        className={`relative inline-flex ${track} items-center rounded-full transition-colors duration-200 ${checked ? "bg-accent" : "bg-surface-soft"} focus:ring-line focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50`}
       >
         <span
           className={`inline-block ${thumb} transform rounded-full bg-white shadow transition-transform duration-200 ${checked ? translate : "translate-x-0.5"}`}

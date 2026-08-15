@@ -43,12 +43,14 @@ export function ContactDetailsSection() {
         <div className="flex flex-row gap-2">
           {isEditing ? (
             <>
-              <Button variant="primary" type="submit">
+              <Button variant="primary">
                 {/* TODO: blocked by #109 Insert API here */}
                 Save
               </Button>
               {/* TODO: blocked by #109 Using states, once forms are live we can make cancel only appear if user is in edit mode */}
-              <Button variant="secondary" type="button" onClick={() => {
+              <Button
+                variant="secondary"
+                onClick={() => {
                   form.reset();
                   setEditing(false);
                 }}
@@ -57,7 +59,7 @@ export function ContactDetailsSection() {
               </Button>
             </>
           ) : (
-            <Button variant="primary" type="button" onClick={() => setEditing(true)}>
+            <Button variant="primary" onClick={() => setEditing(true)}>
               Edit Details
             </Button>
           )}

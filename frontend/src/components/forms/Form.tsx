@@ -1,5 +1,5 @@
 import { FormProvider, type UseFormReturn, type FieldValues } from "react-hook-form";
-import { ReactNode } from "react";
+import { type ReactNode } from "react";
 
 type FormProps<T extends FieldValues> = {
   form: UseFormReturn<T>;

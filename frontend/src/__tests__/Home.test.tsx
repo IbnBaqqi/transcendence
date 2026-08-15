@@ -43,10 +43,10 @@ const secondSample: Listing = {
 };
 
 describe("Home", () => {
-  test("shows a loading message while the query is pending", () => {
+  test("shows skeleton placeholders while the query is pending", () => {
     mockListings({ data: undefined, isPending: true, isError: false });
-    render(<Home />);
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    const { container } = render(<Home />);
+    expect(container.querySelectorAll(".skeleton")).toHaveLength(6);
   });
 
   test("shows an error message when the query fails", () => {

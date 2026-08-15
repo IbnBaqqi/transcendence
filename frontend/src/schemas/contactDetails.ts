@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { nameSchema, phoneSchema, citySchema, } from "./common";
+import { nameSchema, phoneSchema, citySchema } from "./common";
 
 export const contactDetailsSchema = z.object({
   firstName: nameSchema,

@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { passwordSchema } from "./common";
 
 export const confirmSchema = z
   .object({
