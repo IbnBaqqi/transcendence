@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
@@ -53,15 +54,6 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 		return SignupResponse{}, err
 	}
 
-	// Check for duplicate email
-	_, err := s.db.GetUserByEmail(ctx, input.Email)
-	if err == nil {
-		return SignupResponse{}, &ConflictError{Message: "email already in use"}
-	}
-	if !errors.Is(err, sql.ErrNoRows) {
-		return SignupResponse{}, signupFailed("look up email", err)
-	}
-
 	hashed, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return SignupResponse{}, signupFailed("hash password", err)
@@ -85,6 +77,9 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 		Password: string(hashed),
 	})
 	if err != nil {
+		if conflict := duplicateUserError(err); conflict != nil {
+			return SignupResponse{}, conflict
+		}
 		return SignupResponse{}, signupFailed("create user", err)
 	}
 
@@ -135,20 +130,61 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 	}, nil
 }
 
+const (
+	maxUsernameLength = 50
+	minPasswordLength = 8
+
+	// bcrypt refuses anything longer and returns ErrPasswordTooLong. Rejecting
+	// it here turns what would be a 500 from the hashing step into a 400.
+	maxPasswordLength = 72
+)
+
 func validateSignupInput(input dtos.CreateUserRequest) error {
 	if input.Username == "" {
 		return &ValidationError{Message: "username is required"}
 	}
-	if len(input.Username) > 50 {
-		return &ValidationError{Message: "username must be 50 characters or fewer"}
+	if len(input.Username) > maxUsernameLength {
+		return &ValidationError{Message: "username must be 50 bytes or fewer"}
 	}
 	if input.Email == "" {
 		return &ValidationError{Message: "email is required"}
 	}
-	if len(input.Password) < 8 {
+	if len(input.Password) < minPasswordLength {
 		return &ValidationError{Message: "password must be at least 8 characters"}
 	}
+	if len(input.Password) > maxPasswordLength {
+		return &ValidationError{Message: "password must be 72 bytes or fewer"}
+	}
 	return nil
+}
+
+// The unique indexes from migration 001. Postgres reports the constraint name
+// with the error, which is what lets us tell the two apart.
+const (
+	usernameConstraint = "users_username_uq"
+	emailConstraint    = "users_email_uq"
+)
+
+// duplicateUserError translates a unique violation into the error the handler
+// maps to 409. Returns nil when err is something else.
+func duplicateUserError(err error) error {
+	switch {
+	case isUniqueViolation(err, usernameConstraint):
+		return &ConflictError{Message: "username already taken"}
+	case isUniqueViolation(err, emailConstraint):
+		return &ConflictError{Message: "email already in use"}
+	}
+	return nil
+}
+
+// isUniqueViolation reports whether err is Postgres' "duplicate key" (23505)
+// for one specific constraint.
+func isUniqueViolation(err error, constraint string) bool {
+	var pqErr *pq.Error
+	if !errors.As(err, &pqErr) {
+		return false
+	}
+	return pqErr.Code == "23505" && pqErr.Constraint == constraint
 }
 
 func toUserInfo(user database.User) dtos.UserInfo {
