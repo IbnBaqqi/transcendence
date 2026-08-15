@@ -217,9 +217,12 @@ components:
           type: string
           format: password
           minLength: 8
+          maxLength: 72
           description: |
-            Counted in bytes, not characters. Hashed with bcrypt before
-            storage; never returned.
+            Counted in bytes, not characters — bcrypt's own limit is 72 bytes,
+            so a long passphrase with accented characters can be rejected at
+            fewer than 72 typed characters. Hashed before storage; never
+            returned.
 
     LoginRequest:
       type: object
@@ -691,8 +694,9 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequest"
         "409":
-          # Not the shared Conflict response: this one has a specific meaning.
-          description: That email is already registered.
+          description: |
+            That email or username is already taken. Both are unique, and the
+            message says which.
           content:
             application/json:
               schema:
