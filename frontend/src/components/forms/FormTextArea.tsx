@@ -37,8 +37,10 @@ export function FormTextArea({
             placeholder={placeholder}
             {...register(name)}
           />
-          <div className="flex justify-between text-xs text-muted">
-            <span>{error && <span className="text-berry-500">{error.message as string}</span>}</span>
+          <div className="text-muted flex justify-between text-xs">
+            <span>
+              {error && <span className="text-berry-500">{error.message as string}</span>}
+            </span>
             <span>
               {value.length} / {maxLength}
             </span>

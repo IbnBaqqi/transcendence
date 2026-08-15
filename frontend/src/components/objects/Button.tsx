@@ -13,6 +13,19 @@ export default function Button({
   variant = "primary",
   type = "button",
 }: ButtonProps) {
+  // A click on a type="button" has no meaningful default action, so we cancel
+  // it. Without this, Chromium runs the click's default action AFTER React has
+  // re-rendered: an "enter edit mode" button that swaps itself for a
+  // type="submit" Save button mid-click makes the browser fire a synthetic
+  // submit via that new button (implicit submission), so the form submits
+  // immediately with an empty payload.
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (type === "button") {
+      event.preventDefault();
+    }
+    onClick?.();
+  };
+
   const baseStyles =
     "px-4 py-2 rounded-full font-medium transition-colors duration-150 " +
     "disabled:opacity-50 disabled:cursor-not-allowed " +
@@ -28,7 +41,7 @@ export default function Button({
   return (
     <button
       type={type}
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled}
       className={`${baseStyles} ${variantStyles[variant]}`}
     >
