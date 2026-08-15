@@ -146,7 +146,7 @@ func (q *Queries) ListProfiles(ctx context.Context) ([]Profile, error) {
 	return items, nil
 }
 
-const updateProfile = `-- name: UpdateProfile :exec
+const updateProfile = `-- name: UpdateProfile :one
 UPDATE profiles
 SET firstname     = $2,
     lastname      = $3,
@@ -154,6 +154,7 @@ SET firstname     = $2,
     phone_number  = $5,
     date_of_birth = $6
 WHERE id = $1
+RETURNING id, firstname, lastname, bio, phone_number, date_of_birth
 `
 
 type UpdateProfileParams struct {
@@ -165,8 +166,8 @@ type UpdateProfileParams struct {
 	DateOfBirth sql.NullTime
 }
 
-func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) error {
-	_, err := q.db.ExecContext(ctx, updateProfile,
+func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) (Profile, error) {
+	row := q.db.QueryRowContext(ctx, updateProfile,
 		arg.ID,
 		arg.Firstname,
 		arg.Lastname,
@@ -174,5 +175,14 @@ func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) er
 		arg.PhoneNumber,
 		arg.DateOfBirth,
 	)
-	return err
+	var i Profile
+	err := row.Scan(
+		&i.ID,
+		&i.Firstname,
+		&i.Lastname,
+		&i.Bio,
+		&i.PhoneNumber,
+		&i.DateOfBirth,
+	)
+	return i, err
 }

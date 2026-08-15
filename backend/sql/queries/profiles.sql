@@ -14,14 +14,15 @@ VALUES (
 )
 RETURNING *;
 
--- name: UpdateProfile :exec
+-- name: UpdateProfile :one
 UPDATE profiles
 SET firstname     = $2,
     lastname      = $3,
     bio           = $4,
     phone_number  = $5,
     date_of_birth = $6
-WHERE id = $1;
+WHERE id = $1
+RETURNING *;
 
 -- name: DeleteProfile :exec
 DELETE FROM profiles
