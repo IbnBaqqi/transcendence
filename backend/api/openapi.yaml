@@ -43,6 +43,8 @@ tags:
     description: Browsing, searching and managing listings
   - name: images
     description: Listing photos
+  - name: health
+    description: Liveness and dependency checks
   - name: wishlist
     description: Saved listings
   - name: orders
@@ -189,6 +191,81 @@ components:
         total_pages:
           type: integer
 
+    # --- auth ---------------------------------------------------------------
+
+    SignupRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          maxLength: 50
+          examples: ["forager42"]
+        email:
+          type: string
+          format: email
+          examples: ["forager@example.com"]
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Hashed with bcrypt before storage; never returned.
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+      # The login handler uses DisallowUnknownFields, so an extra key is a 400.
+      # Signup does NOT - that asymmetry is real, not a typo here.
+      additionalProperties: false
+
+    UserInfo:
+      type: object
+      required: [id, username, email, role]
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          examples: ["user"]
+
+    AuthResponse:
+      type: object
+      required: [access_token, user]
+      properties:
+        access_token:
+          type: string
+          description: |
+            Send as `Authorization: Bearer <access_token>`. The refresh token
+            is NOT in the body — it comes back as an HttpOnly cookie.
+        user:
+          $ref: "#/components/schemas/UserInfo"
+
+    Health:
+      type: object
+      required: [status, checks]
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        checks:
+          type: object
+          additionalProperties:
+            type: string
+          examples: [{ "database": "healthy" }]
+
   # Whole reusable responses, not just schemas - status code descriptions we
   # would otherwise retype on all 35 operations.
   responses:
@@ -231,6 +308,328 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
 
-# Required key, filled in by steps 2 and 3. "{}" is an empty map - leaving the
-# key out entirely makes the document invalid.
-paths: {}
+# Each key is a URL relative to the server above, so "/listings" is really
+# http://localhost:8080/api/v1/listings.
+paths:
+  # ---------------------------------------------------------------------------
+  # auth
+  # ---------------------------------------------------------------------------
+  /auth/signup:
+    post: # the HTTP method is the second level: path -> method -> operation
+      tags: [auth] # which section of the UI this lands in
+      summary: Create an account
+      operationId: signup # unique id; client generators use it as the func name
+      # Overrides the document-wide default: no token needed (you have none yet).
+      security: []
+      description: |
+        Creates the user and their empty profile in one transaction, then
+        returns an access token. The refresh token is set as an HttpOnly
+        `refresh_token` cookie rather than returned in the body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        # Status codes are quoted - unquoted YAML would read them as numbers.
+        "201":
+          description: Account created.
+          headers:
+            Set-Cookie:
+              description: HttpOnly `refresh_token`, valid for 7 days.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          # Not the shared Conflict response: this one has a specific meaning.
+          description: That email is already registered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Exchange credentials for a token
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Authenticated.
+          headers:
+            Set-Cookie:
+              description: HttpOnly `refresh_token`, valid for 7 days.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: |
+            Wrong password, or no such account. Deliberately the same message
+            either way, so this cannot be used to discover which emails exist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Clear the refresh token cookie
+      operationId: logout
+      security: []
+      description: |
+        Expires the `refresh_token` cookie. The access token is stateless and
+        stays valid until it expires, so the client should drop it too.
+        Succeeds even if you were never logged in.
+      responses:
+        "204":
+          description: Cookie cleared. No body.
+
+  # ---------------------------------------------------------------------------
+  # listings (public reads)
+  # ---------------------------------------------------------------------------
+  /listings:
+    get:
+      tags: [listings]
+      summary: List every listing
+      operationId: getListings
+      security: []
+      description: |
+        Unpaginated — use `/listings/search` for filtering, sorting and pages.
+      responses:
+        "200":
+          description: Every listing, each with its photos attached.
+          content:
+            application/json:
+              schema:
+                # An array response has no named schema; describe it inline.
+                type: array
+                items:
+                  $ref: "#/components/schemas/Listing"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /listings/search:
+    get:
+      tags: [listings]
+      summary: Search, filter, sort and paginate listings
+      operationId: searchListings
+      security: []
+      description: |
+        Every parameter is optional; omitting one means "no filter". Text
+        filters match case-insensitively on a substring, and `%` or `_` in the
+        input are treated literally rather than as SQL wildcards.
+      parameters:
+        # in: query = ?keyword=... . Optional unless "required: true".
+        - name: keyword
+          in: query
+          description: Matches the title or description.
+          schema:
+            type: string
+            maxLength: 200
+          examples:
+            chanterelle:
+              value: chanterelle
+        - name: category
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          examples:
+            mushrooms:
+              value: mushrooms
+        - name: location
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+        - name: min_price
+          in: query
+          description: Non-negative. Must not exceed `max_price`.
+          schema:
+            type: number
+            minimum: 0
+        - name: max_price
+          in: query
+          schema:
+            type: number
+            minimum: 0
+        - name: sort
+          in: query
+          description: Anything outside this list is a 400.
+          schema:
+            type: string
+            # Mirrors the sortOptions map in database/listings_search.go.
+            enum: [newest, oldest, price_asc, price_desc]
+            default: newest
+        - name: page
+          in: query
+          description: 1-based. A page past the end returns an empty `items`.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Values above 50 are clamped to 50 rather than rejected.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          description: One page of matches, plus the totals for a pager.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedListings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /listings/{id}:
+    # Declared at path level, so every method on this path inherits it.
+    # {id} in the path and "name: id" here have to match exactly.
+    parameters:
+      - name: id
+        in: path
+        required: true # path parameters are ALWAYS required
+        schema:
+          type: integer
+          format: int32
+    get:
+      tags: [listings]
+      summary: Get one listing
+      operationId: getListing
+      security: []
+      responses:
+        "200":
+          description: The listing, with its photos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /listings/{id}/images:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    get:
+      tags: [images]
+      summary: List a listing's photos
+      operationId: getListingImages
+      security: []
+      description: |
+        Ordered by `position`. A listing id that does not exist returns an
+        empty array, not a 404.
+      responses:
+        "200":
+          description: The photos, ascending by position.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingImage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  # ---------------------------------------------------------------------------
+  # served outside /api/v1 - hence the per-path "servers" override below
+  # ---------------------------------------------------------------------------
+  /health:
+    # A path may override the document's servers. Without this, the docs would
+    # claim /api/v1/health, which does not exist.
+    servers:
+      - url: http://localhost:8080
+        description: Mounted at the root, not under /api/v1
+    get:
+      tags: [health]
+      summary: Liveness and dependency check
+      operationId: health
+      security: []
+      responses:
+        "200":
+          description: Everything is up.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: A dependency is down; `checks` says which.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /uploads/{filename}:
+    servers:
+      - url: http://localhost:8080
+        description: Mounted at the root, not under /api/v1
+    get:
+      tags: [images]
+      summary: Fetch an uploaded image file
+      operationId: getUpload
+      security: []
+      description: |
+        Serves the bytes behind a `ListingImage.url`. Filenames are generated
+        by the server; a name containing `/` is a 404, so the directory cannot
+        be walked. Responses carry `X-Content-Type-Options: nosniff`.
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: Bare filename, no directories.
+          schema:
+            type: string
+          examples:
+            png:
+              value: 0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png
+      responses:
+        "200":
+          description: The image bytes.
+          content:
+            # Binary responses: name the media types, no schema needed.
+            image/jpeg: {}
+            image/png: {}
+            image/webp: {}
+        "404":
+          description: No such file. Plain text, not the JSON error envelope.
+          content:
+            text/plain: {}
