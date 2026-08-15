@@ -17,14 +17,6 @@ func newService(t *testing.T) (*Service, *database.DB) {
 	return NewService(db, NewJwtService("test-secret")), db
 }
 
-func signupInput(name string) dtos.CreateUserRequest {
-	return dtos.CreateUserRequest{
-		Username: name,
-		Email:    name + "@example.test",
-		Password: "password123",
-	}
-}
-
 func countUsers(t *testing.T, db *database.DB) int {
 	t.Helper()
 
@@ -92,6 +84,9 @@ func TestSignupRejectsADuplicateEmail(t *testing.T) {
 	if !errors.As(err, &conflict) {
 		t.Fatalf("err = %v, want *ConflictError", err)
 	}
+	if conflict.Message != "email already in use" {
+		t.Errorf("message = %q, want %q", conflict.Message, "email already in use")
+	}
 }
 
 func TestLoginAcceptsTheSignupPassword(t *testing.T) {
@@ -140,6 +135,33 @@ func TestSignupRejectsADuplicateUsername(t *testing.T) {
 	}
 	if conflict.Message != "username already taken" {
 		t.Errorf("message = %q, want %q", conflict.Message, "username already taken")
+	}
+	if after := countUsers(t, db); after != before {
+		t.Errorf("users = %d, want %d - the rejected signup left a row behind", after, before)
+	}
+}
+
+// The spec says the 409 message names which field clashed. When BOTH clash it
+// can only name one, and which index Postgres reports is not contractual - so
+// this pins the status, not the wording.
+func TestSignupRejectsADuplicateOfBothFields(t *testing.T) {
+	svc, db := newService(t)
+
+	input := signupInput("clash")
+	if _, err := svc.Signup(context.Background(), input); err != nil {
+		t.Fatalf("first signup failed: %v", err)
+	}
+
+	before := countUsers(t, db)
+
+	_, err := svc.Signup(context.Background(), input)
+
+	var conflict *ConflictError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("err = %v, want *ConflictError", err)
+	}
+	if conflict.Message != "email already in use" && conflict.Message != "username already taken" {
+		t.Errorf("message = %q, want one of the two duplicate messages", conflict.Message)
 	}
 	if after := countUsers(t, db); after != before {
 		t.Errorf("users = %d, want %d - the rejected signup left a row behind", after, before)

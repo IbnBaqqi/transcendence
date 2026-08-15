@@ -47,11 +47,20 @@ func signupFailed(step string, err error) error {
 	return fmt.Errorf("signup: %s: %w", step, err)
 }
 
-// Signup validates input, checks for duplicate email, hashes the
-// password, creates the user, and issues tokens.
+// Signup validates input, hashes the password, creates the user (letting the
+// unique constraints on email and username decide), and issues tokens.
 func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (SignupResponse, error) {
 	if err := validateSignupInput(input); err != nil {
 		return SignupResponse{}, err
+	}
+
+	// Fast path only: reject an email we already know is taken before paying
+	// for a bcrypt hash. This can race, so the unique constraints below remain
+	// the authority - never the other way round.
+	if _, err := s.db.GetUserByEmail(ctx, input.Email); err == nil {
+		return SignupResponse{}, &ConflictError{Message: emailTakenMessage}
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return SignupResponse{}, signupFailed("look up email", err)
 	}
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
@@ -132,6 +141,9 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 
 const (
 	maxUsernameLength = 50
+	// The users.email column is varchar(150); without this a long address is
+	// a 22001 from Postgres, which classifies as a 500.
+	maxEmailLength    = 150
 	minPasswordLength = 8
 
 	// bcrypt refuses anything longer and returns ErrPasswordTooLong. Rejecting
@@ -139,23 +151,40 @@ const (
 	maxPasswordLength = 72
 )
 
+// Both the pre-check and the constraint path report a duplicate, so they share
+// one message rather than drifting apart.
+const (
+	emailTakenMessage    = "email already in use"
+	usernameTakenMessage = "username already taken"
+)
+
 func validateSignupInput(input dtos.CreateUserRequest) error {
 	if input.Username == "" {
 		return &ValidationError{Message: "username is required"}
 	}
 	if len(input.Username) > maxUsernameLength {
-		return &ValidationError{Message: "username must be 50 bytes or fewer"}
+		return &ValidationError{Message: tooLong("username", maxUsernameLength)}
 	}
 	if input.Email == "" {
 		return &ValidationError{Message: "email is required"}
 	}
+	if len(input.Email) > maxEmailLength {
+		return &ValidationError{Message: tooLong("email", maxEmailLength)}
+	}
 	if len(input.Password) < minPasswordLength {
-		return &ValidationError{Message: "password must be at least 8 characters"}
+		return &ValidationError{
+			Message: fmt.Sprintf("password must be at least %d bytes", minPasswordLength),
+		}
 	}
 	if len(input.Password) > maxPasswordLength {
-		return &ValidationError{Message: "password must be 72 bytes or fewer"}
+		return &ValidationError{Message: tooLong("password", maxPasswordLength)}
 	}
 	return nil
+}
+
+// tooLong keeps each limit and the message describing it in one place.
+func tooLong(field string, limit int) string {
+	return fmt.Sprintf("%s must be %d bytes or fewer", field, limit)
 }
 
 // The unique indexes from migration 001. Postgres reports the constraint name
@@ -170,9 +199,9 @@ const (
 func duplicateUserError(err error) error {
 	switch {
 	case isUniqueViolation(err, usernameConstraint):
-		return &ConflictError{Message: "username already taken"}
+		return &ConflictError{Message: usernameTakenMessage}
 	case isUniqueViolation(err, emailConstraint):
-		return &ConflictError{Message: "email already in use"}
+		return &ConflictError{Message: emailTakenMessage}
 	}
 	return nil
 }
