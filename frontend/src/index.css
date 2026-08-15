@@ -72,6 +72,7 @@
     --color-soft-contrast: #f3f4f6; /* off-white */
     --color-soft-hover: #225b39; /* brand-700 */
     --color-soft-active: #297244; /* brand-600 */
+    --skeleton-shimmer: rgb(255 255 255 / 0.08);
   }
 }
 
@@ -86,6 +87,10 @@
  * matches light/dark mode; the highlight intensity lives in
  * --skeleton-shimmer.
  */
+:root {
+  --skeleton-shimmer: rgb(255 255 255 / 0.45);
+}
+
 @keyframes skeleton-shimmer {
   0% {
     background-position: 0% 0;
@@ -105,13 +110,6 @@
   );
   background-size: 200% 100%;
   animation: skeleton-shimmer 1s ease-in-out infinite alternate;
-  --skeleton-shimmer: rgb(255 255 255 / 0.45);
-}
-
-@media (prefers-color-scheme: dark) {
-  .skeleton {
-    --skeleton-shimmer: rgb(255 255 255 / 0.08);
-  }
 }
 
 /* Minimal base */
