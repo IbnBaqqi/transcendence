@@ -30,13 +30,15 @@ info:
 
     Two cases bypass that envelope, because they never reach a handler: an
     unrouted path returns a plain-text 404, and a routed path called with the
-    wrong method returns an empty 405.
+    wrong method usually returns an empty 405. `/uploads/` is the exception —
+    it is registered for every method, so it serves the file whatever verb
+    you use.
 
 # The base URL every path in this file is relative to. Because /api/v1 lives
 # here, paths below can be written as /listings instead of /api/v1/listings.
 servers:
-  - url: http://localhost:8080/api/v1
-    description: Local development
+  - url: /api/v1
+    description: Relative, so "Try it out" follows whatever host serves the docs
 
 # Tags are just grouping labels; each operation names one and Swagger UI
 # renders one collapsible section per tag.
@@ -209,6 +211,7 @@ components:
         email:
           type: string
           format: email
+          maxLength: 150
           examples: ["forager@example.com"]
         password:
           type: string
@@ -293,6 +296,7 @@ components:
           description: The only optional field.
         category:
           type: string
+          maxLength: 50
           examples: ["mushrooms"]
         price:
           type: number
@@ -306,6 +310,7 @@ components:
           examples: [4]
         unit:
           type: string
+          maxLength: 20
           examples: ["kg"]
 
     CreateOrderInput:
@@ -429,9 +434,10 @@ components:
         `is_online` means "seen within the last 2 minutes" (twice the
         heartbeat interval, so one missed beat is not read as offline).
 
-        When the other user has switched online status off, this is
-        `{"is_online": false}` with no `last_seen_at` — deliberately identical
-        to a user who is simply offline, so hiding cannot be detected.
+        `last_seen_at` is absent when the other user has switched online
+        status off, and also when they have never been seen. An offline user
+        who has NOT hidden their status still sends `last_seen_at`, so an
+        absent timestamp does not by itself mean "offline".
       properties:
         is_online:
           type: boolean
@@ -1033,7 +1039,9 @@ paths:
                   format: binary # "this field is a file", not text
       responses:
         "201":
-          description: Stored. `position` is the next free slot.
+          description: |
+            Stored. `position` is one past the highest already in use, so a
+            gap left by a deleted photo is never reused.
           content:
             application/json:
               schema:
@@ -1078,7 +1086,7 @@ paths:
     # A path may override the document's servers. Without this, the docs would
     # claim /api/v1/health, which does not exist.
     servers:
-      - url: http://localhost:8080
+      - url: /
         description: Mounted at the root, not under /api/v1
     get:
       tags: [health]
@@ -1101,7 +1109,7 @@ paths:
 
   /uploads/{filename}:
     servers:
-      - url: http://localhost:8080
+      - url: /
         description: Mounted at the root, not under /api/v1
     get:
       tags: [images]
@@ -1130,6 +1138,18 @@ paths:
             image/jpeg: {}
             image/png: {}
             image/webp: {}
+        "206":
+          description: |
+            A byte range, when the request carried a `Range` header. These
+            files are served by net/http's file server, which supports ranges.
+          content:
+            image/jpeg: {}
+            image/png: {}
+            image/webp: {}
+        "304":
+          description: |
+            Unchanged since the `If-Modified-Since` the request carried. No
+            body. These responses carry `Last-Modified` but no `ETag`.
         "404":
           description: No such file. Plain text, not the JSON error envelope.
           content:
@@ -1707,9 +1727,10 @@ paths:
           in: query
           description: |
             Values above 100 are clamped to 100 rather than rejected, and 0
-            means "use the default".
+            means "use the default". Anything past the int32 maximum is a 400.
           schema:
             type: integer
+            format: int32
             minimum: 0
             default: 50
       responses:
