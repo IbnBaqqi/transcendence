@@ -2,10 +2,10 @@ import { z } from "zod";
 
 export const confirmSchema = z
   .object({
-    currentPassword: z.string().min(1, "Current password is required"),
-    confirmPassword: z.string().min(1, "Password confirmation is required"),
+    password: z.string().min(1, "Password is required"),
+    confirmPassword: z.string().min(1, "Please confirm password"),
   })
-  .refine((data) => data.currentPassword === data.confirmPassword, {
+  .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });

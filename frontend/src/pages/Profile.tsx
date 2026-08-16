@@ -17,6 +17,7 @@ import { ContactDetailsSection } from "../components/forms/ContactDetailsSection
 import { ChangePasswordSection } from "../components/forms/ChangePasswordSection.tsx";
 import { BioSection } from "../components/forms/BioSection.tsx";
 import { useState } from "react";
+import { useModal } from "../providers/modalContext";
 
 export default function Profile() {
   {
@@ -24,6 +25,7 @@ export default function Profile() {
   }
   const [marketing, setMarketing] = useState(false);
   const [hideDetails, setHideDetails] = useState(false);
+  const { openModal } = useModal();
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
       <h1 className="text-foreground text-3xl font-bold">Profile & Settings</h1>
@@ -66,11 +68,9 @@ export default function Profile() {
       </div>
       <div className="space-y-1">
         <h2 className="text-foreground text-lg font-bold">Account Deletion</h2>
-        <div className="flex flex-row gap-2">
-          <Button variant="secondary" onClick={() => console.log("delete!")}>
-            Delete Account
-          </Button>
-        </div>
+        <Button variant="secondary" onClick={() => openModal("deleteAccount")}>
+          Delete Account
+        </Button>
       </div>
     </div>
   );

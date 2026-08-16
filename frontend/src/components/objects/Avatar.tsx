@@ -1,6 +1,7 @@
+import { useModal } from "../../providers/modalContext";
+
 type AvatarProps = {
   size?: "sm" | "md" | "lg";
-  onClick?: () => void; // Insert event handler here
   initials?: string;
   editable?: boolean;
 };
@@ -11,13 +12,9 @@ const sizeStyles = {
   lg: { circle: "w-16 h-16 text-xl", label: "h-5 text-[10px]" },
 };
 
-export default function Avatar({
-  size = "md",
-  initials = "?",
-  editable = false,
-  onClick,
-}: AvatarProps) {
+export default function Avatar({ size = "md", initials = "?", editable = false }: AvatarProps) {
   const { circle, label } = sizeStyles[size];
+  const { openModal } = useModal();
 
   const content = (
     <>
@@ -38,7 +35,7 @@ export default function Avatar({
     return (
       <button
         type="button"
-        onClick={onClick}
+        onClick={() => openModal("imageUpload")}
         aria-label="Edit profile picture"
         className={`relative ${circle} ring-line bg-accent hover:bg-accent-hover active:bg-accent-active focus:ring-surface-accent overflow-hidden rounded-full opacity-90 ring-2 transition-colors duration-150 select-none hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none`}
       >

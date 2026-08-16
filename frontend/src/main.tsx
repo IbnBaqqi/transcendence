@@ -11,6 +11,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 
 import { ModalProvider } from "./providers/ModalProvider";
 import { ModalRoot } from "./components/modal/ModalRoot";
+import { ChatRoot } from "./components/modal/ChatRoot";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -18,6 +19,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <ModalProvider>
           <AppRouter />
+          <ChatRoot />
           <ModalRoot />
         </ModalProvider>
       </QueryClientProvider>

@@ -1,13 +1,14 @@
 import { useModal } from "../../providers/modalContext";
+import { type DialogType } from "../../providers/modalContext";
 import { Modal } from "./Modal";
 import { LoginModal } from "./LoginModal";
-import { ChatModal } from "./ChatModal";
 import { ImageUploadModal } from "./ImageUploadModal";
+import { DeleteAccountModal } from "./DeleteAccountModal";
 
-const sizeByModal: Record<string, string> = {
+const sizeByModal: Record<NonNullable<DialogType>, string> = {
   login: "max-w-sm",
-  chat: "max-w-2xl h-[80vh]",
   imageUpload: "max-w-lg",
+  deleteAccount: "max-w-sm",
 };
 
 export function ModalRoot() {
@@ -15,10 +16,10 @@ export function ModalRoot() {
   if (!activeModal) return null;
 
   return (
-    <Modal onClose={closeModal} className={sizeByModal[activeModal]}>
+    <Modal onClose={closeModal} variant="dialog" className={sizeByModal[activeModal]}>
       {activeModal === "login" && <LoginModal />}
-      {activeModal === "chat" && <ChatModal />}
       {activeModal === "imageUpload" && <ImageUploadModal />}
+      {activeModal === "deleteAccount" && <DeleteAccountModal />}
     </Modal>
   );
 }

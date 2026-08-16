@@ -11,11 +11,14 @@ import Avatar from "../components/objects/Avatar.tsx";
 import Mailto from "../components/objects/Mailto.tsx";
 import { useListings } from "../api/listings";
 import { ListingCard } from "../components/objects/ListingCard";
+import Button from "../components/objects/Button.tsx";
+import { useModal } from "../providers/modalContext";
 
 export default function User() {
   {
     /* Placeholder, needs to pull only user's listings */
   }
+  const { openChat } = useModal();
   const { data: listings, isPending, isError } = useListings();
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
@@ -24,12 +27,16 @@ export default function User() {
         <div>
           <Avatar size="lg" initials="OR" />
         </div>
-        <div className="text-accent flex flex-col text-base">
+        <div className="text-accent my-auto flex flex-col text-base">
           <div className="font-bold">Oscar Rogers</div>
           {/* Hide email depending on preferences */}
           <Mailto label="oscarroff@example.com" mailto="oscarrogers@example.com" />
         </div>
       </div>
+      {/* If user profile does not match logged in entity then display button */}
+      <Button variant="secondary" onClick={() => openChat()}>
+        Message User
+      </Button>
       <div className="space-y-1">
         <h2 className="text-foreground text-lg font-bold">Contact Details</h2>
         <div className="flex flex-row gap-4">

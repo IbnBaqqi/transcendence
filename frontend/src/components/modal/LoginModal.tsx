@@ -7,7 +7,7 @@ export function LoginModal() {
   return (
     <div className="p-6">
       <h2 className="mb-4 text-lg font-semibold">Log in</h2>
-      <LoginSection onCancel={closeModal} />
+      <LoginSection onClose={closeModal} />
     </div>
   );
 }

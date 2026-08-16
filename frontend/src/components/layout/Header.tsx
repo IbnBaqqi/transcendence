@@ -14,7 +14,7 @@ export default function Header() {
     /* const [isLoggedIn, setLoggedIn] = useState(false); */
     /* just a placeholder state until we pull from backend with auth */
   }
-  const { openModal } = useModal();
+  const { openModal, openChat } = useModal();
 
   return (
     <header className="border-line bg-surface sticky top-0 z-10 border-b">
@@ -27,6 +27,25 @@ export default function Header() {
           <NavLink to="/" className={navLinkClass}>
             Home
           </NavLink>
+          <button
+            type="button"
+            onClick={openChat}
+            aria-label="Open chat"
+            className="text-muted hover:text-foreground"
+          >
+            <svg className="h-5 w-5" aria-hidden="true">
+              <use href="/icons.svg#chat-icon" />
+            </svg>
+          </button>
+          <Link
+            to="/notifications"
+            aria-label="Notifications"
+            className="text-muted hover:text-foreground"
+          >
+            <svg className="h-5 w-5" aria-hidden="true">
+              <use href="/icons.svg#notifications-icon" />
+            </svg>
+          </Link>
           {isLoggedIn ? (
             <Link to="/profile">
               <Avatar size="sm" initials="OR" /> {/* OR just a placeholder for now */}
