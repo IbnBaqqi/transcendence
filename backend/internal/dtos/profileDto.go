@@ -13,12 +13,12 @@ const DateLayout = "2006-01-02"
 
 // UpdateProfileInput is the PATCH body.
 type UpdateProfileInput struct {
-	Firstname   *string `json:"firstname"`
-	Lastname    *string `json:"lastname"`
-	Bio         *string `json:"bio"`
-	PhoneNumber *string `json:"phone_number"`
-	DateOfBirth *string `json:"date_of_birth"`
-	Location    *string `json:"location"`
+	Firstname   OptionalString `json:"firstname"`
+	Lastname    OptionalString `json:"lastname"`
+	Bio         OptionalString `json:"bio"`
+	PhoneNumber OptionalString `json:"phone_number"`
+	DateOfBirth OptionalString `json:"date_of_birth"`
+	Location    OptionalString `json:"location"`
 }
 
 // OwnProfileResponse is what you get about YOURSELF: everything, including

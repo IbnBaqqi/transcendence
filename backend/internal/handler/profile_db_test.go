@@ -39,9 +39,11 @@ func profileRouter(t *testing.T) (http.Handler, uuid.UUID) {
 
 	profiles := service.NewProfileService(db)
 
-	first, phone, dob, location := "Aino", "+358401234567", "2001-05-14", "Espoo"
 	if _, err := profiles.Update(ctx, user.ID, dtos.UpdateProfileInput{
-		Firstname: &first, PhoneNumber: &phone, DateOfBirth: &dob, Location: &location,
+		Firstname:   dtos.SetString("Aino"),
+		PhoneNumber: dtos.SetString("+358401234567"),
+		DateOfBirth: dtos.SetString("2001-05-14"),
+		Location:    dtos.SetString("Espoo"),
 	}); err != nil {
 		t.Fatalf("filling the profile: %v", err)
 	}

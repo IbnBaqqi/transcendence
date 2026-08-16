@@ -38,15 +38,16 @@ func TestProfileUpdateKeepsFieldsThePatchOmits(t *testing.T) {
 	svc, userID := newProfileService(t)
 	ctx := context.Background()
 
-	first, bio, dob, location := "Aino", "picks chanterelles", "2001-05-14", "Espoo"
 	if _, err := svc.Update(ctx, userID, dtos.UpdateProfileInput{
-		Firstname: &first, Bio: &bio, DateOfBirth: &dob, Location: &location,
+		Firstname:   dtos.SetString("Aino"),
+		Bio:         dtos.SetString("picks chanterelles"),
+		DateOfBirth: dtos.SetString("2001-05-14"),
+		Location:    dtos.SetString("Espoo"),
 	}); err != nil {
 		t.Fatalf("first update: %v", err)
 	}
 
-	last := "Virtanen"
-	got, err := svc.Update(ctx, userID, dtos.UpdateProfileInput{Lastname: &last})
+	got, err := svc.Update(ctx, userID, dtos.UpdateProfileInput{Lastname: dtos.SetString("Virtanen")})
 	if err != nil {
 		t.Fatalf("second update: %v", err)
 	}
@@ -69,13 +70,11 @@ func TestProfileUpdateClearsWithAnEmptyString(t *testing.T) {
 	svc, userID := newProfileService(t)
 	ctx := context.Background()
 
-	bio := "picks chanterelles"
-	if _, err := svc.Update(ctx, userID, dtos.UpdateProfileInput{Bio: &bio}); err != nil {
+	if _, err := svc.Update(ctx, userID, dtos.UpdateProfileInput{Bio: dtos.SetString("picks chanterelles")}); err != nil {
 		t.Fatalf("setting the bio: %v", err)
 	}
 
-	empty := ""
-	got, err := svc.Update(ctx, userID, dtos.UpdateProfileInput{Bio: &empty})
+	got, err := svc.Update(ctx, userID, dtos.UpdateProfileInput{Bio: dtos.SetString("")})
 	if err != nil {
 		t.Fatalf("clearing the bio: %v", err)
 	}
@@ -98,13 +97,11 @@ func TestProfileUpdateWritesLocationToAddresses(t *testing.T) {
 		t.Errorf("location = %q, want none before anything is written", before.Location.String)
 	}
 
-	first := "Espoo"
-	if _, err := svc.Update(ctx, userID, dtos.UpdateProfileInput{Location: &first}); err != nil {
+	if _, err := svc.Update(ctx, userID, dtos.UpdateProfileInput{Location: dtos.SetString("Espoo")}); err != nil {
 		t.Fatalf("inserting the address: %v", err)
 	}
 
-	second := "Tampere"
-	got, err := svc.Update(ctx, userID, dtos.UpdateProfileInput{Location: &second})
+	got, err := svc.Update(ctx, userID, dtos.UpdateProfileInput{Location: dtos.SetString("Tampere")})
 	if err != nil {
 		t.Fatalf("updating the address: %v", err)
 	}

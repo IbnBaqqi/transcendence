@@ -113,7 +113,7 @@ func (s *ProfileService) Update(ctx context.Context, userID uuid.UUID, input dto
 	if err != nil {
 		return ProfileDetail{}, err
 	}
-	if input.Location != nil {
+	if input.Location.Set {
 		address, err := qtx.UpsertAddress(ctx, database.UpsertAddressParams{
 			UserID:   userID,
 			Location: mergeString(location, input.Location),
@@ -151,22 +151,28 @@ func (s *ProfileService) location(ctx context.Context, q *database.Queries, user
 
 // mergeString is the PATCH rule in one place: nil keeps what is there, a
 // value replaces it, and an empty value clears the column to NULL.
-func mergeString(current sql.NullString, in *string) sql.NullString {
-	if in == nil {
+func mergeString(current sql.NullString, in dtos.OptionalString) sql.NullString {
+	if !in.Set {
 		return current
 	}
-	trimmed := strings.TrimSpace(*in)
+	if in.Value == nil {
+		return sql.NullString{}
+	}
+	trimmed := strings.TrimSpace(*in.Value)
 	if trimmed == "" {
 		return sql.NullString{}
 	}
 	return sql.NullString{String: trimmed, Valid: true}
 }
 
-func mergeDate(current sql.NullTime, in *string) (sql.NullTime, error) {
-	if in == nil {
+func mergeDate(current sql.NullTime, in dtos.OptionalString) (sql.NullTime, error) {
+	if !in.Set {
 		return current, nil
 	}
-	trimmed := strings.TrimSpace(*in)
+	if in.Value == nil {
+		return sql.NullTime{}, nil
+	}
+	trimmed := strings.TrimSpace(*in.Value)
 	if trimmed == "" {
 		return sql.NullTime{}, nil
 	}
@@ -187,7 +193,7 @@ func mergeDate(current sql.NullTime, in *string) (sql.NullTime, error) {
 func validateProfileInput(input dtos.UpdateProfileInput) error {
 	limits := []struct {
 		field string
-		value *string
+		value dtos.OptionalString
 		max   int
 	}{
 		{"firstname", input.Firstname, maxNameLength},
@@ -198,10 +204,10 @@ func validateProfileInput(input dtos.UpdateProfileInput) error {
 	}
 
 	for _, l := range limits {
-		if l.value == nil {
+		if !l.value.Set || l.value.Value == nil {
 			continue
 		}
-		value := strings.TrimSpace(*l.value)
+		value := strings.TrimSpace(*l.value.Value)
 
 		if !utf8.ValidString(value) || strings.ContainsRune(value, 0) {
 			return &ValidationError{Message: l.field + " must be valid UTF-8 without null bytes"}

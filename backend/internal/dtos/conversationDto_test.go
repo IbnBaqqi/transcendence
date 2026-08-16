@@ -237,3 +237,49 @@ func TestToMessageResponsesIsAlwaysAnArray(t *testing.T) {
 		t.Errorf("empty messages = %s, want []", b)
 	}
 }
+
+// last_seen_at is a public field on a profile, so it is truncated to the
+// minute: TouchLastSeen only writes once per presence.Interval, and the extra
+// precision would be a microsecond-accurate activity log for anyone holding a
+// user id. Freshness is still judged on the untruncated value.
+func TestPresenceTimestampIsTruncatedToTheMinute(t *testing.T) {
+	buyer, seller := uuid.New(), uuid.New()
+
+	// A time with obvious sub-minute detail to lose.
+	seen := time.Date(2026, 8, 16, 12, 34, 56, 789012345, time.UTC)
+
+	res := ToConversationResponse(
+		conversationFor(buyer, seller),
+		userWithPresence(sql.NullTime{Time: seen, Valid: true}, true),
+		buyer,
+	)
+
+	got := res.OtherUser.Presence.LastSeenAt
+	if got == nil {
+		t.Fatal("last_seen_at is missing")
+	}
+	if want := seen.Truncate(time.Minute); !got.Equal(want) {
+		t.Errorf("last_seen_at = %s, want %s", got.Format(time.RFC3339Nano), want.Format(time.RFC3339Nano))
+	}
+	if got.Second() != 0 || got.Nanosecond() != 0 {
+		t.Errorf("last_seen_at = %s, want no seconds or nanoseconds", got.Format(time.RFC3339Nano))
+	}
+}
+
+// Truncating the exposed value must not make a fresh user look offline.
+func TestPresenceFreshnessUsesTheUntruncatedTime(t *testing.T) {
+	buyer, seller := uuid.New(), uuid.New()
+
+	// Inside the window, but truncating would push it outside.
+	seen := time.Now().Add(-presence.Window + 5*time.Second)
+
+	res := ToConversationResponse(
+		conversationFor(buyer, seller),
+		userWithPresence(sql.NullTime{Time: seen, Valid: true}, true),
+		buyer,
+	)
+
+	if !res.OtherUser.Presence.IsOnline {
+		t.Error("is_online = false, want true - freshness was judged on the truncated value")
+	}
+}
