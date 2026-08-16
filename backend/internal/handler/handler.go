@@ -14,6 +14,7 @@ type Handler struct {
 	Saved          *service.SavedListingService
 	Conversation   *service.ConversationService
 	User           *service.UserService
+	Follow         *service.FollowService
 	ListingImage   *service.ListingImageService
 	maxUploadBytes int64
 }
@@ -26,6 +27,7 @@ func New(
 	savedService *service.SavedListingService,
 	conversationService *service.ConversationService,
 	userService *service.UserService,
+	followService *service.FollowService,
 	listingImageService *service.ListingImageService,
 	maxUploadBytes int64,
 ) *Handler {
@@ -37,6 +39,7 @@ func New(
 		Saved:          savedService,
 		Conversation:   conversationService,
 		User:           userService,
+		Follow:         followService,
 		ListingImage:   listingImageService,
 		maxUploadBytes: maxUploadBytes,
 	}
