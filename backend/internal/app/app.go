@@ -19,6 +19,7 @@ type api struct {
 	Saved        *service.SavedListingService
 	Conversation *service.ConversationService
 	User         *service.UserService
+	Follow       *service.FollowService
 	ListingImage *service.ListingImageService
 	Files        *storage.Local
 	Upload       config.UploadConfig
@@ -38,6 +39,7 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 	savedService := service.NewSavedListingService(db.Queries)
 	conversationService := service.NewConversationService(db)
 	userService := service.NewUserService(db.Queries)
+	followService := service.NewFollowService(db.Queries)
 	listingImageService := service.NewListingImageService(db, files, cfg.Upload.MaxPerListing)
 
 	return &api{
@@ -49,6 +51,7 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 		Saved:        savedService,
 		Conversation: conversationService,
 		User:         userService,
+		Follow:       followService,
 		ListingImage: listingImageService,
 		Files:        files,
 		Upload:       cfg.Upload,

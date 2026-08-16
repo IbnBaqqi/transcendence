@@ -25,6 +25,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.Saved,
 		appService.Conversation,
 		appService.User,
+		appService.Follow,
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
 	)
@@ -78,6 +79,11 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Get("/me/settings", h.GetSettings)
 			r.Patch("/me/settings", h.UpdateSettings)
 			r.Get("/me/unread", h.GetUnreadCount)
+
+			r.Post("/users/{id}/follow", h.FollowUser)
+			r.Delete("/users/{id}/follow", h.UnfollowUser)
+			r.Get("/users/{id}/followers", h.GetFollowers)
+			r.Get("/me/following", h.GetFollowing)
 
 			r.Post("/orders", h.CreateOrder)
 			r.Get("/orders", h.GetOrders)
