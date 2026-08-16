@@ -13,9 +13,9 @@
 import Avatar from "../components/objects/Avatar.tsx";
 import Button from "../components/objects/Button.tsx";
 import Toggle from "../components/objects/Toggle.tsx";
-import { ContactDetailsSection } from "../components/forms/ContactDetails.tsx";
-import { ChangePasswordSection } from "../components/forms/ChangePassword.tsx";
-import { BioSection } from "../components/forms/Bio.tsx";
+import { ContactDetailsSection } from "../components/forms/ContactDetailsSection.tsx";
+import { ChangePasswordSection } from "../components/forms/ChangePasswordSection.tsx";
+import { BioSection } from "../components/forms/BioSection.tsx";
 import { useState } from "react";
 
 export default function Profile() {
