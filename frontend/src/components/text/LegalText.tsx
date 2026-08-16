@@ -1,4 +1,5 @@
 import type { Block, Document } from "../types/DocumentTypes.ts";
+import Mailto from "../objects/Mailto.tsx";
 
 function LegalParagraph({ paragraphs }: { paragraphs: string[] }) {
   return (
@@ -54,10 +55,7 @@ export function LegalDocument({ document }: { document: Document }) {
 
       {contactEmail && (
         <p className="text-muted mt-10">
-          Questions? Reach out at:{" "}
-          <a href={`mailto:${contactEmail}`} className="text-accent hover:underline">
-            {contactEmail}
-          </a>
+          Questions? Reach out at: <Mailto label={contactEmail} mailto={contactEmail} />
         </p>
       )}
     </div>
