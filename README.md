@@ -53,10 +53,6 @@ are all present.
   offline. Users can switch the signal off, and when they do the response is
   byte-identical to a user who has never been seen: presence is hidden by
   *absence*, so it cannot be inferred from the shape of the reply.
-- **The timestamp is deliberately coarse.** `last_seen_at` is truncated to the
-  minute before it leaves the process. Since it's only written once a minute, the
-  extra precision was never information — but it would have been a
-  microsecond-accurate activity log of when someone is at their computer.
 
 **What it adds.** Followers are what make a marketplace repeatable rather than
 transactional: a buyer can find the forager they trusted last autumn, and a

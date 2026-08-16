@@ -3,7 +3,7 @@ package dtos
 import (
 	"database/sql"
 	"encoding/json"
-	"strings"
+	"reflect"
 	"testing"
 	"time"
 
@@ -61,19 +61,20 @@ func TestFollowListHidesPresenceWhenAsked(t *testing.T) {
 	}
 }
 
-func TestFollowerListUsesTheSameShape(t *testing.T) {
-	id := uuid.New()
-	rows := []database.ListFollowersRow{
-		{ID: id, Username: "afollower", LastSeenAt: sql.NullTime{Time: time.Now(), Valid: true}, ShowOnlineStatus: true},
-	}
+func TestBothFollowMappersAgree(t *testing.T) {
+	first, second := uuid.New(), uuid.New()
+	seen := sql.NullTime{Time: time.Date(2026, 8, 16, 12, 0, 0, 0, time.UTC), Valid: true}
 
-	body, err := json.Marshal(ToFollowerResponses(rows))
-	if err != nil {
-		t.Fatalf("marshalling: %v", err)
-	}
-	for _, want := range []string{`"username":"afollower"`, `"presence"`, `"is_online":true`} {
-		if !strings.Contains(string(body), want) {
-			t.Errorf("followers response is missing %s:\n%s", want, body)
-		}
+	following := ToFollowingResponses([]database.ListFollowingRow{
+		{ID: first, Username: "aino", LastSeenAt: seen, ShowOnlineStatus: true},
+		{ID: second, Username: "hidden", LastSeenAt: seen, ShowOnlineStatus: false},
+	})
+	followers := ToFollowerResponses([]database.ListFollowersRow{
+		{ID: first, Username: "aino", LastSeenAt: seen, ShowOnlineStatus: true},
+		{ID: second, Username: "hidden", LastSeenAt: seen, ShowOnlineStatus: false},
+	})
+
+	if !reflect.DeepEqual(following, followers) {
+		t.Errorf("the two mappers disagree:\n following = %+v\n followers = %+v", following, followers)
 	}
 }

@@ -11,7 +11,10 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
-const followeeConstraint = "follows_followee_id_fkey"
+const (
+	followeeConstraint = "follows_followee_id_fkey"
+	followerConstraint = "follows_follower_id_fkey"
+)
 
 type FollowService struct {
 	db *database.Queries
@@ -30,7 +33,7 @@ func (s *FollowService) Follow(ctx context.Context, followerID, followeeID uuid.
 		FollowerID: followerID,
 		FolloweeID: followeeID,
 	})
-	if isForeignKeyViolation(err, followeeConstraint) {
+	if isForeignKeyViolation(err, followeeConstraint) || isForeignKeyViolation(err, followerConstraint) {
 		return &NotFoundError{Message: "user not found"}
 	}
 	return err
