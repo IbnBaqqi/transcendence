@@ -1,0 +1,34 @@
+package dtos
+
+import (
+    "database/sql"
+
+    "github.com/google/uuid"
+    "github.com/IbnBaqqi/transcendence/internal/database"
+)
+
+func ToFollowingResponses(rows []database.ListFollowingRow) []ChatUserResponse {
+    out := make([]ChatUserResponse, 0, len(rows))
+    for _, r := range rows {
+        out = append(out, chatUser(r.ID, r.Username, r.LastSeenAt, r.ShowOnlineStatus))
+    }
+    return out
+}
+
+func ToFollowerResponses(rows []database.ListFollowersRow) []ChatUserResponse {
+    out := make([]ChatUserResponse, 0, len(rows))
+    for _, r := range rows {
+        out = append(out, chatUser(r.ID, r.Username, r.LastSeenAt, r.ShowOnlineStatus))
+    }
+    return out
+}
+
+// chatUser is where the actual work happens, including applying the
+// show_online_status rule via toPresence.
+func chatUser(id uuid.UUID, username string, lastSeen sql.NullTime, showOnlineStatus bool) ChatUserResponse {
+    return ChatUserResponse{
+        ID:       id,
+        Username: username,
+        Presence: toPresence(lastSeen, showOnlineStatus),
+    }
+}
