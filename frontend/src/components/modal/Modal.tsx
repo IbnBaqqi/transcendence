@@ -44,7 +44,7 @@ export function Modal({
   if (variant === "floating") {
     return createPortal(
       <div
-        className={`fixed right-4 bottom-4 z-50 flex h-[70vh] flex-col overflow-hidden rounded-lg bg-white shadow-lg ${className}`}
+        className={`bg-surface fixed right-4 bottom-4 z-50 flex h-[70vh] flex-col overflow-hidden rounded-lg shadow-lg ${className}`}
       >
         {children}
       </div>,
@@ -59,7 +59,7 @@ export function Modal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`w-full rounded-lg bg-white shadow-lg ${className}`}
+        className={`bg-surface w-full rounded-lg shadow-lg ${className}`}
       >
         {children}
       </div>
