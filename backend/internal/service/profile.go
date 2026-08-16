@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 
@@ -200,7 +201,12 @@ func validateProfileInput(input dtos.UpdateProfileInput) error {
 		if l.value == nil {
 			continue
 		}
-		if len(strings.TrimSpace(*l.value)) > l.max {
+		value := strings.TrimSpace(*l.value)
+
+		if !utf8.ValidString(value) || strings.ContainsRune(value, 0) {
+			return &ValidationError{Message: l.field + " must be valid UTF-8 without null bytes"}
+		}
+		if len(value) > l.max {
 			return &ValidationError{Message: l.field + " is too long"}
 		}
 	}

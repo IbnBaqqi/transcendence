@@ -92,6 +92,8 @@ func TestValidateProfileInput(t *testing.T) {
 		{"phone over the limit", dtos.UpdateProfileInput{PhoneNumber: ptr(strings.Repeat("1", 16))}, "phone_number is too long"},
 		{"location over the limit", dtos.UpdateProfileInput{Location: ptr(strings.Repeat("a", 101))}, "location is too long"},
 		{"multi-byte location over the BYTE limit", dtos.UpdateProfileInput{Location: ptr(strings.Repeat("ä", 51))}, "location is too long"},
+		{"a null byte in bio", dtos.UpdateProfileInput{Bio: ptr("a\x00b")}, "bio must be valid UTF-8 without null bytes"},
+		{"a null byte in location", dtos.UpdateProfileInput{Location: ptr("Espoo\x00")}, "location must be valid UTF-8 without null bytes"},
 		{"padding does not count", dtos.UpdateProfileInput{Firstname: ptr("  " + strings.Repeat("a", 150) + "  ")}, ""},
 	}
 
