@@ -41,3 +41,8 @@ SET show_online_status = $2,
   updated_at = now()
 WHERE id = $1
 RETURNING *;
+
+-- name: UserCredentialsTaken :one
+SELECT
+    EXISTS(SELECT 1 FROM users u WHERE u.email = sqlc.arg(email))       AS email_taken,
+    EXISTS(SELECT 1 FROM users u WHERE u.username = sqlc.arg(username)) AS username_taken;

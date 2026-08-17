@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"unicode/utf8"
 
 	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
@@ -54,13 +55,21 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 		return SignupResponse{}, err
 	}
 
-	// Fast path only: reject an email we already know is taken before paying
-	// for a bcrypt hash. This can race, so the unique constraints below remain
-	// the authority - never the other way round.
-	if _, err := s.db.GetUserByEmail(ctx, input.Email); err == nil {
+	// Fast path only: neither of these is the guarantee - they can both race
+	// with a concurrent signup, so the unique constraints below stay the
+	// authority. This just stops a doomed signup paying for a bcrypt hash.
+	taken, err := s.db.UserCredentialsTaken(ctx, database.UserCredentialsTakenParams{
+		Email:    input.Email,
+		Username: input.Username,
+	})
+	if err != nil {
+		return SignupResponse{}, signupFailed("look up credentials", err)
+	}
+	if taken.EmailTaken {
 		return SignupResponse{}, &ConflictError{Message: emailTakenMessage}
-	} else if !errors.Is(err, sql.ErrNoRows) {
-		return SignupResponse{}, signupFailed("look up email", err)
+	}
+	if taken.UsernameTaken {
+		return SignupResponse{}, &ConflictError{Message: usernameTakenMessage}
 	}
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
@@ -162,13 +171,13 @@ func validateSignupInput(input dtos.CreateUserRequest) error {
 	if input.Username == "" {
 		return &ValidationError{Message: "username is required"}
 	}
-	if len(input.Username) > maxUsernameLength {
+	if utf8.RuneCountInString(input.Username) > maxUsernameLength {
 		return &ValidationError{Message: tooLong("username", maxUsernameLength)}
 	}
 	if input.Email == "" {
 		return &ValidationError{Message: "email is required"}
 	}
-	if len(input.Email) > maxEmailLength {
+	if utf8.RuneCountInString(input.Email) > maxEmailLength {
 		return &ValidationError{Message: tooLong("email", maxEmailLength)}
 	}
 	if len(input.Password) < minPasswordLength {
@@ -177,14 +186,18 @@ func validateSignupInput(input dtos.CreateUserRequest) error {
 		}
 	}
 	if len(input.Password) > maxPasswordLength {
-		return &ValidationError{Message: tooLong("password", maxPasswordLength)}
+		return &ValidationError{Message: passwordTooLong(maxPasswordLength)}
 	}
 	return nil
 }
 
 // tooLong keeps each limit and the message describing it in one place.
 func tooLong(field string, limit int) string {
-	return fmt.Sprintf("%s must be %d bytes or fewer", field, limit)
+	return fmt.Sprintf("%s must be %d characters or fewer", field, limit)
+}
+
+func passwordTooLong(limit int) string {
+	return fmt.Sprintf("password must be %d bytes or fewer", limit)
 }
 
 // The unique indexes from migration 001. Postgres reports the constraint name

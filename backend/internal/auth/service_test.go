@@ -34,14 +34,14 @@ func TestValidateSignupInput(t *testing.T) {
 
 		{"no username", func(i *dtos.CreateUserRequest) { i.Username = "" }, "username is required"},
 		{"username at the limit", func(i *dtos.CreateUserRequest) { i.Username = strings.Repeat("a", 50) }, ""},
-		{"username over the limit", func(i *dtos.CreateUserRequest) { i.Username = strings.Repeat("a", 51) }, "username must be 50 bytes or fewer"},
-		// "ä" is 2 bytes in UTF-8, so 26 of them is 52 bytes but only 26
-		// characters - this is the case that pins len() meaning BYTES.
-		{"multi-byte username over the BYTE limit", func(i *dtos.CreateUserRequest) { i.Username = strings.Repeat("ä", 26) }, "username must be 50 bytes or fewer"},
+		{"username over the limit", func(i *dtos.CreateUserRequest) { i.Username = strings.Repeat("a", 51) }, "username must be 50 characters or fewer"},
+		{"multi-byte username at the limit", func(i *dtos.CreateUserRequest) { i.Username = strings.Repeat("ä", 50) }, ""},
+		{"multi-byte username over the limit", func(i *dtos.CreateUserRequest) { i.Username = strings.Repeat("ä", 51) }, "username must be 50 characters or fewer"},
 
 		{"no email", func(i *dtos.CreateUserRequest) { i.Email = "" }, "email is required"},
 		{"email at the limit", func(i *dtos.CreateUserRequest) { i.Email = strings.Repeat("a", 150) }, ""},
-		{"email over the limit", func(i *dtos.CreateUserRequest) { i.Email = strings.Repeat("a", 151) }, "email must be 150 bytes or fewer"},
+		{"email over the limit", func(i *dtos.CreateUserRequest) { i.Email = strings.Repeat("a", 151) }, "email must be 150 characters or fewer"},
+		{"multi-byte email under the character limit", func(i *dtos.CreateUserRequest) { i.Email = strings.Repeat("ä", 100) }, ""},
 
 		{"password too short", func(i *dtos.CreateUserRequest) { i.Password = strings.Repeat("a", 7) }, "password must be at least 8 bytes"},
 		{"password at the floor", func(i *dtos.CreateUserRequest) { i.Password = strings.Repeat("a", 8) }, ""},
