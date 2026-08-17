@@ -11,6 +11,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // OrderService holds the business rules for orders.
@@ -67,6 +68,9 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 		return database.Order{}, err
 	}
 
+	// The buyer comes from a token, and a token outlives the account it names.
+	// Without this the foreign key violation reaches the handler as a driver
+	// error and becomes a 500 - the #112 failure mode.
 	order, err := qtx.CreateOrder(ctx, database.CreateOrderParams{
 		ListingID:    listing.ID,
 		BuyerID:      buyerID,
@@ -76,6 +80,9 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 		ListingTitle: listing.Title,
 	})
 	if err != nil {
+		if violatesForeignKey(err, buyerConstraint) {
+			return database.Order{}, &NotFoundError{Message: "user not found"}
+		}
 		return database.Order{}, err
 	}
 
@@ -287,13 +294,39 @@ func recordEvent(
 	to string,
 	note string,
 ) error {
-	return qtx.CreateOrderEvent(ctx, database.CreateOrderEventParams{
+	err := qtx.CreateOrderEvent(ctx, database.CreateOrderEventParams{
 		OrderID:    orderID,
 		ActorID:    uuid.NullUUID{UUID: actorID, Valid: true},
 		FromStatus: from,
 		ToStatus:   to,
 		Note:       sql.NullString{String: note, Valid: note != ""},
 	})
+	// Unreachable today - every actor has already passed the participant check
+	// or the order insert. It becomes reachable the moment #37 lets an admin
+	// act on someone else's order.
+	if violatesForeignKey(err, actorConstraint) {
+		return &NotFoundError{Message: "user not found"}
+	}
+	return err
+}
+
+// The two foreign keys that name a user. Both mean the same thing: a token
+// outlived the account it was issued to.
+const (
+	buyerConstraint = "orders_buyer_id_fkey"
+	actorConstraint = "order_events_actor_id_fkey"
+)
+
+// violatesForeignKey is deliberately not named isForeignKeyViolation:
+// feature/follows adds a function by that name to this package, and two of
+// them would merge cleanly and then fail to compile. Collapse them once that
+// branch lands - alongside isUniqueViolation in conversation.go.
+func violatesForeignKey(err error, constraint string) bool {
+	var pqErr *pq.Error
+	if !errors.As(err, &pqErr) {
+		return false
+	}
+	return pqErr.Code == "23503" && pqErr.Constraint == constraint
 }
 
 func markNote(m handshakeMark) string {

@@ -172,6 +172,91 @@ func TestCancelRecordsWhoDidIt(t *testing.T) {
 	}
 }
 
+// Migration 016. Nothing else asserts this, and the first version of that
+// migration silently dropped the buyer's foreign key entirely - every other
+// test stayed green while a seller delete wiped the order and its history.
+func TestAnOrdersPartiesCannotBeDeleted(t *testing.T) {
+	tests := []struct {
+		name  string
+		party func(orderFixture) uuid.UUID
+	}{
+		{"the buyer", func(f orderFixture) uuid.UUID { return f.buyer }},
+		{"the seller", func(f orderFixture) uuid.UUID { return f.seller }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := newOrderFixture(t)
+
+			if _, err := f.db.Exec("DELETE FROM users WHERE id = $1", tt.party(f)); err == nil {
+				t.Error("the delete was allowed - order history can be erased")
+			}
+
+			var orders, events int
+			if err := f.db.QueryRow("SELECT count(*) FROM orders").Scan(&orders); err != nil {
+				t.Fatal(err)
+			}
+			if err := f.db.QueryRow("SELECT count(*) FROM order_events").Scan(&events); err != nil {
+				t.Fatal(err)
+			}
+			if orders != 1 || events != 1 {
+				t.Errorf("orders = %d, events = %d, want 1 and 1", orders, events)
+			}
+		})
+	}
+}
+
+// A JWT outlives the account it names, and Authenticate does no database
+// lookup - so a deleted user still reaches the service. That must be a 404,
+// not the driver error a foreign key violation would otherwise produce.
+func TestCreateOrderByADeletedUserIsNotFound(t *testing.T) {
+	f := newOrderFixture(t)
+	ctx := context.Background()
+
+	listing, err := f.db.CreateListing(ctx, database.CreateListingParams{
+		SellerID: f.seller, Title: "More chanterelles", Category: "mushrooms",
+		Price: "12.00", Quantity: 5, Unit: "kg",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Deletable because they have no orders yet - the RESTRICT guard only
+	// covers the parties to an existing order.
+	ghost, err := f.db.CreateUser(ctx, database.CreateUserParams{
+		Username: "ghost", Email: "ghost@example.test", Password: "irrelevant",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.db.Exec("DELETE FROM users WHERE id = $1", ghost.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = f.svc.CreateOrder(ctx, ghost.ID, dtos.CreateOrderInput{ListingID: listing.ID, Quantity: 1})
+
+	var notFound *NotFoundError
+	if !errors.As(err, &notFound) {
+		t.Fatalf("err = %#v, want *NotFoundError (a raw pq error here is a 500)", err)
+	}
+}
+
+// The guard is on the parties, not on users in general.
+func TestAnUninvolvedUserCanStillBeDeleted(t *testing.T) {
+	f := newOrderFixture(t)
+
+	bystander, err := f.db.CreateUser(context.Background(), database.CreateUserParams{
+		Username: "bystander", Email: "bystander@example.test", Password: "irrelevant",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := f.db.Exec("DELETE FROM users WHERE id = $1", bystander.ID); err != nil {
+		t.Errorf("deleting an uninvolved user was refused: %v", err)
+	}
+}
+
 func TestListEventsIsForParticipantsOnly(t *testing.T) {
 	f := newOrderFixture(t)
 	ctx := context.Background()

@@ -58,8 +58,10 @@ field" would deserve that. Four things make this a lifecycle:
 - **Orders outlive what they refer to.** The listing title is snapshotted at
   purchase, so an order still reads correctly after the listing is edited; the
   listing itself cannot be deleted while orders reference it; and neither can
-  the buyer or the seller. A history that either party can erase is not
-  evidence.
+  the buyer or the seller, whose foreign keys are `ON DELETE RESTRICT`. A
+  history that either party can erase is not evidence — and the first draft of
+  that migration silently dropped one of the two keys, so there is a test
+  asserting both deletes are refused.
 
 **What it adds.** Disputes become answerable. "Who cancelled this, and when?"
 has a row to point at rather than a word in a column — which is what a
