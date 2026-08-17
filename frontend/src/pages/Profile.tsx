@@ -34,7 +34,7 @@ export default function Profile() {
         <div>
           <Avatar size="lg" initials="OR" editable />
         </div>
-        <div className="text-accent flex flex-col text-base">
+        <div className="text-accent my-auto flex flex-col text-base">
           <div className="font-bold">Oscar Rogers</div>
           <div className="font-normal">oscarrogers@example.com</div>
         </div>

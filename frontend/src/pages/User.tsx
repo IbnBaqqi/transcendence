@@ -39,7 +39,7 @@ export default function User() {
       </Button>
       <div className="space-y-1">
         <h2 className="text-foreground text-lg font-bold">Contact Details</h2>
-        <div className="flex flex-row gap-4">
+        <div className="grid max-w-fit grid-cols-2 gap-4">
           <div className="flex flex-col">
             <div className="text-muted">First Name</div>
             <div>Oscar</div>
@@ -59,7 +59,6 @@ export default function User() {
             <div>Helsinki</div>
           </div>
         </div>
-        <div className="flex flex-row gap-2"></div>
       </div>
       <div className="space-y-1">
         <h2 className="text-foreground text-lg font-bold">Bio</h2>
