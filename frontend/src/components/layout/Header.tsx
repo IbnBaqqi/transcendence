@@ -20,7 +20,7 @@ export default function Header() {
     <header className="border-line bg-surface sticky top-0 z-10 border-b">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link to="/" className="text-accent text-lg font-bold">
-          Forage Marketplace
+          Metsätori
         </Link>
         <nav className="flex items-center gap-6 text-sm">
           {/* {navLinkClass} passes the function itself and React Router calls it and supplies { isActive } */}

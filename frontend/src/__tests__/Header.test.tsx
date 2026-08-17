@@ -11,5 +11,5 @@ test("renders the brand name", () => {
       </MemoryRouter>
     </ModalProvider>,
   );
-  expect(screen.getByText("Forage Marketplace")).toBeInTheDocument();
+  expect(screen.getByText("Metsätori")).toBeInTheDocument();
 });
