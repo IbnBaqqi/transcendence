@@ -55,6 +55,8 @@ tags:
     description: The simulated order lifecycle
   - name: chat
     description: Buyer/seller conversations
+  - name: follows
+    description: The social graph - who follows whom
   - name: me
     description: The authenticated user's own resources
 
@@ -1239,6 +1241,124 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /users/{id}/follow:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [follows]
+      summary: Follow a user
+      operationId: followUser
+      description: |
+        Idempotent - following someone you already follow is still a 204. The
+        edge is one-directional: this says nothing about whether they follow
+        you back.
+      responses:
+        "204":
+          description: Followed. No body.
+        "400":
+          description: The id is not a uuid, or it is your own - you cannot follow yourself.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags: [follows]
+      summary: Unfollow a user
+      operationId: unfollowUser
+      description: |
+        NOT idempotent, unlike follow: unfollowing someone you were not
+        following is a 404. Same asymmetry as the wishlist.
+      responses:
+        "204":
+          description: Unfollowed. No body.
+        "400":
+          description: The id is not a uuid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: You were not following that user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /users/{id}/followers:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [follows]
+      summary: List a user's followers
+      operationId: getFollowers
+      description: |
+        Alphabetical by username, and unpaginated. Requires a token: a follower
+        list is a social graph rather than public profile data.
+      responses:
+        "200":
+          description: The people following that user, each with online status.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatUser"
+        "400":
+          description: The id is not a uuid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /me/following:
+    get:
+      tags: [follows, me]
+      summary: List the people you follow
+      operationId: getFollowing
+      description: |
+        The "friends list". Alphabetical by username, unpaginated, and each row
+        carries `presence` - so a client renders online status without a
+        request per person.
+      responses:
+        "200":
+          description: The people you follow.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/ServerError"
 
