@@ -126,9 +126,6 @@ func operationsFromRouter(t *testing.T) []string {
 		if !slices.Contains(httpMethods, strings.ToLower(method)) {
 			return nil
 		}
-		if route == uploadRoute && method != http.MethodGet {
-			return nil
-		}
 		seen[method+" "+normalize(route)] = true
 		return nil
 	})
