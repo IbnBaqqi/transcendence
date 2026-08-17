@@ -30,9 +30,7 @@ info:
 
     Two cases bypass that envelope, because they never reach a handler: an
     unrouted path returns a plain-text 404, and a routed path called with the
-    wrong method usually returns an empty 405. `/uploads/` is the exception —
-    it is registered for every method, so it serves the file whatever verb
-    you use.
+    wrong method returns an empty 405.
 
 # The base URL every path in this file is relative to. Because /api/v1 lives
 # here, paths below can be written as /listings instead of /api/v1/listings.
@@ -217,9 +215,12 @@ components:
           type: string
           format: password
           minLength: 8
+          maxLength: 72
           description: |
-            Counted in bytes, not characters. Hashed with bcrypt before
-            storage; never returned.
+            Counted in bytes, not characters — bcrypt's own limit is 72 bytes,
+            so a long passphrase with accented characters can be rejected at
+            fewer than 72 typed characters. Hashed before storage; never
+            returned.
 
     LoginRequest:
       type: object
@@ -691,8 +692,9 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequest"
         "409":
-          # Not the shared Conflict response: this one has a specific meaning.
-          description: That email is already registered.
+          description: |
+            That email or username is already taken. Both are unique, and the
+            message says which.
           content:
             application/json:
               schema:

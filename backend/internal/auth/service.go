@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"unicode/utf8"
 
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
@@ -25,41 +27,39 @@ func NewService(db *database.DB, jwt *JwtService) *Service {
 	}
 }
 
-// SignupResponse holds the outputs of a successful signup.
 type SignupResponse struct {
 	AccessToken  string
 	RefreshToken string
 	User         dtos.UserInfo
 }
 
-// LoginResult holds the outputs of a successful login.
 type LoginResult struct {
 	AccessToken  string
 	RefreshToken string
 	User         dtos.UserInfo
 }
 
-// signupFailed labels the cause with the step that failed. It deliberately does
-// NOT log: the handler logs every 5xx exactly once with the request id attached,
-// and a second line here would put the detail and the id on different lines.
 func signupFailed(step string, err error) error {
 	return fmt.Errorf("signup: %s: %w", step, err)
 }
 
-// Signup validates input, checks for duplicate email, hashes the
-// password, creates the user, and issues tokens.
 func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (SignupResponse, error) {
 	if err := validateSignupInput(input); err != nil {
 		return SignupResponse{}, err
 	}
 
-	// Check for duplicate email
-	_, err := s.db.GetUserByEmail(ctx, input.Email)
-	if err == nil {
-		return SignupResponse{}, &ConflictError{Message: "email already in use"}
+	taken, err := s.db.EmailOrUsernameTaken(ctx, database.EmailOrUsernameTakenParams{
+		Email:    input.Email,
+		Username: input.Username,
+	})
+	if err != nil {
+		return SignupResponse{}, signupFailed("look up credentials", err)
 	}
-	if !errors.Is(err, sql.ErrNoRows) {
-		return SignupResponse{}, signupFailed("look up email", err)
+	if taken.EmailTaken {
+		return SignupResponse{}, &ConflictError{Message: emailTakenMessage}
+	}
+	if taken.UsernameTaken {
+		return SignupResponse{}, &ConflictError{Message: usernameTakenMessage}
 	}
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
@@ -85,6 +85,9 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 		Password: string(hashed),
 	})
 	if err != nil {
+		if conflict := duplicateUserError(err); conflict != nil {
+			return SignupResponse{}, conflict
+		}
 		return SignupResponse{}, signupFailed("create user", err)
 	}
 
@@ -108,7 +111,6 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 	}, nil
 }
 
-// Login verifies credentials and issues tokens.
 func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResult, error) {
 	if input.Email == "" || input.Password == "" {
 		return LoginResult{}, &ValidationError{Message: "email and password are required"}
@@ -135,20 +137,71 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 	}, nil
 }
 
+const (
+	maxUsernameLength = 50
+	maxEmailLength    = 150
+	minPasswordLength = 8
+	maxPasswordLength = 72
+)
+
+const (
+	emailTakenMessage    = "email already in use"
+	usernameTakenMessage = "username already taken"
+)
+
 func validateSignupInput(input dtos.CreateUserRequest) error {
 	if input.Username == "" {
 		return &ValidationError{Message: "username is required"}
 	}
-	if len(input.Username) > 50 {
-		return &ValidationError{Message: "username must be 50 characters or fewer"}
+	if utf8.RuneCountInString(input.Username) > maxUsernameLength {
+		return &ValidationError{Message: tooLong("username", maxUsernameLength)}
 	}
 	if input.Email == "" {
 		return &ValidationError{Message: "email is required"}
 	}
-	if len(input.Password) < 8 {
-		return &ValidationError{Message: "password must be at least 8 characters"}
+	if utf8.RuneCountInString(input.Email) > maxEmailLength {
+		return &ValidationError{Message: tooLong("email", maxEmailLength)}
+	}
+	if len(input.Password) < minPasswordLength {
+		return &ValidationError{
+			Message: fmt.Sprintf("password must be at least %d bytes", minPasswordLength),
+		}
+	}
+	if len(input.Password) > maxPasswordLength {
+		return &ValidationError{Message: passwordTooLong(maxPasswordLength)}
 	}
 	return nil
+}
+
+func tooLong(field string, limit int) string {
+	return fmt.Sprintf("%s must be %d characters or fewer", field, limit)
+}
+
+func passwordTooLong(limit int) string {
+	return fmt.Sprintf("password must be %d bytes or fewer", limit)
+}
+
+const (
+	usernameConstraint = "users_username_uq"
+	emailConstraint    = "users_email_uq"
+)
+
+func duplicateUserError(err error) error {
+	switch {
+	case isUniqueViolation(err, usernameConstraint):
+		return &ConflictError{Message: usernameTakenMessage}
+	case isUniqueViolation(err, emailConstraint):
+		return &ConflictError{Message: emailTakenMessage}
+	}
+	return nil
+}
+
+func isUniqueViolation(err error, constraint string) bool {
+	var pqErr *pq.Error
+	if !errors.As(err, &pqErr) {
+		return false
+	}
+	return pqErr.Code == "23505" && pqErr.Constraint == constraint
 }
 
 func toUserInfo(user database.User) dtos.UserInfo {
