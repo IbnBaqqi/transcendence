@@ -11,7 +11,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const ACCESS_TOKEN_KEY = "accessToken"; // must match the key api/client.ts's interceptor reads
+const ACCESS_TOKEN_KEY = "access_token"; // must match the key api/client.ts's interceptor reads
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -31,8 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       { email, password },
       { withCredentials: true },
     );
-    const { accessToken, user } = res.data;
-    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+    const { access_token, user } = res.data;
+    localStorage.setItem(ACCESS_TOKEN_KEY, access_token);
     setUser(user);
   }
 

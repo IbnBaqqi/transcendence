@@ -124,7 +124,7 @@ export interface User {
 }
 
 export interface AuthResponse {
-  accessToken: string;
+  access_token: string;
   user: User;
 }
 

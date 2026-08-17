@@ -30,7 +30,7 @@ export function toApiError(error: AxiosError<ErrorBody>): ApiError {
 
 // request: attach the auth token when present
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken"); // placeholder store until #46
+  const token = localStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
