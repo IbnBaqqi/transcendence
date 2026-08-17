@@ -79,6 +79,10 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 		return database.Order{}, err
 	}
 
+	if err := recordEvent(ctx, qtx, order.ID, buyerID, sql.NullString{}, order.Status, ""); err != nil {
+		return database.Order{}, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return database.Order{}, err
 	}
@@ -208,8 +212,6 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 	if err := checkOrderActor(order, userID, action); err != nil {
 		return database.Order{}, err
 	}
-	// Status first, so an order in the wrong state reports that plainly rather
-	// than blaming the handshake.
 	if !slices.Contains(action.from, order.Status) {
 		return database.Order{}, &ConflictError{
 			Message: fmt.Sprintf("cannot %s an order that is %s", action.name, order.Status),
@@ -234,6 +236,12 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 		if err != nil {
 			return database.Order{}, err
 		}
+
+		if err := recordEvent(ctx, qtx, order.ID, userID,
+			sql.NullString{String: order.Status, Valid: true}, order.Status, markNote(action.mark)); err != nil {
+			return database.Order{}, err
+		}
+
 		if !bothSidesMarked(marked) {
 			if err := tx.Commit(); err != nil {
 				return database.Order{}, err
@@ -250,11 +258,45 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 		return database.Order{}, err
 	}
 
+	if err := recordEvent(ctx, qtx, order.ID, userID,
+		sql.NullString{String: order.Status, Valid: true}, action.to, ""); err != nil {
+		return database.Order{}, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return database.Order{}, err
 	}
 
 	return updated, nil
+}
+
+func recordEvent(
+	ctx context.Context,
+	qtx *database.Queries,
+	orderID int32,
+	actorID uuid.UUID,
+	from sql.NullString,
+	to string,
+	note string,
+) error {
+	return qtx.CreateOrderEvent(ctx, database.CreateOrderEventParams{
+		OrderID:    orderID,
+		ActorID:    uuid.NullUUID{UUID: actorID, Valid: true},
+		FromStatus: from,
+		ToStatus:   to,
+		Note:       sql.NullString{String: note, Valid: note != ""},
+	})
+}
+
+func markNote(m handshakeMark) string {
+	switch m {
+	case markSeller:
+		return "seller marked handover"
+	case markBuyer:
+		return "buyer confirmed receipt"
+	default:
+		return ""
+	}
 }
 
 // markHandshake stamps one side's confirmation, refusing a second stamp from
