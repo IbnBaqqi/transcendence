@@ -1,11 +1,12 @@
 import { useFormContext } from "react-hook-form";
+import { useFormConfig } from "./FormContext";
 
 type FormTextAreaProps = {
   label?: string;
   name: string;
   placeholder?: string;
   maxLength?: number;
-  isEditing: boolean;
+  isEditing?: boolean;
 };
 
 export function FormTextArea({
@@ -13,13 +14,16 @@ export function FormTextArea({
   name,
   placeholder,
   maxLength = 1024,
-  isEditing,
+  isEditing: isEditingProp,
 }: FormTextAreaProps) {
   const {
     register,
     watch,
     formState: { errors },
   } = useFormContext();
+  const { isEditing: ctxEditing } = useFormConfig();
+
+  const isEditing = isEditingProp ?? ctxEditing ?? false;
 
   const error = errors[name];
   const value = watch(name) ?? "";
@@ -30,7 +34,7 @@ export function FormTextArea({
       {isEditing ? (
         <>
           <textarea
-            className="field-sizing-content w-full min-w-64 resize-none overflow-y-auto rounded border p-2 focus:outline-none"
+            className="field-sizing-content w-full min-w-64 resize-none overflow-y-auto rounded border p-2 shadow focus:outline-none"
             id={name}
             rows={3}
             maxLength={maxLength}

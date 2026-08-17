@@ -32,13 +32,13 @@ export function ContactDetailsSection() {
   // }
 
   return (
-    <Form form={form} onSubmit={handleSubmit}>
+    <Form form={form} onSubmit={handleSubmit} width="max-w-128" isEditing={isEditing}>
       <div className="space-y-2">
-        <div className="flex flex-row gap-4">
-          <FormField label="First name" name="firstName" isEditing={isEditing} />
-          <FormField label="Last name" name="lastName" isEditing={isEditing} />
-          <FormField label="Phone" name="phone" type="tel" isEditing={isEditing} />
-          <FormField label="City" name="city" isEditing={isEditing} />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="First name" name="firstName" />
+          <FormField label="Last name" name="lastName" />
+          <FormField label="Phone" name="phone" type="tel" />
+          <FormField label="City" name="city" />
         </div>
         <div className="flex flex-row gap-2">
           {isEditing ? (

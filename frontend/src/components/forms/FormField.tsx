@@ -1,19 +1,32 @@
 import { useFormContext } from "react-hook-form";
+import { useFormConfig } from "./FormContext";
 
 type FormFieldProps = {
   label?: string;
   name: string;
   type?: string;
   placeholder?: string;
-  isEditing: boolean;
+  isEditing?: boolean;
+  width?: string;
 };
 
-export function FormField({ label, name, type = "text", placeholder, isEditing }: FormFieldProps) {
+export function FormField({
+  label,
+  name,
+  type = "text",
+  placeholder,
+  isEditing: isEditingProp,
+  width: widthProp,
+}: FormFieldProps) {
   const {
     register,
     watch,
     formState: { errors },
   } = useFormContext();
+  const { isEditing: ctxEditing } = useFormConfig();
+
+  const width = widthProp ?? "w-full";
+  const isEditing = isEditingProp ?? ctxEditing ?? false;
 
   const error = errors[name];
   const value = watch(name) ?? "";
@@ -24,7 +37,7 @@ export function FormField({ label, name, type = "text", placeholder, isEditing }
       {isEditing ? (
         <>
           <input
-            className="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight shadow focus:outline-none"
+            className={`focus:shadow-outline ${width} appearance-none rounded border px-3 py-2 leading-tight shadow focus:outline-none`}
             id={name}
             type={type}
             placeholder={placeholder}

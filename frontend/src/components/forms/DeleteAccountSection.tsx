@@ -17,16 +17,11 @@ export function DeleteAccountSection({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Form form={form} onSubmit={handleSubmit}>
+    <Form form={form} onSubmit={handleSubmit} isEditing={true}>
       <div className="space-y-4">
         <div className="space-y-2">
-          <FormField label="Password" name="password" type="password" isEditing={true} />
-          <FormField
-            label="Confirm password"
-            name="confirmPassword"
-            type="password"
-            isEditing={true}
-          />
+          <FormField label="Password" name="password" type="password" />
+          <FormField label="Confirm password" name="confirmPassword" type="password" />
         </div>
         <div className="flex flex-row gap-2">
           <Button variant="secondary" type="submit">

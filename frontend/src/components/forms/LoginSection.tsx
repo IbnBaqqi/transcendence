@@ -17,11 +17,11 @@ export function LoginSection({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Form form={form} onSubmit={handleSubmit}>
+    <Form form={form} onSubmit={handleSubmit} isEditing={true}>
       <div className="space-y-4">
         <div className="space-y-2">
-          <FormField label="Email" name="email" isEditing={true} />
-          <FormField label="Password" name="password" type="password" isEditing={true} />
+          <FormField label="Email" name="email" />
+          <FormField label="Password" name="password" type="password" />
         </div>
         <div className="flex flex-row gap-2">
           <Button variant="primary" type="submit">

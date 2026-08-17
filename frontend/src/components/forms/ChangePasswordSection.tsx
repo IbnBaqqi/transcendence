@@ -22,29 +22,14 @@ export function ChangePasswordSection() {
   // TODO: blocked by #109 Add hooks to save data to backend
 
   return (
-    <Form form={form} onSubmit={handleSubmit}>
+    <Form form={form} onSubmit={handleSubmit} width="max-w-64" isEditing={isEditing}>
       <div className="space-y-2">
         {isEditing ? (
           <>
-            <div className="flex flex-row gap-4">
-              <FormField
-                label="Current password"
-                name="currentPassword"
-                type="password"
-                isEditing={isEditing}
-              />
-              <FormField
-                label="New password"
-                name="newPassword"
-                type="password"
-                isEditing={isEditing}
-              />
-              <FormField
-                label="Confirm password"
-                name="confirmPassword"
-                type="password"
-                isEditing={isEditing}
-              />
+            <div className="flex flex-col gap-4">
+              <FormField label="Current password" name="currentPassword" type="password" />
+              <FormField label="New password" name="newPassword" type="password" />
+              <FormField label="Confirm password" name="confirmPassword" type="password" />
             </div>
             <div className="flex flex-row gap-2">
               <Button variant="primary" type="submit">

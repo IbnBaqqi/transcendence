@@ -22,10 +22,10 @@ export function BioSection() {
   // TODO: blocked by #109 Add hooks to save data to backend
 
   return (
-    <Form form={form} onSubmit={handleSubmit}>
+    <Form form={form} onSubmit={handleSubmit} isEditing={isEditing}>
       <div className="space-y-2">
         <div className="flex flex-row gap-4">
-          <FormTextArea name="bio" isEditing={isEditing} />
+          <FormTextArea name="bio" />
         </div>
         <div className="flex flex-row gap-2">
           {isEditing ? (
