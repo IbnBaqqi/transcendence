@@ -41,6 +41,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 	r.Handle(dtos.UploadURLPrefix+"*", uploadFileServer(appService.Files.Dir()))
 
+	mountDocs(r)
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authenticate)
 		r.Use(mw.TouchLastSeen(appService.DB.Queries, presence.Interval))
