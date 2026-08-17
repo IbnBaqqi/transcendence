@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Layout from "../components/layout/Layout";
 import Home from "../pages/Home";
+import AddListing from "../pages/AddListing";
 import ListingDetail from "../pages/ListingDetail";
 import Search from "../pages/Search";
 import Profile from "../pages/Profile";
@@ -20,6 +21,7 @@ export default function AppRouter() {
           <Route path="/" element={<Home />} />
           {/* ":id" is a URL parameter - the page reads it with useParams() */}
           <Route path="/listings/:id" element={<ListingDetail />} />
+          <Route path="/addlisting" element={<AddListing />} />
           <Route path="/search" element={<Search />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/user" element={<User />} />

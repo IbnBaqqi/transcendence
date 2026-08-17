@@ -4,6 +4,10 @@ type AvatarProps = {
   size?: "sm" | "md" | "lg";
   initials?: string;
   editable?: boolean;
+  /** Local preview/blob or remote URL. Falls back to initials when absent. */
+  imageUrl?: string;
+  /** Called with the file the user picked in the upload modal, once confirmed. */
+  onImageSelected?: (file: File) => void;
 };
 
 const sizeStyles = {
@@ -12,15 +16,25 @@ const sizeStyles = {
   lg: { circle: "w-16 h-16 text-xl", label: "h-5 text-[10px]" },
 };
 
-export default function Avatar({ size = "md", initials = "?", editable = false }: AvatarProps) {
+export default function Avatar({
+  size = "md",
+  initials = "?",
+  editable = false,
+  imageUrl,
+  onImageSelected,
+}: AvatarProps) {
   const { circle, label } = sizeStyles[size];
   const { openModal } = useModal();
 
   const content = (
     <>
-      <div className="bg-accent text-accent-contrast flex h-full w-full items-center justify-center font-semibold">
-        {initials}
-      </div>
+      {imageUrl ? (
+        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <div className="bg-accent text-accent-contrast flex h-full w-full items-center justify-center font-semibold">
+          {initials}
+        </div>
+      )}
       {editable && (
         <div
           className={`absolute right-0 bottom-0 left-0 flex items-center justify-center ${label} bg-black/60 font-medium text-white`}
@@ -35,7 +49,7 @@ export default function Avatar({ size = "md", initials = "?", editable = false }
     return (
       <button
         type="button"
-        onClick={() => openModal("imageUpload")}
+        onClick={() => openModal("imageUpload", { onComplete: onImageSelected })}
         aria-label="Edit profile picture"
         className={`relative ${circle} ring-line bg-accent hover:bg-accent-hover active:bg-accent-active focus:ring-surface-accent overflow-hidden rounded-full opacity-90 ring-2 transition-colors duration-150 select-none hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none`}
       >
