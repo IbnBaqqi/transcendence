@@ -20,8 +20,8 @@ func signupInput(name string) dtos.CreateUserRequest {
 
 func TestValidateSignupInput(t *testing.T) {
 	tests := []struct {
-		name string
-		mutate func(*dtos.CreateUserRequest)
+		name    string
+		mutate  func(*dtos.CreateUserRequest)
 		wantMsg string
 	}{
 		{"a normal signup", func(*dtos.CreateUserRequest) {}, ""},
