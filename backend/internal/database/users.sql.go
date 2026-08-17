@@ -52,6 +52,29 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const emailOrUsernameTaken = `-- name: EmailOrUsernameTaken :one
+SELECT
+    EXISTS(SELECT 1 FROM users u WHERE u.email = $1)       AS email_taken,
+    EXISTS(SELECT 1 FROM users u WHERE u.username = $2) AS username_taken
+`
+
+type EmailOrUsernameTakenParams struct {
+	Email    string
+	Username string
+}
+
+type EmailOrUsernameTakenRow struct {
+	EmailTaken    bool
+	UsernameTaken bool
+}
+
+func (q *Queries) EmailOrUsernameTaken(ctx context.Context, arg EmailOrUsernameTakenParams) (EmailOrUsernameTakenRow, error) {
+	row := q.db.QueryRowContext(ctx, emailOrUsernameTaken, arg.Email, arg.Username)
+	var i EmailOrUsernameTakenRow
+	err := row.Scan(&i.EmailTaken, &i.UsernameTaken)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status FROM users
 WHERE id = $1
@@ -194,29 +217,4 @@ type UpdateUserParams struct {
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 	_, err := q.db.ExecContext(ctx, updateUser, arg.ID, arg.Username, arg.Email)
 	return err
-}
-
-const userCredentialsTaken = `-- name: UserCredentialsTaken :one
-SELECT
-    EXISTS(SELECT 1 FROM users u WHERE u.email = $1)       AS email_taken,
-    EXISTS(SELECT 1 FROM users u WHERE u.username = $2) AS username_taken
-`
-
-type UserCredentialsTakenParams struct {
-	Email    string
-	Username string
-}
-
-type UserCredentialsTakenRow struct {
-	EmailTaken    bool
-	UsernameTaken bool
-}
-
-// One round trip for both, so a doomed signup does not pay for a bcrypt hash.
-// The unique constraints remain the authority: this can race, that cannot.
-func (q *Queries) UserCredentialsTaken(ctx context.Context, arg UserCredentialsTakenParams) (UserCredentialsTakenRow, error) {
-	row := q.db.QueryRowContext(ctx, userCredentialsTaken, arg.Email, arg.Username)
-	var i UserCredentialsTakenRow
-	err := row.Scan(&i.EmailTaken, &i.UsernameTaken)
-	return i, err
 }

@@ -10,8 +10,6 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
-// signupInput lives here rather than in the database test file so the tests
-// that need no database do not depend on the ones that do.
 func signupInput(name string) dtos.CreateUserRequest {
 	return dtos.CreateUserRequest{
 		Username: name,
@@ -23,11 +21,7 @@ func signupInput(name string) dtos.CreateUserRequest {
 func TestValidateSignupInput(t *testing.T) {
 	tests := []struct {
 		name string
-		// Each case starts from a valid input and breaks one thing, so the
-		// table says what is being tested rather than repeating five fields.
 		mutate func(*dtos.CreateUserRequest)
-		// Empty means "expect no error". Pinning the message stops a case
-		// passing because some OTHER rule happened to fire.
 		wantMsg string
 	}{
 		{"a normal signup", func(*dtos.CreateUserRequest) {}, ""},
@@ -75,9 +69,6 @@ func TestValidateSignupInput(t *testing.T) {
 	}
 }
 
-// The email constraint fires only when the pre-check loses a race, so a
-// database test cannot reach it. Feeding duplicateUserError the error pq would
-// produce covers both mappings without one.
 func TestDuplicateUserError(t *testing.T) {
 	tests := []struct {
 		name    string
