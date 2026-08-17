@@ -270,6 +270,14 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 	return updated, nil
 }
 
+func (s *OrderService) ListEvents(ctx context.Context, userID uuid.UUID, orderID int32) ([]database.OrderEvent, error) {
+	if _, err := s.GetOrder(ctx, userID, orderID); err != nil {
+		return nil, err
+	}
+
+	return s.db.ListOrderEvents(ctx, orderID)
+}
+
 func recordEvent(
 	ctx context.Context,
 	qtx *database.Queries,

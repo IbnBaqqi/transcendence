@@ -15,7 +15,7 @@ type OrderEventResponse struct {
 	FromStatus *string   `json:"from_status"`
 	ToStatus   string    `json:"to_status"`
 	Note       *string   `json:"note"`
-	CreatedAt  time.Time `json:"create_at"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 func ToOrderEventResponse(e database.OrderEvent) OrderEventResponse {
