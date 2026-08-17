@@ -39,7 +39,9 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 	r.Get("/health", h.Health)
 
-	r.Handle(dtos.UploadURLPrefix+"*", uploadFileServer(appService.Files.Dir()))
+	uploads := uploadFileServer(appService.Files.Dir())
+	r.Get(dtos.UploadURLPrefix+"*", uploads.ServeHTTP)
+	r.Head(dtos.UploadURLPrefix+"*", uploads.ServeHTTP)
 
 	mountDocs(r)
 

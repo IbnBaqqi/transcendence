@@ -30,9 +30,7 @@ info:
 
     Two cases bypass that envelope, because they never reach a handler: an
     unrouted path returns a plain-text 404, and a routed path called with the
-    wrong method usually returns an empty 405. `/uploads/` is the exception —
-    it is registered for every method, so it serves the file whatever verb
-    you use.
+    wrong method returns an empty 405.
 
 # The base URL every path in this file is relative to. Because /api/v1 lives
 # here, paths below can be written as /listings instead of /api/v1/listings.
