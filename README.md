@@ -58,6 +58,42 @@ are all present.
 transactional: a buyer can find the forager they trusted last autumn, and a
 seller can build an audience. It is also the substrate the notification and
 recommendation work builds on later.
+## API documentation
+
+The API describes itself. With the stack up (`docker compose up`):
+
+- **<http://localhost:8080/api/docs>** — Swagger UI: every endpoint, its
+  request and response shapes, and a "Try it out" button that issues real
+  requests. Paste an access token from `POST /auth/login` into **Authorize**
+  to call the endpoints that need one.
+- **<http://localhost:8080/api/openapi.yaml>** — the raw OpenAPI 3.1 document,
+  if you'd rather point a client generator or another tool at it.
+
+Both are served straight out of the binary — the spec and Swagger UI's assets
+are embedded with `go:embed`, so there is nothing to install and no CDN
+involved.
+
+### Keeping it honest
+
+The spec is hand-written and lives at `backend/api/openapi.yaml`, so **it is
+part of the change, not a follow-up**: adding an endpoint means adding it there
+in the same pull request.
+
+That isn't left to memory. `TestSpecMatchesRouter` asks chi for its real route
+table and compares it against the spec, failing when an endpoint is in one and
+not the other. It checks **method and path only** — the request and response
+schemas are still on you to keep true:
+
+```
+routed but not documented: GET /api/v1/me/profile (add it to api/openapi.yaml)
+documented but not routed: PUT /api/v1/me/settings (stale entry in api/openapi.yaml)
+```
+
+It needs no database, so `make test` and CI both run it.
+
+Note that `go:embed` bakes the spec in **at build time** — after editing the
+YAML, rebuild (`docker compose up --build`) before the change shows up at
+`/api/docs`.
 
 ## Running the tests
 
