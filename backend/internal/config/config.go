@@ -27,6 +27,7 @@ type UploadConfig struct {
 type AuthConfig struct {
 	JWTSecret      string
 	AccessTokenTTL time.Duration
+	CookieSecure bool
 }
 
 type ServerConfig struct {
@@ -73,6 +74,7 @@ func Load() (*Config, error) {
 		Auth: AuthConfig{
 			JWTSecret:      mustGetEnv("JWT_SECRET"),
 			AccessTokenTTL: getEnvAsDuration("ACCESS_TOKEN_TTL", "15m"),
+			CookieSecure:   getEnvAsBool("COOKIE_SECURE", true),
 		},
 
 		Upload: UploadConfig{
@@ -99,6 +101,18 @@ func mustGetEnv(key string) string {
 			"key", key,
 		)
 		os.Exit(1)
+	}
+	return value
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return defaultValue
+	}
+	value, err := strconv.ParseBool(raw)
+	if err != nil {
+		return defaultValue
 	}
 	return value
 }

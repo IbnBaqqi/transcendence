@@ -27,7 +27,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setRefreshTokenCookie(w, result.RefreshToken, auth.RefreshTokenTTL)
+	h.setRefreshTokenCookie(w, result.RefreshToken, auth.RefreshTokenTTL)
 
 	respondWithJSON(w, http.StatusCreated, dtos.AuthResponse{
 		AccessToken: result.AccessToken,
@@ -52,7 +52,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setRefreshTokenCookie(w, result.RefreshToken, auth.RefreshTokenTTL)
+	h.setRefreshTokenCookie(w, result.RefreshToken, auth.RefreshTokenTTL)
 
 	respondWithJSON(w, http.StatusOK, dtos.AuthResponse{
 		AccessToken: result.AccessToken,
@@ -68,7 +68,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	setRefreshTokenCookie(w, "", -1)
+	h.setRefreshTokenCookie(w, "", -1)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -85,7 +85,7 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setRefreshTokenCookie(w, result.RefreshToken, auth.RefreshTokenTTL)
+	h.setRefreshTokenCookie(w, result.RefreshToken, auth.RefreshTokenTTL)
 
 	respondWithJSON(w, http.StatusOK, dtos.AuthResponse{
 		AccessToken: result.AccessToken,
@@ -114,7 +114,7 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func setRefreshTokenCookie(w http.ResponseWriter, value string, ttl time.Duration) {
+func (h *Handler) setRefreshTokenCookie(w http.ResponseWriter, value string, ttl time.Duration) {
 	maxAge := int(ttl.Seconds())
 	if ttl < 0 {
 		maxAge = -1
@@ -125,7 +125,7 @@ func setRefreshTokenCookie(w http.ResponseWriter, value string, ttl time.Duratio
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   h.cookieSecure,
 		SameSite: http.SameSiteLaxMode,
 	})
 }

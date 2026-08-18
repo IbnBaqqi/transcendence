@@ -26,6 +26,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.User,
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
+		appService.AuthConfig.CookieSecure,
 	)
 
 	r.Use(middleware.RequestID)
