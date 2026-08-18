@@ -11,6 +11,7 @@ export function BioSection() {
 
   const form = useForm<BioFormValues>({
     resolver: zodResolver(bioSchema),
+    mode: "onBlur",
     // TODO: blocked by #109 Add hooks to fetch data from backend (or maybe local frontend e.g. from Profile.tsx?)
   });
 
@@ -25,7 +26,7 @@ export function BioSection() {
     <Form form={form} onSubmit={handleSubmit} isEditing={isEditing}>
       <div className="space-y-2">
         <div className="flex flex-row gap-4">
-          <FormTextArea name="bio" />
+          <FormTextArea name="bio" validateOnChange />
         </div>
         <div className="flex flex-row gap-2">
           {isEditing ? (

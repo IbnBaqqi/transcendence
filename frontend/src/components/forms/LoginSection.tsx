@@ -8,6 +8,7 @@ import Button from "../objects/Button.tsx";
 export function LoginSection({ onClose }: { onClose: () => void }) {
   const form = useForm<LoginFormSchema>({
     resolver: zodResolver(loginSchema),
+    mode: "onBlur",
     // TODO: blocked by #109 Add hooks to fetch data from backend (or maybe local frontend e.g. from Profile.tsx?)
   });
 
@@ -20,8 +21,8 @@ export function LoginSection({ onClose }: { onClose: () => void }) {
     <Form form={form} onSubmit={handleSubmit} isEditing={true}>
       <div className="space-y-4">
         <div className="space-y-2">
-          <FormField label="Email" name="email" />
-          <FormField label="Password" name="password" type="password" />
+          <FormField label="Email" name="email" validateOnChange />
+          <FormField label="Password" name="password" type="password" validateOnChange />
         </div>
         <div className="flex flex-row gap-2">
           <Button variant="primary" type="submit" disabled={!form.formState.isValid}>

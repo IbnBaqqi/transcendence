@@ -18,6 +18,7 @@ const MAX_LISTING_IMAGES = 5;
 export function AddListingSection() {
   const form = useForm<AddListingFormValues>({
     resolver: zodResolver(addListingSchema),
+    mode: "onBlur",
     // TODO: blocked by #109 Add hooks to fetch data from backend (or maybe local frontend e.g. from Profile.tsx?)
     // defaultValues: {
     //   firstName: user.firstName ?? "",
@@ -53,37 +54,58 @@ export function AddListingSection() {
 
   return (
     <Form form={form} onSubmit={handleSubmit} isEditing={true}>
-      <div className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-foreground text-lg font-bold">Title</h2>
-          <FormField name="title" width="max-w-lg" />
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-foreground text-lg font-bold">Photos</h2>
-          <ImageDropzone
-            images={photos}
-            onFilesSelected={addPhotos}
-            onRemove={removePhoto}
-            multiple
-            emptyMessage="No photos yet."
-            helperText="Drag & drop photos here, or click to browse"
-          />
-          {photoError && <p className="text-berry-500 text-sm">{photoError}</p>}
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-foreground text-lg font-bold">Description</h2>
-          <FormTextArea name="description" />
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-foreground text-lg font-bold">Category</h2>
-          <FormField name="category" width="max-w-lg" />
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-foreground text-lg font-bold">Price & Quantity</h2>
-          <div className="flex flex-row gap-4">
-            <FormField name="price" width="max-w-sm" />
-            <FormField name="quantity" width="max-w-sm" />
-            <FormField name="unit" width="max-w-sm" />
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <div className="space-y-1">
+            <h2 className="text-foreground text-lg font-bold">Title</h2>
+            <FormField name="title" width="max-w-lg" validateOnChange />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-foreground text-lg font-bold">Photos</h2>
+            <ImageDropzone
+              images={photos}
+              onFilesSelected={addPhotos}
+              onRemove={removePhoto}
+              multiple
+              emptyMessage="No photos yet."
+              helperText="Drag & drop photos here, or click to browse"
+            />
+            {photoError && <p className="text-berry-500 text-sm">{photoError}</p>}
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-foreground text-lg font-bold">Description</h2>
+            <FormTextArea name="description" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-foreground text-lg font-bold">Category</h2>
+            <FormField name="category" width="max-w-lg" placeholder="e.g. 'Mushroom'" validateOnChange />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-foreground text-lg font-bold">Price & Quantity</h2>
+            <div className="flex flex-row gap-4">
+              <FormField
+                name="price"
+                label="Price"
+                placeholder="*in local currency"
+                type="number"
+                width="max-w-sm"
+                validateOnChange
+              />
+              <FormField
+                name="quantity"
+                label="Quantity"
+                type="number"
+                width="max-w-sm"
+                validateOnChange
+              />
+              <FormField
+                name="unit"
+                label="Unit"
+                placeholder="e.g. 'kg' or 'dl'"
+                width="max-w-sm"
+                validateOnChange
+              />
+            </div>
           </div>
         </div>
         <Button

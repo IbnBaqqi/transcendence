@@ -11,6 +11,7 @@ export function ChangePasswordSection() {
 
   const form = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
+    mode: "onBlur",
     // TODO: blocked by #109 Add hooks to fetch data from backend (or maybe local frontend e.g. from Profile.tsx?)
   });
 
@@ -27,9 +28,19 @@ export function ChangePasswordSection() {
         {isEditing ? (
           <>
             <div className="flex flex-col gap-4">
-              <FormField label="Current password" name="currentPassword" type="password" />
-              <FormField label="New password" name="newPassword" type="password" />
-              <FormField label="Confirm password" name="confirmPassword" type="password" />
+              <FormField
+                label="Current password"
+                name="currentPassword"
+                type="password"
+                validateOnChange
+              />
+              <FormField label="New password" name="newPassword" type="password" validateOnChange />
+              <FormField
+                label="Confirm password"
+                name="confirmPassword"
+                type="password"
+                validateOnChange
+              />
             </div>
             <div className="flex flex-row gap-2">
               <Button variant="primary" type="submit" disabled={!form.formState.isValid}>
