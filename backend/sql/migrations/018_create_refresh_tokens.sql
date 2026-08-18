@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     user_id     uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at  timestamptz NOT NULL,
     revoked_at  timestamptz,
+    revoked_reason text CHECK (revoked_reason IN ('rotated', 'logout')),
     created_at  timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

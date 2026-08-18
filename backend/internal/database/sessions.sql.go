@@ -14,10 +14,13 @@ import (
 )
 
 const findLiveSession = `-- name: FindLiveSession :one
-SELECT token_hash, user_id, expires_at, revoked_at, created_at FROM refresh_tokens
+SELECT token_hash, user_id, expires_at, revoked_at, revoked_reason, created_at FROM refresh_tokens
 WHERE token_hash = $1
     AND expires_at > now()
-    AND (revoked_at IS NULL OR revoked_at > $2)
+    AND (
+        revoked_at IS NULL
+        OR (revoked_reason = 'rotated' AND revoked_at > $2)
+      )
 `
 
 type FindLiveSessionParams struct {
@@ -33,6 +36,7 @@ func (q *Queries) FindLiveSession(ctx context.Context, arg FindLiveSessionParams
 		&i.UserID,
 		&i.ExpiresAt,
 		&i.RevokedAt,
+		&i.RevokedReason,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -40,13 +44,19 @@ func (q *Queries) FindLiveSession(ctx context.Context, arg FindLiveSessionParams
 
 const revokeSession = `-- name: RevokeSession :execrows
 UPDATE refresh_tokens
-SET revoked_at = now()
-WHERE token_hash = $1
+SET revoked_at = now(),
+    revoked_reason = $1
+WHERE token_hash = $2
     AND revoked_at IS NULL
 `
 
-func (q *Queries) RevokeSession(ctx context.Context, tokenHash string) (int64, error) {
-	result, err := q.db.ExecContext(ctx, revokeSession, tokenHash)
+type RevokeSessionParams struct {
+	Reason    sql.NullString
+	TokenHash string
+}
+
+func (q *Queries) RevokeSession(ctx context.Context, arg RevokeSessionParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, revokeSession, arg.Reason, arg.TokenHash)
 	if err != nil {
 		return 0, err
 	}
@@ -55,7 +65,8 @@ func (q *Queries) RevokeSession(ctx context.Context, tokenHash string) (int64, e
 
 const revokeSessionsForUser = `-- name: RevokeSessionsForUser :exec
 UPDATE refresh_tokens
-SET revoked_at = now()
+SET revoked_at = now(),
+    revoked_reason = 'logout'
 WHERE user_id = $1
     AND revoked_at IS NULL
 `
