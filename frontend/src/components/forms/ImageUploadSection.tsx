@@ -44,12 +44,12 @@ export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionPr
         shape="circle"
       />
       {error && <p className="text-berry-500 text-center text-sm">{error}</p>}
-      <div className="flex flex-row justify-end gap-2">
-        <Button variant="secondary" type="button" onClick={onClose}>
-          Cancel
-        </Button>
+      <div className="flex flex-row gap-2">
         <Button variant="primary" type="button" onClick={handleSave} disabled={images.length === 0}>
           Save
+        </Button>
+        <Button variant="secondary" type="button" onClick={onClose}>
+          Cancel
         </Button>
       </div>
     </div>

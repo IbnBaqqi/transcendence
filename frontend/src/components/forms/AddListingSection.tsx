@@ -78,7 +78,11 @@ export function AddListingSection() {
           <h2 className="text-foreground text-lg font-bold">Location</h2>
           <FormField name="city" width="max-w-lg" />
         </div>
-        <Button variant="primary" type="submit">
+        <Button
+          variant="primary"
+          type="submit"
+          disabled={!form.formState.isValid || photos.length === 0}
+        >
           {/* TODO: blocked by #109 Insert API here */}
           Save
         </Button>

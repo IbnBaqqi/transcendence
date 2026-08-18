@@ -46,6 +46,7 @@ export function ImageDropzone({
 }: ImageDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [isHover, setIsHover] = useState(false);
 
   const openFileBrowser = () => {
     if (disabled) return;
@@ -121,10 +122,16 @@ export function ImageDropzone({
             className={`h-full w-full ${roundedClass} border-2 border-dashed transition-colors ${
               isDragActive ? "border-accent" : "border-line"
             }`}
+            onMouseEnter={() => setIsHover(true)}
+            onMouseLeave={() => setIsHover(false)}
           />
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center">
             <span className="text-foreground text-sm font-medium">{emptyMessage}</span>
-            <span className="text-muted text-xs">{helperText}</span>
+            <span
+              className={`${isHover ? "text-berry-500" : "text-muted"} text-xs transition-colors duration-150`}
+            >
+              {helperText}
+            </span>
           </div>
         </div>
       ) : (

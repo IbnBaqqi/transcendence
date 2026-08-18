@@ -32,7 +32,7 @@ export function ChangePasswordSection() {
               <FormField label="Confirm password" name="confirmPassword" type="password" />
             </div>
             <div className="flex flex-row gap-2">
-              <Button variant="primary" type="submit">
+              <Button variant="primary" type="submit" disabled={!form.formState.isValid}>
                 {/* TODO: blocked by #109 Insert API here */}
                 Save
               </Button>
