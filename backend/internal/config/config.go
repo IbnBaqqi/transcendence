@@ -27,7 +27,7 @@ type UploadConfig struct {
 type AuthConfig struct {
 	JWTSecret      string
 	AccessTokenTTL time.Duration
-	CookieSecure bool
+	CookieSecure   bool
 }
 
 type ServerConfig struct {

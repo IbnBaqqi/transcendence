@@ -119,6 +119,7 @@ func (h *Handler) setRefreshTokenCookie(w http.ResponseWriter, value string, ttl
 	if ttl < 0 {
 		maxAge = -1
 	}
+	// #nosec G124 -- Secure follows COOKIE_SECURE, true by default
 	http.SetCookie(w, &http.Cookie{
 		Name:     refreshTokenCookie,
 		Value:    value,
