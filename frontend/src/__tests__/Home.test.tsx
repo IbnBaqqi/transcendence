@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 
 import Home from "../pages/Home";
 import { useListings } from "../api/listings";
-import type { Listing } from "../api/types";
+import { makeListing } from "../test/factories";
 
 // Replace the whole module with auto-generated mock functions. Home imports
 // useListings from here, so it gets the fake instead of the real hook.
@@ -18,21 +18,11 @@ function mockListings(state: Partial<ListingsQuery>) {
   vi.mocked(useListings).mockReturnValue(state as ListingsQuery);
 }
 
-// One listing to render in the "has data" case.
-const sample: Listing = {
-  id: 1,
-  title: "Golden Chanterelles",
-  description: "Freshly foraged this morning.",
-  category: "mushrooms",
-  price: 18,
-  quantity: 4,
-  unit: "kg",
-};
+const sample = makeListing();
 
-// A second, deliberately different listing: different id (so keys are unique),
-// different title (so we can assert both rendered), different unit (so the
-// "available" lines don't collide in getByText).
-const secondSample: Listing = {
+// Deliberately different: id (so keys are unique), title (so we can assert
+// both rendered), unit (so the "available" lines don't collide in getByText).
+const secondSample = makeListing({
   id: 2,
   title: "Wild Blueberries",
   description: "Hand-picked from a sunny hillside.",
@@ -40,7 +30,7 @@ const secondSample: Listing = {
   price: 7.5,
   quantity: 10,
   unit: "litre",
-};
+});
 
 describe("Home", () => {
   test("shows skeleton placeholders while the query is pending", () => {

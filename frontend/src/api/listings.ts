@@ -1,29 +1,70 @@
 import { useQuery } from "@tanstack/react-query";
+
 import { api } from "./client";
-import type { Listing } from "./types";
+import { keys } from "./queryKeys";
+import type { Listing, ListingImage, Paginated } from "./types";
 
-// GET /api/v1/listings -> a base JSON array of listings
-//
-// no response envelope: success vs failure is signalled by the HTTP status
-// code. axios throws on any non-2xx, which React Query turns into isError,
-// so the filaure path needs no special handling here
-//
-// NOTE: this targets the ListingResponse DTO from feature/listing-response-dto,
-// which isnt merged yet. until it lands the backend still serialises raw sqlc
-// structs (PascalCase keys, null-wrappers), so the feed will not render.
+// Mirrors the backend's sort allow-list, so a typo is a compile error rather
+// than a 400 at runtime.
+export type ListingSort = "newest" | "oldest" | "price_asc" | "price_desc";
 
-async function fetchListings(): Promise<Listing[]> {
-  const res = await api.get<Listing[]>("/listings");
-  // res.data IS the array here (axios puts the HTTP body on .data).
-  // ?? [] is insurance in case an empty result ever arrives as null.
-  return res.data ?? [];
+export interface ListingSearchParams {
+  keyword?: string;
+  category?: string;
+  min_price?: number;
+  max_price?: number;
+  location?: string;
+  sort?: ListingSort;
+  page?: number;
+  limit?: number;
 }
 
-// the hook components will call, React Query wraps fetchListings with caching,
-// loading/error states, dedup, etc.
+// Sorted, so the same filters always produce the same cache key regardless of
+// the order the caller wrote them in.
+export function toQueryString(params: ListingSearchParams): string {
+  const search = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== "") search.set(key, String(value));
+  }
+  search.sort();
+
+  return search.toString();
+}
+
 export function useListings() {
   return useQuery({
-    queryKey: ["listings"], // cache identity. same key = same shared cache entry
-    queryFn: fetchListings, // how to fetch when the cache is empty/stale
+    queryKey: keys.listings.list(),
+    queryFn: async () => {
+      const res = await api.get<Listing[]>("/listings");
+      return res.data ?? []; // insurance: an empty result must not be null
+    },
+  });
+}
+
+export function useListing(id: number) {
+  return useQuery({
+    queryKey: keys.listings.detail(id),
+    queryFn: async () => (await api.get<Listing>(`/listings/${id}`)).data,
+    enabled: Number.isInteger(id) && id > 0, // skip while a route param is still being parsed
+  });
+}
+
+export function useSearchListings(params: ListingSearchParams) {
+  const query = toQueryString(params);
+
+  return useQuery({
+    queryKey: keys.listings.search(query),
+    queryFn: async () => (await api.get<Paginated<Listing>>(`/listings/search?${query}`)).data,
+  });
+}
+
+// Listings already carry their images, so this is only for the cases that
+// need them on their own - the upload UI in #90.
+export function useListingImages(id: number) {
+  return useQuery({
+    queryKey: keys.listings.images(id),
+    queryFn: async () => (await api.get<ListingImage[]>(`/listings/${id}/images`)).data ?? [],
+    enabled: Number.isInteger(id) && id > 0,
   });
 }
