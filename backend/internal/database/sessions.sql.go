@@ -42,6 +42,27 @@ func (q *Queries) FindLiveSession(ctx context.Context, arg FindLiveSessionParams
 	return i, err
 }
 
+const findSessionByHash = `-- name: FindSessionByHash :one
+SELECT token_hash, user_id, expires_at, revoked_at, revoked_reason, created_at FROM refresh_tokens
+WHERE token_hash = $1
+`
+
+// Whatever its state - logout needs the owner of a token that may already have
+// been rotated, which FindLiveSession would refuse to return.
+func (q *Queries) FindSessionByHash(ctx context.Context, tokenHash string) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, findSessionByHash, tokenHash)
+	var i RefreshToken
+	err := row.Scan(
+		&i.TokenHash,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+		&i.RevokedReason,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const revokeSession = `-- name: RevokeSession :execrows
 UPDATE refresh_tokens
 SET revoked_at = now(),

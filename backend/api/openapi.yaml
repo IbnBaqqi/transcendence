@@ -778,9 +778,14 @@ paths:
       operationId: logout
       security: []
       description: |
-        Revokes the stored session and expires the `refresh_token` cookie, so
-        the refresh token stops working immediately - it does not get the
-        rotation grace window.
+        Ends **every** session for this account and expires the
+        `refresh_token` cookie, so refreshing stops working immediately - it
+        does not get the rotation grace window.
+
+        All sessions rather than only the presented one: if that token had
+        already been rotated, its successor would otherwise stay live for a
+        week while the client was told it had logged out. The cost is that
+        logging out on one device logs you out on the others.
 
         The access token is stateless and cannot be revoked, so it stays valid
         until it expires (up to 15 minutes); the client should drop it too.
@@ -801,9 +806,14 @@ paths:
         access token is gone.
 
         **The refresh token is rotated.** A new one is set on the cookie and
-        the old one is revoked. To keep two browser tabs from logging each
-        other out, a just-rotated token stays usable for 30 seconds; after
-        that, presenting it again is a 401.
+        the old one is revoked.
+
+        To keep two browser tabs from logging each other out, a just-rotated
+        token stays usable for 30 seconds - but it rotates only once. A replay
+        inside that window returns a new access token and **no** `Set-Cookie`,
+        because the request that won the rotation already put the current token
+        in the shared cookie jar. After the window, presenting it again is a
+        401.
 
         The response is the same shape as signup and login, so a client sets
         its session from any of the three with one code path - and recovering
@@ -813,7 +823,10 @@ paths:
           description: A new access token, and the identity behind it.
           headers:
             Set-Cookie:
-              description: The rotated HttpOnly `refresh_token`, valid for 7 days.
+              description: |
+                The rotated HttpOnly `refresh_token`, valid for 7 days. Absent
+                when this request was a replay inside the grace window and did
+                not win the rotation.
               schema:
                 type: string
           content:

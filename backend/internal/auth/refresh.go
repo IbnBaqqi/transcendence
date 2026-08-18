@@ -70,15 +70,19 @@ func (s *Service) RedeemSession(ctx context.Context, raw string) (LoginResult, e
 		return LoginResult{}, err
 	}
 
-	if session.RevokedAt.Valid {
-		slog.Info("refresh token reused inside the grace window", "user_id", session.UserID)
+	rotate := !session.RevokedAt.Valid
+	if rotate {
+		rows, err := qtx.RevokeSession(ctx, database.RevokeSessionParams{
+			TokenHash: session.TokenHash,
+			Reason:    sql.NullString{String: reasonRotated, Valid: true},
+		})
+		if err != nil {
+			return LoginResult{}, err
+		}
+		rotate = rows == 1
 	}
-
-	if _, err := qtx.RevokeSession(ctx, database.RevokeSessionParams{
-		TokenHash: session.TokenHash,
-		Reason:    sql.NullString{String: reasonRotated, Valid: true},
-	}); err != nil {
-		return LoginResult{}, err
+	if !rotate {
+		slog.Info("refresh token reused inside the grace window", "user_id", session.UserID)
 	}
 
 	user, err := qtx.GetUser(ctx, session.UserID)
@@ -86,9 +90,12 @@ func (s *Service) RedeemSession(ctx context.Context, raw string) (LoginResult, e
 		return LoginResult{}, err
 	}
 
-	next, err := s.IssueSession(ctx, qtx, user.ID)
-	if err != nil {
-		return LoginResult{}, err
+	var next string
+	if rotate {
+		next, err = s.IssueSession(ctx, qtx, user.ID)
+		if err != nil {
+			return LoginResult{}, err
+		}
 	}
 
 	accessToken, err := s.jwt.IssueAccessToken(user)
@@ -112,9 +119,13 @@ func (s *Service) EndSession(ctx context.Context, raw string) error {
 		return nil
 	}
 
-	_, err := s.db.RevokeSession(ctx, database.RevokeSessionParams{
-		TokenHash: hashSession(raw),
-		Reason:    sql.NullString{String: reasonLogout, Valid: true},
-	})
-	return err
+	session, err := s.db.FindSessionByHash(ctx, hashSession(raw))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
+
+	return s.db.RevokeSessionsForUser(ctx, session.UserID)
 }

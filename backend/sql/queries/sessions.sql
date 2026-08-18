@@ -24,3 +24,7 @@ SET revoked_at = now(),
     revoked_reason = 'logout'
 WHERE user_id = $1
     AND revoked_at IS NULL;
+
+-- name: FindSessionByHash :one
+SELECT * FROM refresh_tokens
+WHERE token_hash = $1;

@@ -85,7 +85,9 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.setRefreshTokenCookie(w, result.RefreshToken, auth.RefreshTokenTTL)
+	if result.RefreshToken != "" {
+		h.setRefreshTokenCookie(w, result.RefreshToken, auth.RefreshTokenTTL)
+	}
 
 	respondWithJSON(w, http.StatusOK, dtos.AuthResponse{
 		AccessToken: result.AccessToken,

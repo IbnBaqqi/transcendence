@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
@@ -21,6 +22,16 @@ func signUp(t *testing.T) (*Service, *database.DB, dtos.CreateUserRequest, strin
 	}
 
 	return svc, db, input, signup.RefreshToken
+}
+
+func liveSessions(t *testing.T, db *database.DB) int {
+	t.Helper()
+
+	var n int
+	if err := db.QueryRow(`SELECT count(*) FROM refresh_tokens WHERE revoked_at IS NULL`).Scan(&n); err != nil {
+		t.Fatalf("counting live sessions: %v", err)
+	}
+	return n
 }
 
 func sessionCount(t *testing.T, db *database.DB) int {
@@ -133,6 +144,96 @@ func TestLogoutEndsTheSessionImmediately(t *testing.T) {
 	var authErr *AuthError
 	if _, err := svc.RedeemSession(ctx, raw); !errors.As(err, &authErr) {
 		t.Errorf("err = %v, want *AuthError - logout should end the session now", err)
+	}
+}
+
+// A token rotates once. Replaying it - two tabs, or a stolen cookie - must
+// not mint a second seven-day session: before this was enforced, five replays
+// produced five independent live sessions that survived the victim rotating
+// their own cookie.
+func TestAReplayedTokenMintsNoSecondSession(t *testing.T) {
+	svc, db, _, first := signUp(t)
+	ctx := context.Background()
+
+	for i := 0; i < 5; i++ {
+		result, err := svc.RedeemSession(ctx, first)
+		if err != nil {
+			t.Fatalf("replay %d: %v", i+1, err)
+		}
+		if result.AccessToken == "" {
+			t.Errorf("replay %d returned no access token", i+1)
+		}
+		// Only the first rotation issues a refresh token.
+		if got, want := result.RefreshToken != "", i == 0; got != want {
+			t.Errorf("replay %d issued a refresh token = %v, want %v", i+1, got, want)
+		}
+	}
+
+	if n := liveSessions(t, db); n != 1 {
+		t.Errorf("live sessions = %d, want 1", n)
+	}
+}
+
+// The same property under a real race, where every caller reads the row as
+// live before any of them revokes it.
+func TestConcurrentRedemptionsRotateOnce(t *testing.T) {
+	svc, db, _, first := signUp(t)
+	ctx := context.Background()
+
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	var mu sync.Mutex
+	issued := 0
+
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+
+			result, err := svc.RedeemSession(ctx, first)
+			if err != nil {
+				return
+			}
+			if result.RefreshToken != "" {
+				mu.Lock()
+				issued++
+				mu.Unlock()
+			}
+		}()
+	}
+	close(start)
+	wg.Wait()
+
+	if issued != 1 {
+		t.Errorf("%d refresh tokens issued, want 1 - the rotation raced", issued)
+	}
+	if n := liveSessions(t, db); n != 1 {
+		t.Errorf("live sessions = %d, want 1", n)
+	}
+}
+
+// Logging out with a cookie that has already been rotated - an in-flight
+// logout, or a stale tab - must still end the session. Revoking only the
+// presented token would leave its successor alive for a week.
+func TestLogoutEndsEverySessionEvenFromAStaleToken(t *testing.T) {
+	svc, db, input, first := signUp(t)
+	ctx := context.Background()
+
+	if _, err := svc.Login(ctx, dtos.LoginRequest{Email: input.Email, Password: input.Password}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.RedeemSession(ctx, first); err != nil {
+		t.Fatalf("rotate: %v", err)
+	}
+
+	// first is now the rotated, stale token
+	if err := svc.EndSession(ctx, first); err != nil {
+		t.Fatalf("logout: %v", err)
+	}
+
+	if n := liveSessions(t, db); n != 0 {
+		t.Errorf("live sessions = %d, want 0", n)
 	}
 }
 
