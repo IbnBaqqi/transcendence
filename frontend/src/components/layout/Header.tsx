@@ -57,11 +57,11 @@ export default function Header() {
           </Link>
           {isLoggedIn ? (
             <Link to="/profile">
-              <Avatar size="sm" initials="OR" /> {/* OR just a placeholder for now */}
+              <Avatar size="sm" initials="OR" interactive />
             </Link>
           ) : (
             <button type="button" onClick={() => openModal("login")}>
-              <Avatar size="sm" initials="?" />
+              <Avatar size="sm" initials="?" interactive />
             </button>
           )}
           {/* TODO: add Listing (#20) and auth links (#46) when those pages exist */}

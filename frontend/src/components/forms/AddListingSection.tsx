@@ -75,8 +75,16 @@ export function AddListingSection() {
           <FormTextArea name="description" />
         </div>
         <div className="space-y-1">
-          <h2 className="text-foreground text-lg font-bold">Location</h2>
-          <FormField name="city" width="max-w-lg" />
+          <h2 className="text-foreground text-lg font-bold">Category</h2>
+          <FormField name="category" width="max-w-lg" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-foreground text-lg font-bold">Price & Quantity</h2>
+          <div className="flex flex-row gap-4">
+            <FormField name="price" width="max-w-sm" />
+            <FormField name="quantity" width="max-w-sm" />
+            <FormField name="unit" width="max-w-sm" />
+          </div>
         </div>
         <Button
           variant="primary"
