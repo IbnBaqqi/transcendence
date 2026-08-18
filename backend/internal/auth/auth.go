@@ -66,10 +66,10 @@ func UserFromContext(ctx context.Context) (User, bool) {
 }
 
 // NewJwtService creates a new auth service(JWT).
-func NewJwtService(secret string) *JwtService {
+func NewJwtService(secret string, accessTokenTTL time.Duration) *JwtService {
 	return &JwtService{
 		JwtSecret:      secret,
-		AccessTokenTTL: 7 * 24 * time.Hour,
+		AccessTokenTTL: accessTokenTTL,
 	}
 }
 
@@ -101,7 +101,6 @@ func (s *JwtService) VerifyAccessToken(tokenStr string) (*CustomClaims, error) {
 		tokenStr,
 		&CustomClaims{},
 		func(token *jwt.Token) (any, error) {
-			// enforce signing method
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, ErrInvalidToken
 			}
@@ -143,6 +142,6 @@ func GetBearerToken(headers http.Header) (string, error) {
 // MakeRefreshToken makes a random 256 bit token encoded in hex
 func MakeRefreshToken() string {
 	tokenBytes := make([]byte, 32)
-	_, _ = rand.Read(tokenBytes) // no error check as Read always succeeds
+	_, _ = rand.Read(tokenBytes)
 	return hex.EncodeToString(tokenBytes)
 }

@@ -31,7 +31,7 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 		return nil, err
 	}
 
-	jwtService := auth.NewJwtService(cfg.Auth.JWTSecret)
+	jwtService := auth.NewJwtService(cfg.Auth.JWTSecret, cfg.Auth.AccessTokenTTL)
 	authService := auth.NewService(db, jwtService)         // needs *DB for transaction
 	listingService := service.NewListingService(db, files) // needs *DB for transaction
 	orderService := service.NewOrderService(db)

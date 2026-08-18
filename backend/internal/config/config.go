@@ -27,6 +27,7 @@ type UploadConfig struct {
 
 type AuthConfig struct {
 	JWTSecret string
+	AccessTokenTTL time.Duration
 }
 
 type ServerConfig struct {
@@ -71,7 +72,8 @@ func Load() (*Config, error) {
 		},
 
 		Auth: AuthConfig{
-			JWTSecret: mustGetEnv("JWT_SECRET"),
+			JWTSecret:      mustGetEnv("JWT_SECRET"),
+			AccessTokenTTL: getEnvAsDuration("ACCESS_TOKEN_TTL", "15m"),
 		},
 
 		Upload: UploadConfig{
@@ -142,7 +144,6 @@ func getEnvAsDuration(key, defaultValue string) time.Duration {
 	valueStr := getEnv(key, defaultValue)
 	duration, err := time.ParseDuration(valueStr)
 	if err != nil {
-		// Fallback to parsing the default if provided value is invalid
 		duration, err = time.ParseDuration(defaultValue)
 		if err != nil {
 			return 0
