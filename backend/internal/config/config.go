@@ -1,4 +1,3 @@
-// Package config provides application configuration loading.
 package config
 
 import (
@@ -26,7 +25,7 @@ type UploadConfig struct {
 }
 
 type AuthConfig struct {
-	JWTSecret string
+	JWTSecret      string
 	AccessTokenTTL time.Duration
 }
 
