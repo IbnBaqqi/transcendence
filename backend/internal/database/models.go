@@ -6,6 +6,7 @@ package database
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -82,6 +83,14 @@ type Profile struct {
 	Bio         sql.NullString
 	PhoneNumber sql.NullString
 	DateOfBirth sql.NullTime
+}
+
+type RefreshToken struct {
+	TokenHash string
+	UserID    uuid.UUID
+	ExpiresAt time.Time
+	RevokedAt sql.NullTime
+	CreatedAt time.Time
 }
 
 type SavedListing struct {
