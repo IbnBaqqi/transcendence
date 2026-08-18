@@ -33,7 +33,7 @@ export default function Header() {
             aria-label="Open chat"
             className="text-muted hover:text-foreground"
           >
-            <svg className="h-6 w-5 translate-y-[-2px]" aria-hidden="true">
+            <svg className="h-6 w-5" aria-hidden="true">
               <use href="/icons.svg#chat-icon" />
             </svg>
           </button>
@@ -42,7 +42,7 @@ export default function Header() {
             aria-label="Notifications"
             className="text-muted hover:text-foreground"
           >
-            <svg className="translate-y-[-2px] h-6 w-5" aria-hidden="true">
+            <svg className="h-6 w-5" aria-hidden="true">
               <use href="/icons.svg#notifications-icon" />
             </svg>
           </Link>
@@ -51,7 +51,7 @@ export default function Header() {
             aria-label="Add listing"
             className="text-muted hover:text-foreground"
           >
-            <svg className="translate-y-[-2px] h-6 w-5" aria-hidden="true">
+            <svg className="h-6 w-5" aria-hidden="true">
               <use href="/icons.svg#add-icon" />
             </svg>
           </Link>
