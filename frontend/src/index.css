@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Design tokens for the forage marketplace (issue #42).
+ * Design tokens for the Metsätori marketplace (issue #42).
  *
  * Two layers:
  *   1. Raw palettes (brand, berry) — the source colors.
@@ -36,11 +36,19 @@
   /* Semantic tokens (light values) */
   --color-surface: #ffffff; /* page / card background */
   --color-surface-muted: #f5f5f4; /* subtle background */
+  --color-surface-soft: #dbdbdb; /* soft background */
+  --color-surface-accent: #8fc9a3; /* brand-300 */
   --color-foreground: #1c1917; /* primary text */
   --color-muted: #57534e; /* secondary text */
   --color-line: #e7e5e4; /* borders / dividers */
   --color-accent: #297244; /* brand-600 */
   --color-accent-contrast: #ffffff; /* text on an accent background */
+  --color-accent-hover: #225b39; /* brand-700 */
+  --color-accent-active: #1d4830; /* brand-800 */
+  --color-soft: #bce0c7; /* brand-200 */
+  --color-soft-contrast: #1d4830; /* brand-800 */
+  --color-soft-hover: #8fc9a3; /* brand-300 */
+  --color-soft-active: #5aab77; /* brand-400 */
 
   --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
 }
@@ -51,12 +59,57 @@
   :root {
     --color-surface: #16171d;
     --color-surface-muted: #1f2028;
+    --color-surface-soft: #303030; /* soft background */
+    --color-surface-accent: #225b39; /* brand-700 */
     --color-foreground: #f3f4f6;
     --color-muted: #9ca3af;
     --color-line: #2e303a;
     --color-accent: #5aab77; /* brand-400 — lighter reads better on dark */
-    --color-accent-contrast: #16171d;
+    --color-accent-contrast: #16171d; /* off-black */
+    --color-accent-hover: #8fc9a3; /* brand-300 */
+    --color-accent-active: #bce0c7; /* brand-200 */
+    --color-soft: #1d4830; /* brand-800 */
+    --color-soft-contrast: #f3f4f6; /* off-white */
+    --color-soft-hover: #225b39; /* brand-700 */
+    --color-soft-active: #297244; /* brand-600 */
+    --skeleton-shimmer: rgb(255 255 255 / 0.08);
   }
+}
+
+/*
+ * Skeleton loading block.
+ * The highlight is baked into the block's own background as a single soft
+ * wave: surface-soft at both ends, highlight in the middle, ramp spanning
+ * the whole block. background-size doubles the width so the visible slice
+ * is always one full base->peak->base wave; panned with background-position
+ * (alternate) the wave travels across without ever leaving a flat region or
+ * a hard edge behind. Base fill uses the existing surface-soft token so it
+ * matches light/dark mode; the highlight intensity lives in
+ * --skeleton-shimmer.
+ */
+:root {
+  --skeleton-shimmer: rgb(255 255 255 / 0.45);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 100% 0;
+  }
+}
+
+.skeleton {
+  background-color: var(--color-surface-soft);
+  background-image: linear-gradient(
+    115deg,
+    rgb(255 255 255 / 0) 0%,
+    var(--skeleton-shimmer) 50%,
+    rgb(255 255 255 / 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1s ease-in-out infinite alternate;
 }
 
 /* Minimal base */

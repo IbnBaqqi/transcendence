@@ -33,10 +33,10 @@ const secondSample = makeListing({
 });
 
 describe("Home", () => {
-  test("shows a loading message while the query is pending", () => {
+  test("shows skeleton placeholders while the query is pending", () => {
     mockListings({ data: undefined, isPending: true, isError: false });
-    render(<Home />);
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    const { container } = render(<Home />);
+    expect(container.querySelectorAll(".skeleton")).toHaveLength(3);
   });
 
   test("shows an error message when the query fails", () => {
@@ -48,7 +48,7 @@ describe("Home", () => {
   test("shows an empty message when there are no listings", () => {
     mockListings({ data: [], isPending: false, isError: false });
     render(<Home />);
-    expect(screen.getByText("No listings yet!")).toBeInTheDocument();
+    expect(screen.getByText("No listings yet.")).toBeInTheDocument();
   });
 
   test("renders a card for each listing", () => {
@@ -68,6 +68,6 @@ describe("Home", () => {
     expect(screen.getAllByRole("article")).toHaveLength(2);
 
     // and the empty-state message must NOT be showing
-    expect(screen.queryByText("No listings yet!")).not.toBeInTheDocument();
+    expect(screen.queryByText("No listings yet.")).not.toBeInTheDocument();
   });
 });

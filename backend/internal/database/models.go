@@ -29,6 +29,12 @@ type Conversation struct {
 	UpdatedAt    sql.NullTime
 }
 
+type Follow struct {
+	FollowerID uuid.UUID
+	FolloweeID uuid.UUID
+	CreatedAt  sql.NullTime
+}
+
 type Listing struct {
 	ID          int32
 	SellerID    uuid.UUID

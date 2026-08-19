@@ -12,6 +12,53 @@ React + TypeScript frontend, Go backend, PostgreSQL, all runnable with
 The subject requires a written justification for the modules we claim —
 why this one, what was technically hard, and what it adds. One section each.
 
+### Friends system → follows + online status
+
+**What the subject asks for.** Two majors mention it:
+
+> *Allow users to interact* — "A friends system (add/remove friends, see friends list)"
+>
+> *Standard user management* — "Users can add other users as friends and see their online status"
+
+**What we built.** A **directed follow graph** rather than mutual friendship:
+`POST`/`DELETE /users/{id}/follow`, `GET /me/following` (the friends list),
+`GET /users/{id}/followers`, each row carrying live online status.
+
+**Why follows rather than mutual friendship.** The subject's module list
+predates the open-ended web-app version of the project — several modules still
+assume a Pong game — so "friends system" is legacy wording for *a social graph
+between users*. Ours is shaped for a marketplace, where the relationship is
+genuinely asymmetric: a buyer follows a seller they bought from, and a seller
+accumulates followers without having to approve anyone. Requiring a mutual
+handshake for that would be worse product design, not better compliance. The
+capabilities the subject names — add, remove, see the list, see online status —
+are all present.
+
+**What was technically interesting.**
+
+- **The data model is the design.** `follows` has no surrogate id and no status
+  column: the composite primary key `(follower_id, followee_id)` is
+  simultaneously the row's identity, the guarantee that you cannot follow
+  someone twice, and the index for "who does this user follow?". A `CHECK`
+  constraint makes self-following impossible at the database level rather than
+  by a handler remembering to look. The reverse question needs its own index,
+  because a composite key can only be searched from its leading column.
+- **Errors are classified rather than leaked.** Following a user who does not
+  exist is a foreign key violation; unhandled, that reaches the client as
+  `500 something went wrong`. We map it to 404, alongside the equivalent
+  handling for duplicate-key violations elsewhere in the codebase.
+- **Online status without WebSockets.** Middleware stamps `last_seen_at` at most
+  once a minute, and a user counts as online if that stamp is inside a two-minute
+  window — twice the write interval, so one missed request doesn't flicker them
+  offline. Users can switch the signal off, and when they do the response is
+  byte-identical to a user who has never been seen: presence is hidden by
+  *absence*, so it cannot be inferred from the shape of the reply.
+
+**What it adds.** Followers are what make a marketplace repeatable rather than
+transactional: a buyer can find the forager they trusted last autumn, and a
+seller can build an audience. It is also the substrate the notification and
+recommendation work builds on later.
+
 ### Order lifecycle
 
 **What we built.** A finite state machine over `pending → confirmed →

@@ -32,5 +32,5 @@ export const Privacy: Document = {
       paragraphs: ["Payments on this platform are simulated, no real financial data is collected."],
     },
   ],
-  contactEmail: "support@forageapp.fi",
+  contactEmail: "support@metsatori.fi",
 };
