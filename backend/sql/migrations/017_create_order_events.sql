@@ -6,10 +6,10 @@ CREATE TABLE IF NOT EXISTS order_events (
     from_status text,
     to_status text NOT NULL,
     note text,
-    created_at timestamp DEFAULT CURRENT_TIMESTAMP
+    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_order_events_order_id ON order_events(order_id, created_at);
+CREATE INDEX idx_order_events_order_id ON order_events(order_id, created_at, id);
 
 -- +goose Down
 DROP TABLE IF EXISTS order_events;

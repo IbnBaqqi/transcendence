@@ -26,7 +26,7 @@ func ToOrderEventResponse(e database.OrderEvent) OrderEventResponse {
 		FromStatus: textOrNil(e.FromStatus),
 		ToStatus:   e.ToStatus,
 		Note:       textOrNil(e.Note),
-		CreatedAt:  e.CreatedAt.Time,
+		CreatedAt:  e.CreatedAt,
 	}
 }
 

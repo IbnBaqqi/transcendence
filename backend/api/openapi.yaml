@@ -661,7 +661,11 @@ components:
             Set on handshake marks, where `from_status` equals `to_status` and
             the status alone cannot say who acted. Null on ordinary
             transitions.
-          examples: ["seller marked handover"]
+
+            A stable code, not display text - `seller_handover` or
+            `buyer_receipt` - so a client renders it in its own language.
+            Rows already written cannot be re-translated.
+          examples: ["seller_handover"]
         created_at:
           type: string
           format: date-time

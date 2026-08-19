@@ -297,12 +297,17 @@ const (
 	actorConstraint = "order_events_actor_id_fkey"
 )
 
+const (
+	noteSellerHandover = "seller_handover"
+	noteBuyerReceipt   = "buyer_receipt"
+)
+
 func markNote(m handshakeMark) string {
 	switch m {
 	case markSeller:
-		return "seller marked handover"
+		return noteSellerHandover
 	case markBuyer:
-		return "buyer confirmed receipt"
+		return noteBuyerReceipt
 	default:
 		return ""
 	}

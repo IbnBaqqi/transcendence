@@ -37,7 +37,8 @@ func (q *Queries) CreateOrderEvent(ctx context.Context, arg CreateOrderEventPara
 }
 
 const listOrderEvents = `-- name: ListOrderEvents :many
-SELECT id, order_id, actor_id, from_status, to_status, note, created_at FROM order_events
+SELECT id, order_id, actor_id, from_status, to_status, note, created_at
+FROM order_events
 WHERE order_id = $1
 ORDER BY created_at, id
 `

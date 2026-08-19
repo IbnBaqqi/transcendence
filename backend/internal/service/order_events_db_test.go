@@ -86,8 +86,8 @@ func TestTimelineRecordsTheWholeLifecycle(t *testing.T) {
 	}{
 		{"", "pending", "", f.buyer},
 		{"pending", "confirmed", "", f.seller},
-		{"confirmed", "confirmed", "seller marked handover", f.seller},
-		{"confirmed", "confirmed", "buyer confirmed receipt", f.buyer},
+		{"confirmed", "confirmed", "seller_handover", f.seller},
+		{"confirmed", "confirmed", "buyer_receipt", f.buyer},
 		{"confirmed", "completed", "", f.buyer},
 	}
 
@@ -172,9 +172,6 @@ func TestCancelRecordsWhoDidIt(t *testing.T) {
 	}
 }
 
-// Migration 016. Nothing else asserts this, and the first version of that
-// migration silently dropped the buyer's foreign key entirely - every other
-// test stayed green while a seller delete wiped the order and its history.
 func TestAnOrdersPartiesCannotBeDeleted(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -206,9 +203,6 @@ func TestAnOrdersPartiesCannotBeDeleted(t *testing.T) {
 	}
 }
 
-// A JWT outlives the account it names, and Authenticate does no database
-// lookup - so a deleted user still reaches the service. That must be a 404,
-// not the driver error a foreign key violation would otherwise produce.
 func TestCreateOrderByADeletedUserIsNotFound(t *testing.T) {
 	f := newOrderFixture(t)
 	ctx := context.Background()
@@ -221,8 +215,6 @@ func TestCreateOrderByADeletedUserIsNotFound(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Deletable because they have no orders yet - the RESTRICT guard only
-	// covers the parties to an existing order.
 	ghost, err := f.db.CreateUser(ctx, database.CreateUserParams{
 		Username: "ghost", Email: "ghost@example.test", Password: "irrelevant",
 	})
@@ -241,7 +233,6 @@ func TestCreateOrderByADeletedUserIsNotFound(t *testing.T) {
 	}
 }
 
-// The guard is on the parties, not on users in general.
 func TestAnUninvolvedUserCanStillBeDeleted(t *testing.T) {
 	f := newOrderFixture(t)
 

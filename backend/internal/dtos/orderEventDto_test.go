@@ -18,8 +18,8 @@ func sampleEvent() database.OrderEvent {
 		ActorID:    uuid.NullUUID{UUID: uuid.MustParse("33333333-3333-3333-3333-333333333333"), Valid: true},
 		FromStatus: sql.NullString{String: "confirmed", Valid: true},
 		ToStatus:   "completed",
-		Note:       sql.NullString{String: "buyer confirmed receipt", Valid: true},
-		CreatedAt:  sql.NullTime{Time: time.Date(2026, 8, 17, 9, 30, 0, 0, time.UTC), Valid: true},
+		Note:       sql.NullString{String: "buyer_receipt", Valid: true},
+		CreatedAt:  time.Date(2026, 8, 17, 9, 30, 0, 0, time.UTC),
 	}
 }
 

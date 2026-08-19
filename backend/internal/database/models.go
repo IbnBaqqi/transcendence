@@ -6,6 +6,7 @@ package database
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -88,7 +89,7 @@ type OrderEvent struct {
 	FromStatus sql.NullString
 	ToStatus   string
 	Note       sql.NullString
-	CreatedAt  sql.NullTime
+	CreatedAt  time.Time
 }
 
 type Profile struct {
