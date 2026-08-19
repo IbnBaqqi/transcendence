@@ -20,10 +20,7 @@ export function Form<T extends FieldValues>({
   return (
     <FormProvider {...form}>
       <FormContext.Provider value={{ isEditing }}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className={className}
-        >
+        <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
           {children}
         </form>
       </FormContext.Provider>

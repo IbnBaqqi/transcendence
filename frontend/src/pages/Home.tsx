@@ -18,7 +18,7 @@ export default function Home() {
         When every condition is false it renders empty, taking no space.
       */}
       {/* Plain text Loading / Error / Message view */}
-      {/* <p role="status" aria-live="polite" className="text-muted mt-4"> */}
+      {/* <p role="status" className="text-muted mt-4"> */}
       {/*   {isPending && "Loading..."} */}
       {/*   {isError && "Couldn't load listings. Try again."} */}
       {/*   {listings?.length === 0 && "No listings yet!"} */}

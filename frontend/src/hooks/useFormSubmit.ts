@@ -12,11 +12,7 @@ export function useFormSubmit<T>(submitFn: (data: T) => Promise<void>) {
       await submitFn(data);
     } catch (err) {
       setSubmitError(
-        isApiError(err)
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Something went wrong",
+        isApiError(err) ? err.message : err instanceof Error ? err.message : "Something went wrong",
       );
     } finally {
       setIsSubmitting(false);
