@@ -189,6 +189,10 @@ r.Group(func(r chi.Router) {
 Order matters: `RequiredAuth` first, so "not logged in" answers 401 and "logged
 in, wrong role" answers 403.
 
+Roles are matched exactly, not ranked — an `ADMIN` does **not** satisfy
+`RequireRole(auth.RoleUser)`. For "any logged-in user", `RequiredAuth` alone is
+the check.
+
 ## Running the tests
 
 ```bash

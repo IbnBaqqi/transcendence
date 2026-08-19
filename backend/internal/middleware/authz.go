@@ -52,7 +52,12 @@ func writeAuthzError(w http.ResponseWriter, status int, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
-	if err := json.NewEncoder(w).Encode(map[string]string{"error": msg}); err != nil {
-		slog.Error("could not write the error body", "error", err)
+	// Marshal, not Encoder: Encode appends a newline, and RequiredAuth next
+	// door writes the same shape without one.
+	body, err := json.Marshal(map[string]string{"error": msg})
+	if err != nil {
+		slog.Error("could not marshal the error body", "error", err)
+		return
 	}
+	_, _ = w.Write(body)
 }
