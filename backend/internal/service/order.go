@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// OrderService holds the business rules for orders.
 type OrderService struct {
 	db *database.DB
 }
@@ -76,6 +75,13 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 		ListingTitle: listing.Title,
 	})
 	if err != nil {
+		if isForeignKeyViolation(err, buyerConstraint) {
+			return database.Order{}, &NotFoundError{Message: "user not found"}
+		}
+		return database.Order{}, err
+	}
+
+	if err := recordEvent(ctx, qtx, order.ID, buyerID, sql.NullString{}, order.Status, ""); err != nil {
 		return database.Order{}, err
 	}
 
@@ -86,7 +92,6 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 	return order, nil
 }
 
-// GetOrder returns one order, but only to the two people involved in it.
 func (s *OrderService) GetOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
 	order, err := s.db.GetOrder(ctx, orderID)
 	if err != nil {
@@ -98,12 +103,10 @@ func (s *OrderService) GetOrder(ctx context.Context, userID uuid.UUID, orderID i
 	return order, nil
 }
 
-// ListOrders returns every order where the caller is buyer OR seller.
 func (s *OrderService) ListOrders(ctx context.Context, userID uuid.UUID) ([]database.Order, error) {
 	return s.db.ListOrdersForUser(ctx, userID)
 }
 
-// orderActor says which side of the order may perform a move.
 type orderActor int
 
 const (
@@ -112,7 +115,6 @@ const (
 	actorEither
 )
 
-// handshakeMark says which side's confirmation a move records.
 type handshakeMark int
 
 const (
@@ -121,7 +123,6 @@ const (
 	markBuyer
 )
 
-// orderAction is one edge of the state machine
 type orderAction struct {
 	name             string
 	from             []string
@@ -132,7 +133,6 @@ type orderAction struct {
 	blockedAfterMark bool
 }
 
-// The transition table - this IS the lifecycle.
 var (
 	actionConfirm = orderAction{
 		name:  "confirm",
@@ -168,12 +168,10 @@ func (s *OrderService) ConfirmOrder(ctx context.Context, userID uuid.UUID, order
 	return s.applyAction(ctx, userID, orderID, actionConfirm)
 }
 
-// HandoverOrder records the SELLER's half of the handshake.
 func (s *OrderService) HandoverOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
 	return s.applyAction(ctx, userID, orderID, actionHandover)
 }
 
-// ReceiveOrder records the BUYER's half of the handshake.
 func (s *OrderService) ReceiveOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
 	return s.applyAction(ctx, userID, orderID, actionReceive)
 }
@@ -182,8 +180,6 @@ func (s *OrderService) CancelOrder(ctx context.Context, userID uuid.UUID, orderI
 	return s.applyAction(ctx, userID, orderID, actionCancel)
 }
 
-// applyAction is the referee: it loads the order, checks who's asking and what
-// state it's in, then moves it.
 func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderID int32, action orderAction) (database.Order, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -208,8 +204,6 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 	if err := checkOrderActor(order, userID, action); err != nil {
 		return database.Order{}, err
 	}
-	// Status first, so an order in the wrong state reports that plainly rather
-	// than blaming the handshake.
 	if !slices.Contains(action.from, order.Status) {
 		return database.Order{}, &ConflictError{
 			Message: fmt.Sprintf("cannot %s an order that is %s", action.name, order.Status),
@@ -234,6 +228,12 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 		if err != nil {
 			return database.Order{}, err
 		}
+
+		if err := recordEvent(ctx, qtx, order.ID, userID,
+			sql.NullString{String: order.Status, Valid: true}, order.Status, markNote(action.mark)); err != nil {
+			return database.Order{}, err
+		}
+
 		if !bothSidesMarked(marked) {
 			if err := tx.Commit(); err != nil {
 				return database.Order{}, err
@@ -250,6 +250,11 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 		return database.Order{}, err
 	}
 
+	if err := recordEvent(ctx, qtx, order.ID, userID,
+		sql.NullString{String: order.Status, Valid: true}, action.to, ""); err != nil {
+		return database.Order{}, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return database.Order{}, err
 	}
@@ -257,8 +262,57 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 	return updated, nil
 }
 
-// markHandshake stamps one side's confirmation, refusing a second stamp from
-// the same side so a double-click can't look like progress.
+func (s *OrderService) ListEvents(ctx context.Context, userID uuid.UUID, orderID int32) ([]database.OrderEvent, error) {
+	if _, err := s.GetOrder(ctx, userID, orderID); err != nil {
+		return nil, err
+	}
+
+	return s.db.ListOrderEvents(ctx, orderID)
+}
+
+func recordEvent(
+	ctx context.Context,
+	qtx *database.Queries,
+	orderID int32,
+	actorID uuid.UUID,
+	from sql.NullString,
+	to string,
+	note string,
+) error {
+	err := qtx.CreateOrderEvent(ctx, database.CreateOrderEventParams{
+		OrderID:    orderID,
+		ActorID:    uuid.NullUUID{UUID: actorID, Valid: true},
+		FromStatus: from,
+		ToStatus:   to,
+		Note:       sql.NullString{String: note, Valid: note != ""},
+	})
+	if isForeignKeyViolation(err, actorConstraint) {
+		return &NotFoundError{Message: "user not found"}
+	}
+	return err
+}
+
+const (
+	buyerConstraint = "orders_buyer_id_fkey"
+	actorConstraint = "order_events_actor_id_fkey"
+)
+
+const (
+	noteSellerHandover = "seller_handover"
+	noteBuyerReceipt   = "buyer_receipt"
+)
+
+func markNote(m handshakeMark) string {
+	switch m {
+	case markSeller:
+		return noteSellerHandover
+	case markBuyer:
+		return noteBuyerReceipt
+	default:
+		return ""
+	}
+}
+
 func markHandshake(ctx context.Context, qtx *database.Queries, order database.Order, action orderAction) (database.Order, error) {
 	switch action.mark {
 	case markSeller:
@@ -275,12 +329,10 @@ func markHandshake(ctx context.Context, qtx *database.Queries, order database.Or
 	return order, nil
 }
 
-// bothSidesMarked reports whether the handshake is finished.
 func bothSidesMarked(o database.Order) bool {
 	return o.SellerHandedOverAt.Valid && o.BuyerReceivedAt.Valid
 }
 
-// checkOrderActor enforces the "who may travel this edge" guard.
 func checkOrderActor(order database.Order, userID uuid.UUID, action orderAction) error {
 	isBuyer := order.BuyerID == userID
 	isSeller := order.SellerID == userID
