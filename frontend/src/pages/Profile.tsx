@@ -1,4 +1,4 @@
-// Stub for #24.
+// Hard coded profile & settings page #24
 //
 // Scope reminder (also on the issue): display name + bio are buildable now.
 // Avatar upload needs #14, password change needs auth (#32/#33), payout
@@ -7,16 +7,71 @@
 //
 // Don't add a form library here: #47 hasn't picked one yet (React Hook Form +
 // Zod is the default suggestion), and whoever does #47 will retrofit this.
+//
+// N.B. This page is only viewable for the logged in user of the same profile
+// To view another user's profile we have User.tsx
+import Avatar from "../components/objects/Avatar.tsx";
+import Button from "../components/objects/Button.tsx";
+import Toggle from "../components/objects/Toggle.tsx";
+import { ContactDetailsSection } from "../components/forms/ContactDetailsSection.tsx";
+import { ChangePasswordSection } from "../components/forms/ChangePasswordSection.tsx";
+import { BioSection } from "../components/forms/BioSection.tsx";
+import { useState } from "react";
+import { useModal } from "../providers/modalContext";
+
 export default function Profile() {
+  {
+    /* These two states are just placeholders until we pull from backend with auth */
+  }
+  const [marketing, setMarketing] = useState(false);
+  const [hideDetails, setHideDetails] = useState(false);
+  const { openModal } = useModal();
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">Profile & settings</h1>
-      <p className="text-muted mt-2">
-        {/* TODO(#24): display name + bio form. The backend doesn't create a
-            profiles row on signup yet, so there's nothing to load - hardcode
-            values for now. */}
-        Profile & settings - not built yet (#24).
-      </p>
+    <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
+      <h1 className="text-foreground text-3xl font-bold">Profile & Settings</h1>
+      {/* TODO: blocked by #109 nothing to load - hardcoded values for now. */}
+      <div className="flex flex-row gap-4">
+        <div>
+          <Avatar size="lg" initials="OR" editable />
+        </div>
+        <div className="text-accent my-auto flex flex-col text-base">
+          <div className="font-bold">Oscar Rogers</div>
+          <div className="font-normal">oscarrogers@example.com</div>
+        </div>
+      </div>
+      <div className="space-y-1">
+        <h2 className="text-foreground text-lg font-bold">Contact Details</h2>
+        <ContactDetailsSection />
+      </div>
+      <div className="space-y-1">
+        <h2 className="text-foreground text-lg font-bold">Password</h2>
+        <ChangePasswordSection />
+      </div>
+      <div className="space-y-1">
+        <h2 className="text-foreground text-lg font-bold">Bio</h2>
+        <BioSection />
+      </div>
+      <div className="space-y-1">
+        <h2 className="text-foreground text-lg font-bold">Preferences</h2>
+        <div className="flex flex-row gap-6">
+          <Toggle
+            checked={marketing}
+            onChange={setMarketing}
+            label="Receive marketing emails from us"
+          />
+          <Toggle
+            checked={hideDetails}
+            onChange={setHideDetails}
+            label="Show only first name and initials to other users"
+          />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <h2 className="text-foreground text-lg font-bold">Account Deletion</h2>
+        <Button variant="secondary" onClick={() => openModal("deleteAccount")}>
+          Delete Account
+        </Button>
+      </div>
     </div>
   );
 }
