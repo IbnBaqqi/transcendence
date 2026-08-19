@@ -9,7 +9,6 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/storage"
 )
 
-// api holds all dependencies for the api handlers
 type api struct {
 	DB           *database.DB
 	JWT          *auth.JwtService
@@ -24,16 +23,17 @@ type api struct {
 	ListingImage *service.ListingImageService
 	Files        *storage.Local
 	Upload       config.UploadConfig
+	AuthConfig   config.AuthConfig
 }
 
-// New initializes all services and returns a pointer to api
+// New wires every service and returns the api they hang off.
 func New(cfg *config.Config, db *database.DB) (*api, error) {
 	files, err := storage.NewLocal(cfg.Upload.Dir)
 	if err != nil {
 		return nil, err
 	}
 
-	jwtService := auth.NewJwtService(cfg.Auth.JWTSecret)
+	jwtService := auth.NewJwtService(cfg.Auth.JWTSecret, cfg.Auth.AccessTokenTTL)
 	authService := auth.NewService(db, jwtService)         // needs *DB for transaction
 	listingService := service.NewListingService(db, files) // needs *DB for transaction
 	orderService := service.NewOrderService(db)
@@ -58,5 +58,6 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 		ListingImage: listingImageService,
 		Files:        files,
 		Upload:       cfg.Upload,
+		AuthConfig:   cfg.Auth,
 	}, nil
 }

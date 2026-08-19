@@ -28,6 +28,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.Follow,
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
+		appService.AuthConfig.CookieSecure,
 	)
 
 	r.Use(middleware.RequestID)
@@ -53,6 +54,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		r.Post("/auth/signup", h.Signup)
 		r.Post("/auth/login", h.Login)
 		r.Post("/auth/logout", h.Logout)
+		r.Post("/auth/refresh", h.Refresh)
 
 		r.Get("/listings", h.GetListings)
 		r.Get("/listings/search", h.SearchListings)
@@ -81,6 +83,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Get("/conversations/{id}/messages", h.GetMessages)
 			r.Post("/conversations/{id}/messages", h.SendMessage)
 			r.Post("/conversations/{id}/read", h.MarkConversationRead)
+
+			r.Get("/auth/me", h.Me)
 
 			r.Get("/me/settings", h.GetSettings)
 			r.Patch("/me/settings", h.UpdateSettings)

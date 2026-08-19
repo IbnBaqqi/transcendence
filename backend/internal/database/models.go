@@ -101,6 +101,15 @@ type Profile struct {
 	DateOfBirth sql.NullTime
 }
 
+type RefreshToken struct {
+	TokenHash     string
+	UserID        uuid.UUID
+	ExpiresAt     time.Time
+	RevokedAt     sql.NullTime
+	RevokedReason sql.NullString
+	CreatedAt     time.Time
+}
+
 type SavedListing struct {
 	UserID    uuid.UUID
 	ListingID int32

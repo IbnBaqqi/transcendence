@@ -18,6 +18,7 @@ type Handler struct {
 	Follow         *service.FollowService
 	ListingImage   *service.ListingImageService
 	maxUploadBytes int64
+	cookieSecure   bool
 }
 
 func New(
@@ -32,6 +33,7 @@ func New(
 	followService *service.FollowService,
 	listingImageService *service.ListingImageService,
 	maxUploadBytes int64,
+	cookieSecure bool,
 ) *Handler {
 	return &Handler{
 		db:             db,
@@ -45,5 +47,6 @@ func New(
 		Follow:         followService,
 		ListingImage:   listingImageService,
 		maxUploadBytes: maxUploadBytes,
+		cookieSecure:   cookieSecure,
 	}
 }
