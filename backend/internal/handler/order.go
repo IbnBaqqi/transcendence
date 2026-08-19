@@ -158,3 +158,26 @@ func (h *Handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusOK, dtos.NewOrderResponse(order))
 }
+
+// GetOrderEvents handles GET /api/v1/orders/{id}/events.
+func (h *Handler) GetOrderEvents(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserID(r)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	id, err := parseIDParam(r)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid order id")
+		return
+	}
+
+	events, err := h.Order.ListEvents(r.Context(), userID, id)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToOrderEventResponses(events))
+}

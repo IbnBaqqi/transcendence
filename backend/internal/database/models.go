@@ -82,6 +82,16 @@ type Order struct {
 	ListingTitle       string
 }
 
+type OrderEvent struct {
+	ID         int32
+	OrderID    int32
+	ActorID    uuid.NullUUID
+	FromStatus sql.NullString
+	ToStatus   string
+	Note       sql.NullString
+	CreatedAt  time.Time
+}
+
 type Profile struct {
 	ID          uuid.UUID
 	Firstname   sql.NullString

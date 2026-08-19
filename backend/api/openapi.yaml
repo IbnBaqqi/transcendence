@@ -633,6 +633,57 @@ components:
         show_online_status:
           type: boolean
 
+    OrderEvent:
+      type: object
+      description: |
+        One entry in an order's history, written in the same transaction as the
+        change it describes - so a refused transition leaves no entry, and an
+        entry cannot describe something that did not happen.
+      required: [id, order_id, actor_id, from_status, to_status, note, created_at]
+      properties:
+        id:
+          type: integer
+          format: int32
+        order_id:
+          type: integer
+          format: int32
+        actor_id:
+          type: [string, "null"]
+          format: uuid
+          description: |
+            Who acted. Null once that account is deleted: the event outlives
+            the person, unlike a follow or a session.
+        from_status:
+          # Deliberately NOT the OrderStatus enum: these are historical values.
+          # Migration 007 removed 'paid' from the allowed set, and rows written
+          # before that still say it.
+          type: [string, "null"]
+          description: |
+            The status before the change, or null for the event recording the
+            order being placed. A plain string rather than the `OrderStatus`
+            enum, because old rows may hold statuses no longer in use.
+          examples: ["confirmed"]
+        to_status:
+          type: string
+          description: |
+            The status after the change. Equal to `from_status` on a handshake
+            mark, where a party acted but the order did not move.
+          examples: ["completed"]
+        note:
+          type: [string, "null"]
+          description: |
+            Set on handshake marks, where `from_status` equals `to_status` and
+            the status alone cannot say who acted. Null on ordinary
+            transitions.
+
+            A stable code, not display text - `seller_handover` or
+            `buyer_receipt` - so a client renders it in its own language.
+            Rows already written cannot be re-translated.
+          examples: ["seller_handover"]
+        created_at:
+          type: string
+          format: date-time
+
     # --- profiles --------------------------------------------------------------
 
     ProfileUpdate:
@@ -1834,6 +1885,54 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /orders/{id}/events:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    get:
+      tags: [orders]
+      summary: An order's history
+      operationId: getOrderEvents
+      description: |
+        Every transition the order made, oldest first: who did what, and when.
+        A completed order has five entries - placed, confirmed, both halves of
+        the handshake, and the completion.
+
+        The two handshake entries share a `created_at`, because they are
+        written in one transaction; they are ordered by `id` behind it.
+
+        Buyer and seller only.
+      responses:
+        "200":
+          description: The timeline, oldest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderEvent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: |
+            You are not the buyer or the seller. Note orders answer this with
+            403 where conversations answer 404 - so an outsider can tell that
+            an order id exists.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
