@@ -1,4 +1,4 @@
-// Package auth provides JWT authentication and authorization.
+// Package auth issues and verifies the tokens the API authenticates with.
 package auth
 
 import (
@@ -17,20 +17,20 @@ import (
 	"github.com/google/uuid"
 )
 
-// CustomClaims represents custom JWT claims.
+// CustomClaims is what the access token carries beyond the registered claims.
 type CustomClaims struct {
 	Name string `json:"name"`
 	Role string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-// JwtService handles JWT authentication.
+// JwtService signs and verifies access tokens.
 type JwtService struct {
 	JwtSecret      string
 	AccessTokenTTL time.Duration
 }
 
-// User represents an authenticated User.
+// User is the authenticated caller, as carried in the request context.
 type User struct {
 	ID   uuid.UUID
 	Role string
@@ -41,11 +41,15 @@ type contextKey struct{}
 
 var userKey = contextKey{}
 
+type expiredKey struct{}
+
+var tokenExpiredKey = expiredKey{}
+
 type tokenType string
 
 const tokenTypeAccess tokenType = "access"
 
-// Predefined errors - Auth errors
+// Errors callers match with errors.Is.
 var (
 	ErrInvalidToken         = errors.New("invalid token")
 	ErrExpiredToken         = errors.New("expired token")
@@ -54,26 +58,35 @@ var (
 	ErrNoAuthHeaderIncluded = errors.New("no auth header included in request")
 )
 
-// WithUser save user into context
+// WithUser puts the authenticated caller in the context.
 func WithUser(ctx context.Context, user User) context.Context {
 	return context.WithValue(ctx, userKey, user)
 }
 
-// UserFromContext get the saved user during Auth from context
+// UserFromContext returns the caller Authenticate attached, if any.
 func UserFromContext(ctx context.Context) (User, bool) {
 	user, ok := ctx.Value(userKey).(User)
 	return user, ok
 }
 
-// NewJwtService creates a new auth service(JWT).
-func NewJwtService(secret string) *JwtService {
+func WithExpiredToken(ctx context.Context) context.Context {
+	return context.WithValue(ctx, tokenExpiredKey, true)
+}
+
+func TokenExpired(ctx context.Context) bool {
+	expired, _ := ctx.Value(tokenExpiredKey).(bool)
+	return expired
+}
+
+// NewJwtService builds a service signing with secret.
+func NewJwtService(secret string, accessTokenTTL time.Duration) *JwtService {
 	return &JwtService{
 		JwtSecret:      secret,
-		AccessTokenTTL: 7 * 24 * time.Hour,
+		AccessTokenTTL: accessTokenTTL,
 	}
 }
 
-// IssueAccessToken create a jwt token
+// IssueAccessToken signs a short-lived token for the user.
 func (s *JwtService) IssueAccessToken(user database.User) (string, error) {
 
 	claims := CustomClaims{
@@ -95,13 +108,14 @@ func (s *JwtService) IssueAccessToken(user database.User) (string, error) {
 	return jwtToken, nil
 }
 
-// VerifyAccessToken validate the signature of the JWT and extract the claims
+// VerifyAccessToken checks the signature and returns the claims.
 func (s *JwtService) VerifyAccessToken(tokenStr string) (*CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(
 		tokenStr,
 		&CustomClaims{},
 		func(token *jwt.Token) (any, error) {
-			// enforce signing method
+			// Reject anything not signed with HMAC: accepting the token's own
+			// choice of algorithm is how signatures get bypassed.
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, ErrInvalidToken
 			}
@@ -124,7 +138,7 @@ func (s *JwtService) VerifyAccessToken(tokenStr string) (*CustomClaims, error) {
 	return claims, nil
 }
 
-// GetBearerToken return the Bearer Token from request header
+// GetBearerToken pulls the token out of an Authorization header.
 func GetBearerToken(headers http.Header) (string, error) {
 	authHeader := headers.Get("Authorization")
 	if authHeader == "" {
@@ -140,9 +154,9 @@ func GetBearerToken(headers http.Header) (string, error) {
 	return token, nil
 }
 
-// MakeRefreshToken makes a random 256 bit token encoded in hex
+// MakeRefreshToken returns 256 bits of CSPRNG output, hex encoded.
 func MakeRefreshToken() string {
 	tokenBytes := make([]byte, 32)
-	_, _ = rand.Read(tokenBytes) // no error check as Read always succeeds
+	_, _ = rand.Read(tokenBytes)
 	return hex.EncodeToString(tokenBytes)
 }

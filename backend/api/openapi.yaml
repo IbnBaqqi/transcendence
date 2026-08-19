@@ -14,10 +14,24 @@ info:
 
     ## Authentication
 
-    Most endpoints need a bearer token from `POST /auth/signup` or
-    `POST /auth/login`:
+    Two tokens, with opposite properties.
+
+    The **access token** is a signed JWT sent on every request:
 
         Authorization: Bearer <access_token>
+
+    It is verified without touching the database, which also means it cannot be
+    revoked - so it is short-lived (15 minutes by default, `ACCESS_TOKEN_TTL`).
+
+    The **refresh token** is an opaque value in an HttpOnly `refresh_token`
+    cookie, set by signup and login and valid for 7 days. `POST /auth/refresh`
+    exchanges it for a new access token and rotates it. Only its hash is
+    stored, so a database leak cannot resume a session.
+
+    When an access token expires, the 401 carries
+    `WWW-Authenticate: Bearer error="invalid_token"` - the signal to refresh
+    rather than to show a login screen. `GET /auth/me` returns the identity
+    behind a token that is still valid, for restoring a session on page load.
 
     Public endpoints (browsing listings, search, images) work without one.
 
@@ -793,7 +807,25 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
     Unauthorized:
-      description: No token, or a token that is expired or invalid.
+      description: |
+        No token, or one that is expired or invalid. The body is the same in
+        every case; `WWW-Authenticate` says which, because a client's response
+        differs: refresh, or log in.
+      headers:
+        WWW-Authenticate:
+          description: |
+            `Bearer error="invalid_token", error_description="The access token expired"`
+            when the token was valid but has aged out - retry through
+            `POST /auth/refresh`. A bare `Bearer` for a missing, malformed or
+            forged token - the client should log in. A forged token reads as
+            absent on purpose.
+          schema:
+            type: string
+          examples:
+            expired:
+              value: Bearer error="invalid_token", error_description="The access token expired"
+            absent:
+              value: Bearer
       content:
         application/json:
           schema:
@@ -912,12 +944,103 @@ paths:
       operationId: logout
       security: []
       description: |
-        Expires the `refresh_token` cookie. The access token is stateless and
-        stays valid until it expires, so the client should drop it too.
+        Ends **every** session for this account and expires the
+        `refresh_token` cookie, so refreshing stops working immediately - it
+        does not get the rotation grace window.
+
+        All sessions rather than only the presented one: if that token had
+        already been rotated, its successor would otherwise stay live for a
+        week while the client was told it had logged out. The cost is that
+        logging out on one device logs you out on the others.
+
+        The access token is stateless and cannot be revoked, so it stays valid
+        until it expires (up to 15 minutes); the client should drop it too.
         Succeeds even if you were never logged in.
       responses:
         "204":
           description: Cookie cleared. No body.
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Exchange the refresh cookie for a new access token
+      operationId: refresh
+      security: []
+      description: |
+        Reads the `refresh_token` cookie - there is no request body, and no
+        bearer token is needed, since you are refreshing precisely because the
+        access token is gone.
+
+        **The refresh token is rotated.** A new one is set on the cookie and
+        the old one is revoked.
+
+        To keep two browser tabs from logging each other out, a just-rotated
+        token stays usable for 30 seconds - but it rotates only once. A replay
+        inside that window returns a new access token and **no** `Set-Cookie`,
+        because the request that won the rotation already put the current token
+        in the shared cookie jar. After the window, presenting it again is a
+        401.
+
+        The response is the same shape as signup and login, so a client sets
+        its session from any of the three with one code path - and recovering
+        from a 401 costs one round trip rather than two.
+      responses:
+        "200":
+          description: A new access token, and the identity behind it.
+          headers:
+            Set-Cookie:
+              description: |
+                The rotated HttpOnly `refresh_token`, valid for 7 days. Absent
+                when this request was a replay inside the grace window and did
+                not win the rotation.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: |
+            The cookie is missing, unknown, expired, revoked by a logout, or
+            rotated more than 30 seconds ago. One answer for all of them: the
+            client's move is the same, and distinguishing them would reveal
+            which tokens once existed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Who this session belongs to
+      operationId: getCurrentUser
+      description: |
+        For restoring a session on page load: the access token is still valid,
+        only the user object was lost. Refreshing would work too, but it would
+        rotate a perfectly good session to answer a question about identity.
+
+        Deliberately not `GET /me/profile`, which is about profile data, is
+        assembled from three tables, and carries no `role`.
+      responses:
+        "200":
+          description: The identity behind the token - the same object nested under `user` elsewhere.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserInfo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The account behind this token no longer exists.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
   # ---------------------------------------------------------------------------
   # listings (public reads)
