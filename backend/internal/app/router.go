@@ -25,6 +25,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.Conversation,
 		appService.User,
 		appService.Profile,
+		appService.Follow,
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
 		appService.AuthConfig.CookieSecure,
@@ -91,6 +92,11 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 			r.Get("/me/profile", h.GetOwnProfile)
 			r.Patch("/me/profile", h.UpdateOwnProfile)
+			r.Post("/users/{id}/follow", h.FollowUser)
+			r.Delete("/users/{id}/follow", h.UnfollowUser)
+			r.Get("/users/{id}/followers", h.GetFollowers)
+			r.Get("/users/{id}/following", h.GetUserFollowing)
+			r.Get("/me/following", h.GetFollowing)
 
 			r.Post("/orders", h.CreateOrder)
 			r.Get("/orders", h.GetOrders)

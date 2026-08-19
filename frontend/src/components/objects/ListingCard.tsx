@@ -1,4 +1,4 @@
-import type { Listing } from "../api/types";
+import type { Listing } from "../../api/types";
 
 // presentation only: takes one Listing and renders it, no data fetching here
 export function ListingCard({ listing }: { listing: Listing }) {
