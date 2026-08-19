@@ -367,13 +367,22 @@ components:
           type: integer
           format: int32
         unit_price:
-          # A STRING, unlike Listing.price. NUMERIC comes out of the driver as
-          # a string and the order code keeps it that way to avoid float error.
-          type: string
-          examples: ["18.50"]
+          type: number
+          format: double
+          description: |
+            Price per unit, snapshotted when the order was placed, so the order
+            still reads correctly after the listing is repriced.
+
+            Stored as `NUMERIC(10,2)` and converted only on the way out —
+            `total_price` is multiplied by Postgres in exact decimal, never in
+            Go. Trailing zeroes are not preserved: 18.50 is sent as 18.5, and
+            74.00 as 74. Format for display client-side.
+          examples: [18.5]
         total_price:
-          type: string
-          examples: ["74.00"]
+          type: number
+          format: double
+          description: unit_price × quantity, computed in the database.
+          examples: [74]
         status:
           $ref: "#/components/schemas/OrderStatus"
         seller_handed_over_at:
