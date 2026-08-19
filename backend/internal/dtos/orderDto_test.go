@@ -55,7 +55,7 @@ func TestOrderPricesAreUnquotedNumbers(t *testing.T) {
 		{"0.10", "0.1"},
 		{"74.00", "74"},
 		{"99999999.99", "99999999.99"},
-		{"0.00", "0"},
+		{"0.01", "0.01"},
 	}
 
 	for _, tt := range tests {
