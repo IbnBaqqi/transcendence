@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -33,44 +34,48 @@ func (s *FollowService) Follow(ctx context.Context, followerID, followeeID uuid.
 		FollowerID: followerID,
 		FolloweeID: followeeID,
 	})
-	if isForeignKeyViolation(err, followeeConstraint) || isForeignKeyViolation(err, followerConstraint) {
+	if isForeignKeyViolation(err, followeeConstraint, followerConstraint) {
 		return &NotFoundError{Message: "user not found"}
 	}
 	return err
 }
 
 func (s *FollowService) Unfollow(ctx context.Context, followerID, followeeID uuid.UUID) error {
-	rows, err := s.db.UnfollowUser(ctx, database.UnfollowUserParams{
+	_, err := s.db.UnfollowUser(ctx, database.UnfollowUserParams{
 		FollowerID: followerID,
 		FolloweeID: followeeID,
 	})
-	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return &NotFoundError{Message: "you are not following this user"}
-	}
-	return nil
+	return err
 }
 
 func (s *FollowService) ListFollowing(ctx context.Context, userID uuid.UUID) ([]database.ListFollowingRow, error) {
+	if err := s.requireUser(ctx, userID); err != nil {
+		return nil, err
+	}
 	return s.db.ListFollowing(ctx, userID)
 }
 
 func (s *FollowService) ListFollowers(ctx context.Context, userID uuid.UUID) ([]database.ListFollowersRow, error) {
-	if _, err := s.db.GetUser(ctx, userID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, &NotFoundError{Message: "user not found"}
-		}
+	if err := s.requireUser(ctx, userID); err != nil {
 		return nil, err
 	}
 	return s.db.ListFollowers(ctx, userID)
 }
 
-func isForeignKeyViolation(err error, constraint string) bool {
+func (s *FollowService) requireUser(ctx context.Context, userID uuid.UUID) error {
+	if _, err := s.db.GetUser(ctx, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &NotFoundError{Message: "user not found"}
+		}
+		return err
+	}
+	return nil
+}
+
+func isForeignKeyViolation(err error, constraints ...string) bool {
 	var pqErr *pq.Error
-	if !errors.As(err, &pqErr) {
+	if !errors.As(err, &pqErr) || pqErr.Code != "23503" {
 		return false
 	}
-	return pqErr.Code == "23503" && pqErr.Constraint == constraint
+	return slices.Contains(constraints, pqErr.Constraint)
 }

@@ -63,8 +63,6 @@ func TestFollowAnUnknownUserIsNotFound(t *testing.T) {
 	}
 }
 
-// The mirror of the test above: the caller's own account can vanish while
-// their token is still valid, and that FK fires too.
 func TestFollowWithADeletedFollowerIsNotFound(t *testing.T) {
 	svc, db, aino, bea := newFollowService(t)
 	ctx := context.Background()
@@ -81,8 +79,6 @@ func TestFollowWithADeletedFollowerIsNotFound(t *testing.T) {
 	}
 }
 
-// Nothing else asserts the CHECK exists, so removing it from the migration
-// would leave every other test green while the README claims it is there.
 func TestSelfFollowIsImpossibleInTheDatabase(t *testing.T) {
 	_, db, aino, _ := newFollowService(t)
 
@@ -100,13 +96,12 @@ func TestSelfFollowIsImpossibleInTheDatabase(t *testing.T) {
 	}
 }
 
-func TestUnfollowWhenNotFollowing(t *testing.T) {
+func TestUnfollowIsIdempotent(t *testing.T) {
 	svc, _, aino, bea := newFollowService(t)
 	ctx := context.Background()
 
-	var notFound *NotFoundError
-	if err := svc.Unfollow(ctx, aino, bea); !errors.As(err, &notFound) {
-		t.Fatalf("err = %v, want *NotFoundError", err)
+	if err := svc.Unfollow(ctx, aino, bea); err != nil {
+		t.Fatalf("unfollowing without following = %v, want nil", err)
 	}
 
 	if err := svc.Follow(ctx, aino, bea); err != nil {
@@ -115,8 +110,24 @@ func TestUnfollowWhenNotFollowing(t *testing.T) {
 	if err := svc.Unfollow(ctx, aino, bea); err != nil {
 		t.Fatalf("unfollow: %v", err)
 	}
-	if err := svc.Unfollow(ctx, aino, bea); !errors.As(err, &notFound) {
-		t.Errorf("unfollowing twice = %v, want *NotFoundError", err)
+	if err := svc.Unfollow(ctx, aino, bea); err != nil {
+		t.Errorf("unfollowing twice = %v, want nil", err)
+	}
+
+	following, err := svc.ListFollowing(ctx, aino)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(following) != 0 {
+		t.Errorf("aino follows %+v, want nobody", following)
+	}
+}
+
+func TestUnfollowAnUnknownUser(t *testing.T) {
+	svc, _, aino, _ := newFollowService(t)
+
+	if err := svc.Unfollow(context.Background(), aino, uuid.New()); err != nil {
+		t.Errorf("err = %v, want nil", err)
 	}
 }
 
@@ -157,6 +168,32 @@ func TestListFollowersOfAnUnknownUser(t *testing.T) {
 	svc, _, _, _ := newFollowService(t)
 
 	_, err := svc.ListFollowers(context.Background(), uuid.New())
+
+	var notFound *NotFoundError
+	if !errors.As(err, &notFound) {
+		t.Fatalf("err = %v, want *NotFoundError", err)
+	}
+}
+
+func TestListFollowingOfAnUnknownUser(t *testing.T) {
+	svc, _, _, _ := newFollowService(t)
+
+	_, err := svc.ListFollowing(context.Background(), uuid.New())
+
+	var notFound *NotFoundError
+	if !errors.As(err, &notFound) {
+		t.Fatalf("err = %v, want *NotFoundError", err)
+	}
+}
+
+func TestListFollowingOfADeletedCaller(t *testing.T) {
+	svc, db, aino, _ := newFollowService(t)
+
+	if _, err := db.Exec(`DELETE FROM users WHERE id = $1`, aino); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := svc.ListFollowing(context.Background(), aino)
 
 	var notFound *NotFoundError
 	if !errors.As(err, &notFound) {

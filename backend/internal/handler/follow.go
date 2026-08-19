@@ -67,6 +67,22 @@ func (h *Handler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, dtos.ToFollowingResponses(rows))
 }
 
+func (h *Handler) GetUserFollowing(w http.ResponseWriter, r *http.Request) {
+	userID, err := targetUserID(r)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	rows, err := h.Follow.ListFollowing(r.Context(), userID)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToFollowingResponses(rows))
+}
+
 func (h *Handler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 	userID, err := targetUserID(r)
 	if err != nil {

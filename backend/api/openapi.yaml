@@ -1384,8 +1384,11 @@ paths:
       summary: Unfollow a user
       operationId: unfollowUser
       description: |
-        NOT idempotent, unlike follow: unfollowing someone you were not
-        following is a 404. Same asymmetry as the wishlist.
+        Idempotent, like follow: unfollowing someone you were not following is
+        still a 204, because not following them is the state you asked for.
+        There is no 404 - "you were not following them" is not something a
+        client can act on, and it would turn a retried mutation into a spurious
+        error.
       responses:
         "204":
           description: Unfollowed. No body.
@@ -1397,12 +1400,6 @@ paths:
                 $ref: "#/components/schemas/Error"
         "401":
           $ref: "#/components/responses/Unauthorized"
-        "404":
-          description: You were not following that user.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -1419,11 +1416,54 @@ paths:
       summary: List a user's followers
       operationId: getFollowers
       description: |
-        Alphabetical by username, and unpaginated. Requires a token: a follower
-        list is a social graph rather than public profile data.
+        Alphabetical by username, and unpaginated - deliberately, unlike
+        listings: a follow list is bounded by how many people one person
+        chooses to follow, while a catalogue is not. Revisit if these ever
+        run to hundreds. Requires a token: a follower list is a social graph
+        rather than public profile data.
       responses:
         "200":
           description: The people following that user, each with online status.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatUser"
+        "400":
+          description: The id is not a uuid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /users/{id}/following:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [follows]
+      summary: List who a user follows
+      operationId: getUserFollowing
+      description: |
+        The mirror of `/users/{id}/followers`, and public on the same terms:
+        who someone follows is no more private here than who follows them, and
+        hiding one but not the other would be an asymmetry rather than a
+        privacy design. `/me/following` is the same list for the authenticated
+        caller, without needing to know your own id.
+      responses:
+        "200":
+          description: The people that user follows, each with online status.
           content:
             application/json:
               schema:
