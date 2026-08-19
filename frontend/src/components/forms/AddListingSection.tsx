@@ -44,7 +44,7 @@ export function AddListingSection() {
     // images can be uploaded (POST /listings/{id}/images needs the new
     // listing's id), so once CreateListing is wired up: create the listing
     // first, then call useUploadListingImage(listing.id) once per file in
-    // `photos` (see src/api/listingImages.ts).
+    // `photos` (see src/api/listings.ts).
   };
   // TODO: blocked by #109 Add hooks to save data to backend
   // const { handleSubmit: handleSave, isSubmitting, submitError } = useFormSubmit<AddListingFormValues>(
