@@ -45,6 +45,6 @@ export const locationSchema = z
 
 // NOTE: Exports for common schemas that are directly used without wrapper objects
 export const bioSchema = z.object({
-  bio: z.string().min(1).max(1000, "Bio must be less than 1000 characters"),
+  bio: z.string().max(1000, "Bio must be less than 1000 characters"),
 });
 export type BioFormValues = z.infer<typeof bioSchema>;
