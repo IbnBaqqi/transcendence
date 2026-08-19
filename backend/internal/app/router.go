@@ -13,7 +13,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-// NewRouter takes *database.Queries so it can construct the listing handler
 func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	r := chi.NewRouter()
 
@@ -26,8 +25,10 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.Conversation,
 		appService.User,
 		appService.Profile,
+		appService.Follow,
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
+		appService.AuthConfig.CookieSecure,
 	)
 
 	r.Use(middleware.RequestID)
@@ -53,6 +54,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		r.Post("/auth/signup", h.Signup)
 		r.Post("/auth/login", h.Login)
 		r.Post("/auth/logout", h.Logout)
+		r.Post("/auth/refresh", h.Refresh)
 
 		r.Get("/listings", h.GetListings)
 		r.Get("/listings/search", h.SearchListings)
@@ -82,16 +84,24 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/conversations/{id}/messages", h.SendMessage)
 			r.Post("/conversations/{id}/read", h.MarkConversationRead)
 
+			r.Get("/auth/me", h.Me)
+
 			r.Get("/me/settings", h.GetSettings)
 			r.Patch("/me/settings", h.UpdateSettings)
 			r.Get("/me/unread", h.GetUnreadCount)
 
 			r.Get("/me/profile", h.GetOwnProfile)
 			r.Patch("/me/profile", h.UpdateOwnProfile)
+			r.Post("/users/{id}/follow", h.FollowUser)
+			r.Delete("/users/{id}/follow", h.UnfollowUser)
+			r.Get("/users/{id}/followers", h.GetFollowers)
+			r.Get("/users/{id}/following", h.GetUserFollowing)
+			r.Get("/me/following", h.GetFollowing)
 
 			r.Post("/orders", h.CreateOrder)
 			r.Get("/orders", h.GetOrders)
 			r.Get("/orders/{id}", h.GetOrder)
+			r.Get("/orders/{id}/events", h.GetOrderEvents)
 
 			r.Post("/orders/{id}/confirm", h.ConfirmOrder)
 			r.Post("/orders/{id}/handover", h.HandoverOrder)
@@ -104,7 +114,6 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	return r
 }
 
-// uploadFileServer serves stored files by bare filename, with no directory listing.
 func uploadFileServer(dir string) http.Handler {
 	fs := http.StripPrefix(dtos.UploadURLPrefix, http.FileServer(http.Dir(dir)))
 

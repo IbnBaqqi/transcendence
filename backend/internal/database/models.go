@@ -6,6 +6,7 @@ package database
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -27,6 +28,12 @@ type Conversation struct {
 	Status       string
 	CreatedAt    sql.NullTime
 	UpdatedAt    sql.NullTime
+}
+
+type Follow struct {
+	FollowerID uuid.UUID
+	FolloweeID uuid.UUID
+	CreatedAt  sql.NullTime
 }
 
 type Listing struct {
@@ -75,6 +82,16 @@ type Order struct {
 	ListingTitle       string
 }
 
+type OrderEvent struct {
+	ID         int32
+	OrderID    int32
+	ActorID    uuid.NullUUID
+	FromStatus sql.NullString
+	ToStatus   string
+	Note       sql.NullString
+	CreatedAt  time.Time
+}
+
 type Profile struct {
 	ID          uuid.UUID
 	Firstname   sql.NullString
@@ -82,6 +99,15 @@ type Profile struct {
 	Bio         sql.NullString
 	PhoneNumber sql.NullString
 	DateOfBirth sql.NullTime
+}
+
+type RefreshToken struct {
+	TokenHash     string
+	UserID        uuid.UUID
+	ExpiresAt     time.Time
+	RevokedAt     sql.NullTime
+	RevokedReason sql.NullString
+	CreatedAt     time.Time
 }
 
 type SavedListing struct {

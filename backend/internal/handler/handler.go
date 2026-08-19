@@ -15,8 +15,10 @@ type Handler struct {
 	Conversation   *service.ConversationService
 	User           *service.UserService
 	Profile        *service.ProfileService
+	Follow         *service.FollowService
 	ListingImage   *service.ListingImageService
 	maxUploadBytes int64
+	cookieSecure   bool
 }
 
 func New(
@@ -28,8 +30,10 @@ func New(
 	conversationService *service.ConversationService,
 	userService *service.UserService,
 	profileService *service.ProfileService,
+	followService *service.FollowService,
 	listingImageService *service.ListingImageService,
 	maxUploadBytes int64,
+	cookieSecure bool,
 ) *Handler {
 	return &Handler{
 		db:             db,
@@ -40,7 +44,9 @@ func New(
 		Conversation:   conversationService,
 		User:           userService,
 		Profile:        profileService,
+		Follow:         followService,
 		ListingImage:   listingImageService,
 		maxUploadBytes: maxUploadBytes,
+		cookieSecure:   cookieSecure,
 	}
 }

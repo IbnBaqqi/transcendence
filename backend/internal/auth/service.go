@@ -95,6 +95,11 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 		return SignupResponse{}, signupFailed("create profile", err)
 	}
 
+	refreshToken, err := s.IssueSession(ctx, qtx, user.ID)
+	if err != nil {
+		return SignupResponse{}, signupFailed("store session", err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return SignupResponse{}, signupFailed("commit", err)
 	}
@@ -106,7 +111,7 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 
 	return SignupResponse{
 		AccessToken:  accessToken,
-		RefreshToken: MakeRefreshToken(),
+		RefreshToken: refreshToken,
 		User:         toUserInfo(user),
 	}, nil
 }
@@ -130,9 +135,14 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 		return LoginResult{}, fmt.Errorf("login: issue token: %w", err)
 	}
 
+	refreshToken, err := s.IssueSession(ctx, s.db.Queries, user.ID)
+	if err != nil {
+		return LoginResult{}, fmt.Errorf("login: store session: %w", err)
+	}
+
 	return LoginResult{
 		AccessToken:  accessToken,
-		RefreshToken: MakeRefreshToken(),
+		RefreshToken: refreshToken,
 		User:         toUserInfo(user),
 	}, nil
 }
