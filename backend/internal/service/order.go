@@ -11,10 +11,8 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
-// OrderService holds the business rules for orders.
 type OrderService struct {
 	db *database.DB
 }
@@ -68,9 +66,6 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 		return database.Order{}, err
 	}
 
-	// The buyer comes from a token, and a token outlives the account it names.
-	// Without this the foreign key violation reaches the handler as a driver
-	// error and becomes a 500 - the #112 failure mode.
 	order, err := qtx.CreateOrder(ctx, database.CreateOrderParams{
 		ListingID:    listing.ID,
 		BuyerID:      buyerID,
@@ -80,7 +75,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 		ListingTitle: listing.Title,
 	})
 	if err != nil {
-		if violatesForeignKey(err, buyerConstraint) {
+		if isForeignKeyViolation(err, buyerConstraint) {
 			return database.Order{}, &NotFoundError{Message: "user not found"}
 		}
 		return database.Order{}, err
@@ -97,7 +92,6 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 	return order, nil
 }
 
-// GetOrder returns one order, but only to the two people involved in it.
 func (s *OrderService) GetOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
 	order, err := s.db.GetOrder(ctx, orderID)
 	if err != nil {
@@ -109,12 +103,10 @@ func (s *OrderService) GetOrder(ctx context.Context, userID uuid.UUID, orderID i
 	return order, nil
 }
 
-// ListOrders returns every order where the caller is buyer OR seller.
 func (s *OrderService) ListOrders(ctx context.Context, userID uuid.UUID) ([]database.Order, error) {
 	return s.db.ListOrdersForUser(ctx, userID)
 }
 
-// orderActor says which side of the order may perform a move.
 type orderActor int
 
 const (
@@ -123,7 +115,6 @@ const (
 	actorEither
 )
 
-// handshakeMark says which side's confirmation a move records.
 type handshakeMark int
 
 const (
@@ -132,7 +123,6 @@ const (
 	markBuyer
 )
 
-// orderAction is one edge of the state machine
 type orderAction struct {
 	name             string
 	from             []string
@@ -143,7 +133,6 @@ type orderAction struct {
 	blockedAfterMark bool
 }
 
-// The transition table - this IS the lifecycle.
 var (
 	actionConfirm = orderAction{
 		name:  "confirm",
@@ -179,12 +168,10 @@ func (s *OrderService) ConfirmOrder(ctx context.Context, userID uuid.UUID, order
 	return s.applyAction(ctx, userID, orderID, actionConfirm)
 }
 
-// HandoverOrder records the SELLER's half of the handshake.
 func (s *OrderService) HandoverOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
 	return s.applyAction(ctx, userID, orderID, actionHandover)
 }
 
-// ReceiveOrder records the BUYER's half of the handshake.
 func (s *OrderService) ReceiveOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
 	return s.applyAction(ctx, userID, orderID, actionReceive)
 }
@@ -193,8 +180,6 @@ func (s *OrderService) CancelOrder(ctx context.Context, userID uuid.UUID, orderI
 	return s.applyAction(ctx, userID, orderID, actionCancel)
 }
 
-// applyAction is the referee: it loads the order, checks who's asking and what
-// state it's in, then moves it.
 func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderID int32, action orderAction) (database.Order, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -301,33 +286,16 @@ func recordEvent(
 		ToStatus:   to,
 		Note:       sql.NullString{String: note, Valid: note != ""},
 	})
-	// Unreachable today - every actor has already passed the participant check
-	// or the order insert. It becomes reachable the moment #37 lets an admin
-	// act on someone else's order.
-	if violatesForeignKey(err, actorConstraint) {
+	if isForeignKeyViolation(err, actorConstraint) {
 		return &NotFoundError{Message: "user not found"}
 	}
 	return err
 }
 
-// The two foreign keys that name a user. Both mean the same thing: a token
-// outlived the account it was issued to.
 const (
 	buyerConstraint = "orders_buyer_id_fkey"
 	actorConstraint = "order_events_actor_id_fkey"
 )
-
-// violatesForeignKey is deliberately not named isForeignKeyViolation:
-// feature/follows adds a function by that name to this package, and two of
-// them would merge cleanly and then fail to compile. Collapse them once that
-// branch lands - alongside isUniqueViolation in conversation.go.
-func violatesForeignKey(err error, constraint string) bool {
-	var pqErr *pq.Error
-	if !errors.As(err, &pqErr) {
-		return false
-	}
-	return pqErr.Code == "23503" && pqErr.Constraint == constraint
-}
 
 func markNote(m handshakeMark) string {
 	switch m {
@@ -340,8 +308,6 @@ func markNote(m handshakeMark) string {
 	}
 }
 
-// markHandshake stamps one side's confirmation, refusing a second stamp from
-// the same side so a double-click can't look like progress.
 func markHandshake(ctx context.Context, qtx *database.Queries, order database.Order, action orderAction) (database.Order, error) {
 	switch action.mark {
 	case markSeller:
@@ -358,12 +324,10 @@ func markHandshake(ctx context.Context, qtx *database.Queries, order database.Or
 	return order, nil
 }
 
-// bothSidesMarked reports whether the handshake is finished.
 func bothSidesMarked(o database.Order) bool {
 	return o.SellerHandedOverAt.Valid && o.BuyerReceivedAt.Valid
 }
 
-// checkOrderActor enforces the "who may travel this edge" guard.
 func checkOrderActor(order database.Order, userID uuid.UUID, action orderAction) error {
 	isBuyer := order.BuyerID == userID
 	isSeller := order.SellerID == userID
