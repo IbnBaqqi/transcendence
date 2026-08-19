@@ -23,14 +23,12 @@ const (
 	earliestBirthYear = 1900
 )
 
-// ProfileDetail is the three rows a profile is spread across.
 type ProfileDetail struct {
 	User     database.User
 	Profile  database.Profile
 	Location sql.NullString
 }
 
-// Takes *database.DB, not *database.Queries, because Update needs BeginTx.
 type ProfileService struct {
 	db *database.DB
 }
@@ -39,7 +37,6 @@ func NewProfileService(db *database.DB) *ProfileService {
 	return &ProfileService{db: db}
 }
 
-// Get loads one user's profile.
 func (s *ProfileService) Get(ctx context.Context, userID uuid.UUID) (ProfileDetail, error) {
 	user, err := s.db.GetUser(ctx, userID)
 	if err != nil {
@@ -65,8 +62,6 @@ func (s *ProfileService) Get(ctx context.Context, userID uuid.UUID) (ProfileDeta
 	return ProfileDetail{User: user, Profile: profile, Location: location}, nil
 }
 
-// Update applies a PATCH. Fields left out of the body keep their current
-// value; fields sent as "" are cleared.
 func (s *ProfileService) Update(ctx context.Context, userID uuid.UUID, input dtos.UpdateProfileInput) (ProfileDetail, error) {
 	if err := validateProfileInput(input); err != nil {
 		return ProfileDetail{}, err
@@ -136,8 +131,6 @@ func (s *ProfileService) Update(ctx context.Context, userID uuid.UUID, input dto
 	return ProfileDetail{User: user, Profile: profile, Location: location}, nil
 }
 
-// location returns an invalid NullString when the user has no address row,
-// which is the normal case rather than an error.
 func (s *ProfileService) location(ctx context.Context, q *database.Queries, userID uuid.UUID) (sql.NullString, error) {
 	address, err := q.GetAddress(ctx, userID)
 	if err != nil {
@@ -149,8 +142,6 @@ func (s *ProfileService) location(ctx context.Context, q *database.Queries, user
 	return address.Location, nil
 }
 
-// mergeString is the PATCH rule in one place: nil keeps what is there, a
-// value replaces it, and an empty value clears the column to NULL.
 func mergeString(current sql.NullString, in dtos.OptionalString) sql.NullString {
 	if !in.Set {
 		return current
