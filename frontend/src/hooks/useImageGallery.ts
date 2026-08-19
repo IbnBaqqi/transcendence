@@ -44,39 +44,42 @@ export function useImageGallery({
 }: UseImageGalleryOptions = {}) {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const objectUrls = useRef<Set<string>>(new Set());
+  const imagesRef = useRef<GalleryImage[]>([]);
+
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
 
   const addFiles = useCallback(
     (files: File[]) => {
-      setImages((prev) => {
-        const remaining = maxFiles - prev.length;
-        if (remaining <= 0) {
+      const remaining = maxFiles - imagesRef.current.length;
+      if (remaining <= 0) {
+        onError?.(`You can only add up to ${maxFiles} image${maxFiles === 1 ? "" : "s"}.`);
+        return;
+      }
+
+      const next: GalleryImage[] = [];
+      for (const file of files) {
+        if (next.length >= remaining) {
           onError?.(`You can only add up to ${maxFiles} image${maxFiles === 1 ? "" : "s"}.`);
-          return prev;
+          break;
+        }
+        if (!acceptedTypes.includes(file.type)) {
+          onError?.(`"${file.name}" isn't a supported image type (use JPEG, PNG or WebP).`);
+          continue;
+        }
+        if (file.size > maxSizeBytes) {
+          onError?.(`"${file.name}" is larger than ${Math.round(maxSizeBytes / (1024 * 1024))}MB.`);
+          continue;
         }
 
-        const next: GalleryImage[] = [];
-        for (const file of files) {
-          if (next.length >= remaining) {
-            onError?.(`You can only add up to ${maxFiles} image${maxFiles === 1 ? "" : "s"}.`);
-            break;
-          }
-          if (!acceptedTypes.includes(file.type)) {
-            onError?.(`"${file.name}" isn't a supported image type (use JPEG, PNG or WebP).`);
-            continue;
-          }
-          if (file.size > maxSizeBytes) {
-            onError?.(
-              `"${file.name}" is larger than ${Math.round(maxSizeBytes / (1024 * 1024))}MB.`,
-            );
-            continue;
-          }
-
-          const previewUrl = URL.createObjectURL(file);
-          objectUrls.current.add(previewUrl);
-          next.push({ id: makeId(file), file, previewUrl, status: "pending" });
-        }
-        return next.length ? [...prev, ...next] : prev;
-      });
+        const previewUrl = URL.createObjectURL(file);
+        objectUrls.current.add(previewUrl);
+        next.push({ id: makeId(file), file, previewUrl, status: "pending" });
+      }
+      if (next.length) {
+        setImages((prev) => [...prev, ...next]);
+      }
     },
     [maxFiles, maxSizeBytes, acceptedTypes, onError],
   );
