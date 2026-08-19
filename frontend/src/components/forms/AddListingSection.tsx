@@ -78,7 +78,12 @@ export function AddListingSection() {
           </div>
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">Category</h2>
-            <FormField name="category" width="max-w-lg" placeholder="e.g. 'Mushroom'" validateOnChange />
+            <FormField
+              name="category"
+              width="max-w-lg"
+              placeholder="e.g. 'Mushroom'"
+              validateOnChange
+            />
           </div>
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">Price & Quantity</h2>

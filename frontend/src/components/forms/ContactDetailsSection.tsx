@@ -36,7 +36,7 @@ export function ContactDetailsSection() {
     <Form form={form} onSubmit={handleSubmit} className="max-w-fit" isEditing={isEditing}>
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-4">
-          <FormField label="First name" name="firstName" validateOnChange/>
+          <FormField label="First name" name="firstName" validateOnChange />
           <FormField label="Last name" name="lastName" />
           <FormField label="Phone" name="phone" type="tel" />
           <FormField label="City" name="city" validateOnChange />
