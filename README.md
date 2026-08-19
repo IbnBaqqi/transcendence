@@ -74,8 +74,8 @@ the token expired.
 
 ```go
 r.Group(func(r chi.Router) {
-	r.Use(mw.RequiredAuth)                                     // 401 if not logged in
-	r.Use(mw.RequireRole(appService.DB.Queries, mw.RoleAdmin)) // 403 if not an admin
+	r.Use(mw.RequiredAuth)                                       // 401 if not logged in
+	r.Use(mw.RequireRole(appService.DB.Queries, auth.RoleAdmin)) // 403 if not an admin
 	// admin routes here
 })
 ```

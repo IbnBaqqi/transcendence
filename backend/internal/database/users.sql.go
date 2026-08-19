@@ -126,8 +126,6 @@ SELECT role FROM users
 WHERE id = $1
 `
 
-// The role as it is right now, for RequireRole. Deliberately not GetUser
-// (SELECT *), which would load the password hash on every admin request.
 func (q *Queries) GetUserRole(ctx context.Context, id uuid.UUID) (string, error) {
 	row := q.db.QueryRowContext(ctx, getUserRole, id)
 	var role string

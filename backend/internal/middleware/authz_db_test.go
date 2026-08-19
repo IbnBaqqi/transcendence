@@ -42,7 +42,7 @@ func adminRouter(t *testing.T, db *database.DB, startingRole string) (func() int
 	r.Use(mw.Authenticate(jwt))
 	r.Group(func(r chi.Router) {
 		r.Use(mw.RequiredAuth)
-		r.Use(mw.RequireRole(db.Queries, mw.RoleAdmin))
+		r.Use(mw.RequireRole(db.Queries, auth.RoleAdmin))
 		r.Get("/admin", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
@@ -62,13 +62,13 @@ func adminRouter(t *testing.T, db *database.DB, startingRole string) (func() int
 func TestDemotionTakesEffectOnTheNextRequest(t *testing.T) {
 	db := testdb.New(t)
 
-	call, id := adminRouter(t, db, mw.RoleAdmin)
+	call, id := adminRouter(t, db, auth.RoleAdmin)
 
 	if code := call(); code != http.StatusNoContent {
 		t.Fatalf("as an admin: status = %d, want %d", code, http.StatusNoContent)
 	}
 
-	if _, err := db.Exec(`UPDATE users SET role = $2 WHERE id = $1`, id, mw.RoleUser); err != nil {
+	if _, err := db.Exec(`UPDATE users SET role = $2 WHERE id = $1`, id, auth.RoleUser); err != nil {
 		t.Fatal(err)
 	}
 
@@ -80,13 +80,13 @@ func TestDemotionTakesEffectOnTheNextRequest(t *testing.T) {
 func TestPromotionNeedsNoNewToken(t *testing.T) {
 	db := testdb.New(t)
 
-	call, id := adminRouter(t, db, mw.RoleUser)
+	call, id := adminRouter(t, db, auth.RoleUser)
 
 	if code := call(); code != http.StatusForbidden {
 		t.Fatalf("as an ordinary user: status = %d, want %d", code, http.StatusForbidden)
 	}
 
-	if _, err := db.Exec(`UPDATE users SET role = $2 WHERE id = $1`, id, mw.RoleAdmin); err != nil {
+	if _, err := db.Exec(`UPDATE users SET role = $2 WHERE id = $1`, id, auth.RoleAdmin); err != nil {
 		t.Fatal(err)
 	}
 

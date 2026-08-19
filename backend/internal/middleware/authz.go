@@ -3,17 +3,14 @@ package middleware
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 
-	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/google/uuid"
-)
 
-const (
-	RoleUser  = "USER"
-	RoleAdmin = "ADMIN"
+	"github.com/IbnBaqqi/transcendence/internal/auth"
 )
 
 type roleStore interface {
@@ -41,7 +38,7 @@ func RequireRole(store roleStore, role string) func(http.Handler) http.Handler {
 			}
 
 			if current != role {
-				slog.Warn("role check failed", "user_id", user.ID, "have", current, "want", role)
+				slog.Info("role check failed", "user_id", user.ID, "have", current, "want", role)
 				writeAuthzError(w, http.StatusForbidden, "forbidden")
 				return
 			}
@@ -54,5 +51,8 @@ func RequireRole(store roleStore, role string) func(http.Handler) http.Handler {
 func writeAuthzError(w http.ResponseWriter, status int, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_, _ = w.Write([]byte(`{"error":"` + msg + `"}`))
+
+	if err := json.NewEncoder(w).Encode(map[string]string{"error": msg}); err != nil {
+		slog.Error("could not write the error body", "error", err)
+	}
 }
