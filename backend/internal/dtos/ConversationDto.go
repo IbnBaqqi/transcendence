@@ -80,9 +80,11 @@ func toPresence(lastSeen sql.NullTime, showOnlineStatus bool) PresenceResponse {
 		return PresenceResponse{}
 	}
 
-	seenAt := lastSeen.Time
+	online := presence.IsOnline(lastSeen.Time, time.Now())
+	seenAt := lastSeen.Time.Truncate(presence.Interval)
+
 	return PresenceResponse{
-		IsOnline:   presence.IsOnline(seenAt, time.Now()),
+		IsOnline:   online,
 		LastSeenAt: &seenAt,
 	}
 }
