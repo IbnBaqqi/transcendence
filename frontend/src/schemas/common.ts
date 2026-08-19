@@ -24,8 +24,16 @@ export const phoneSchema = z
   .min(1, "Phone number is required")
   .regex(/^[\d\s()+-]{7,15}$/, "Invalid phone number");
 // NOTE: If we want better validation then we could convert to E164 standard
-// NOTE: Backend caps title at 100 BYTES (accented chars take more space), so the char limit is stricter here
-export const titleSchema = z.string().min(1, "Title is required").max(64, "Title is too long");
+// NOTE: Go rejects titles over 100 bytes (len() in validateListingInput) and
+// the DB column is VARCHAR(100) which counts characters. The byte cap is the
+// stricter one for multibyte text, so the refine below enforces it too.
+export const titleSchema = z
+  .string()
+  .min(1, "Title is required")
+  .max(64, "Title is too long")
+  .refine((t) => new TextEncoder().encode(t).length <= 100, {
+    message: "Title must be under 100 bytes",
+  });
 // NOTE: Backend imposes no length limit on description; 1024 here is a UI-only cap
 export const descriptionSchema = z.string().max(1024, "Description is too long");
 export const categorySchema = z
