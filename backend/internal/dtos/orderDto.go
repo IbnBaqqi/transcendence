@@ -7,13 +7,11 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
-// CreateOrderInput is the JSON body for POST /orders.
 type CreateOrderInput struct {
 	ListingID int32 `json:"listing_id"`
 	Quantity  int32 `json:"quantity"`
 }
 
-// OrderResponse is the shape we send back to clients.
 type OrderResponse struct {
 	ID                 int32      `json:"id"`
 	ListingID          int32      `json:"listing_id"`
@@ -21,8 +19,8 @@ type OrderResponse struct {
 	BuyerID            string     `json:"buyer_id"`
 	SellerID           string     `json:"seller_id"`
 	Quantity           int32      `json:"quantity"`
-	UnitPrice          string     `json:"unit_price"`
-	TotalPrice         string     `json:"total_price"`
+	UnitPrice          float64    `json:"unit_price"`
+	TotalPrice         float64    `json:"total_price"`
 	Status             string     `json:"status"`
 	SellerHandedOverAt *time.Time `json:"seller_handed_over_at"`
 	BuyerReceivedAt    *time.Time `json:"buyer_received_at"`
@@ -30,7 +28,6 @@ type OrderResponse struct {
 	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
-// NewOrderResponse converts one database row into the API shape.
 func NewOrderResponse(o database.Order) OrderResponse {
 	return OrderResponse{
 		ID:                 o.ID,
@@ -39,8 +36,8 @@ func NewOrderResponse(o database.Order) OrderResponse {
 		BuyerID:            o.BuyerID.String(),
 		SellerID:           o.SellerID.String(),
 		Quantity:           o.Quantity,
-		UnitPrice:          o.UnitPrice,
-		TotalPrice:         o.TotalPrice,
+		UnitPrice:          numericToFloat(o.UnitPrice),
+		TotalPrice:         numericToFloat(o.TotalPrice),
 		Status:             o.Status,
 		SellerHandedOverAt: nullTimeToPtr(o.SellerHandedOverAt),
 		BuyerReceivedAt:    nullTimeToPtr(o.BuyerReceivedAt),
@@ -49,7 +46,6 @@ func NewOrderResponse(o database.Order) OrderResponse {
 	}
 }
 
-// nullTimeToPtr converts sqlc's sql.NullTime into a *time.Time.
 func nullTimeToPtr(nt sql.NullTime) *time.Time {
 	if !nt.Valid {
 		return nil
@@ -57,7 +53,6 @@ func nullTimeToPtr(nt sql.NullTime) *time.Time {
 	return &nt.Time
 }
 
-// NewOrderResponse converts a whole list.
 func NewOrderResponses(orders []database.Order) []OrderResponse {
 	out := make([]OrderResponse, 0, len(orders))
 	for _, o := range orders {
