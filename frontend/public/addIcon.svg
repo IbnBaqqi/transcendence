@@ -1,6 +1,0 @@
-  <symbol id="add-icon" viewBox="0 0 24 28">
-    <path id="svg_1" d="m5,18c0,-3.8674 3.1326,-7 7,-7c3.8674,0 7,3.1326 7,7c0,3.8674 -3.1326,7 -7,7" opacity="undefined" stroke-width="1.5" stroke="currentColor" fill="none"/>
-    <path stroke="currentColor" id="svg_3" d="m8.87501,16.5l0,9.24999m-4.625,-4.625l9.24999,0" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
-    <path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M11.5,11 C7.6,8.6 7.1,7.6 9.1,6.2 C11.9,7.6 12.4,8.6 11.5,11"/>
-    <path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M12.5,11 C16.4,7.6 16.9,6.1 15.4,4.1 C12.9,6.1 12.4,7.6 12.5,11"/>
-  </symbol>

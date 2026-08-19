@@ -21,10 +21,10 @@ export function AddListingSection() {
     mode: "onBlur",
     // TODO: blocked by #109 Add hooks to fetch data from backend (or maybe local frontend e.g. from Profile.tsx?)
     // defaultValues: {
-    //   firstName: user.firstName ?? "",
-    //   lastName: user.lastName ?? "",
-    //   phone: user.phone ?? "",
-    //   city: user.city ?? "",
+    //   firstname: user.firstname ?? "",
+    //   lastname: user.lastname ?? "",
+    //   phone_number: user.phone_number ?? "",
+    //   location: user.location ?? "",
     // },
   });
 
@@ -113,11 +113,7 @@ export function AddListingSection() {
             </div>
           </div>
         </div>
-        <Button
-          variant="primary"
-          type="submit"
-          disabled={!form.formState.isValid || photos.length === 0}
-        >
+        <Button variant="primary" type="submit" disabled={!form.formState.isValid}>
           {/* TODO: blocked by #109 Insert API here */}
           Save
         </Button>
