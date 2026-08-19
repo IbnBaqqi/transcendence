@@ -150,6 +150,49 @@ Note that `go:embed` bakes the spec in **at build time** — after editing the
 YAML, rebuild (`docker compose up --build`) before the change shows up at
 `/api/docs`.
 
+## Roles and the first admin
+
+Accounts are `USER` or `ADMIN` — those two values only, enforced by a `CHECK`
+constraint, so a typo is rejected rather than stored:
+
+```
+ERROR: new row for relation "users" violates check constraint "users_role_check"
+```
+
+There is no UI for promotion and no seeded admin account. Everyone signs up as
+`USER`; the first admin is made by hand, on purpose:
+
+```bash
+docker compose exec db psql -U postgres -d transcendence \
+  -c "UPDATE users SET role = 'ADMIN' WHERE email = 'you@example.test';"
+```
+
+`UPDATE 1` means it worked; `UPDATE 0` means no account has that email. Adjust
+`-U` and `-d` if you changed `POSTGRES_USER` / `POSTGRES_DB` in `.env`.
+
+The role is read from the database on every request that needs it, not from the
+token, so **promotion and demotion take effect on the next request** — no
+logging out and back in. That is also what makes revoking an admin meaningful:
+were the role taken from the JWT, a demoted admin would keep their powers until
+the token expired.
+
+### Protecting a route
+
+```go
+r.Group(func(r chi.Router) {
+	r.Use(mw.RequiredAuth)                                       // 401 if not logged in
+	r.Use(mw.RequireRole(appService.DB.Queries, auth.RoleAdmin)) // 403 if not an admin
+	// admin routes here
+})
+```
+
+Order matters: `RequiredAuth` first, so "not logged in" answers 401 and "logged
+in, wrong role" answers 403.
+
+Roles are matched exactly, not ranked — an `ADMIN` does **not** satisfy
+`RequireRole(auth.RoleUser)`. For "any logged-in user", `RequiredAuth` alone is
+the check.
+
 ## Running the tests
 
 ```bash

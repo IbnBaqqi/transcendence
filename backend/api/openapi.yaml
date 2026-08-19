@@ -831,7 +831,9 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
     Forbidden:
-      description: Authenticated, but this resource belongs to someone else.
+      description: |
+        Authenticated, but not permitted — the resource belongs to someone
+        else, or the account does not hold the role the route requires.
       content:
         application/json:
           schema:

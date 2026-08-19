@@ -37,6 +37,11 @@ type User struct {
 	Name string
 }
 
+const (
+	RoleUser  = "USER"
+	RoleAdmin = "ADMIN"
+)
+
 type contextKey struct{}
 
 var userKey = contextKey{}
