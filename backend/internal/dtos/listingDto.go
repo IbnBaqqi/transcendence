@@ -1,7 +1,6 @@
 package dtos
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,10 +28,6 @@ type UpdateListingInput struct {
 	Unit        string  `json:"unit"`
 }
 
-// --- Search DTOs ---
-
-// ListingSearchQuery holds raw, unparsed values pulled from URL query
-// params. Parsing/validation happens in service layer.
 type ListingSearchQuery struct {
 	Keyword  string
 	Category string
@@ -52,7 +47,6 @@ type PaginatedListings struct {
 	TotalPages int               `json:"total_pages"`
 }
 
-// ListingResponse is the public JSON shape for a listing.
 type ListingResponse struct {
 	ID          int32                  `json:"id"`
 	SellerID    uuid.UUID              `json:"seller_id"`
@@ -67,9 +61,8 @@ type ListingResponse struct {
 	Images      []ListingImageResponse `json:"images"`
 }
 
-// ToListingResponse map single listing row into the response dto.
 func ToListingResponse(l database.Listing) ListingResponse {
-	price, _ := strconv.ParseFloat(l.Price, 64)
+	price := numericToFloat(l.Price)
 
 	return ListingResponse{
 		ID:          l.ID,
@@ -86,7 +79,6 @@ func ToListingResponse(l database.Listing) ListingResponse {
 	}
 }
 
-// ToListingResponses map mutliiple listing rows to response slice.
 func ToListingResponses(rows []database.Listing) []ListingResponse {
 	out := make([]ListingResponse, 0, len(rows))
 	for _, r := range rows {
@@ -95,15 +87,12 @@ func ToListingResponses(rows []database.Listing) []ListingResponse {
 	return out
 }
 
-// ToListingResponseWithImages is ToListingResponse plus the listing's photos.
 func ToListingResponseWithImages(l database.Listing, imgs []database.ListingImage) ListingResponse {
 	res := ToListingResponse(l)
 	res.Images = ToListingImageResponses(imgs)
 	return res
 }
 
-// ToListingResponsesWithImages maps a page of listings, looking each one's
-// photos up in a map built from ONE batch query.
 func ToListingResponsesWithImages(
 	rows []database.Listing,
 	byListing map[int32][]database.ListingImage,
