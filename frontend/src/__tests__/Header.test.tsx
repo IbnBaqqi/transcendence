@@ -1,8 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Header from "../components/layout/Header";
+import { ModalProvider } from "../providers/ModalProvider";
 
 test("renders the brand name", () => {
-  render(<Header />, { wrapper: MemoryRouter });
-  expect(screen.getByText("Forage Marketplace")).toBeInTheDocument();
+  render(
+    <ModalProvider>
+      <MemoryRouter>
+        <Header />
+      </MemoryRouter>
+    </ModalProvider>,
+  );
+  expect(screen.getByText("Metsätori")).toBeInTheDocument();
 });
