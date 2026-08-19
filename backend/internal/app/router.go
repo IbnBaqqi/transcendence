@@ -13,7 +13,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-// NewRouter takes *database.Queries so it can construct the listing handler
 func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	r := chi.NewRouter()
 
@@ -26,6 +25,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.Conversation,
 		appService.User,
 		appService.Profile,
+		appService.Follow,
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
 	)
@@ -88,6 +88,11 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 			r.Get("/me/profile", h.GetOwnProfile)
 			r.Patch("/me/profile", h.UpdateOwnProfile)
+			r.Post("/users/{id}/follow", h.FollowUser)
+			r.Delete("/users/{id}/follow", h.UnfollowUser)
+			r.Get("/users/{id}/followers", h.GetFollowers)
+			r.Get("/users/{id}/following", h.GetUserFollowing)
+			r.Get("/me/following", h.GetFollowing)
 
 			r.Post("/orders", h.CreateOrder)
 			r.Get("/orders", h.GetOrders)
@@ -104,7 +109,6 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	return r
 }
 
-// uploadFileServer serves stored files by bare filename, with no directory listing.
 func uploadFileServer(dir string) http.Handler {
 	fs := http.StripPrefix(dtos.UploadURLPrefix, http.FileServer(http.Dir(dir)))
 

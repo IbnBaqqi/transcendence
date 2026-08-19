@@ -40,5 +40,5 @@ export const Terms: Document = {
       paragraphs: ['Provided "as is," with no warranty. Use at your own risk.'],
     },
   ],
-  contactEmail: "support@forageapp.fi",
+  contactEmail: "support@metsatori.fi",
 };
