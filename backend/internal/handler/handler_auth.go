@@ -14,6 +14,9 @@ import (
 
 const refreshTokenCookie = "refresh_token"
 
+const refreshCookiePath = "/api/v1/auth"
+
+// Signup creates the account and starts a session.
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	var input dtos.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -35,6 +38,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Login exchanges credentials for an access token and a session cookie.
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req dtos.LoginRequest
 
@@ -60,6 +64,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Logout ends every session for the caller and expires the cookie.
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	if cookie, err := r.Cookie(refreshTokenCookie); err == nil {
 		if err := h.Auth.EndSession(r.Context(), cookie.Value); err != nil {
@@ -125,7 +130,7 @@ func (h *Handler) setRefreshTokenCookie(w http.ResponseWriter, value string, ttl
 	http.SetCookie(w, &http.Cookie{
 		Name:     refreshTokenCookie,
 		Value:    value,
-		Path:     "/",
+		Path:     refreshCookiePath,
 		MaxAge:   maxAge,
 		HttpOnly: true,
 		Secure:   h.cookieSecure,

@@ -13,6 +13,29 @@ import (
 	"github.com/google/uuid"
 )
 
+const deleteDeadSessionsForUser = `-- name: DeleteDeadSessionsForUser :exec
+DELETE FROM refresh_tokens
+WHERE user_id = $1
+    AND (
+        expires_at < now()
+        OR (revoked_at IS NOT NULL AND revoked_at < $2)
+      )
+`
+
+type DeleteDeadSessionsForUserParams struct {
+	UserID        uuid.UUID
+	RevokedBefore sql.NullTime
+}
+
+// Sessions that can never be redeemed again: expired, or revoked long enough
+// ago that the grace window has closed. Runs on the user's own rows as they
+// issue a new session, so growth is bounded by active sessions rather than by
+// lifetime logins - no scheduler, and the user_id index already covers it.
+func (q *Queries) DeleteDeadSessionsForUser(ctx context.Context, arg DeleteDeadSessionsForUserParams) error {
+	_, err := q.db.ExecContext(ctx, deleteDeadSessionsForUser, arg.UserID, arg.RevokedBefore)
+	return err
+}
+
 const findLiveSession = `-- name: FindLiveSession :one
 SELECT token_hash, user_id, expires_at, revoked_at, revoked_reason, created_at FROM refresh_tokens
 WHERE token_hash = $1
@@ -47,8 +70,6 @@ SELECT token_hash, user_id, expires_at, revoked_at, revoked_reason, created_at F
 WHERE token_hash = $1
 `
 
-// Whatever its state - logout needs the owner of a token that may already have
-// been rotated, which FindLiveSession would refuse to return.
 func (q *Queries) FindSessionByHash(ctx context.Context, tokenHash string) (RefreshToken, error) {
 	row := q.db.QueryRowContext(ctx, findSessionByHash, tokenHash)
 	var i RefreshToken
@@ -89,9 +110,13 @@ UPDATE refresh_tokens
 SET revoked_at = now(),
     revoked_reason = 'logout'
 WHERE user_id = $1
-    AND revoked_at IS NULL
+    AND expires_at > now()
+    AND (revoked_at IS NULL OR revoked_reason = 'rotated')
 `
 
+// Rotated rows are included, not just live ones: FindLiveSession still accepts
+// a rotated token for the length of the grace window, so skipping them would
+// leave a logged-out user redeemable for another 30 seconds.
 func (q *Queries) RevokeSessionsForUser(ctx context.Context, userID uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, revokeSessionsForUser, userID)
 	return err

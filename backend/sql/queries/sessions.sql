@@ -23,8 +23,17 @@ UPDATE refresh_tokens
 SET revoked_at = now(),
     revoked_reason = 'logout'
 WHERE user_id = $1
-    AND revoked_at IS NULL;
+    AND expires_at > now()
+    AND (revoked_at IS NULL OR revoked_reason = 'rotated');
 
 -- name: FindSessionByHash :one
 SELECT * FROM refresh_tokens
 WHERE token_hash = $1;
+
+-- name: DeleteDeadSessionsForUser :exec
+DELETE FROM refresh_tokens
+WHERE user_id = $1
+    AND (
+        expires_at < now()
+        OR (revoked_at IS NOT NULL AND revoked_at < sqlc.arg(revoked_before))
+      );

@@ -147,10 +147,6 @@ func TestLogoutEndsTheSessionImmediately(t *testing.T) {
 	}
 }
 
-// A token rotates once. Replaying it - two tabs, or a stolen cookie - must
-// not mint a second seven-day session: before this was enforced, five replays
-// produced five independent live sessions that survived the victim rotating
-// their own cookie.
 func TestAReplayedTokenMintsNoSecondSession(t *testing.T) {
 	svc, db, _, first := signUp(t)
 	ctx := context.Background()
@@ -163,7 +159,6 @@ func TestAReplayedTokenMintsNoSecondSession(t *testing.T) {
 		if result.AccessToken == "" {
 			t.Errorf("replay %d returned no access token", i+1)
 		}
-		// Only the first rotation issues a refresh token.
 		if got, want := result.RefreshToken != "", i == 0; got != want {
 			t.Errorf("replay %d issued a refresh token = %v, want %v", i+1, got, want)
 		}
@@ -174,8 +169,6 @@ func TestAReplayedTokenMintsNoSecondSession(t *testing.T) {
 	}
 }
 
-// The same property under a real race, where every caller reads the row as
-// live before any of them revokes it.
 func TestConcurrentRedemptionsRotateOnce(t *testing.T) {
 	svc, db, _, first := signUp(t)
 	ctx := context.Background()
@@ -213,9 +206,76 @@ func TestConcurrentRedemptionsRotateOnce(t *testing.T) {
 	}
 }
 
-// Logging out with a cookie that has already been rotated - an in-flight
-// logout, or a stale tab - must still end the session. Revoking only the
-// presented token would leave its successor alive for a week.
+func TestIssuingASessionCollectsDeadRows(t *testing.T) {
+	svc, db, input, first := signUp(t)
+	ctx := context.Background()
+
+	if _, err := db.Exec(
+		`INSERT INTO refresh_tokens (token_hash, user_id, expires_at)
+		 SELECT 'expired', user_id, now() - interval '1 day' FROM refresh_tokens LIMIT 1`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO refresh_tokens (token_hash, user_id, expires_at, revoked_at, revoked_reason)
+		 SELECT 'stale-rotated', user_id, now() + interval '6 days', now() - interval '1 hour', 'rotated'
+		 FROM refresh_tokens LIMIT 1`); err != nil {
+		t.Fatal(err)
+	}
+
+	count := func() int {
+		var n int
+		if err := db.QueryRow(`SELECT count(*) FROM refresh_tokens`).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	if got := count(); got != 3 {
+		t.Fatalf("rows before = %d, want 3", got)
+	}
+
+	if _, err := svc.RedeemSession(ctx, first); err != nil {
+		t.Fatalf("redeem: %v", err)
+	}
+
+	if got := count(); got != 2 {
+		t.Errorf("rows after = %d, want 2", got)
+	}
+
+	var stale int
+	if err := db.QueryRow(
+		`SELECT count(*) FROM refresh_tokens WHERE token_hash IN ('expired', 'stale-rotated')`).Scan(&stale); err != nil {
+		t.Fatal(err)
+	}
+	if stale != 0 {
+		t.Errorf("%d dead rows survived", stale)
+	}
+
+	login, err := svc.Login(ctx, dtos.LoginRequest{Email: input.Email, Password: input.Password})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.RedeemSession(ctx, login.RefreshToken); err != nil {
+		t.Errorf("a live session from another device was collected: %v", err)
+	}
+}
+
+func TestLogoutClosesTheGraceWindow(t *testing.T) {
+	svc, _, _, first := signUp(t)
+	ctx := context.Background()
+
+	if _, err := svc.RedeemSession(ctx, first); err != nil {
+		t.Fatalf("rotate: %v", err)
+	}
+
+	if err := svc.EndSession(ctx, first); err != nil {
+		t.Fatalf("logout: %v", err)
+	}
+
+	if _, err := svc.RedeemSession(ctx, first); err == nil {
+		t.Error("a rotated token still redeemed after logout")
+	}
+}
+
 func TestLogoutEndsEverySessionEvenFromAStaleToken(t *testing.T) {
 	svc, db, input, first := signUp(t)
 	ctx := context.Background()
@@ -227,7 +287,6 @@ func TestLogoutEndsEverySessionEvenFromAStaleToken(t *testing.T) {
 		t.Fatalf("rotate: %v", err)
 	}
 
-	// first is now the rotated, stale token
 	if err := svc.EndSession(ctx, first); err != nil {
 		t.Fatalf("logout: %v", err)
 	}

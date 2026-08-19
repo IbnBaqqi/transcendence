@@ -58,6 +58,7 @@ func Authenticate(authService *auth.JwtService) func(http.Handler) http.Handler 
 	}
 }
 
+// RequiredAuth rejects the request unless Authenticate attached a user.
 func RequiredAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := auth.UserFromContext(r.Context()); !ok {

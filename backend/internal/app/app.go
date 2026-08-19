@@ -26,6 +26,7 @@ type api struct {
 	AuthConfig   config.AuthConfig
 }
 
+// New wires every service and returns the api they hang off.
 func New(cfg *config.Config, db *database.DB) (*api, error) {
 	files, err := storage.NewLocal(cfg.Upload.Dir)
 	if err != nil {

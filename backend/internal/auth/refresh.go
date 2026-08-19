@@ -31,6 +31,13 @@ func hashSession(raw string) string {
 func (s *Service) IssueSession(ctx context.Context, q *database.Queries, userID uuid.UUID) (string, error) {
 	raw := MakeRefreshToken()
 
+	if err := q.DeleteDeadSessionsForUser(ctx, database.DeleteDeadSessionsForUserParams{
+		UserID:        userID,
+		RevokedBefore: sql.NullTime{Time: time.Now().Add(-RefreshGracePeriod), Valid: true},
+	}); err != nil {
+		return "", err
+	}
+
 	if err := q.StoreSession(ctx, database.StoreSessionParams{
 		TokenHash: hashSession(raw),
 		UserID:    userID,
