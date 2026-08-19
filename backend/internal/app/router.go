@@ -97,6 +97,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/orders", h.CreateOrder)
 			r.Get("/orders", h.GetOrders)
 			r.Get("/orders/{id}", h.GetOrder)
+			r.Get("/orders/{id}/events", h.GetOrderEvents)
 
 			r.Post("/orders/{id}/confirm", h.ConfirmOrder)
 			r.Post("/orders/{id}/handover", h.HandoverOrder)
