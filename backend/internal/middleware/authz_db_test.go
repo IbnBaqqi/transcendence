@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -32,7 +33,7 @@ func adminRouter(t *testing.T, db *database.DB, startingRole string) (func() int
 		t.Fatalf("reading the user back: %v", err)
 	}
 
-	jwt := auth.NewJwtService("test-secret")
+	jwt := auth.NewJwtService("test-secret", time.Hour)
 	token, err := jwt.IssueAccessToken(user)
 	if err != nil {
 		t.Fatalf("issuing a token: %v", err)

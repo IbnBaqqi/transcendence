@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
@@ -14,7 +15,7 @@ func newService(t *testing.T) (*Service, *database.DB) {
 	t.Helper()
 
 	db := testdb.New(t)
-	return NewService(db, NewJwtService("test-secret")), db
+	return NewService(db, NewJwtService("test-secret", time.Minute)), db
 }
 
 func countUsers(t *testing.T, db *database.DB) int {
@@ -141,9 +142,6 @@ func TestSignupRejectsADuplicateUsername(t *testing.T) {
 	}
 }
 
-// The spec says the 409 message names which field clashed. When BOTH clash it
-// can only name one, and which index Postgres reports is not contractual - so
-// this pins the status, not the wording.
 func TestSignupRejectsADuplicateOfBothFields(t *testing.T) {
 	svc, db := newService(t)
 
