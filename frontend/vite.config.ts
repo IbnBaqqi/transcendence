@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     watch: {
       usePolling: true,
-      interval: 25,
+      interval: 300,
     },
     host: true, // listen on 0.0.0.0 so the container is reachable
     port: 5173,

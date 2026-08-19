@@ -7,7 +7,6 @@ type FormProps<T extends FieldValues> = {
   onSubmit: (data: T) => void;
   children: ReactNode;
   className?: string;
-  width?: string;
   isEditing?: boolean;
 };
 
@@ -16,7 +15,6 @@ export function Form<T extends FieldValues>({
   onSubmit,
   children,
   className,
-  width,
   isEditing,
 }: FormProps<T>) {
   return (
@@ -24,7 +22,7 @@ export function Form<T extends FieldValues>({
       <FormContext.Provider value={{ isEditing }}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className={`${className ?? ""} ${width ?? ""}`}
+          className={className}
         >
           {children}
         </form>

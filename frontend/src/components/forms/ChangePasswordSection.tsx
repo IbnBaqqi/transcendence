@@ -22,7 +22,7 @@ export function ChangePasswordSection() {
   // TODO: blocked by #109 Add hooks to save data to backend
 
   return (
-    <Form form={form} onSubmit={handleSubmit} width="max-w-64" isEditing={isEditing}>
+    <Form form={form} onSubmit={handleSubmit} className="max-w-64" isEditing={isEditing}>
       <div className="space-y-2">
         {isEditing ? (
           <>

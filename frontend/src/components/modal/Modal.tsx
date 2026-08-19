@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { type ReactNode, useEffect, useSyncExternalStore } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 type ModalVariant = "dialog" | "floating";
 
@@ -14,12 +14,11 @@ export function Modal({
   className?: string;
   variant?: ModalVariant;
 }) {
-  // avoid SSR mismatch — document.body only exists client-side
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     // "floating" panels stay open while the page is used: no backdrop to
@@ -55,10 +54,11 @@ export function Modal({
   return createPortal(
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
         className={`bg-surface w-full rounded-lg shadow-lg ${className}`}
       >
         {children}

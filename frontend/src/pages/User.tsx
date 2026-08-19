@@ -30,7 +30,7 @@ export default function User() {
         <div className="text-accent my-auto flex flex-col text-base">
           <div className="font-bold">Oscar Rogers</div>
           {/* Hide email depending on preferences */}
-          <Mailto label="oscarroff@example.com" mailto="oscarrogers@example.com" />
+          <Mailto label="oscarrogers@example.com" mailto="oscarrogers@example.com" />
         </div>
       </div>
       {/* If user profile does not match logged in entity then display button */}

@@ -32,7 +32,7 @@ export function ContactDetailsSection() {
   // }
 
   return (
-    <Form form={form} onSubmit={handleSubmit} width="max-w-fit" isEditing={isEditing}>
+    <Form form={form} onSubmit={handleSubmit} className="max-w-fit" isEditing={isEditing}>
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-4">
           <FormField label="First name" name="firstName" />

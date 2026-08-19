@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isApiError } from "../api/client";
 
 export function useFormSubmit<T>(submitFn: (data: T) => Promise<void>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -10,7 +11,13 @@ export function useFormSubmit<T>(submitFn: (data: T) => Promise<void>) {
     try {
       await submitFn(data);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Something went wrong");
+      setSubmitError(
+        isApiError(err)
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Something went wrong",
+      );
     } finally {
       setIsSubmitting(false);
     }
