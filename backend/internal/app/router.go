@@ -24,6 +24,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.Saved,
 		appService.Conversation,
 		appService.User,
+		appService.Profile,
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
 		appService.AuthConfig.CookieSecure,
@@ -59,6 +60,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		r.Get("/listings/{id}", h.GetListing)
 		r.Get("/listings/{id}/images", h.GetListingImages)
 
+		r.Get("/users/{id}", h.GetPublicProfile)
+
 		r.Group(func(r chi.Router) {
 			r.Use(mw.RequiredAuth)
 
@@ -86,6 +89,9 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Patch("/me/settings", h.UpdateSettings)
 			r.Get("/me/unread", h.GetUnreadCount)
 
+			r.Get("/me/profile", h.GetOwnProfile)
+			r.Patch("/me/profile", h.UpdateOwnProfile)
+
 			r.Post("/orders", h.CreateOrder)
 			r.Get("/orders", h.GetOrders)
 			r.Get("/orders/{id}", h.GetOrder)
@@ -95,7 +101,6 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/orders/{id}/receive", h.ReceiveOrder)
 			r.Post("/orders/{id}/cancel", h.CancelOrder)
 			// r.Get("/dashboard", dashboardHandler)
-			// r.Get("/profile", profileHandler)
 		})
 	})
 

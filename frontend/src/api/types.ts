@@ -1,15 +1,118 @@
-// shapes returned by the backend API
-// use `import type { Listing } from "../api/types";` when needed
+// The API contract as the frontend sees it, mirroring backend/internal/dtos.
+// Components import from here and never read raw response fields.
+//
+// No response envelope: endpoints return the payload directly and signal
+// success with the status code. Errors are normalised into ApiError in
+// client.ts.
+
+// Timestamps arrive as ISO 8601 strings; parse where they're displayed.
+export type Timestamp = string;
+
+export interface Paginated<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
+// --- Listings ---
+
+export interface ListingImage {
+  id: number;
+  url: string; // relative: "/uploads/abc.jpg"
+  position: number;
+}
+
 export interface Listing {
   id: number;
+  seller_id: string;
   title: string;
   description: string;
   category: string;
   price: number;
   quantity: number;
   unit: string;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  images: ListingImage[]; // always an array, never null
 }
 
-// NOTE: there is no response envelope. endpoints return the payload directly
-// and signal success/failure through the HTTP status code. errors come back as
-// { error, details } - the interceptor is where this will be normalised
+// --- Orders ---
+
+export type OrderStatus = "pending" | "confirmed" | "completed" | "cancelled";
+
+export interface Order {
+  id: number;
+  listing_id: number;
+  listing_title: string; // snapshotted at order time
+  buyer_id: string;
+  seller_id: string;
+  quantity: number;
+  // The backend sends these as strings ("18.00") while listing price is a
+  // number. Normalised to number in orders.ts.
+  unit_price: number;
+  total_price: number;
+  status: OrderStatus;
+  // Null until that side confirms; both set means completed.
+  seller_handed_over_at: Timestamp | null;
+  buyer_received_at: Timestamp | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+// --- Chat ---
+
+export interface Presence {
+  is_online: boolean;
+  last_seen_at?: Timestamp; // absent when hidden AND when never seen
+}
+
+export interface ChatUser {
+  id: string;
+  username: string;
+  presence: Presence;
+}
+
+export type ConversationStatus = "pending" | "accepted" | "declined";
+export type ConversationRole = "buyer" | "seller";
+
+export interface Conversation {
+  id: number;
+  listing_id: number | null; // null once the listing is deleted
+  listing_title: string;
+  status: ConversationStatus;
+  role: ConversationRole;
+  other_user: ChatUser;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+export interface MessagePreview {
+  body: string;
+  created_at: Timestamp;
+}
+
+export interface ConversationListItem extends Omit<Conversation, "created_at"> {
+  last_message: MessagePreview | null;
+  unread_count: number;
+}
+
+export interface Message {
+  id: number;
+  conversation_id: number;
+  sender_id: string;
+  body: string;
+  read_at?: Timestamp; // absent while unread
+  created_at: Timestamp;
+}
+
+// --- Me ---
+
+export interface UserSettings {
+  show_online_status: boolean;
+}
+
+export interface UnreadCount {
+  unread_count: number;
+}
