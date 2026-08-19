@@ -664,6 +664,110 @@ components:
           type: string
           format: date-time
 
+    # --- profiles --------------------------------------------------------------
+
+    ProfileUpdate:
+      type: object
+      description: |
+        Every field is optional and each accepts three states, so a PATCH can
+        say "leave this alone", "clear it", or "set it" per field:
+
+        | Sent | Effect |
+        |---|---|
+        | key absent | keep the current value |
+        | `null` **or** `""` | clear the field to `null` |
+        | a value | replace it (surrounding whitespace is trimmed) |
+
+        Note `null` and `""` behave the same. RFC 7396 merge-patch would treat
+        `""` as a value; this API treats an empty string as "clear", because a
+        form that submits a cleared input sends `""` rather than `null`.
+
+        Unknown fields are rejected with a 400 - with every field optional, a
+        typo is otherwise indistinguishable from an omission.
+      additionalProperties: false
+      properties:
+        firstname:
+          type: [string, "null"]
+          maxLength: 150
+        lastname:
+          type: [string, "null"]
+          maxLength: 150
+        bio:
+          type: [string, "null"]
+          maxLength: 1000
+        phone_number:
+          type: [string, "null"]
+          maxLength: 15
+        date_of_birth:
+          type: [string, "null"]
+          format: date
+          description: |
+            `YYYY-MM-DD`. Rejected if it is not a plain date, is in the future,
+            or falls before 1900.
+          examples: ["2001-05-14"]
+        location:
+          type: [string, "null"]
+          maxLength: 100
+          description: |
+            Free text, stored on the user's address rather than the profile.
+            This is what the `location` filter on `/listings/search` matches.
+          examples: ["Espoo"]
+
+    OwnProfile:
+      type: object
+      description: |
+        Your own profile. Unset fields are `null` rather than absent, so a form
+        can render an empty input without deciding whether the key exists.
+      required:
+        [id, username, email, firstname, lastname, bio, phone_number, date_of_birth, location]
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        firstname:
+          type: [string, "null"]
+        lastname:
+          type: [string, "null"]
+        bio:
+          type: [string, "null"]
+        phone_number:
+          type: [string, "null"]
+        date_of_birth:
+          type: [string, "null"]
+          format: date
+          examples: ["2001-05-14"]
+        location:
+          type: [string, "null"]
+
+    PublicProfile:
+      type: object
+      description: |
+        Somebody else's profile. `email`, `phone_number` and `date_of_birth`
+        are not blanked here - the shape has no such fields, so they cannot be
+        exposed by an oversight.
+      required: [id, username, firstname, lastname, bio, location, presence]
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        firstname:
+          type: [string, "null"]
+        lastname:
+          type: [string, "null"]
+        bio:
+          type: [string, "null"]
+        location:
+          type: [string, "null"]
+        presence:
+          $ref: "#/components/schemas/Presence"
+
   # Whole reusable responses, not just schemas - status code descriptions we
   # would otherwise retype on all 35 operations.
   responses:
@@ -1284,6 +1388,103 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /me/profile:
+    get:
+      tags: [me]
+      summary: Get your own profile
+      operationId: getOwnProfile
+      responses:
+        "200":
+          description: Your profile, including the fields only you can see.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OwnProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: |
+            The account behind this token no longer exists. Signup creates the
+            profile row, so a missing profile means a missing user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    patch:
+      tags: [me]
+      summary: Update your own profile
+      operationId: updateOwnProfile
+      description: |
+        A partial update: fields you do not mention keep their current value.
+        Both halves are written in one transaction, since `location` lives on
+        the address rather than the profile.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: The profile after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OwnProfile"
+        "400":
+          description: |
+            A malformed body, an unknown field, a value over its limit, a
+            string containing a null byte, or a `date_of_birth` that is not a
+            plain past date after 1900.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [me]
+      summary: Get someone else's public profile
+      operationId: getPublicProfile
+      security: []
+      description: |
+        Public, like the listing reads - a seller's profile should be readable
+        while browsing. `presence` honours that user's `show_online_status`:
+        with it off, the response is `{"is_online": false}` with no
+        `last_seen_at`, identical to a user who has never been seen.
+      responses:
+        "200":
+          description: The public view of that profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicProfile"
+        "400":
+          description: The id is not a uuid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
