@@ -4,15 +4,18 @@ import { z } from "zod";
 
 export const usernameSchema = z
   .string()
+  .trim()
   .min(1, "Username is required")
   .max(50, "Username must be less than 50 characters");
 export const emailSchema = z
   .string()
+  .trim()
   .min(1, "Email is required")
   .max(150, "Email must be less than 150 characters")
   .email("Invalid email address");
 export const nameSchema = z
   .string()
+  .trim()
   .min(1, "Name is required")
   .max(64, "Name must be less than 64 characters");
 export const passwordSchema = z
@@ -29,23 +32,26 @@ export const phoneSchema = z
 // stricter one for multibyte text, so the refine below enforces it too.
 export const titleSchema = z
   .string()
+  .trim()
   .min(1, "Title is required")
   .max(64, "Title is too long")
   .refine((t) => new TextEncoder().encode(t).length <= 100, {
     message: "Title must be under 100 bytes",
   });
 // NOTE: Backend imposes no length limit on description; 1024 here is a UI-only cap
-export const descriptionSchema = z.string().max(1024, "Description is too long");
+export const descriptionSchema = z.string().trim().max(1024, "Description is too long");
 export const categorySchema = z
   .string()
+  .trim()
   .min(1, "Category is required")
   .max(50, "Category name is too long");
 export const priceSchema = z.number("Price is required").positive("Needs a valid price");
 export const quantitySchema = z.int32("Quantity is required").positive("Needs a valid quantity");
-export const unitSchema = z.string().min(1, "Unit is required").max(20, "Unit too long");
+export const unitSchema = z.string().trim().min(1, "Unit is required").max(20, "Unit too long");
 
 export const locationSchema = z
   .string()
+  .trim()
   .min(1, "Location is required")
   .max(64, "Location name is too long")
   .regex(/^[\p{L}\s.'-]+$/u, "Invalid location");
