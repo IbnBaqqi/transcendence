@@ -121,6 +121,18 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 	return i, err
 }
 
+const getUserRole = `-- name: GetUserRole :one
+SELECT role FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetUserRole(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRowContext(ctx, getUserRole, id)
+	var role string
+	err := row.Scan(&role)
+	return role, err
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status FROM users
 ORDER BY created_at DESC

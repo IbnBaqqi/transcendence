@@ -46,3 +46,7 @@ RETURNING *;
 SELECT
     EXISTS(SELECT 1 FROM users u WHERE u.email = sqlc.arg(email))       AS email_taken,
     EXISTS(SELECT 1 FROM users u WHERE u.username = sqlc.arg(username)) AS username_taken;
+
+-- name: GetUserRole :one
+SELECT role FROM users
+WHERE id = $1;
