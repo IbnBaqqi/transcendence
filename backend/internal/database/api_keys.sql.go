@@ -13,21 +13,21 @@ import (
 	"github.com/google/uuid"
 )
 
-const createAPIKey = `-- name: CreateAPIKey :one
+const createKey = `-- name: CreateKey :one
 INSERT INTO api_keys (user_id, name, key_hash, key_prefix)
 VALUES ($1, $2, $3, $4)
 RETURNING id, user_id, name, key_hash, key_prefix, last_used_at, revoked_at, created_at
 `
 
-type CreateAPIKeyParams struct {
+type CreateKeyParams struct {
 	UserID    uuid.UUID
 	Name      string
 	KeyHash   string
 	KeyPrefix string
 }
 
-func (q *Queries) CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error) {
-	row := q.db.QueryRowContext(ctx, createAPIKey,
+func (q *Queries) CreateKey(ctx context.Context, arg CreateKeyParams) (ApiKey, error) {
+	row := q.db.QueryRowContext(ctx, createKey,
 		arg.UserID,
 		arg.Name,
 		arg.KeyHash,
@@ -53,8 +53,6 @@ WHERE key_hash = $1
     AND revoked_at IS NULL
 `
 
-// Revoked keys are filtered here rather than in Go, so a second caller cannot
-// forget the rule.
 func (q *Queries) FindLiveKeyByHash(ctx context.Context, keyHash string) (ApiKey, error) {
 	row := q.db.QueryRowContext(ctx, findLiveKeyByHash, keyHash)
 	var i ApiKey
@@ -71,14 +69,14 @@ func (q *Queries) FindLiveKeyByHash(ctx context.Context, keyHash string) (ApiKey
 	return i, err
 }
 
-const listAPIKeysForUser = `-- name: ListAPIKeysForUser :many
+const listKeysForUser = `-- name: ListKeysForUser :many
 SELECT id, user_id, name, key_prefix, last_used_at, revoked_at, created_at
 FROM api_keys
 WHERE user_id = $1
 ORDER BY created_at DESC
 `
 
-type ListAPIKeysForUserRow struct {
+type ListKeysForUserRow struct {
 	ID         int32
 	UserID     uuid.UUID
 	Name       string
@@ -88,17 +86,15 @@ type ListAPIKeysForUserRow struct {
 	CreatedAt  time.Time
 }
 
-// Columns named deliberately: a SELECT * would put key_hash in the generated
-// struct, one careless DTO change away from a response body.
-func (q *Queries) ListAPIKeysForUser(ctx context.Context, userID uuid.UUID) ([]ListAPIKeysForUserRow, error) {
-	rows, err := q.db.QueryContext(ctx, listAPIKeysForUser, userID)
+func (q *Queries) ListKeysForUser(ctx context.Context, userID uuid.UUID) ([]ListKeysForUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, listKeysForUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListAPIKeysForUserRow
+	var items []ListKeysForUserRow
 	for rows.Next() {
-		var i ListAPIKeysForUserRow
+		var i ListKeysForUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -121,7 +117,7 @@ func (q *Queries) ListAPIKeysForUser(ctx context.Context, userID uuid.UUID) ([]L
 	return items, nil
 }
 
-const revokeAPIKey = `-- name: RevokeAPIKey :execrows
+const revokeKey = `-- name: RevokeKey :execrows
 UPDATE api_keys
 SET revoked_at = now()
 WHERE id = $1
@@ -129,30 +125,26 @@ WHERE id = $1
     AND revoked_at IS NULL
 `
 
-type RevokeAPIKeyParams struct {
+type RevokeKeyParams struct {
 	ID     int32
 	UserID uuid.UUID
 }
 
-// Scoped to the owner: without the user_id clause, DELETE /me/api-keys/1 would
-// switch off a stranger's integration.
-func (q *Queries) RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) (int64, error) {
-	result, err := q.db.ExecContext(ctx, revokeAPIKey, arg.ID, arg.UserID)
+func (q *Queries) RevokeKey(ctx context.Context, arg RevokeKeyParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, revokeKey, arg.ID, arg.UserID)
 	if err != nil {
 		return 0, err
 	}
 	return result.RowsAffected()
 }
 
-const touchAPIKey = `-- name: TouchAPIKey :exec
+const touchKey = `-- name: TouchKey :exec
 UPDATE api_keys
 SET last_used_at = now()
 WHERE id = $1
 `
 
-// By id, not by hash: the key has already been looked up by the time this
-// runs, so there is no reason to hash and search again.
-func (q *Queries) TouchAPIKey(ctx context.Context, id int32) error {
-	_, err := q.db.ExecContext(ctx, touchAPIKey, id)
+func (q *Queries) TouchKey(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, touchKey, id)
 	return err
 }
