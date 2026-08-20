@@ -75,8 +75,8 @@ func TestDuplicateUserError(t *testing.T) {
 		err     error
 		wantMsg string
 	}{
-		{"username taken", &pq.Error{Code: "23505", Constraint: "users_username_uq"}, "username already taken"},
-		{"email taken", &pq.Error{Code: "23505", Constraint: "users_email_uq"}, "email already in use"},
+		{"username taken", &pq.Error{Code: "23505", Constraint: "users_username_lower_uq"}, "username already taken"},
+		{"email taken", &pq.Error{Code: "23505", Constraint: "users_email_lower_uq"}, "email already in use"},
 		{"some other unique index", &pq.Error{Code: "23505", Constraint: "listings_pkey"}, ""},
 		{"a different pq error", &pq.Error{Code: "22001"}, ""},
 		{"not a pq error at all", errors.New("boom"), ""},

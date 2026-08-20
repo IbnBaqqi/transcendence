@@ -203,8 +203,8 @@ func passwordTooLong(limit int) string {
 }
 
 const (
-	usernameConstraint = "users_username_uq"
-	emailConstraint    = "users_email_uq"
+	usernameConstraint = "users_username_lower_uq"
+	emailConstraint    = "users_email_lower_uq"
 )
 
 func duplicateUserError(err error) error {
