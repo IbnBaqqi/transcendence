@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/lib/pq"
@@ -44,6 +45,8 @@ func signupFailed(step string, err error) error {
 }
 
 func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (SignupResponse, error) {
+	input = normalizeSignupInput(input)
+
 	if err := validateSignupInput(input); err != nil {
 		return SignupResponse{}, err
 	}
@@ -117,6 +120,8 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 }
 
 func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResult, error) {
+	input.Email = strings.TrimSpace(input.Email)
+
 	if input.Email == "" || input.Password == "" {
 		return LoginResult{}, &ValidationError{Message: "email and password are required"}
 	}
@@ -159,6 +164,12 @@ const (
 	usernameTakenMessage = "username already taken"
 )
 
+func normalizeSignupInput(in dtos.CreateUserRequest) dtos.CreateUserRequest {
+	in.Username = strings.TrimSpace(in.Username)
+	in.Email = strings.TrimSpace(in.Email)
+	return in
+}
+
 func validateSignupInput(input dtos.CreateUserRequest) error {
 	if input.Username == "" {
 		return &ValidationError{Message: "username is required"}
@@ -192,8 +203,8 @@ func passwordTooLong(limit int) string {
 }
 
 const (
-	usernameConstraint = "users_username_uq"
-	emailConstraint    = "users_email_uq"
+	usernameConstraint = "users_username_lower_uq"
+	emailConstraint    = "users_email_lower_uq"
 )
 
 func duplicateUserError(err error) error {

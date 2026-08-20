@@ -18,6 +18,24 @@ func signupInput(name string) dtos.CreateUserRequest {
 	}
 }
 
+func TestNormalizeSignupInput(t *testing.T) {
+	got := normalizeSignupInput(dtos.CreateUserRequest{
+		Username: "  aino  ",
+		Email:    "  Aino@Example.test  ",
+		Password: "  pass word  ",
+	})
+
+	if got.Username != "aino" {
+		t.Errorf("username = %q, want %q", got.Username, "aino")
+	}
+	if got.Email != "Aino@Example.test" {
+		t.Errorf("email = %q, want %q", got.Email, "Aino@Example.test")
+	}
+	if got.Password != "  pass word  " {
+		t.Errorf("password = %q, want it untouched", got.Password)
+	}
+}
+
 func TestValidateSignupInput(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -42,6 +60,12 @@ func TestValidateSignupInput(t *testing.T) {
 		{"password at the ceiling", func(i *dtos.CreateUserRequest) { i.Password = strings.Repeat("a", 72) }, ""},
 		{"password over the ceiling", func(i *dtos.CreateUserRequest) { i.Password = strings.Repeat("a", 73) }, "password must be 72 bytes or fewer"},
 		{"multi-byte password over the BYTE ceiling", func(i *dtos.CreateUserRequest) { i.Password = strings.Repeat("ä", 37) }, "password must be 72 bytes or fewer"},
+
+		{"whitespace-only username", func(i *dtos.CreateUserRequest) { i.Username = "   " }, "username is required"},
+		{"whitespace-only email", func(i *dtos.CreateUserRequest) { i.Email = "  " }, "email is required"},
+		{"padding does not count toward the limit", func(i *dtos.CreateUserRequest) {
+			i.Username = "  " + strings.Repeat("a", 50) + "  "
+		}, ""},
 	}
 
 	for _, tt := range tests {
@@ -49,7 +73,7 @@ func TestValidateSignupInput(t *testing.T) {
 			input := signupInput("valid")
 			tt.mutate(&input)
 
-			err := validateSignupInput(input)
+			err := validateSignupInput(normalizeSignupInput(input))
 
 			if tt.wantMsg == "" {
 				if err != nil {
@@ -75,8 +99,8 @@ func TestDuplicateUserError(t *testing.T) {
 		err     error
 		wantMsg string
 	}{
-		{"username taken", &pq.Error{Code: "23505", Constraint: "users_username_uq"}, "username already taken"},
-		{"email taken", &pq.Error{Code: "23505", Constraint: "users_email_uq"}, "email already in use"},
+		{"username taken", &pq.Error{Code: "23505", Constraint: "users_username_lower_uq"}, "username already taken"},
+		{"email taken", &pq.Error{Code: "23505", Constraint: "users_email_lower_uq"}, "email already in use"},
 		{"some other unique index", &pq.Error{Code: "23505", Constraint: "listings_pkey"}, ""},
 		{"a different pq error", &pq.Error{Code: "22001"}, ""},
 		{"not a pq error at all", errors.New("boom"), ""},

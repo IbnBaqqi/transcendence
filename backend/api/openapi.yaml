@@ -284,12 +284,18 @@ components:
         username:
           type: string
           maxLength: 50
-          description: Counted in bytes, not characters.
+          description: |
+            Counted in characters, not bytes, and after trimming — surrounding
+            whitespace is stripped and does not count toward the limit, so a
+            padded 50-character name is accepted. Stored as typed; uniqueness
+            ignores case, so `Forager` and `forager` are one account.
           examples: ["forager42"]
         email:
           type: string
           format: email
           maxLength: 150
+          description: |
+            Trimmed, stored as typed, and unique ignoring case.
           examples: ["forager@example.com"]
         password:
           type: string
@@ -309,6 +315,10 @@ components:
         email:
           type: string
           format: email
+          description: |
+            Matched ignoring case and surrounding whitespace, so it need not be
+            typed the way it was at signup. The password is matched exactly —
+            spaces in it are significant.
         password:
           type: string
           format: password
@@ -447,13 +457,22 @@ components:
           type: integer
           format: int32
         unit_price:
-          # A STRING, unlike Listing.price. NUMERIC comes out of the driver as
-          # a string and the order code keeps it that way to avoid float error.
-          type: string
-          examples: ["18.50"]
+          type: number
+          format: double
+          description: |
+            Price per unit, snapshotted when the order was placed, so the order
+            still reads correctly after the listing is repriced.
+
+            Stored as `NUMERIC(10,2)` and converted only on the way out —
+            `total_price` is multiplied by Postgres in exact decimal, never in
+            Go. Trailing zeroes are not preserved: 18.50 is sent as 18.5, and
+            74.00 as 74. Format for display client-side.
+          examples: [18.5]
         total_price:
-          type: string
-          examples: ["74.00"]
+          type: number
+          format: double
+          description: unit_price × quantity, computed in the database.
+          examples: [74]
         status:
           $ref: "#/components/schemas/OrderStatus"
         seller_handed_over_at:
@@ -966,8 +985,10 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "409":
           description: |
-            That email or username is already taken. Both are unique, and the
-            message says which.
+            That email or username is already taken. Both are unique **ignoring
+            case and surrounding whitespace** — `Forager`, `forager` and
+            ` forager ` are the same account — and the message says which
+            clashed.
           content:
             application/json:
               schema:
