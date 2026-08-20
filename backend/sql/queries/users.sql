@@ -20,6 +20,9 @@ VALUES (
 RETURNING *;
 
 -- name: UpdateUser :exec
+-- No callers today. Whoever wires "edit profile" must normalise first the way
+-- normalizeSignupInput does, or padded and case-variant names get back in
+-- through this door.
 UPDATE users
 SET username = $2,
 	email = $3,

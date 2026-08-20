@@ -219,6 +219,34 @@ func TestTheUniqueIndexIsTheBackstop(t *testing.T) {
 	}
 }
 
+func TestTheEmailIndexIsTheBackstop(t *testing.T) {
+	svc, db := newService(t)
+	ctx := context.Background()
+
+	first := signupInput("aino")
+	first.Email = "Aino@Example.test"
+	if _, err := svc.Signup(ctx, first); err != nil {
+		t.Fatalf("first signup failed: %v", err)
+	}
+
+	_, err := db.Queries.CreateUser(ctx, database.CreateUserParams{
+		Username: "someoneelse",
+		Email:    "aino@example.test",
+		Password: "irrelevant",
+	})
+	if err == nil {
+		t.Fatal("the index let a case-variant email through")
+	}
+
+	var conflict *ConflictError
+	if !errors.As(duplicateUserError(err), &conflict) {
+		t.Fatalf("err = %v, want it mapped to *ConflictError - unmapped is a 500", err)
+	}
+	if conflict.Message != "email already in use" {
+		t.Errorf("message = %q, want %q", conflict.Message, "email already in use")
+	}
+}
+
 func TestLoginAcceptsADifferentlyCasedEmail(t *testing.T) {
 	svc, _ := newService(t)
 	ctx := context.Background()
@@ -243,12 +271,13 @@ func TestSignupStoresTheTrimmedValueWithCaseIntact(t *testing.T) {
 	in := signupInput("ignored")
 	in.Username = "  Aino  "
 	in.Email = "  Aino@Example.test  "
-	if _, err := svc.Signup(context.Background(), in); err != nil {
+	res, err := svc.Signup(context.Background(), in)
+	if err != nil {
 		t.Fatalf("signup failed: %v", err)
 	}
 
 	var name, email string
-	if err := db.QueryRow(`SELECT username, email FROM users`).Scan(&name, &email); err != nil {
+	if err := db.QueryRow(`SELECT username, email FROM users WHERE id = $1`, res.User.ID).Scan(&name, &email); err != nil {
 		t.Fatal(err)
 	}
 	if name != "Aino" {

@@ -226,6 +226,9 @@ type UpdateUserParams struct {
 	Email    string
 }
 
+// No callers today. Whoever wires "edit profile" must normalise first the way
+// normalizeSignupInput does, or padded and case-variant names get back in
+// through this door.
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 	_, err := q.db.ExecContext(ctx, updateUser, arg.ID, arg.Username, arg.Email)
 	return err

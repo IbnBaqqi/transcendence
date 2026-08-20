@@ -1,9 +1,9 @@
 -- +goose Up
 UPDATE users
-SET username = trim(username),
-    email = trim(email)
-WHERE username <> trim(username)
-    OR email <> trim(email);
+SET username = btrim(username, E' \t\n\r\v\f\u00a0'),
+    email = btrim(email, E' \t\n\r\v\f\u00a0')
+WHERE username <> btrim(username, E' \t\n\r\v\f\u00a0')
+    OR email <> btrim(email, E' \t\n\r\v\f\u00a0');
 
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_username_uq;
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_uq;
