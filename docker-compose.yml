@@ -17,6 +17,20 @@ services:
       timeout: 5s
       retries: 5
 
+  # --- adminer (browser UI for the database, dev only) ---
+  adminer:
+    image: adminer:6                   # track the major, like postgres:16-alpine and
+                                       # node:20-alpine: patches arrive on pull, a
+                                       # breaking major still needs a deliberate edit
+    profiles: [tools]                  # opt-in: won't start on a plain `docker compose up`
+    environment:
+      ADMINER_DEFAULT_SERVER: db       # pre-fills the "Server" box with the service name
+    ports:
+      - "127.0.0.1:8081:8080"          # adminer listens on 8080 inside; 8080 is the backend's
+    depends_on:
+      db:
+        condition: service_healthy     # same wait the backend uses
+
   # --- backend (Go) ---
   backend:
     image: golang:1.26.3-alpine
