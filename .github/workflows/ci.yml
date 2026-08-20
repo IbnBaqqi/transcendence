@@ -76,7 +76,16 @@ jobs:
       - name: Check linting
         uses: dominikh/staticcheck-action@v1
         with:
-          version: "latest"
+          # Pinned, not "latest": a new release can add checks that fail a
+          # commit nobody touched.
+          version: "2026.1"
+          # The action installs Go "stable" by default, which overrides the
+          # version pinned above. When Go 1.27 became stable, staticcheck could
+          # no longer decode the standard library ("export data version 4 is
+          # greater than maximum supported version 2") and every run failed.
+          # A staticcheck release only supports the Go minor current at its
+          # time, so it has to use ours.
+          install-go: "false"
           working-directory: backend
 
   frontend:
