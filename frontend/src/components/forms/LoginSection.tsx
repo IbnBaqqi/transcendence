@@ -21,7 +21,7 @@ export function LoginSection({ onClose }: { onClose: () => void }) {
     <Form form={form} onSubmit={handleSubmit} isEditing={true}>
       <div className="space-y-4">
         <div className="space-y-2">
-          <FormField label="Username / Email" name="email" validateOnChange />
+          <FormField label="Email" name="email" validateOnChange />
           <FormField label="Password" name="password" type="password" validateOnChange />
         </div>
         <div className="flex flex-row gap-2">
