@@ -220,12 +220,18 @@ components:
         username:
           type: string
           maxLength: 50
-          description: Counted in bytes, not characters.
+          description: |
+            Counted in characters, not bytes, and after trimming — surrounding
+            whitespace is stripped and does not count toward the limit, so a
+            padded 50-character name is accepted. Stored as typed; uniqueness
+            ignores case, so `Forager` and `forager` are one account.
           examples: ["forager42"]
         email:
           type: string
           format: email
           maxLength: 150
+          description: |
+            Trimmed, stored as typed, and unique ignoring case.
           examples: ["forager@example.com"]
         password:
           type: string
@@ -245,6 +251,10 @@ components:
         email:
           type: string
           format: email
+          description: |
+            Matched ignoring case and surrounding whitespace, so it need not be
+            typed the way it was at signup. The password is matched exactly —
+            spaces in it are significant.
         password:
           type: string
           format: password
@@ -893,8 +903,10 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "409":
           description: |
-            That email or username is already taken. Both are unique, and the
-            message says which.
+            That email or username is already taken. Both are unique **ignoring
+            case and surrounding whitespace** — `Forager`, `forager` and
+            ` forager ` are the same account — and the message says which
+            clashed.
           content:
             application/json:
               schema:

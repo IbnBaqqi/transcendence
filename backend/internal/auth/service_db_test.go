@@ -142,6 +142,152 @@ func TestSignupRejectsADuplicateUsername(t *testing.T) {
 	}
 }
 
+func TestSignupRejectsACaseVariantUsername(t *testing.T) {
+	svc, db := newService(t)
+
+	first := signupInput("forager")
+	first.Username = "Forager"
+	if _, err := svc.Signup(context.Background(), first); err != nil {
+		t.Fatalf("first signup failed: %v", err)
+	}
+
+	before := countUsers(t, db)
+
+	second := signupInput("forager")
+	second.Username = "forager"
+	second.Email = "someone.else@example.test"
+
+	_, err := svc.Signup(context.Background(), second)
+
+	var conflict *ConflictError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("err = %v, want *ConflictError", err)
+	}
+	if conflict.Message != "username already taken" {
+		t.Errorf("message = %q, want %q", conflict.Message, "username already taken")
+	}
+	if after := countUsers(t, db); after != before {
+		t.Errorf("users = %d, want %d", after, before)
+	}
+}
+
+func TestSignupRejectsACaseVariantEmail(t *testing.T) {
+	svc, _ := newService(t)
+
+	first := signupInput("aino")
+	first.Email = "Aino@Example.test"
+	if _, err := svc.Signup(context.Background(), first); err != nil {
+		t.Fatalf("first signup failed: %v", err)
+	}
+
+	second := signupInput("someoneelse")
+	second.Email = "aino@example.test"
+
+	_, err := svc.Signup(context.Background(), second)
+
+	var conflict *ConflictError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("err = %v, want *ConflictError", err)
+	}
+	if conflict.Message != "email already in use" {
+		t.Errorf("message = %q, want %q", conflict.Message, "email already in use")
+	}
+}
+
+func TestTheUniqueIndexIsTheBackstop(t *testing.T) {
+	svc, db := newService(t)
+	ctx := context.Background()
+
+	first := signupInput("forager")
+	first.Username = "Forager"
+	if _, err := svc.Signup(ctx, first); err != nil {
+		t.Fatalf("first signup failed: %v", err)
+	}
+
+	_, err := db.Queries.CreateUser(ctx, database.CreateUserParams{
+		Username: "forager",
+		Email:    "someone.else@example.test",
+		Password: "irrelevant",
+	})
+	if err == nil {
+		t.Fatal("the index let a case-variant username through")
+	}
+
+	var conflict *ConflictError
+	if !errors.As(duplicateUserError(err), &conflict) {
+		t.Fatalf("err = %v, want it mapped to *ConflictError - unmapped is a 500", err)
+	}
+}
+
+func TestTheEmailIndexIsTheBackstop(t *testing.T) {
+	svc, db := newService(t)
+	ctx := context.Background()
+
+	first := signupInput("aino")
+	first.Email = "Aino@Example.test"
+	if _, err := svc.Signup(ctx, first); err != nil {
+		t.Fatalf("first signup failed: %v", err)
+	}
+
+	_, err := db.Queries.CreateUser(ctx, database.CreateUserParams{
+		Username: "someoneelse",
+		Email:    "aino@example.test",
+		Password: "irrelevant",
+	})
+	if err == nil {
+		t.Fatal("the index let a case-variant email through")
+	}
+
+	var conflict *ConflictError
+	if !errors.As(duplicateUserError(err), &conflict) {
+		t.Fatalf("err = %v, want it mapped to *ConflictError - unmapped is a 500", err)
+	}
+	if conflict.Message != "email already in use" {
+		t.Errorf("message = %q, want %q", conflict.Message, "email already in use")
+	}
+}
+
+func TestLoginAcceptsADifferentlyCasedEmail(t *testing.T) {
+	svc, _ := newService(t)
+	ctx := context.Background()
+
+	in := signupInput("aino")
+	in.Email = "Aino@Example.test"
+	if _, err := svc.Signup(ctx, in); err != nil {
+		t.Fatalf("signup failed: %v", err)
+	}
+
+	if _, err := svc.Login(ctx, dtos.LoginRequest{
+		Email:    "  aino@example.TEST  ",
+		Password: in.Password,
+	}); err != nil {
+		t.Errorf("login failed: %v", err)
+	}
+}
+
+func TestSignupStoresTheTrimmedValueWithCaseIntact(t *testing.T) {
+	svc, db := newService(t)
+
+	in := signupInput("ignored")
+	in.Username = "  Aino  "
+	in.Email = "  Aino@Example.test  "
+	res, err := svc.Signup(context.Background(), in)
+	if err != nil {
+		t.Fatalf("signup failed: %v", err)
+	}
+
+	var name, email string
+	if err := db.QueryRow(`SELECT username, email FROM users WHERE id = $1`, res.User.ID).Scan(&name, &email); err != nil {
+		t.Fatal(err)
+	}
+	if name != "Aino" {
+		t.Errorf("username = %q, want %q", name, "Aino")
+	}
+	if email != "Aino@Example.test" {
+		t.Errorf("email = %q, want %q", email, "Aino@Example.test")
+	}
+}
+
 func TestSignupRejectsADuplicateOfBothFields(t *testing.T) {
 	svc, db := newService(t)
 

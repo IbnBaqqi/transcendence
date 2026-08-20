@@ -54,8 +54,8 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 
 const emailOrUsernameTaken = `-- name: EmailOrUsernameTaken :one
 SELECT
-    EXISTS(SELECT 1 FROM users u WHERE u.email = $1)       AS email_taken,
-    EXISTS(SELECT 1 FROM users u WHERE u.username = $2) AS username_taken
+    EXISTS(SELECT 1 FROM users u WHERE lower(u.email) = lower($1))       AS email_taken,
+    EXISTS(SELECT 1 FROM users u WHERE lower(u.username) = lower($2)) AS username_taken
 `
 
 type EmailOrUsernameTakenParams struct {
@@ -100,7 +100,7 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status FROM users
-WHERE email = $1
+WHERE lower(email) = lower($1)
 LIMIT 1
 `
 
@@ -226,6 +226,9 @@ type UpdateUserParams struct {
 	Email    string
 }
 
+// No callers today. Whoever wires "edit profile" must normalise first the way
+// normalizeSignupInput does, or padded and case-variant names get back in
+// through this door.
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 	_, err := q.db.ExecContext(ctx, updateUser, arg.ID, arg.Username, arg.Email)
 	return err
