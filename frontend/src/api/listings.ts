@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "./client";
 import { keys } from "./queryKeys";
@@ -66,5 +66,40 @@ export function useListingImages(id: number) {
     queryKey: keys.listings.images(id),
     queryFn: async () => (await api.get<ListingImage[]>(`/listings/${id}/images`)).data ?? [],
     enabled: Number.isInteger(id) && id > 0,
+  });
+}
+
+async function uploadListingImage(listingId: number, file: File): Promise<ListingImage> {
+  const body = new FormData();
+  body.append("image", file);
+  const res = await api.post<ListingImage>(`/listings/${listingId}/images`, body);
+  return res.data;
+}
+
+export function useUploadListingImage(listingId: number | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => uploadListingImage(listingId as number, file),
+    onSuccess: () => {
+      const id = listingId as number;
+      queryClient.invalidateQueries({ queryKey: keys.listings.images(id) });
+      queryClient.invalidateQueries({ queryKey: keys.listings.detail(id) });
+    },
+  });
+}
+
+async function deleteListingImage(listingId: number, imageId: number): Promise<void> {
+  await api.delete(`/listings/${listingId}/images/${imageId}`);
+}
+
+export function useDeleteListingImage(listingId: number | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (imageId: number) => deleteListingImage(listingId as number, imageId),
+    onSuccess: () => {
+      const id = listingId as number;
+      queryClient.invalidateQueries({ queryKey: keys.listings.images(id) });
+      queryClient.invalidateQueries({ queryKey: keys.listings.detail(id) });
+    },
   });
 }

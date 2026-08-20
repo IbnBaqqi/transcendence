@@ -8,6 +8,7 @@ type FormFieldProps = {
   placeholder?: string;
   isEditing?: boolean;
   width?: string;
+  validateOnChange?: boolean;
 };
 
 export function FormField({
@@ -17,10 +18,12 @@ export function FormField({
   placeholder,
   isEditing: isEditingProp,
   width: widthProp,
+  validateOnChange,
 }: FormFieldProps) {
   const {
     register,
     watch,
+    trigger,
     formState: { errors },
   } = useFormContext();
   const { isEditing: ctxEditing } = useFormConfig();
@@ -31,8 +34,13 @@ export function FormField({
   const error = errors[name];
   const value = watch(name) ?? "";
 
+  const { onChange: rhfOnChange, ...registerRest } = register(
+    name,
+    type === "number" ? { valueAsNumber: true } : undefined,
+  );
+
   return (
-    <div className="">
+    <div className="flex flex-col gap-1.5">
       {label && <label htmlFor={name}>{label}</label>}
       {isEditing ? (
         <>
@@ -41,9 +49,20 @@ export function FormField({
             id={name}
             type={type}
             placeholder={placeholder}
-            {...register(name)}
+            {...registerRest}
+            onChange={(e) => {
+              rhfOnChange(e);
+              if (validateOnChange) trigger(name);
+            }}
+            onKeyDown={
+              type === "number"
+                ? (e) => {
+                    if (e.key === "e" || e.key === "E") e.preventDefault();
+                  }
+                : undefined
+            }
           />
-          {error && <span className="text-berry-500">{error.message as string}</span>}
+          {error && <span className="text-berry-500 text-xs">{error.message as string}</span>}
         </>
       ) : (
         <span>{value}</span>
