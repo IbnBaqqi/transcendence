@@ -48,23 +48,35 @@ func (q *Queries) CreateKey(ctx context.Context, arg CreateKeyParams) (ApiKey, e
 }
 
 const findLiveKeyByHash = `-- name: FindLiveKeyByHash :one
-SELECT id, user_id, name, key_hash, key_prefix, last_used_at, revoked_at, created_at FROM api_keys
-WHERE key_hash = $1
-    AND revoked_at IS NULL
+SELECT
+    api_keys.id,
+    api_keys.user_id,
+    users.username,
+    users.role
+FROM api_keys
+JOIN users ON users.id = api_keys.user_id
+WHERE api_keys.key_hash = $1
+    AND api_keys.revoked_at IS NULL
 `
 
-func (q *Queries) FindLiveKeyByHash(ctx context.Context, keyHash string) (ApiKey, error) {
+type FindLiveKeyByHashRow struct {
+	ID       int32
+	UserID   uuid.UUID
+	Username string
+	Role     string
+}
+
+// Joined rather than a second GetUser: the middleware needs the owner's
+// identity on every request, and this also means the role is read fresh each
+// time rather than cached in a credential.
+func (q *Queries) FindLiveKeyByHash(ctx context.Context, keyHash string) (FindLiveKeyByHashRow, error) {
 	row := q.db.QueryRowContext(ctx, findLiveKeyByHash, keyHash)
-	var i ApiKey
+	var i FindLiveKeyByHashRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.Name,
-		&i.KeyHash,
-		&i.KeyPrefix,
-		&i.LastUsedAt,
-		&i.RevokedAt,
-		&i.CreatedAt,
+		&i.Username,
+		&i.Role,
 	)
 	return i, err
 }

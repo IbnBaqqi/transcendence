@@ -40,7 +40,7 @@ func adminRouter(t *testing.T, db *database.DB, startingRole string) (func() int
 	}
 
 	r := chi.NewRouter()
-	r.Use(mw.Authenticate(jwt))
+	r.Use(mw.Authenticate(jwt, nil))
 	r.Group(func(r chi.Router) {
 		r.Use(mw.RequiredAuth)
 		r.Use(mw.RequireRole(db.Queries, auth.RoleAdmin))

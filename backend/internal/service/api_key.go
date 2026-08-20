@@ -11,6 +11,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/IbnBaqqi/transcendence/internal/auth"
+
 	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
@@ -72,19 +74,20 @@ func (s *APIKeyService) Revoke(ctx context.Context, userID uuid.UUID, id int32) 
 	return nil
 }
 
-func (s *APIKeyService) Authenticate(ctx context.Context, raw string) (database.ApiKey, error) {
+func (s *APIKeyService) Authenticate(ctx context.Context, raw string) (int32, auth.User, error) {
 	if !strings.HasPrefix(raw, KeyPrefix) {
-		return database.ApiKey{}, ErrKeyNotUsable
+		return 0, auth.User{}, ErrKeyNotUsable
 	}
 
-	key, err := s.db.FindLiveKeyByHash(ctx, hashKey(raw))
+	row, err := s.db.FindLiveKeyByHash(ctx, hashKey(raw))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return database.ApiKey{}, ErrKeyNotUsable
+			return 0, auth.User{}, ErrKeyNotUsable
 		}
-		return database.ApiKey{}, err
+		return 0, auth.User{}, err
 	}
-	return key, nil
+
+	return row.ID, auth.User{ID: row.UserID, Name: row.Username, Role: row.Role}, nil
 }
 
 var ErrKeyNotUsable = errors.New("api key is not usable")

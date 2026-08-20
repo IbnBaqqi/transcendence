@@ -25,7 +25,7 @@ func authRouter(t *testing.T) http.Handler {
 		service.NewUserService(db.Queries), nil, nil, nil, 0, true)
 
 	r := chi.NewRouter()
-	r.Use(mw.Authenticate(jwt))
+	r.Use(mw.Authenticate(jwt, nil))
 	r.Post("/auth/signup", h.Signup)
 	r.Post("/auth/refresh", h.Refresh)
 	r.Post("/auth/logout", h.Logout)

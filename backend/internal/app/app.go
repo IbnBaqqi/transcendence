@@ -20,13 +20,13 @@ type api struct {
 	User         *service.UserService
 	Profile      *service.ProfileService
 	Follow       *service.FollowService
+	APIKey       *service.APIKeyService
 	ListingImage *service.ListingImageService
 	Files        *storage.Local
 	Upload       config.UploadConfig
 	AuthConfig   config.AuthConfig
 }
 
-// New wires every service and returns the api they hang off.
 func New(cfg *config.Config, db *database.DB) (*api, error) {
 	files, err := storage.NewLocal(cfg.Upload.Dir)
 	if err != nil {
@@ -42,6 +42,7 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 	userService := service.NewUserService(db.Queries)
 	profileService := service.NewProfileService(db) // needs *DB for transaction
 	followService := service.NewFollowService(db.Queries)
+	apiKeyService := service.NewAPIKeyService(db.Queries)
 	listingImageService := service.NewListingImageService(db, files, cfg.Upload.MaxPerListing)
 
 	return &api{
@@ -55,6 +56,7 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 		User:         userService,
 		Profile:      profileService,
 		Follow:       followService,
+		APIKey:       apiKeyService,
 		ListingImage: listingImageService,
 		Files:        files,
 		Upload:       cfg.Upload,

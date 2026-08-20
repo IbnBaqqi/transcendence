@@ -37,7 +37,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	r.Use(mw.Logger(log))
 	r.Use(mw.Recoverer(log))
 
-	authenticate := mw.Authenticate(appService.JWT)
+	authenticate := mw.Authenticate(appService.JWT, appService.APIKey)
 
 	r.Get("/health", h.Health)
 
