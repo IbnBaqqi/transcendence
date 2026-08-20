@@ -27,6 +27,10 @@ type DeleteDeadSessionsForUserParams struct {
 	RevokedBefore sql.NullTime
 }
 
+// Sessions that can never be redeemed again: expired, or revoked long enough
+// ago that the grace window has closed. Runs on the user's own rows as they
+// issue a new session, so growth is bounded by active sessions rather than by
+// lifetime logins - no scheduler, and the user_id index already covers it.
 func (q *Queries) DeleteDeadSessionsForUser(ctx context.Context, arg DeleteDeadSessionsForUserParams) error {
 	_, err := q.db.ExecContext(ctx, deleteDeadSessionsForUser, arg.UserID, arg.RevokedBefore)
 	return err
@@ -110,6 +114,9 @@ WHERE user_id = $1
     AND (revoked_at IS NULL OR revoked_reason = 'rotated')
 `
 
+// Rotated rows are included, not just live ones: FindLiveSession still accepts
+// a rotated token for the length of the grace window, so skipping them would
+// leave a logged-out user redeemable for another 30 seconds.
 func (q *Queries) RevokeSessionsForUser(ctx context.Context, userID uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, revokeSessionsForUser, userID)
 	return err

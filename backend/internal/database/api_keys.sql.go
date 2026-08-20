@@ -66,9 +66,6 @@ type FindLiveKeyByHashRow struct {
 	Role     string
 }
 
-// Joined rather than a second GetUser: the middleware needs the owner's
-// identity on every request, and this also means the role is read fresh each
-// time rather than cached in a credential.
 func (q *Queries) FindLiveKeyByHash(ctx context.Context, keyHash string) (FindLiveKeyByHashRow, error) {
 	row := q.db.QueryRowContext(ctx, findLiveKeyByHash, keyHash)
 	var i FindLiveKeyByHashRow

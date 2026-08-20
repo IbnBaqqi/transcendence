@@ -177,3 +177,39 @@ func TestUsageIsRecordedAtMostOncePerInterval(t *testing.T) {
 		t.Errorf("a browser request recorded key usage")
 	}
 }
+
+func TestALimitBelowOneFallsBackToTheDefault(t *testing.T) {
+	for _, configured := range []int{0, -5} {
+		t.Run(strconv.Itoa(configured), func(t *testing.T) {
+			h := RateLimitByKey(configured)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNoContent)
+			}))
+
+			req := httptest.NewRequest(http.MethodGet, "/listings", nil)
+			req = req.WithContext(context.WithValue(req.Context(), apiKeyIDKey{}, int32(1)))
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusNoContent {
+				t.Errorf("status = %d, want %d - the request was refused outright", rec.Code, http.StatusNoContent)
+			}
+			if got := rec.Header().Get("X-RateLimit-Limit"); got != strconv.Itoa(defaultRateLimitPerMinute) {
+				t.Errorf("X-RateLimit-Limit = %q, want the default %d", got, defaultRateLimitPerMinute)
+			}
+		})
+	}
+}
+
+func TestTheBucketMapStaysBounded(t *testing.T) {
+	l := newTestLimiter(60)
+	now := time.Now()
+
+	for id := int32(1); id <= maxTrackedKeys+500; id++ {
+		l.allow(id, now)
+		l.allow(id, now)
+	}
+
+	if len(l.buckets) > maxTrackedKeys {
+		t.Errorf("tracking %d buckets, want at most %d", len(l.buckets), maxTrackedKeys)
+	}
+}

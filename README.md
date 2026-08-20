@@ -230,7 +230,9 @@ so there is no cache to wait out.
 stack: signup, key creation, the four verbs, the 403 a key gets when it tries
 to mint another key, the 429, and the 401 after revocation. It needs a limit
 above 6 to reach the throttling section — start the backend with
-`RATE_LIMIT_PER_MINUTE=10` to see it trip quickly.
+`RATE_LIMIT_PER_MINUTE=10 docker compose up -d backend` to see it trip
+quickly. A value below 1 is refused and the default is used instead — it would
+mean "no requests at all", not "unlimited".
 
 ### Limits
 
@@ -238,8 +240,9 @@ Key-authenticated requests are limited to `RATE_LIMIT_PER_MINUTE` (default 60)
 per key — per **key**, not per IP, so one noisy client cannot throttle everyone
 behind the same NAT. Browser sessions are not limited.
 
-Every response carries `X-RateLimit-Remaining`; a refusal is a **429** with
-`Retry-After` in seconds.
+Key-authenticated responses carry `X-RateLimit-Limit` and
+`X-RateLimit-Remaining`; a refusal is a **429** with `Retry-After` in seconds.
+Session requests carry neither, because they are not counted.
 
 **The counters live in memory.** They reset when the API restarts, and each
 instance counts separately — two instances behind a load balancer give one key

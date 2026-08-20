@@ -10,8 +10,9 @@ import (
 	"time"
 )
 
-// maxTrackedKeys bounds the map, like presenceTracker's maxTrackedUsers.
 const maxTrackedKeys = 10000
+
+const defaultRateLimitPerMinute = 60
 
 type bucket struct {
 	tokens float64
@@ -26,9 +27,6 @@ type keyLimiter struct {
 	buckets map[int32]*bucket
 }
 
-// allow spends a token if one is available, and reports what to tell the client
-// either way. The bucket refills lazily - a key that went quiet for an hour
-// catches up in one subtraction, so there is no ticker to run.
 func (l *keyLimiter) allow(id int32, now time.Time) (ok bool, remaining int, retryAfter time.Duration) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -44,36 +42,44 @@ func (l *keyLimiter) allow(id int32, now time.Time) (ok bool, remaining int, ret
 	}
 
 	if b.tokens < 1 {
-		// Round up and add a second: telling a client to retry in 0 seconds
-		// invites an immediate retry that also fails.
 		wait := time.Duration((1-b.tokens)/l.refill*float64(time.Second)) + time.Second
 		return false, 0, wait.Round(time.Second)
 	}
 
 	b.tokens--
-	// The floor, never more than we will honour.
 	return true, int(b.tokens), 0
 }
 
-// evictFull drops buckets that have refilled completely: losing one costs the
-// client nothing, since a bucket it has not used starts full anyway.
 func (l *keyLimiter) evictFull(now time.Time) {
 	if len(l.buckets) < maxTrackedKeys {
 		return
 	}
+
 	for id, b := range l.buckets {
 		if b.tokens+now.Sub(b.last).Seconds()*l.refill >= l.capacity {
 			delete(l.buckets, id)
 		}
 	}
+
+	for len(l.buckets) >= maxTrackedKeys {
+		var oldest int32
+		var oldestAt time.Time
+		for id, b := range l.buckets {
+			if oldestAt.IsZero() || b.last.Before(oldestAt) {
+				oldest, oldestAt = id, b.last
+			}
+		}
+		delete(l.buckets, oldest)
+	}
 }
 
-// RateLimitByKey throttles requests that authenticated with an API key. Browser
-// sessions are not limited: a human's pace is not the problem this solves.
-//
-// The state is in memory, so it is lost on restart and not shared between
-// instances - two servers give one client double its limit.
 func RateLimitByKey(perMinute int) func(http.Handler) http.Handler {
+	if perMinute < 1 {
+		slog.Error("RATE_LIMIT_PER_MINUTE must be at least 1; using the default instead",
+			"configured", perMinute, "using", defaultRateLimitPerMinute)
+		perMinute = defaultRateLimitPerMinute
+	}
+
 	l := &keyLimiter{
 		capacity: float64(perMinute),
 		refill:   float64(perMinute) / 60,
@@ -136,9 +142,6 @@ func (k *keyUsageTracker) shouldTouch(id int32, now time.Time) bool {
 	return true
 }
 
-// TouchAPIKey records that a key was used, at most once per interval. Writing
-// on every request would mean 60 updates a minute per key, at the limit, to a
-// column nobody reads more than daily.
 func TouchAPIKey(store keyToucher, interval time.Duration) func(http.Handler) http.Handler {
 	tracker := &keyUsageTracker{
 		store:    store,
