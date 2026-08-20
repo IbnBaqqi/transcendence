@@ -19,6 +19,17 @@ type Address struct {
 	UpdatedAt sql.NullTime
 }
 
+type ApiKey struct {
+	ID         int32
+	UserID     uuid.UUID
+	Name       string
+	KeyHash    string
+	KeyPrefix  string
+	LastUsedAt sql.NullTime
+	RevokedAt  sql.NullTime
+	CreatedAt  time.Time
+}
+
 type Conversation struct {
 	ID           int32
 	ListingID    sql.NullInt32
