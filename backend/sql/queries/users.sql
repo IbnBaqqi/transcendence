@@ -5,7 +5,7 @@ LIMIT 1;
 
 -- name: GetUserByEmail :one
 SELECT * FROM users
-WHERE email = $1
+WHERE lower(email) = lower(sqlc.arg(email))
 LIMIT 1;
 
 -- name: ListUsers :many
@@ -44,8 +44,8 @@ RETURNING *;
 
 -- name: EmailOrUsernameTaken :one
 SELECT
-    EXISTS(SELECT 1 FROM users u WHERE u.email = sqlc.arg(email))       AS email_taken,
-    EXISTS(SELECT 1 FROM users u WHERE u.username = sqlc.arg(username)) AS username_taken;
+    EXISTS(SELECT 1 FROM users u WHERE lower(u.email) = lower(sqlc.arg(email)))       AS email_taken,
+    EXISTS(SELECT 1 FROM users u WHERE lower(u.username) = lower(sqlc.arg(username))) AS username_taken;
 
 -- name: GetUserRole :one
 SELECT role FROM users
