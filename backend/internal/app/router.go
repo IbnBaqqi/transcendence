@@ -50,6 +50,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authenticate)
 		r.Use(mw.TouchLastSeen(appService.DB.Queries, presence.Interval))
+		r.Use(mw.RateLimitByKey(appService.AuthConfig.RateLimitPerMinute))
+		r.Use(mw.TouchAPIKey(appService.DB.Queries, presence.Interval))
 
 		r.Post("/auth/signup", h.Signup)
 		r.Post("/auth/login", h.Login)

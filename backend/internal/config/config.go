@@ -29,6 +29,7 @@ type AuthConfig struct {
 	JWTSecret      string
 	AccessTokenTTL time.Duration
 	CookieSecure   bool
+	RateLimitPerMinute int
 }
 
 type ServerConfig struct {
@@ -76,6 +77,8 @@ func Load() (*Config, error) {
 			JWTSecret:      mustGetEnv("JWT_SECRET"),
 			AccessTokenTTL: getEnvAsDuration("ACCESS_TOKEN_TTL", "15m"),
 			CookieSecure:   getEnvAsBool("COOKIE_SECURE", true),
+
+			RateLimitPerMinute: getEnvAsInt("RATE_LIMIT_PER_MINUTE", 60),
 		},
 
 		Upload: UploadConfig{
