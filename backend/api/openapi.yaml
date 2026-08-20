@@ -255,6 +255,15 @@ components:
             Matched ignoring case and surrounding whitespace, so it need not be
             typed the way it was at signup. The password is matched exactly —
             spaces in it are significant.
+
+            **Login is by email only**, deliberately. A username is a display
+            name: public, shown to others, and meant to be changeable, so it is
+            not a credential. Email is also the recovery channel for password
+            reset and the identity OAuth links on, which keeps one identity
+            rather than two doors onto the same account.
+
+            The other planned sign-in path is OAuth (#35), not
+            username/password.
         password:
           type: string
           format: password
