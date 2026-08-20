@@ -19,7 +19,9 @@ services:
 
   # --- adminer (browser UI for the database, dev only) ---
   adminer:
-    image: adminer:4.8.1
+    image: adminer:6                   # track the major, like postgres:16-alpine and
+                                       # node:20-alpine: patches arrive on pull, a
+                                       # breaking major still needs a deliberate edit
     profiles: [tools]                  # opt-in: won't start on a plain `docker compose up`
     environment:
       ADMINER_DEFAULT_SERVER: db       # pre-fills the "Server" box with the service name
