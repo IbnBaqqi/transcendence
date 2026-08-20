@@ -226,6 +226,12 @@ leaked key cannot mint a replacement and survive its own revocation.
 Revocation takes effect on the next request; the key is looked up every time,
 so there is no cache to wait out.
 
+`make demo` (from `backend/`) runs all of this end to end against a running
+stack: signup, key creation, the four verbs, the 403 a key gets when it tries
+to mint another key, the 429, and the 401 after revocation. It needs a limit
+above 6 to reach the throttling section — start the backend with
+`RATE_LIMIT_PER_MINUTE=10` to see it trip quickly.
+
 ### Limits
 
 Key-authenticated requests are limited to `RATE_LIMIT_PER_MINUTE` (default 60)
