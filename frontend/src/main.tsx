@@ -7,7 +7,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 
 import AppRouter from "./routes";
 import { queryClient } from "./lib/queryClient";
-import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ErrorBoundary } from "./components/layout/ErrorBoundary";
 
 import { ModalProvider } from "./providers/ModalProvider";
 import { ModalRoot } from "./components/modal/ModalRoot";
