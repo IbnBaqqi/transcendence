@@ -9,7 +9,7 @@ export const usernameSchema = z
 export const emailSchema = z
   .string()
   .min(1, "Email is required")
-  .max(150, "Email must be less that 150 characters")
+  .max(150, "Email must be less than 150 characters")
   .email("Invalid email address");
 export const nameSchema = z
   .string()
