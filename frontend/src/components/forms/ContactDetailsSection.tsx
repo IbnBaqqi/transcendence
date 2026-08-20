@@ -11,12 +11,13 @@ export function ContactDetailsSection() {
 
   const form = useForm<ContactDetailsFormValues>({
     resolver: zodResolver(contactDetailsSchema),
+    mode: "onBlur",
     // TODO: blocked by #109 Add hooks to fetch data from backend (or maybe local frontend e.g. from Profile.tsx?)
     // defaultValues: {
-    //   firstName: user.firstName ?? "",
-    //   lastName: user.lastName ?? "",
-    //   phone: user.phone ?? "",
-    //   city: user.city ?? "",
+    //   firstname: user.firstname ?? "",
+    //   lastname: user.lastname ?? "",
+    //   phone_number: user.phone_number ?? "",
+    //   location: user.location ?? "",
     // },
   });
 
@@ -35,15 +36,15 @@ export function ContactDetailsSection() {
     <Form form={form} onSubmit={handleSubmit} className="max-w-fit" isEditing={isEditing}>
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-4">
-          <FormField label="First name" name="firstName" />
-          <FormField label="Last name" name="lastName" />
-          <FormField label="Phone" name="phone" type="tel" />
-          <FormField label="City" name="city" />
+          <FormField label="First name" name="firstname" validateOnChange />
+          <FormField label="Last name" name="lastname" />
+          <FormField label="Phone" name="phone_number" type="tel" />
+          <FormField label="City" name="location" validateOnChange />
         </div>
         <div className="flex flex-row gap-2">
           {isEditing ? (
             <>
-              <Button variant="primary" type="submit">
+              <Button variant="primary" type="submit" disabled={!form.formState.isValid}>
                 {/* TODO: blocked by #109 Insert API here */}
                 Save
               </Button>

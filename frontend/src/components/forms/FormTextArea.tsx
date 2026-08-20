@@ -7,6 +7,7 @@ type FormTextAreaProps = {
   placeholder?: string;
   maxLength?: number;
   isEditing?: boolean;
+  validateOnChange?: boolean;
 };
 
 export function FormTextArea({
@@ -15,10 +16,12 @@ export function FormTextArea({
   placeholder,
   maxLength = 1024,
   isEditing: isEditingProp,
+  validateOnChange,
 }: FormTextAreaProps) {
   const {
     register,
     watch,
+    trigger,
     formState: { errors },
   } = useFormContext();
   const { isEditing: ctxEditing } = useFormConfig();
@@ -28,27 +31,39 @@ export function FormTextArea({
   const error = errors[name];
   const value = watch(name) ?? "";
 
+  const { onChange: rhfOnChange, ...registerRest } = register(name);
+
   return (
     <div className="">
       {label && <label htmlFor={name}>{label}</label>}
       {isEditing ? (
         <>
           <textarea
-            className="field-sizing-content w-full min-w-64 resize-none overflow-y-auto rounded border p-2 shadow focus:outline-none"
+            className="m-0 field-sizing-content w-full min-w-64 resize-none overflow-y-auto rounded border p-2 shadow focus:outline-none"
             id={name}
-            rows={3}
+            rows={1}
             maxLength={maxLength}
             placeholder={placeholder}
-            {...register(name)}
+            {...registerRest}
+            onChange={(e) => {
+              rhfOnChange(e);
+              if (validateOnChange) trigger(name);
+            }}
           />
-          <div className="text-muted flex justify-between text-xs">
-            <span>
-              {error && <span className="text-berry-500">{error.message as string}</span>}
-            </span>
-            <span>
-              {value.length} / {maxLength}
-            </span>
-          </div>
+          {(error || value.length > 0) && (
+            <div className="text-muted flex justify-between text-xs">
+              <span>
+                {error && error.type === "max" && (
+                  <span className="text-berry-500">{error.message as string}</span>
+                )}
+              </span>
+              {value.length > 0 && (
+                <span>
+                  {value.length} / {maxLength}
+                </span>
+              )}
+            </div>
+          )}
         </>
       ) : (
         <span>{value}</span>

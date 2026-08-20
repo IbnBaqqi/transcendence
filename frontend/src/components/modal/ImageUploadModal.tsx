@@ -1,16 +1,13 @@
 import { useModal } from "../../providers/modalContext";
-import Button from "../objects/Button.tsx";
+import { ImageUploadSection } from "../forms/ImageUploadSection";
 
 export function ImageUploadModal() {
-  const { closeModal } = useModal();
+  const { closeModal, imageUploadOptions } = useModal();
 
   return (
     <div className="p-6">
       <h2 className="mb-4 text-lg font-semibold">Upload image</h2>
-      {/* upload UI */}
-      <Button variant="secondary" type="button" onClick={closeModal}>
-        Cancel
-      </Button>
+      <ImageUploadSection onComplete={imageUploadOptions?.onComplete} onClose={closeModal} />
     </div>
   );
 }
