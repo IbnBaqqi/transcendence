@@ -100,3 +100,6 @@ docker-down:
 
 docker-logs:
 	@docker compose logs -f
+
+demo: ## run the API-key demo against a running stack
+	@../scripts/api-demo.sh

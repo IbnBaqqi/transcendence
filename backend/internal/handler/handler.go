@@ -16,6 +16,7 @@ type Handler struct {
 	User           *service.UserService
 	Profile        *service.ProfileService
 	Follow         *service.FollowService
+	APIKey         *service.APIKeyService
 	ListingImage   *service.ListingImageService
 	maxUploadBytes int64
 	cookieSecure   bool
@@ -31,6 +32,7 @@ func New(
 	userService *service.UserService,
 	profileService *service.ProfileService,
 	followService *service.FollowService,
+	apiKeyService *service.APIKeyService,
 	listingImageService *service.ListingImageService,
 	maxUploadBytes int64,
 	cookieSecure bool,
@@ -45,6 +47,7 @@ func New(
 		User:           userService,
 		Profile:        profileService,
 		Follow:         followService,
+		APIKey:         apiKeyService,
 		ListingImage:   listingImageService,
 		maxUploadBytes: maxUploadBytes,
 		cookieSecure:   cookieSecure,

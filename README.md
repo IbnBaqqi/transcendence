@@ -193,6 +193,62 @@ Roles are matched exactly, not ranked — an `ADMIN` does **not** satisfy
 `RequireRole(auth.RoleUser)`. For "any logged-in user", `RequiredAuth` alone is
 the check.
 
+## API keys and rate limiting
+
+Machine clients authenticate with a key instead of a login. Create one while
+logged in:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/me/api-keys \
+  -H "Authorization: Bearer <access token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "ci pipeline"}'
+```
+
+The response contains the key **once**:
+
+```json
+{ "id": 1, "name": "ci pipeline", "key_prefix": "fk_live_a3f9",
+  "key": "fk_live_a3f9c2...", "created_at": "..." }
+```
+
+Only a SHA-256 hash is stored, so nothing can show it again — if it is lost,
+revoke it and create another. Then use it:
+
+```bash
+curl http://localhost:8080/api/v1/listings -H "X-API-Key: fk_live_a3f9c2..."
+```
+
+A key **acts as its owner**: same permissions, same ownership checks. It cannot
+manage keys, though — creating, listing and revoking need a session, so a
+leaked key cannot mint a replacement and survive its own revocation.
+
+Revocation takes effect on the next request; the key is looked up every time,
+so there is no cache to wait out.
+
+`make demo` (from `backend/`) runs all of this end to end against a running
+stack: signup, key creation, the four verbs, the 403 a key gets when it tries
+to mint another key, the 429, and the 401 after revocation. It needs a limit
+above 6 to reach the throttling section — start the backend with
+`RATE_LIMIT_PER_MINUTE=10 docker compose up -d backend` to see it trip
+quickly. A value below 1 is refused and the default is used instead — it would
+mean "no requests at all", not "unlimited".
+
+### Limits
+
+Key-authenticated requests are limited to `RATE_LIMIT_PER_MINUTE` (default 60)
+per key — per **key**, not per IP, so one noisy client cannot throttle everyone
+behind the same NAT. Browser sessions are not limited.
+
+Key-authenticated responses carry `X-RateLimit-Limit` and
+`X-RateLimit-Remaining`; a refusal is a **429** with `Retry-After` in seconds.
+Session requests carry neither, because they are not counted.
+
+**The counters live in memory.** They reset when the API restarts, and each
+instance counts separately — two instances behind a load balancer give one key
+double its limit. That is fine for this project, and a shared store is what
+production would need instead.
+
 ## Running the tests
 
 ```bash

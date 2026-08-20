@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -16,14 +17,45 @@ func sanitizeLog(s string) string {
 	return s
 }
 
-func Authenticate(authService *auth.JwtService) func(http.Handler) http.Handler {
+type keyStore interface {
+	Authenticate(ctx context.Context, raw string) (int32, auth.User, error)
+}
+
+const keyHeader = "X-API-Key"
+
+type apiKeyIDKey struct{}
+
+func apiKeyID(ctx context.Context) (int32, bool) {
+	id, ok := ctx.Value(apiKeyIDKey{}).(int32)
+	return id, ok
+}
+
+func Authenticate(authService *auth.JwtService, keys keyStore) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			tokenStr, err := auth.GetBearerToken(r.Header)
 			if err != nil {
+				if presented := r.Header.Get(keyHeader); presented != "" && keys != nil {
+					id, user, err := keys.Authenticate(r.Context(), presented)
+					if err != nil {
+						slog.Warn("rejected api key", "path", sanitizeLog(r.URL.Path)) // #nosec G706 -- path sanitized by sanitizeLog
+						writeAuthzError(w, http.StatusUnauthorized, "invalid api key")
+						return
+					}
+
+					ctx := auth.WithUser(r.Context(), user)
+					ctx = context.WithValue(ctx, apiKeyIDKey{}, id)
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
+				}
+
 				slog.Debug("no auth token", "path", sanitizeLog(r.URL.Path), "error", err.Error()) // #nosec G706 -- path sanitized by sanitizeLog
 				next.ServeHTTP(w, r)
 				return
+			}
+
+			if r.Header.Get(keyHeader) != "" {
+				slog.Debug("both a bearer token and an api key were sent; using the token")
 			}
 
 			claims, err := authService.VerifyAccessToken(tokenStr)
@@ -58,7 +90,16 @@ func Authenticate(authService *auth.JwtService) func(http.Handler) http.Handler 
 	}
 }
 
-// RequiredAuth rejects the request unless Authenticate attached a user.
+func SessionOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, viaKey := apiKeyID(r.Context()); viaKey {
+			writeAuthzError(w, http.StatusForbidden, "log in to manage api keys")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func RequiredAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := auth.UserFromContext(r.Context()); !ok {

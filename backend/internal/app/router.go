@@ -26,6 +26,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.User,
 		appService.Profile,
 		appService.Follow,
+		appService.APIKey,
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
 		appService.AuthConfig.CookieSecure,
@@ -37,7 +38,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	r.Use(mw.Logger(log))
 	r.Use(mw.Recoverer(log))
 
-	authenticate := mw.Authenticate(appService.JWT)
+	authenticate := mw.Authenticate(appService.JWT, appService.APIKey)
 
 	r.Get("/health", h.Health)
 
@@ -50,6 +51,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authenticate)
 		r.Use(mw.TouchLastSeen(appService.DB.Queries, presence.Interval))
+		r.Use(mw.RateLimitByKey(appService.AuthConfig.RateLimitPerMinute))
+		r.Use(mw.TouchAPIKey(appService.DB.Queries, presence.Interval))
 
 		r.Post("/auth/signup", h.Signup)
 		r.Post("/auth/login", h.Login)
@@ -85,6 +88,14 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/conversations/{id}/read", h.MarkConversationRead)
 
 			r.Get("/auth/me", h.Me)
+
+			r.Group(func(r chi.Router) {
+				r.Use(mw.SessionOnly)
+
+				r.Post("/me/api-keys", h.CreateAPIKey)
+				r.Get("/me/api-keys", h.GetAPIKeys)
+				r.Delete("/me/api-keys/{id}", h.RevokeAPIKey)
+			})
 
 			r.Get("/me/settings", h.GetSettings)
 			r.Patch("/me/settings", h.UpdateSettings)

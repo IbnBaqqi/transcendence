@@ -29,7 +29,7 @@ func TestExpiredTokenIsDistinguishableFromAbsent(t *testing.T) {
 	}
 	time.Sleep(3 * time.Second)
 
-	protected := Authenticate(live)(RequiredAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	protected := Authenticate(live, nil)(RequiredAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})))
 
