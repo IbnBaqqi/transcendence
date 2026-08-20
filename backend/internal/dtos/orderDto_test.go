@@ -1,8 +1,10 @@
 package dtos
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -43,6 +45,28 @@ func TestNewOrderResponseJSON(t *testing.T) {
 
 	if got != want {
 		t.Errorf("JSON shape changed\n got: %s\nwant: %s", got, want)
+	}
+}
+
+func TestAnUnparseableNumericIsLogged(t *testing.T) {
+	var buf bytes.Buffer
+	previous := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, nil)))
+	defer slog.SetDefault(previous)
+
+	if got := numericToFloat("not a number"); got != 0 {
+		t.Errorf("value = %v, want 0", got)
+	}
+	if !strings.Contains(buf.String(), "could not parse a NUMERIC value") {
+		t.Errorf("nothing was logged: %s", buf.String())
+	}
+
+	buf.Reset()
+	if got := numericToFloat("18.50"); got != 18.5 {
+		t.Errorf("value = %v, want 18.5", got)
+	}
+	if buf.Len() != 0 {
+		t.Errorf("a good value logged something: %s", buf.String())
 	}
 }
 
