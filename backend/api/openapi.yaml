@@ -76,13 +76,29 @@ tags:
 
 # The default for the whole API: send a bearer token. Individual public
 # operations switch it off with an empty "security: []" of their own.
+# A list here means OR: send either a bearer token or an API key. Individual
+# public operations switch it off with an empty "security: []", and the
+# key-management operations narrow it back to bearerAuth alone.
 security:
   - bearerAuth: []
+  - apiKeyAuth: []
 
 # "components" is the reusable-definitions section. Nothing in here appears in
 # the docs on its own - it only shows up where something $refs it.
 components:
   securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        A key from `POST /me/api-keys`, for machine clients. It acts as its
+        owner - same permissions, same ownership checks - and is rate limited
+        per key rather than per IP.
+
+        Keys cannot manage keys: creating, listing and revoking need a session,
+        so a leaked key cannot mint a replacement and survive its own
+        revocation.
     bearerAuth:
       type: http
       scheme: bearer
@@ -210,6 +226,54 @@ components:
           description: Clamped to 50.
         total_pages:
           type: integer
+
+    CreateAPIKey:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 60
+          description: What this key is for. Trimmed; must not be blank.
+          examples: ["ci pipeline"]
+
+    APIKey:
+      type: object
+      required: [id, name, key_prefix, last_used_at, revoked_at, created_at]
+      properties:
+        id:
+          type: integer
+          format: int32
+        name:
+          type: string
+        key_prefix:
+          type: string
+          description: The first characters of the key, to tell rows apart.
+          examples: ["fk_live_a3f9"]
+        last_used_at:
+          type: [string, "null"]
+          format: date-time
+          description: |
+            Null until the key is used. Recorded at most once a minute, so it
+            is a rough "last seen" rather than a request log.
+        revoked_at:
+          type: [string, "null"]
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    CreatedAPIKey:
+      allOf:
+        - $ref: "#/components/schemas/APIKey"
+        - type: object
+          required: [key]
+          properties:
+            key:
+              type: string
+              description: |
+                Shown once and never again. Store it now.
+              examples: ["fk_live_a3f9c2..."]
 
     # --- auth ---------------------------------------------------------------
 
@@ -837,6 +901,24 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    RateLimited:
+      description: |
+        Too many requests on this API key. Only key-authenticated requests are
+        limited; browser sessions are not.
+      headers:
+        Retry-After:
+          description: Seconds until a request will be accepted again.
+          schema:
+            type: integer
+            examples: [2]
+        X-RateLimit-Remaining:
+          description: Requests left in the current bucket.
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     ServerError:
       description: Something failed on our side; the cause is in the log.
       content:
@@ -1060,6 +1142,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Listing"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -1088,6 +1172,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -2406,6 +2492,118 @@ paths:
   # ---------------------------------------------------------------------------
   # me
   # ---------------------------------------------------------------------------
+  /me/api-keys:
+    post:
+      tags: [me]
+      summary: Create an API key
+      operationId: createAPIKey
+      # Bearer only: a key must not be able to mint another key.
+      security:
+        - bearerAuth: []
+      description: |
+        Returns the key **once**. Only its SHA-256 hash is stored, so there is
+        no endpoint that can show it again - if it is lost, revoke it and
+        create another.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAPIKey"
+      responses:
+        "201":
+          description: The key, for the only time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedAPIKey"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: An API key cannot manage API keys; log in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    get:
+      tags: [me]
+      summary: List your API keys
+      operationId: getAPIKeys
+      security:
+        - bearerAuth: []
+      description: |
+        Never includes the keys themselves - only the prefix, which is enough
+        to tell one row from another.
+      responses:
+        "200":
+          description: Your keys, newest first. Revoked ones are included.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/APIKey"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: An API key cannot manage API keys; log in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /me/api-keys/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+    delete:
+      tags: [me]
+      summary: Revoke an API key
+      operationId: revokeAPIKey
+      security:
+        - bearerAuth: []
+      description: |
+        Takes effect on the next request - the key is looked up every time, so
+        there is no cache to wait out.
+      responses:
+        "204":
+          description: Revoked. No body.
+        "400":
+          description: The id is not an integer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: An API key cannot manage API keys; log in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: |
+            No such key of yours. Someone else's key and one you already
+            revoked answer the same way, so this cannot be used to discover
+            which ids exist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /me/settings:
     get:
       tags: [me]

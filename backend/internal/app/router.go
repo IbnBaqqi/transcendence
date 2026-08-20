@@ -26,6 +26,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.User,
 		appService.Profile,
 		appService.Follow,
+		appService.APIKey,
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
 		appService.AuthConfig.CookieSecure,
@@ -87,6 +88,14 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/conversations/{id}/read", h.MarkConversationRead)
 
 			r.Get("/auth/me", h.Me)
+
+			r.Group(func(r chi.Router) {
+				r.Use(mw.SessionOnly)
+
+				r.Post("/me/api-keys", h.CreateAPIKey)
+				r.Get("/me/api-keys", h.GetAPIKeys)
+				r.Delete("/me/api-keys/{id}", h.RevokeAPIKey)
+			})
 
 			r.Get("/me/settings", h.GetSettings)
 			r.Patch("/me/settings", h.UpdateSettings)

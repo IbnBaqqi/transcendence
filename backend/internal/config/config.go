@@ -26,9 +26,9 @@ type UploadConfig struct {
 }
 
 type AuthConfig struct {
-	JWTSecret      string
-	AccessTokenTTL time.Duration
-	CookieSecure   bool
+	JWTSecret          string
+	AccessTokenTTL     time.Duration
+	CookieSecure       bool
 	RateLimitPerMinute int
 }
 

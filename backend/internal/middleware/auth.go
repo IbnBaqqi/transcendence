@@ -90,6 +90,16 @@ func Authenticate(authService *auth.JwtService, keys keyStore) func(http.Handler
 	}
 }
 
+func SessionOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, viaKey := apiKeyID(r.Context()); viaKey {
+			writeAuthzError(w, http.StatusForbidden, "log in to manage api keys")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func RequiredAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := auth.UserFromContext(r.Context()); !ok {

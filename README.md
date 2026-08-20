@@ -193,6 +193,53 @@ Roles are matched exactly, not ranked — an `ADMIN` does **not** satisfy
 `RequireRole(auth.RoleUser)`. For "any logged-in user", `RequiredAuth` alone is
 the check.
 
+## API keys and rate limiting
+
+Machine clients authenticate with a key instead of a login. Create one while
+logged in:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/me/api-keys \
+  -H "Authorization: Bearer <access token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "ci pipeline"}'
+```
+
+The response contains the key **once**:
+
+```json
+{ "id": 1, "name": "ci pipeline", "key_prefix": "fk_live_a3f9",
+  "key": "fk_live_a3f9c2...", "created_at": "..." }
+```
+
+Only a SHA-256 hash is stored, so nothing can show it again — if it is lost,
+revoke it and create another. Then use it:
+
+```bash
+curl http://localhost:8080/api/v1/listings -H "X-API-Key: fk_live_a3f9c2..."
+```
+
+A key **acts as its owner**: same permissions, same ownership checks. It cannot
+manage keys, though — creating, listing and revoking need a session, so a
+leaked key cannot mint a replacement and survive its own revocation.
+
+Revocation takes effect on the next request; the key is looked up every time,
+so there is no cache to wait out.
+
+### Limits
+
+Key-authenticated requests are limited to `RATE_LIMIT_PER_MINUTE` (default 60)
+per key — per **key**, not per IP, so one noisy client cannot throttle everyone
+behind the same NAT. Browser sessions are not limited.
+
+Every response carries `X-RateLimit-Remaining`; a refusal is a **429** with
+`Retry-After` in seconds.
+
+**The counters live in memory.** They reset when the API restarts, and each
+instance counts separately — two instances behind a load balancer give one key
+double its limit. That is fine for this project, and a shared store is what
+production would need instead.
+
 ## Running the tests
 
 ```bash
