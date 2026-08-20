@@ -1,7 +1,6 @@
 package dtos
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -69,7 +68,7 @@ type ListingResponse struct {
 
 // ToListingResponse map single listing row into the response dto.
 func ToListingResponse(l database.Listing) ListingResponse {
-	price, _ := strconv.ParseFloat(l.Price, 64)
+	price := numericToFloat(l.Price)
 
 	return ListingResponse{
 		ID:          l.ID,

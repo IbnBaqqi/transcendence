@@ -21,8 +21,8 @@ type OrderResponse struct {
 	BuyerID            string     `json:"buyer_id"`
 	SellerID           string     `json:"seller_id"`
 	Quantity           int32      `json:"quantity"`
-	UnitPrice          string     `json:"unit_price"`
-	TotalPrice         string     `json:"total_price"`
+	UnitPrice          float64    `json:"unit_price"`
+	TotalPrice         float64    `json:"total_price"`
 	Status             string     `json:"status"`
 	SellerHandedOverAt *time.Time `json:"seller_handed_over_at"`
 	BuyerReceivedAt    *time.Time `json:"buyer_received_at"`
@@ -39,8 +39,8 @@ func NewOrderResponse(o database.Order) OrderResponse {
 		BuyerID:            o.BuyerID.String(),
 		SellerID:           o.SellerID.String(),
 		Quantity:           o.Quantity,
-		UnitPrice:          o.UnitPrice,
-		TotalPrice:         o.TotalPrice,
+		UnitPrice:          numericToFloat(o.UnitPrice),
+		TotalPrice:         numericToFloat(o.TotalPrice),
 		Status:             o.Status,
 		SellerHandedOverAt: nullTimeToPtr(o.SellerHandedOverAt),
 		BuyerReceivedAt:    nullTimeToPtr(o.BuyerReceivedAt),
