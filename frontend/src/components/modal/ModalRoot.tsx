@@ -7,7 +7,7 @@ import { DeleteAccountModal } from "./DeleteAccountModal";
 
 const sizeByModal: Record<NonNullable<DialogType>, string> = {
   login: "max-w-sm",
-  imageUpload: "max-w-lg",
+  imageUpload: "max-w-fit",
   deleteAccount: "max-w-sm",
 };
 

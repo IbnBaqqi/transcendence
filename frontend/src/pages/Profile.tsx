@@ -16,7 +16,7 @@ import Toggle from "../components/objects/Toggle.tsx";
 import { ContactDetailsSection } from "../components/forms/ContactDetailsSection.tsx";
 import { ChangePasswordSection } from "../components/forms/ChangePasswordSection.tsx";
 import { BioSection } from "../components/forms/BioSection.tsx";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useModal } from "../providers/modalContext";
 
 export default function Profile() {
@@ -26,13 +26,35 @@ export default function Profile() {
   const [marketing, setMarketing] = useState(false);
   const [hideDetails, setHideDetails] = useState(false);
   const { openModal } = useModal();
+
+  // The image the user picked in the "imageUpload" modal. There's no avatar
+  // upload endpoint yet (#14), so this only lives in memory as a preview -
+  // once the backend supports it, swap this for the real upload + persisted
+  // URL.
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const avatarPreviewUrl = useMemo(
+    () => (avatarFile ? URL.createObjectURL(avatarFile) : undefined),
+    [avatarFile],
+  );
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    };
+  }, [avatarPreviewUrl]);
+
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
       <h1 className="text-foreground text-3xl font-bold">Profile & Settings</h1>
       {/* TODO: blocked by #109 nothing to load - hardcoded values for now. */}
       <div className="flex flex-row gap-4">
         <div>
-          <Avatar size="lg" initials="OR" editable />
+          <Avatar
+            size="lg"
+            initials="OR"
+            editable
+            imageUrl={avatarPreviewUrl}
+            onImageSelected={setAvatarFile}
+          />
         </div>
         <div className="text-accent my-auto flex flex-col text-base">
           <div className="font-bold">Oscar Rogers</div>

@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { nameSchema, phoneSchema, citySchema } from "./common";
+import { nameSchema, phoneSchema, locationSchema } from "./common";
 
 export const contactDetailsSchema = z.object({
-  firstName: nameSchema,
-  lastName: nameSchema.optional().or(z.literal("")),
-  phone: phoneSchema.optional().or(z.literal("")),
-  city: citySchema,
+  firstname: nameSchema,
+  lastname: nameSchema.optional().or(z.literal("")),
+  phone_number: phoneSchema.optional().or(z.literal("")),
+  location: locationSchema,
 });
 
 export type ContactDetailsFormValues = z.infer<typeof contactDetailsSchema>;

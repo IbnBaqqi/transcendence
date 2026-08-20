@@ -11,7 +11,7 @@
 export default function Dashboard() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">Seller dashboard</h1>
+      <h1 className="text-foreground text-2xl font-bold">Seller Dashboard</h1>
       <p className="text-muted mt-2">
         {/* TODO(#23): active listings, pending orders (#13), recent payouts,
             quick actions (manage listing / confirm order) as inert buttons. */}
