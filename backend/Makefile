@@ -7,7 +7,9 @@ export
 # explicitly instead.
 unexport TEST_DB_URL
 
-.PHONY: run build test test-db clean dev lint
+.PHONY: run build test test-db test-coverage clean dev lint sqlc fmt deps \
+        migrate-up migrate-down migrate-status seed demo \
+        docker-build docker-up docker-down docker-logs
 
 # Run the application
 run:
@@ -80,6 +82,12 @@ migrate-up:
 	$(require-db-url)
 	@goose -dir sql/migrations postgres "$(DB_URL)" up
 
+# Fills an empty database with a few users and listings to click around.
+# Truncates first, so it is safe to re-run.
+seed:
+	$(require-db-url)
+	@go run ./cmd/seed
+
 migrate-down:
 	$(require-db-url)
 	@goose -dir sql/migrations postgres "$(DB_URL)" down
@@ -101,5 +109,6 @@ docker-down:
 docker-logs:
 	@docker compose logs -f
 
-demo: ## run the API-key demo against a running stack
+# Runs the API-key demo end to end against a running stack.
+demo:
 	@../scripts/api-demo.sh
