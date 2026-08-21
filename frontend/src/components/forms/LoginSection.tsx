@@ -4,17 +4,31 @@ import { Form } from "./Form";
 import { FormField } from "./FormField";
 import { loginSchema, type LoginFormSchema } from "../../schemas/login";
 import Button from "../objects/Button.tsx";
+import { useAuth } from "../../hooks/useAuth";
+import { isApiError } from "../../api/client";
 
 export function LoginSection({ onClose }: { onClose: () => void }) {
+  const { login } = useAuth();
   const form = useForm<LoginFormSchema>({
     resolver: zodResolver(loginSchema),
     mode: "onBlur",
-    // TODO: blocked by #109 Add hooks to fetch data from backend (or maybe local frontend e.g. from Profile.tsx?)
   });
+  const {
+    formState: { errors, isValid, isSubmitting },
+  } = form;
 
-  const handleSubmit = (data: LoginFormSchema) => {
-    console.log(data);
-    // TODO: blocked by #109 Save to API here
+  const handleSubmit = async (data: LoginFormSchema) => {
+    form.clearErrors("root");
+    try {
+      await login(data.email, data.password);
+      onClose();
+    } catch (err) {
+      // The backend deliberately sends one message for a wrong email and a
+      // wrong password, and rate limits speak for themselves - trust its copy.
+      form.setError("root", {
+        message: isApiError(err) ? err.message : "Something went wrong. Please try again.",
+      });
+    }
   };
 
   return (
@@ -24,10 +38,10 @@ export function LoginSection({ onClose }: { onClose: () => void }) {
           <FormField label="Email" name="email" validateOnChange />
           <FormField label="Password" name="password" type="password" validateOnChange />
         </div>
+        {errors.root?.message && <p className="text-berry-500 text-sm">{errors.root.message}</p>}
         <div className="flex flex-row gap-2">
-          <Button variant="primary" type="submit" disabled={!form.formState.isValid}>
-            {/* TODO: blocked by #109 Insert API here */}
-            Log In
+          <Button variant="primary" type="submit" disabled={!isValid || isSubmitting}>
+            {isSubmitting ? "Logging in…" : "Log In"}
           </Button>
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel

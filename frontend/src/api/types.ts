@@ -123,6 +123,21 @@ export interface User {
   role: string;
 }
 
+export interface SignupInput {
+  username: string;
+  email: string;
+  password: string;
+}
+
+// Login is by email only - a username is a display name, not a credential.
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+// Returned by signup, login and refresh alike, so one code path can start a
+// session from any of them. The refresh token itself is never here: it travels
+// as an HttpOnly cookie.
 export interface AuthResponse {
   access_token: string;
   user: User;
