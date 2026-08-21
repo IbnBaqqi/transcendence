@@ -79,10 +79,8 @@ export default function Profile() {
             <div>
               <Avatar
                 size="lg"
-                // Real names beat the username fallback; the header mini
-                // avatar stays username-only because the auth session carries
-                // no names (see Header.tsx).
-                initials={deriveInitials(profile.username, profile.firstname, profile.lastname)}
+                // Username initial only, same rule as the header mini avatar.
+                initials={deriveInitials(profile.username)}
                 editable
                 imageUrl={avatarPreviewUrl}
                 onImageSelected={setAvatarFile}

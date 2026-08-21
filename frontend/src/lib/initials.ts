@@ -1,8 +1,9 @@
-// Avatar initials from a user's real names.
+// Avatar initial from the username.
 //
 // Assumes a signed-in user: the backend guarantees a non-empty username, so
 // there is deliberately no "?" fallback here - call sites render "?" based on
-// signed-out state instead.
+// signed-out state instead. One rule everywhere keeps the header mini avatar
+// and the profile page avatar consistent.
 
 // First character of a string, multibyte safe; whitespace-only counts as unset.
 function firstChar(value?: string | null): string {
@@ -10,16 +11,6 @@ function firstChar(value?: string | null): string {
   return Array.from(trimmed)[0] ?? "";
 }
 
-// NOTE: Overbuilt logic here, currently only using first letter of username
-export function deriveInitials(
-  username: string,
-  firstname?: string | null,
-  lastname?: string | null,
-): string {
-  const first = firstChar(firstname);
-  const last = firstChar(lastname);
-
-  if (first && last) return (first + last).toUpperCase();
-  if (first) return first.toUpperCase();
+export function deriveInitials(username: string): string {
   return firstChar(username).toUpperCase();
 }

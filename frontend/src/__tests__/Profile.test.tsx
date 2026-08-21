@@ -81,8 +81,8 @@ test("renders the signed-in identity from the backend", () => {
 
   expect(screen.getByText("or99")).toBeInTheDocument();
   expect(screen.getByText("oscarrogers@example.com")).toBeInTheDocument();
-  // Two real names beat the username fallback for the avatar.
-  expect(screen.getByText("OR")).toBeInTheDocument();
+  // One initial from the username, same rule as the header avatar.
+  expect(screen.getByText("O")).toBeInTheDocument();
 });
 
 test("other failures surface their message rather than spinning forever", () => {
