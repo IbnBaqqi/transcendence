@@ -6,7 +6,10 @@ export const usernameSchema = z
   .string()
   .trim()
   .min(1, "Username is required")
-  .max(50, "Username must be less than 50 characters");
+  .max(50, "Username must be less than 50 characters")
+  .regex(/^\S+$/, "Username cannot contain spaces");
+// NOTE: Backend all chars allowed, length 1-50 counted in runes, whitespace
+// trimmed at edges, allowed inside, uniqueness case insensitive
 export const emailSchema = z
   .string()
   .trim()
@@ -20,11 +23,17 @@ export const nameSchema = z
   .max(64, "Name must be less than 64 characters");
 export const passwordSchema = z
   .string()
+  .trim()
   .min(8, "Password must be at least 8 characters long")
-  .max(64, "Password must be less than 64 characters");
+  .max(64, "Password must be less than 64 characters")
+  .regex(/^\S+$/, "Password cannot contain spaces");
+// NOTE: Backend all chars allowed, length 8-72 counted in bytes, whitespace
+// never trimmed
 export const phoneSchema = z
   .string()
+  .trim()
   .min(1, "Phone number is required")
+  .max(15, "Phone number must be less than 15 digits")
   .regex(/^[\d\s()+-]{7,15}$/, "Invalid phone number");
 // NOTE: If we want better validation then we could convert to E164 standard
 // NOTE: Go rejects titles over 100 bytes (len() in validateListingInput) and
@@ -59,6 +68,6 @@ export const locationSchema = z
 
 // NOTE: Exports for common schemas that are directly used without wrapper objects
 export const bioSchema = z.object({
-  bio: z.string().max(1000, "Bio must be less than 1000 characters"),
+  bio: z.string().trim().max(1000, "Bio must be less than 1000 characters"),
 });
 export type BioFormValues = z.infer<typeof bioSchema>;
