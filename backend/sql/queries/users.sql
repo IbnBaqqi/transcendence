@@ -13,9 +13,9 @@ SELECT * FROM users
 ORDER BY created_at DESC;
 
 -- name: CreateUser :one
-INSERT INTO users (username, email, password) 
+INSERT INTO users (id, username, email, password)
 VALUES (
-	$1, $2, $3
+	$1, $2, $3, $4
 )
 RETURNING *;
 

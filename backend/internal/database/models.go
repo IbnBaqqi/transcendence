@@ -12,7 +12,7 @@ import (
 )
 
 type Address struct {
-	ID        int32
+	ID        uuid.UUID
 	UserID    uuid.UUID
 	Location  sql.NullString
 	CreatedAt sql.NullTime
@@ -20,7 +20,7 @@ type Address struct {
 }
 
 type ApiKey struct {
-	ID         int32
+	ID         uuid.UUID
 	UserID     uuid.UUID
 	Name       string
 	KeyHash    string
@@ -31,8 +31,8 @@ type ApiKey struct {
 }
 
 type Conversation struct {
-	ID           int32
-	ListingID    sql.NullInt32
+	ID           uuid.UUID
+	ListingID    uuid.NullUUID
 	ListingTitle string
 	BuyerID      uuid.UUID
 	SellerID     uuid.UUID
@@ -48,7 +48,7 @@ type Follow struct {
 }
 
 type Listing struct {
-	ID          int32
+	ID          uuid.UUID
 	SellerID    uuid.UUID
 	Title       string
 	Description sql.NullString
@@ -61,16 +61,16 @@ type Listing struct {
 }
 
 type ListingImage struct {
-	ID        int32
-	ListingID int32
+	ID        uuid.UUID
+	ListingID uuid.UUID
 	Filename  string
 	Position  int32
 	CreatedAt sql.NullTime
 }
 
 type Message struct {
-	ID             int32
-	ConversationID int32
+	ID             uuid.UUID
+	ConversationID uuid.UUID
 	SenderID       uuid.UUID
 	Body           string
 	ReadAt         sql.NullTime
@@ -78,8 +78,8 @@ type Message struct {
 }
 
 type Order struct {
-	ID                 int32
-	ListingID          int32
+	ID                 uuid.UUID
+	ListingID          uuid.UUID
 	BuyerID            uuid.UUID
 	SellerID           uuid.UUID
 	Quantity           int32
@@ -94,8 +94,8 @@ type Order struct {
 }
 
 type OrderEvent struct {
-	ID         int32
-	OrderID    int32
+	ID         uuid.UUID
+	OrderID    uuid.UUID
 	ActorID    uuid.NullUUID
 	FromStatus sql.NullString
 	ToStatus   string
@@ -123,7 +123,7 @@ type RefreshToken struct {
 
 type SavedListing struct {
 	UserID    uuid.UUID
-	ListingID int32
+	ListingID uuid.UUID
 	CreatedAt sql.NullTime
 }
 

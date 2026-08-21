@@ -27,19 +27,25 @@ func (q *Queries) CountUnreadForUser(ctx context.Context, userID uuid.UUID) (int
 }
 
 const createMessage = `-- name: CreateMessage :one
-INSERT INTO messages (conversation_id, sender_id, body)
-VALUES ($1, $2, $3)
+INSERT INTO messages (id, conversation_id, sender_id, body)
+VALUES ($1, $2, $3, $4)
 RETURNING id, conversation_id, sender_id, body, read_at, created_at
 `
 
 type CreateMessageParams struct {
-	ConversationID int32
+	ID             uuid.UUID
+	ConversationID uuid.UUID
 	SenderID       uuid.UUID
 	Body           string
 }
 
 func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error) {
-	row := q.db.QueryRowContext(ctx, createMessage, arg.ConversationID, arg.SenderID, arg.Body)
+	row := q.db.QueryRowContext(ctx, createMessage,
+		arg.ID,
+		arg.ConversationID,
+		arg.SenderID,
+		arg.Body,
+	)
 	var i Message
 	err := row.Scan(
 		&i.ID,
@@ -61,8 +67,8 @@ LIMIT $3
 `
 
 type ListMessagesAfterParams struct {
-	ConversationID int32
-	AfterID        int32
+	ConversationID uuid.UUID
+	AfterID        uuid.UUID
 	MaxRows        int32
 }
 
@@ -104,7 +110,7 @@ LIMIT $2
 `
 
 type ListRecentMessagesParams struct {
-	ConversationID int32
+	ConversationID uuid.UUID
 	Limit          int32
 }
 
@@ -147,7 +153,7 @@ WHERE conversation_id = $1
 `
 
 type MarkMessagesReadParams struct {
-	ConversationID int32
+	ConversationID uuid.UUID
 	ReaderID       uuid.UUID
 }
 

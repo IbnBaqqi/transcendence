@@ -60,7 +60,7 @@ ON CONFLICT (user_id, listing_id) DO NOTHING
 
 type SaveListingParams struct {
 	UserID    uuid.UUID
-	ListingID int32
+	ListingID uuid.UUID
 }
 
 func (q *Queries) SaveListing(ctx context.Context, arg SaveListingParams) error {
@@ -75,7 +75,7 @@ WHERE user_id = $1 AND listing_id = $2
 
 type UnsaveListingParams struct {
 	UserID    uuid.UUID
-	ListingID int32
+	ListingID uuid.UUID
 }
 
 func (q *Queries) UnsaveListing(ctx context.Context, arg UnsaveListingParams) (int64, error) {
