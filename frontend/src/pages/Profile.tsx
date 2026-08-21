@@ -4,13 +4,12 @@
 // they render read-only. Contact details and bio are editable in their
 // sections below (PATCH /me/profile). Password change has no backend endpoint
 // yet (#32/#33) and the preference toggles have no matching settings fields,
-// so those stay as visible placeholders.
+// so they stay commented out below until then.
 //
 // This page is only viewable for the logged-in user of the same profile.
 // To view another user's profile we have User.tsx
 import Avatar from "../components/objects/Avatar.tsx";
 import Button from "../components/objects/Button.tsx";
-import Toggle from "../components/objects/Toggle.tsx";
 import { ContactDetailsSection } from "../components/forms/ContactDetailsSection.tsx";
 import { ChangePasswordSection } from "../components/forms/ChangePasswordSection.tsx";
 import { BioSection } from "../components/forms/BioSection.tsx";
@@ -22,9 +21,6 @@ import { isApiError } from "../api/client";
 import { deriveInitials } from "../lib/initials";
 
 export default function Profile() {
-  // Placeholder preferences until /me/settings grows matching fields.
-  const [marketing, setMarketing] = useState(false);
-  const [hideDetails, setHideDetails] = useState(false);
   const { openModal } = useModal();
   const { logout } = useAuth();
 
@@ -83,8 +79,10 @@ export default function Profile() {
             <div>
               <Avatar
                 size="lg"
-                // NOTE: Use first/last name for Avatar initials? Needs to be consistent across header mini avatar and profile page
-                initials={deriveInitials(profile.username)}
+                // Real names beat the username fallback; the header mini
+                // avatar stays username-only because the auth session carries
+                // no names (see Header.tsx).
+                initials={deriveInitials(profile.username, profile.firstname, profile.lastname)}
                 editable
                 imageUrl={avatarPreviewUrl}
                 onImageSelected={setAvatarFile}
