@@ -35,6 +35,13 @@ info:
 
     Public endpoints (browsing listings, search, images) work without one.
 
+    ## Ids
+
+    Every id is a **uuid v7**: the leading 48 bits are a millisecond timestamp,
+    so ids sort chronologically and carry their own creation time. Treat them
+    as opaque strings - the ordering is safe to rely on for cursors, but not
+    something to parse.
+
     ## Errors
 
     Errors from the endpoints below are all the same shape:
@@ -130,9 +137,9 @@ components:
       required: [id, url, position]
       properties:
         id:
-          type: integer
-          format: int32 # int32 in Go; "format" is a hint, not a constraint
-          examples: [7]
+          type: string
+          format: uuid
+          examples: ["01a02305-b81c-7dcb-86a0-7f75e33e0af3"]
         url:
           type: string
           description: Path served by the API, e.g. for use in an `img` tag.
@@ -162,9 +169,9 @@ components:
         ]
       properties:
         id:
-          type: integer
-          format: int32
-          examples: [23]
+          type: string
+          format: uuid
+          examples: ["01a02305-b81c-7dcb-86a0-7f75e33e0af3"]
         seller_id:
           type: string
           format: uuid # Go uuid.UUID marshals to a string
@@ -240,8 +247,8 @@ components:
       required: [id, name, key_prefix, last_used_at, revoked_at, created_at]
       properties:
         id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
         name:
           type: string
         key_prefix:
@@ -416,8 +423,8 @@ components:
       required: [listing_id, quantity]
       properties:
         listing_id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
           exclusiveMinimum: 0
         quantity:
           type: integer
@@ -444,11 +451,11 @@ components:
         ]
       properties:
         id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
         listing_id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
         listing_title:
           type: string
           description: |
@@ -517,8 +524,8 @@ components:
       required: [listing_id, body]
       properties:
         listing_id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
         body:
           type: string
           maxLength: 2000
@@ -570,12 +577,12 @@ components:
       required: [id, conversation_id, sender_id, body, created_at]
       properties:
         id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
           description: Ascending; also the cursor for the `after` parameter.
         conversation_id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
         sender_id:
           type: string
           format: uuid
@@ -628,13 +635,13 @@ components:
         ]
       properties:
         id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
         listing_id:
           # Nullable: the FK is ON DELETE SET NULL, so a deleted listing leaves
           # the conversation intact with listing_id null.
-          type: [integer, "null"]
-          format: int32
+          type: [string, "null"]
+          format: uuid
         listing_title:
           type: string
           description: |
@@ -672,11 +679,11 @@ components:
         ]
       properties:
         id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
         listing_id:
-          type: [integer, "null"]
-          format: int32
+          type: [string, "null"]
+          format: uuid
         listing_title:
           type: string
         status:
@@ -732,11 +739,11 @@ components:
       required: [id, order_id, actor_id, from_status, to_status, note, created_at]
       properties:
         id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
         order_id:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
         actor_id:
           type: [string, "null"]
           format: uuid
@@ -1317,8 +1324,8 @@ paths:
         in: path
         required: true # path parameters are ALWAYS required
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     get:
       tags: [listings]
       summary: Get one listing
@@ -1414,8 +1421,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     get:
       tags: [images]
       summary: List a listing's photos
@@ -1590,14 +1597,14 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
       - name: imageID
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     delete:
       tags: [images]
       summary: Delete a photo
@@ -1630,8 +1637,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     post:
       tags: [wishlist]
       summary: Save a listing
@@ -2039,8 +2046,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     get:
       tags: [orders]
       summary: Get one order
@@ -2071,8 +2078,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     get:
       tags: [orders]
       summary: An order's history
@@ -2121,8 +2128,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     post:
       tags: [orders]
       summary: Seller accepts the order
@@ -2160,8 +2167,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     post:
       tags: [orders]
       summary: Seller marks the goods handed over
@@ -2204,8 +2211,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     post:
       tags: [orders]
       summary: Buyer confirms receipt
@@ -2245,8 +2252,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     post:
       tags: [orders]
       summary: Cancel an order
@@ -2357,8 +2364,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     get:
       tags: [chat]
       summary: Get one conversation
@@ -2390,8 +2397,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     post:
       tags: [chat]
       summary: Seller accepts a chat request
@@ -2433,8 +2440,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     post:
       tags: [chat]
       summary: Seller declines a chat request
@@ -2478,8 +2485,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     get:
       tags: [chat]
       summary: Read a conversation's messages
@@ -2497,12 +2504,13 @@ paths:
         - name: after
           in: query
           description: |
-            Return only messages with an id greater than this. `0` and an
-            omitted value both mean "no cursor".
+            Return only messages newer than this one. Omit it for the first
+            page. Ids are uuid v7, so they sort chronologically and this stays
+            a stable cursor even for two messages sent in the same
+            millisecond.
           schema:
-            type: integer
-            format: int32
-            minimum: 0
+            type: string
+            format: uuid
         - name: limit
           in: query
           description: |
@@ -2579,8 +2587,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     post:
       tags: [chat]
       summary: Mark the other side's messages as read
@@ -2677,8 +2685,8 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
-          format: int32
+          type: string
+          format: uuid
     delete:
       tags: [me]
       summary: Revoke an API key
@@ -2692,7 +2700,7 @@ paths:
         "204":
           description: Revoked. No body.
         "400":
-          description: The id is not an integer.
+          description: The id is not a uuid.
           content:
             application/json:
               schema:
