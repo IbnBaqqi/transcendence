@@ -66,6 +66,3 @@ func (h *Handler) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusOK, dtos.ToPublicProfileResponse(detail.User, detail.Profile, detail.Location))
 }
-
-// Users are keyed by uuid, unlike listings and orders - so parseIDParam,
-// which parses an int32, is not usable here.

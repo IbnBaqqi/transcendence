@@ -80,7 +80,7 @@ func run() error {
 
 	if cfg.Env == "dev" {
 		log.Info("clearing existing listings and users (dev only)")
-		if _, err := db.ExecContext(ctx, "TRUNCATE listings, users RESTART IDENTITY CASCADE"); err != nil {
+		if _, err := db.ExecContext(ctx, "TRUNCATE listings, users CASCADE"); err != nil {
 			return fmt.Errorf("failed to truncate tables: %w", err)
 		}
 	}
@@ -88,6 +88,7 @@ func run() error {
 	sellerIDs := make([]uuid.UUID, 0, len(seedUsers))
 	for _, u := range seedUsers {
 		user, err := db.Queries.CreateUser(ctx, database.CreateUserParams{
+			ID:       database.NewID(),
 			Email:    u.Email,
 			Username: u.Username,
 			Password: "seed-placeholder-password",
@@ -106,6 +107,7 @@ func run() error {
 	listingCount := 0
 	for _, l := range seedListings {
 		_, err := db.Queries.CreateListing(ctx, database.CreateListingParams{
+			ID:          database.NewID(),
 			SellerID:    sellerIDs[l.SellerIdx],
 			Title:       l.Title,
 			Description: sql.NullString{String: l.Description, Valid: true},

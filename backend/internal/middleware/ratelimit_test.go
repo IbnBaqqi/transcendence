@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
-	"time"
 )
 
 // Two stable keys, so "a different key is unaffected" reads clearly.

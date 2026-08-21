@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"github.com/google/uuid"
-
 	"net/http"
+
+	"github.com/google/uuid"
 
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )

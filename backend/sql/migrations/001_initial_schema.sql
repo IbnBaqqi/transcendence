@@ -10,8 +10,12 @@
 --    still chronological and the message cursor (id > $2) still works. Random
 --    v4 would have made chat message order arbitrary and broken pagination.
 --
---    There is deliberately no DEFAULT on any id. A forgotten one is then a NOT
---    NULL violation - loud - rather than a silent v4 that sorts wrongly.
+--    There is deliberately no DEFAULT on any id, so a v4 can never appear by
+--    accident. Note what that does and does not catch: raw SQL omitting the
+--    column fails immediately on NOT NULL, but a Go struct with the field
+--    unset sends uuid.Nil, which inserts silently and only collides on the
+--    second row. uuid.Nil also sorts below every v7, so a forgotten message id
+--    would jump to the top of its thread.
 --    Postgres 16 has no uuidv7(), and a SQL implementation would only order to
 --    the millisecond; order_events writes two rows in one transaction that
 --    share a created_at and need the id tiebreak.

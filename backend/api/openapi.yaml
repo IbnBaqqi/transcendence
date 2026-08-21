@@ -425,7 +425,6 @@ components:
         listing_id:
           type: string
           format: uuid
-          exclusiveMinimum: 0
         quantity:
           type: integer
           format: int32

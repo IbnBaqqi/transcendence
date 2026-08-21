@@ -62,6 +62,25 @@ func New(t *testing.T) *database.DB {
 	return db
 }
 
+// NewWithURL is New, plus the connection string it built. A test that has to
+// hand the database to a subprocess needs it; everything else should use New.
+func NewWithURL(t *testing.T) (*database.DB, string) {
+	t.Helper()
+
+	adminURL := os.Getenv(EnvURL)
+	if adminURL == "" {
+		t.Skipf("set %s to run database tests", EnvURL)
+	}
+
+	db := New(t)
+
+	var name string
+	if err := db.QueryRow("SELECT current_database()").Scan(&name); err != nil {
+		t.Fatalf("reading the database name: %v", err)
+	}
+	return db, withDatabase(t, adminURL, name)
+}
+
 // open connects through the app's own Connect, so tests exercise the same
 // pool settings the server uses.
 func open(t *testing.T, dbURL string) *database.DB {
