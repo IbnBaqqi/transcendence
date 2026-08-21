@@ -2,6 +2,7 @@
 // NavLink: a Link that knows if it points to the current page, so you can style the active one differently
 import { useModal } from "../../providers/modalContext";
 import { useAuth } from "../../hooks/useAuth";
+import { deriveInitials } from "../../lib/initials";
 import { Link, NavLink } from "react-router-dom";
 import Avatar from "../objects/Avatar.tsx";
 
@@ -12,8 +13,9 @@ export default function Header() {
   const { user } = useAuth();
   const { openModal, openChat } = useModal();
 
-  // Two letters from the username; good enough until real avatars land.
-  const initials = user ? user.username.slice(0, 2).toUpperCase() : "?";
+  // Names live on the profile, not the auth session - header works from the
+  // username alone and "?" covers signed-out visitors.
+  const initials = user ? deriveInitials(user.username) : "?";
 
   return (
     <header className="border-line bg-surface sticky top-0 z-10 border-b">

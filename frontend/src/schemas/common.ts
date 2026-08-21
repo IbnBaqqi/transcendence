@@ -16,11 +16,17 @@ export const emailSchema = z
   .min(1, "Email is required")
   .max(150, "Email must be less than 150 characters")
   .email("Invalid email address");
+// NOTE: Backend caps firstname/lastname at 150 bytes (len() in
+// validateProfileInput); the refine below enforces that stricter byte limit
+// for multibyte text where the rune-counted max() alone wouldn't catch it.
 export const nameSchema = z
   .string()
   .trim()
   .min(1, "Name is required")
-  .max(64, "Name must be less than 64 characters");
+  .max(150, "Name must be less than 150 characters")
+  .refine((v) => new TextEncoder().encode(v).length <= 150, {
+    message: "Name must be less than 150 characters",
+  });
 export const passwordSchema = z
   .string()
   .trim()
@@ -58,12 +64,18 @@ export const priceSchema = z.number("Price is required").positive("Needs a valid
 export const quantitySchema = z.int32("Quantity is required").positive("Needs a valid quantity");
 export const unitSchema = z.string().trim().min(1, "Unit is required").max(20, "Unit too long");
 
+// NOTE: Backend caps location at 100 bytes (len() in validateProfileInput,
+// shared with the addresses table); the refine below enforces that stricter
+// byte limit for multibyte text where the rune-counted max() alone wouldn't.
 export const locationSchema = z
   .string()
   .trim()
   .min(1, "Location is required")
-  .max(64, "Location name is too long")
-  .regex(/^[\p{L}\s.'-]+$/u, "Invalid location");
+  .max(100, "Location name is too long")
+  .regex(/^[\p{L}\s.'-]+$/u, "Invalid location")
+  .refine((v) => new TextEncoder().encode(v).length <= 100, {
+    message: "Location name is too long",
+  });
 // NOTE: If we want real geodata then we will need to link to an API such as OpenMaps
 
 // NOTE: Exports for common schemas that are directly used without wrapper objects

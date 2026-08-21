@@ -143,6 +143,32 @@ export interface AuthResponse {
   user: User;
 }
 
+// GET /me/profile. Unset fields arrive as null rather than absent, so forms
+// can render an empty input without deciding whether the key exists.
+export interface OwnProfile {
+  id: string;
+  username: string;
+  email: string;
+  firstname: string | null;
+  lastname: string | null;
+  bio: string | null;
+  phone_number: string | null;
+  date_of_birth: string | null;
+  location: string | null;
+}
+
+// PATCH /me/profile body. Each field has three states: key absent keeps the
+// current value, "" or null clears it, a value replaces it (trimmed). Username
+// and email are identity, not profile - they are not updatable here.
+export type ProfileUpdateInput = Partial<{
+  firstname: string | null;
+  lastname: string | null;
+  bio: string | null;
+  phone_number: string | null;
+  date_of_birth: string | null;
+  location: string | null;
+}>;
+
 // TODO: add an ApiError interface? e.g.
 // export interface ApiError {
 //   error: string;

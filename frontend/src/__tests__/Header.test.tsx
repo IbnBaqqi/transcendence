@@ -51,5 +51,6 @@ test("shows who is signed in", () => {
   renderHeader({
     user: { id: "u1", username: "forager", email: "f@example.com", role: "USER" },
   });
-  expect(screen.getByText("FO")).toBeInTheDocument();
+  // Single initial from the username - names live on the profile.
+  expect(screen.getByText("F")).toBeInTheDocument();
 });
