@@ -86,7 +86,7 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 		ID:       database.NewID(),
 		Username: input.Username,
 		Email:    input.Email,
-		Password: string(hashed),
+		Password: sql.NullString{String: string(hashed), Valid: true},
 	})
 	if err != nil {
 		if conflict := duplicateUserError(err); conflict != nil {
@@ -132,7 +132,18 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 		return LoginResult{}, &AuthError{Message: "invalid email or password"}
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
+	// An account created through an OAuth provider has no password. bcrypt
+	// would reject the empty hash below anyway, so this is defence in depth
+	// rather than the thing that stops the login - it states the intent, and
+	// keeps the protection if the comparison is ever changed or given a fast
+	// path. The message is the one a wrong password gets: saying "this account
+	// uses Google" would confirm the address exists and reveal how to attack
+	// it.
+	if !user.Password.Valid {
+		return LoginResult{}, &AuthError{Message: "invalid email or password"}
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password.String), []byte(input.Password)); err != nil {
 		return LoginResult{}, &AuthError{Message: "invalid email or password"}
 	}
 

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,7 +30,7 @@ func profileRouter(t *testing.T) (http.Handler, uuid.UUID) {
 		ID:       database.NewID(),
 		Username: "aino",
 		Email:    "aino@example.test",
-		Password: "irrelevant",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
 	})
 	if err != nil {
 		t.Fatalf("creating a user: %v", err)

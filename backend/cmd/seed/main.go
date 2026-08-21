@@ -95,7 +95,7 @@ func run() error {
 			ID:       database.NewID(),
 			Email:    u.Email,
 			Username: u.Username,
-			Password: "seed-placeholder-password",
+			Password: sql.NullString{String: "seed-placeholder-password", Valid: true},
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create seed user %s: %w", u.Email, err)
