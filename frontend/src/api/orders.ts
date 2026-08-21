@@ -17,7 +17,7 @@ function toOrder(o: OrderWire): Order {
 }
 
 export interface CreateOrderInput {
-  listing_id: number;
+  listing_id: string;
   quantity: number;
 }
 
@@ -30,11 +30,11 @@ export function useOrders() {
   });
 }
 
-export function useOrder(id: number) {
+export function useOrder(id: string) {
   return useQuery({
     queryKey: keys.orders.detail(id),
     queryFn: async () => toOrder((await api.get<OrderWire>(`/orders/${id}`)).data),
-    enabled: Number.isInteger(id) && id > 0,
+    enabled: id !== "",
   });
 }
 
@@ -63,7 +63,7 @@ function useOrderTransition(action: Transition) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: number) =>
+    mutationFn: async (id: string) =>
       toOrder((await api.post<OrderWire>(`/orders/${id}/${action}`)).data),
 
     onSuccess: (order) => {

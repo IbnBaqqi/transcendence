@@ -42,11 +42,11 @@ export function useListings() {
   });
 }
 
-export function useListing(id: number) {
+export function useListing(id: string) {
   return useQuery({
     queryKey: keys.listings.detail(id),
     queryFn: async () => (await api.get<Listing>(`/listings/${id}`)).data,
-    enabled: Number.isInteger(id) && id > 0, // skip while a route param is still being parsed
+    enabled: id !== "", // skip while a route param is still being parsed
   });
 }
 
@@ -61,43 +61,43 @@ export function useSearchListings(params: ListingSearchParams) {
 
 // Listings already carry their images, so this is only for the cases that
 // need them on their own - the upload UI in #90.
-export function useListingImages(id: number) {
+export function useListingImages(id: string) {
   return useQuery({
     queryKey: keys.listings.images(id),
     queryFn: async () => (await api.get<ListingImage[]>(`/listings/${id}/images`)).data ?? [],
-    enabled: Number.isInteger(id) && id > 0,
+    enabled: id !== "",
   });
 }
 
-async function uploadListingImage(listingId: number, file: File): Promise<ListingImage> {
+async function uploadListingImage(listingId: string, file: File): Promise<ListingImage> {
   const body = new FormData();
   body.append("image", file);
   const res = await api.post<ListingImage>(`/listings/${listingId}/images`, body);
   return res.data;
 }
 
-export function useUploadListingImage(listingId: number | undefined) {
+export function useUploadListingImage(listingId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (file: File) => uploadListingImage(listingId as number, file),
+    mutationFn: (file: File) => uploadListingImage(listingId as string, file),
     onSuccess: () => {
-      const id = listingId as number;
+      const id = listingId as string;
       queryClient.invalidateQueries({ queryKey: keys.listings.images(id) });
       queryClient.invalidateQueries({ queryKey: keys.listings.detail(id) });
     },
   });
 }
 
-async function deleteListingImage(listingId: number, imageId: number): Promise<void> {
+async function deleteListingImage(listingId: string, imageId: string): Promise<void> {
   await api.delete(`/listings/${listingId}/images/${imageId}`);
 }
 
-export function useDeleteListingImage(listingId: number | undefined) {
+export function useDeleteListingImage(listingId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (imageId: number) => deleteListingImage(listingId as number, imageId),
+    mutationFn: (imageId: string) => deleteListingImage(listingId as string, imageId),
     onSuccess: () => {
-      const id = listingId as number;
+      const id = listingId as string;
       queryClient.invalidateQueries({ queryKey: keys.listings.images(id) });
       queryClient.invalidateQueries({ queryKey: keys.listings.detail(id) });
     },

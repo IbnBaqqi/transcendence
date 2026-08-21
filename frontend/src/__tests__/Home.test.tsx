@@ -23,7 +23,7 @@ const sample = makeListing();
 // Deliberately different: id (so keys are unique), title (so we can assert
 // both rendered), unit (so the "available" lines don't collide in getByText).
 const secondSample = makeListing({
-  id: 2,
+  id: "01a02305-b81d-764a-a738-d8c0642639de",
   title: "Wild Blueberries",
   description: "Hand-picked from a sunny hillside.",
   category: "berries",

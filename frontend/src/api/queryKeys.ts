@@ -12,24 +12,24 @@ export const keys = {
   listings: {
     all: ["listings"] as const,
     list: () => [...keys.listings.all, "list"] as const,
-    detail: (id: number) => [...keys.listings.all, "detail", id] as const,
+    detail: (id: string) => [...keys.listings.all, "detail", id] as const,
     // The query string is part of the key: different filters are different
     // cache entries, so going back to a previous search is instant.
     search: (query: string) => [...keys.listings.all, "search", query] as const,
-    images: (id: number) => [...keys.listings.all, "images", id] as const,
+    images: (id: string) => [...keys.listings.all, "images", id] as const,
   },
 
   orders: {
     all: ["orders"] as const,
     list: () => [...keys.orders.all, "list"] as const,
-    detail: (id: number) => [...keys.orders.all, "detail", id] as const,
+    detail: (id: string) => [...keys.orders.all, "detail", id] as const,
   },
 
   conversations: {
     all: ["conversations"] as const,
     list: () => [...keys.conversations.all, "list"] as const,
-    detail: (id: number) => [...keys.conversations.all, "detail", id] as const,
-    messages: (id: number) => [...keys.conversations.all, "messages", id] as const,
+    detail: (id: string) => [...keys.conversations.all, "detail", id] as const,
+    messages: (id: string) => [...keys.conversations.all, "messages", id] as const,
   },
 
   me: {

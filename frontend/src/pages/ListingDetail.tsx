@@ -4,12 +4,14 @@ import { useParams } from "react-router-dom";
 //
 // useParams reads the dynamic segments of the current URL. The route is
 // registered as "/listings/:id", so the ":id" part is captured by name -
-// visiting /listings/7 gives { id: "7" }.
+// visiting /listings/01a02305-b81c-7dcb-86a0-7f75e33e0af3 gives that
+// string back under { id }.
 //
-// two thing worth knowing: the value is always a string (URLs are text), so
-// it needs Number() before being used as a numeric id. and its typed as
-// string | undefined, because TypeScript can't know which route rendered this
-// component - React Router has no way to prove ":id" exists in the path
+// two things worth knowing: the value is always a string (URLs are text),
+// which is exactly what the API wants - ids are uuids, so it goes straight
+// into a request with no conversion. and it's typed string | undefined,
+// because TypeScript can't know which route rendered this component - React
+// Router has no way to prove ":id" exists in the path
 export default function ListingDetail() {
   const { id } = useParams();
 

@@ -4,7 +4,7 @@ import type { Listing } from "../api/types";
 // mean editing every test that builds one.
 export function makeListing(overrides: Partial<Listing> = {}): Listing {
   return {
-    id: 1,
+    id: "01a02305-b81c-7dcb-86a0-7f75e33e0af3",
     seller_id: "3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34",
     title: "Golden Chanterelles",
     description: "Freshly foraged this morning.",
