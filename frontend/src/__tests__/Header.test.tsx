@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Header from "../components/layout/Header";
@@ -26,13 +27,17 @@ function renderHeader(auth?: Partial<AuthContextValue>) {
         </ModalProvider>
       </AuthContext.Provider>
     ) : (
-      <AuthProvider>
-        <ModalProvider>
-          <MemoryRouter>
-            <Header />
-          </MemoryRouter>
-        </ModalProvider>
-      </AuthProvider>
+      // AuthProvider clears the query cache on logout, so it needs a
+      // QueryClient in scope even though this suite never triggers that path.
+      <QueryClientProvider client={new QueryClient()}>
+        <AuthProvider>
+          <ModalProvider>
+            <MemoryRouter>
+              <Header />
+            </MemoryRouter>
+          </ModalProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     ),
   );
 }

@@ -16,6 +16,7 @@ import { ChangePasswordSection } from "../components/forms/ChangePasswordSection
 import { BioSection } from "../components/forms/BioSection.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { useModal } from "../providers/modalContext";
+import { useAuth } from "../hooks/useAuth";
 import { useOwnProfile } from "../api/profile";
 import { isApiError } from "../api/client";
 import { deriveInitials } from "../lib/initials";
@@ -25,10 +26,23 @@ export default function Profile() {
   const [marketing, setMarketing] = useState(false);
   const [hideDetails, setHideDetails] = useState(false);
   const { openModal } = useModal();
+  const { logout } = useAuth();
 
   const { data: profile, isLoading, error } = useOwnProfile();
 
   const signedOut = isApiError(error) && error.status === 401;
+
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      // Clears the session (and its cache) - the profile query then reruns,
+      // gets a 401, and the signed-out branch above takes over.
+      await logout();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   // The image the user picked in the "imageUpload" modal. There's no avatar
   // upload endpoint yet (#14), so this only lives in memory as a preview -
@@ -108,10 +122,15 @@ export default function Profile() {
             </div>
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">Account Deletion</h2>
-            <Button variant="secondary" onClick={() => openModal("deleteAccount")}>
-              Delete Account
-            </Button>
+            <h2 className="text-foreground text-lg font-bold">Account Management</h2>
+            <div className="flex flex-row gap-4">
+              <Button variant="primary" onClick={handleLogout} disabled={isLoggingOut}>
+                {isLoggingOut ? "Logging out…" : "Log Out"}
+              </Button>
+              <Button variant="secondary" onClick={() => openModal("deleteAccount")}>
+                Delete Account
+              </Button>
+            </div>
           </div>
         </>
       )}

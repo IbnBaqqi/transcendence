@@ -27,15 +27,20 @@ const PROFILE: OwnProfile = {
   location: "Espoo",
 };
 
-// Profile itself only needs the modal system (delete-account, login prompt).
-// The auth stub exists because the login modal it can open needs a context.
+// Profile itself only needs the modal system (delete-account, login prompt)
+// and the logout action. The auth stub exists because the login modal it can
+// open needs a context too.
 const AUTH_STUB: AuthContextValue = {
   user: null,
   isLoading: false,
   login: vi.fn().mockResolvedValue(undefined),
   signup: vi.fn(),
-  logout: vi.fn(),
+  logout: vi.fn().mockResolvedValue(undefined),
 };
+
+beforeEach(() => {
+  vi.mocked(AUTH_STUB.logout).mockClear();
+});
 
 // Only the three fields the page actually reads; the real query result type
 // is richer than any stub needs.
@@ -87,4 +92,32 @@ test("other failures surface their message rather than spinning forever", () => 
     error: { status: 500, message: "Something went wrong" },
   });
   expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+});
+
+test("logs out through the auth context when Log Out is clicked", async () => {
+  const user = userEvent.setup();
+  renderPage({ data: PROFILE, isLoading: false, error: null });
+
+  await user.click(screen.getByRole("button", { name: "Log Out" }));
+
+  expect(AUTH_STUB.logout).toHaveBeenCalledTimes(1);
+});
+
+test("disables the Log Out button while the request is in flight", async () => {
+  let resolveLogout!: () => void;
+  vi.mocked(AUTH_STUB.logout).mockReturnValue(
+    new Promise<void>((resolve) => {
+      resolveLogout = resolve;
+    }),
+  );
+  const user = userEvent.setup();
+  renderPage({ data: PROFILE, isLoading: false, error: null });
+
+  await user.click(screen.getByRole("button", { name: "Log Out" }));
+
+  const pendingButton = screen.getByRole("button", { name: "Logging out…" });
+  expect(pendingButton).toBeDisabled();
+
+  resolveLogout();
+  expect(await screen.findByRole("button", { name: "Log Out" })).toBeInTheDocument();
 });

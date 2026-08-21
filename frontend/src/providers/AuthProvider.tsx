@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   getCurrentUser,
   login as loginApi,
@@ -12,6 +13,7 @@ import { AuthContext, ACCESS_TOKEN_KEY } from "./AuthContext";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const queryClient = useQueryClient();
   // True until the restore attempt below finishes. Starting optimistic means
   // consumers can wait out one round trip instead of flashing logged-out UI
   // on every page load.
@@ -53,6 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function storeSession(res: AuthResponse) {
     localStorage.setItem(ACCESS_TOKEN_KEY, res.access_token);
     setUser(res.user);
+    // Anything cached so far (e.g. a 401 on /me/profile from before this
+    // login) was fetched signed-out or as somebody else - drop it so pages
+    // already on screen, like Profile after its "Log In" button, refetch
+    // under the new session instead of continuing to show that stale result.
+    queryClient.clear();
   }
 
   async function login(email: string, password: string) {
@@ -72,6 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     setUser(null);
+    // Every cached query (profile, orders, conversations, ...) was scoped to
+    // the session that just ended - drop it all so the next signed-in user
+    // (or a re-login as the same one) never renders someone else's stale data.
+    queryClient.clear();
   }
 
   return (
