@@ -24,8 +24,8 @@ func userWithPresence(lastSeen sql.NullTime, show bool) database.User {
 func conversationFor(buyer, seller uuid.UUID) database.Conversation {
 	now := sql.NullTime{Time: time.Unix(0, 0).UTC(), Valid: true}
 	return database.Conversation{
-		ID:           1,
-		ListingID:    sql.NullInt32{Int32: 7, Valid: true},
+		ID:           uuid.New(),
+		ListingID:    uuid.NullUUID{UUID: uuid.New(), Valid: true},
 		ListingTitle: "Chanterelles",
 		BuyerID:      buyer,
 		SellerID:     seller,
@@ -118,7 +118,7 @@ func TestConversationSurvivesADeletedListing(t *testing.T) {
 	buyer, seller := uuid.New(), uuid.New()
 
 	conv := conversationFor(buyer, seller)
-	conv.ListingID = sql.NullInt32{}
+	conv.ListingID = uuid.NullUUID{}
 
 	res := ToConversationResponse(conv, userWithPresence(sql.NullTime{}, true), buyer)
 
@@ -154,7 +154,7 @@ func TestConversationRoleFollowsViewer(t *testing.T) {
 func TestListItemWithoutMessages(t *testing.T) {
 	buyer := uuid.New()
 	row := database.ListConversationsForUserRow{
-		ID:              1,
+		ID:              uuid.New(),
 		BuyerID:         buyer,
 		SellerID:        uuid.New(),
 		Status:          "pending",
@@ -183,7 +183,7 @@ func TestListItemWithMessages(t *testing.T) {
 	buyer := uuid.New()
 	at := time.Unix(1000, 0).UTC()
 	row := database.ListConversationsForUserRow{
-		ID:              1,
+		ID:              uuid.New(),
 		BuyerID:         buyer,
 		SellerID:        uuid.New(),
 		Status:          "accepted",
@@ -205,7 +205,7 @@ func TestListItemWithMessages(t *testing.T) {
 }
 
 func TestMessageResponseReadState(t *testing.T) {
-	unread := ToMessageResponse(database.Message{ID: 1, Body: "hei"})
+	unread := ToMessageResponse(database.Message{ID: uuid.New(), Body: "hei"})
 	if unread.ReadAt != nil {
 		t.Error("read_at set on an unread message")
 	}
@@ -219,7 +219,7 @@ func TestMessageResponseReadState(t *testing.T) {
 	}
 
 	read := ToMessageResponse(database.Message{
-		ID:     2,
+		ID:     uuid.New(),
 		Body:   "hei",
 		ReadAt: sql.NullTime{Time: time.Unix(0, 0).UTC(), Valid: true},
 	})

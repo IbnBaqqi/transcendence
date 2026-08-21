@@ -150,6 +150,26 @@ Note that `go:embed` bakes the spec in **at build time** — after editing the
 YAML, rebuild (`docker compose up --build`) before the change shows up at
 `/api/docs`.
 
+## After the id migration — recreate your database
+
+The migration history was replaced with a single baseline
+(`001_initial_schema.sql`) and every id became a uuid. goose tracks versions by
+number, so a database already at version 21 sees one file, decides it is
+applied, and reports:
+
+```
+goose: no migrations to run. current version: 21
+```
+
+That leaves the old integer schema in place while the code sends uuids, and the
+app half-works before failing on the first listing insert. Recreate it once:
+
+```bash
+docker compose down -v
+docker compose up -d db
+cd backend && make migrate-up && make seed
+```
+
 ## Roles and the first admin
 
 Accounts are `USER` or `ADMIN` — those two values only, enforced by a `CHECK`

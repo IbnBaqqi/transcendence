@@ -46,6 +46,10 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
+
+	if err := database.AssertSchemaCurrent(ctx, db.DB); err != nil {
+		return err
+	}
 	defer func() {
 		if err := db.Close(); err != nil {
 			log.Error("failed to close database connection", "error", err)

@@ -205,6 +205,7 @@ func TestTheUniqueIndexIsTheBackstop(t *testing.T) {
 	}
 
 	_, err := db.Queries.CreateUser(ctx, database.CreateUserParams{
+		ID:       database.NewID(),
 		Username: "forager",
 		Email:    "someone.else@example.test",
 		Password: "irrelevant",
@@ -230,6 +231,7 @@ func TestTheEmailIndexIsTheBackstop(t *testing.T) {
 	}
 
 	_, err := db.Queries.CreateUser(ctx, database.CreateUserParams{
+		ID:       database.NewID(),
 		Username: "someoneelse",
 		Email:    "aino@example.test",
 		Password: "irrelevant",

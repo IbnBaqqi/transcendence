@@ -110,9 +110,9 @@ func (h *Handler) GetMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	afterID, err := parseOptionalInt32(r.URL.Query().Get("after"))
+	afterID, err := parseOptionalUUID(r.URL.Query().Get("after"))
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "after must be a positive integer")
+		respondWithError(w, http.StatusBadRequest, "after must be a uuid")
 		return
 	}
 
@@ -184,7 +184,7 @@ func (h *Handler) respondWithConversation(
 	w http.ResponseWriter,
 	r *http.Request,
 	userID uuid.UUID,
-	conversationID int32,
+	conversationID uuid.UUID,
 	status int,
 ) {
 	conv, other, err := h.Conversation.GetConversationDetail(r.Context(), userID, conversationID)
@@ -196,6 +196,8 @@ func (h *Handler) respondWithConversation(
 	respondWithJSON(w, status, dtos.ToConversationResponse(conv, other, userID))
 }
 
+// parseOptionalInt32 reads a non-negative integer from a query string, treating
+// an empty value as absent. Still an integer: `limit` is a count, not an id.
 func parseOptionalInt32(raw string) (int32, error) {
 	if raw == "" {
 		return 0, nil

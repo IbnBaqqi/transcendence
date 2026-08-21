@@ -26,6 +26,7 @@ func profileRouter(t *testing.T) (http.Handler, uuid.UUID) {
 	ctx := context.Background()
 
 	user, err := db.CreateUser(ctx, database.CreateUserParams{
+		ID:       database.NewID(),
 		Username: "aino",
 		Email:    "aino@example.test",
 		Password: "irrelevant",

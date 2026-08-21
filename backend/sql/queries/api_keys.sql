@@ -1,6 +1,6 @@
 -- name: CreateKey :one
-INSERT INTO api_keys (user_id, name, key_hash, key_prefix)
-VALUES ($1, $2, $3, $4)
+INSERT INTO api_keys (id, user_id, name, key_hash, key_prefix)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: FindLiveKeyByHash :one

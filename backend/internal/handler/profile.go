@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
-
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
@@ -68,10 +65,4 @@ func (h *Handler) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, dtos.ToPublicProfileResponse(detail.User, detail.Profile, detail.Location))
-}
-
-// Users are keyed by uuid, unlike listings and orders - so parseIDParam,
-// which parses an int32, is not usable here.
-func parseUUIDParam(r *http.Request, name string) (uuid.UUID, error) {
-	return uuid.Parse(chi.URLParam(r, name))
 }

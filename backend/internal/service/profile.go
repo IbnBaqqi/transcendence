@@ -110,6 +110,7 @@ func (s *ProfileService) Update(ctx context.Context, userID uuid.UUID, input dto
 	}
 	if input.Location.Set {
 		address, err := qtx.UpsertAddress(ctx, database.UpsertAddressParams{
+			ID:       database.NewID(),
 			UserID:   userID,
 			Location: mergeString(location, input.Location),
 		})

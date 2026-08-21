@@ -13,12 +13,13 @@ import (
 )
 
 const createOrderEvent = `-- name: CreateOrderEvent :exec
-INSERT INTO order_events (order_id, actor_id, from_status, to_status, note)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO order_events (id, order_id, actor_id, from_status, to_status, note)
+VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type CreateOrderEventParams struct {
-	OrderID    int32
+	ID         uuid.UUID
+	OrderID    uuid.UUID
 	ActorID    uuid.NullUUID
 	FromStatus sql.NullString
 	ToStatus   string
@@ -27,6 +28,7 @@ type CreateOrderEventParams struct {
 
 func (q *Queries) CreateOrderEvent(ctx context.Context, arg CreateOrderEventParams) error {
 	_, err := q.db.ExecContext(ctx, createOrderEvent,
+		arg.ID,
 		arg.OrderID,
 		arg.ActorID,
 		arg.FromStatus,
@@ -43,7 +45,7 @@ WHERE order_id = $1
 ORDER BY created_at, id
 `
 
-func (q *Queries) ListOrderEvents(ctx context.Context, orderID int32) ([]OrderEvent, error) {
+func (q *Queries) ListOrderEvents(ctx context.Context, orderID uuid.UUID) ([]OrderEvent, error) {
 	rows, err := q.db.QueryContext(ctx, listOrderEvents, orderID)
 	if err != nil {
 		return nil, err

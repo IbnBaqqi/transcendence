@@ -53,7 +53,7 @@ type PaginatedListings struct {
 
 // ListingResponse is the public JSON shape for a listing.
 type ListingResponse struct {
-	ID          int32                  `json:"id"`
+	ID          uuid.UUID              `json:"id"`
 	SellerID    uuid.UUID              `json:"seller_id"`
 	Title       string                 `json:"title"`
 	Description string                 `json:"description"`
@@ -105,7 +105,7 @@ func ToListingResponseWithImages(l database.Listing, imgs []database.ListingImag
 // photos up in a map built from ONE batch query.
 func ToListingResponsesWithImages(
 	rows []database.Listing,
-	byListing map[int32][]database.ListingImage,
+	byListing map[uuid.UUID][]database.ListingImage,
 ) []ListingResponse {
 	out := make([]ListingResponse, 0, len(rows))
 	for _, r := range rows {

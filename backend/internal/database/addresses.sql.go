@@ -32,8 +32,8 @@ func (q *Queries) GetAddress(ctx context.Context, userID uuid.UUID) (Address, er
 }
 
 const upsertAddress = `-- name: UpsertAddress :one
-INSERT INTO addresses (user_id, location)
-VALUES ($1, $2)
+INSERT INTO addresses (id, user_id, location)
+VALUES ($1, $2, $3)
 ON CONFLICT (user_id) DO UPDATE
 SET location   = EXCLUDED.location,
   updated_at = CURRENT_TIMESTAMP
@@ -41,12 +41,14 @@ RETURNING id, user_id, location, created_at, updated_at
 `
 
 type UpsertAddressParams struct {
+	ID       uuid.UUID
 	UserID   uuid.UUID
 	Location sql.NullString
 }
 
+// The id is only used when the row is new; on conflict it is discarded.
 func (q *Queries) UpsertAddress(ctx context.Context, arg UpsertAddressParams) (Address, error) {
-	row := q.db.QueryRowContext(ctx, upsertAddress, arg.UserID, arg.Location)
+	row := q.db.QueryRowContext(ctx, upsertAddress, arg.ID, arg.UserID, arg.Location)
 	var i Address
 	err := row.Scan(
 		&i.ID,

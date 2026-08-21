@@ -17,13 +17,14 @@ import (
 type fakeKeyStore struct {
 	owner auth.User
 	good  string
+	keyID uuid.UUID
 }
 
-func (f fakeKeyStore) Authenticate(_ context.Context, raw string) (int32, auth.User, error) {
+func (f fakeKeyStore) Authenticate(_ context.Context, raw string) (uuid.UUID, auth.User, error) {
 	if raw == f.good {
-		return 7, f.owner, nil
+		return f.keyID, f.owner, nil
 	}
-	return 0, auth.User{}, errors.New("not usable")
+	return uuid.Nil, auth.User{}, errors.New("not usable")
 }
 
 func TestAuthenticateAcceptsEitherCredential(t *testing.T) {
@@ -33,7 +34,7 @@ func TestAuthenticateAcceptsEitherCredential(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	keys := fakeKeyStore{owner: owner, good: "fk_live_good"}
+	keys := fakeKeyStore{owner: owner, good: "fk_live_good", keyID: uuid.New()}
 
 	tests := []struct {
 		name       string
@@ -100,7 +101,7 @@ func TestSessionOnlyBlocksAPIKeys(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodPost, "/me/api-keys", nil)
 			if tt.viaKey {
-				req = req.WithContext(context.WithValue(req.Context(), apiKeyIDKey{}, int32(7)))
+				req = req.WithContext(context.WithValue(req.Context(), apiKeyIDKey{}, uuid.New()))
 			}
 			rec := httptest.NewRecorder()
 

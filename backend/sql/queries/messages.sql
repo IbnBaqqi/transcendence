@@ -1,6 +1,6 @@
 -- name: CreateMessage :one
-INSERT INTO messages (conversation_id, sender_id, body)
-VALUES ($1, $2, $3)
+INSERT INTO messages (id, conversation_id, sender_id, body)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- name: ListRecentMessages :many

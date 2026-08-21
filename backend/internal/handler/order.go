@@ -75,17 +75,17 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 
 // parseOrderRequest pulls out the two things every status endpoint needs and
 // writes the error response itself if either is missin.
-func parseOrderRequest(w http.ResponseWriter, r *http.Request) (uuid.UUID, int32, bool) {
+func parseOrderRequest(w http.ResponseWriter, r *http.Request) (uuid.UUID, uuid.UUID, bool) {
 	userID, err := getUserID(r)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "authentication required")
-		return uuid.Nil, 0, false
+		return uuid.Nil, uuid.Nil, false
 	}
 
 	id, err := parseIDParam(r)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "invalid order id")
-		return uuid.Nil, 0, false
+		return uuid.Nil, uuid.Nil, false
 	}
 
 	return userID, id, true

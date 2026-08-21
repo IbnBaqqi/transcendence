@@ -13,13 +13,14 @@ import (
 )
 
 const createConversation = `-- name: CreateConversation :one
-INSERT INTO conversations (listing_id, listing_title, buyer_id, seller_id)
-VALUES ($1, $2, $3, $4)
+INSERT INTO conversations (id, listing_id, listing_title, buyer_id, seller_id)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id, listing_id, listing_title, buyer_id, seller_id, status, created_at, updated_at
 `
 
 type CreateConversationParams struct {
-	ListingID    sql.NullInt32
+	ID           uuid.UUID
+	ListingID    uuid.NullUUID
 	ListingTitle string
 	BuyerID      uuid.UUID
 	SellerID     uuid.UUID
@@ -27,6 +28,7 @@ type CreateConversationParams struct {
 
 func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversationParams) (Conversation, error) {
 	row := q.db.QueryRowContext(ctx, createConversation,
+		arg.ID,
 		arg.ListingID,
 		arg.ListingTitle,
 		arg.BuyerID,
@@ -51,7 +53,7 @@ SELECT id, listing_id, listing_title, buyer_id, seller_id, status, created_at, u
 WHERE id = $1
 `
 
-func (q *Queries) GetConversation(ctx context.Context, id int32) (Conversation, error) {
+func (q *Queries) GetConversation(ctx context.Context, id uuid.UUID) (Conversation, error) {
 	row := q.db.QueryRowContext(ctx, getConversation, id)
 	var i Conversation
 	err := row.Scan(
@@ -73,7 +75,7 @@ WHERE id = $1
 FOR UPDATE
 `
 
-func (q *Queries) GetConversationForUpdate(ctx context.Context, id int32) (Conversation, error) {
+func (q *Queries) GetConversationForUpdate(ctx context.Context, id uuid.UUID) (Conversation, error) {
 	row := q.db.QueryRowContext(ctx, getConversationForUpdate, id)
 	var i Conversation
 	err := row.Scan(
@@ -119,8 +121,8 @@ ORDER BY c.updated_at DESC NULLS LAST
 `
 
 type ListConversationsForUserRow struct {
-	ID                    int32
-	ListingID             sql.NullInt32
+	ID                    uuid.UUID
+	ListingID             uuid.NullUUID
 	ListingTitle          string
 	BuyerID               uuid.UUID
 	SellerID              uuid.UUID
@@ -181,7 +183,7 @@ SET updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 `
 
-func (q *Queries) TouchConversation(ctx context.Context, id int32) error {
+func (q *Queries) TouchConversation(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, touchConversation, id)
 	return err
 }
@@ -195,7 +197,7 @@ RETURNING id, listing_id, listing_title, buyer_id, seller_id, status, created_at
 `
 
 type UpdateConversationStatusParams struct {
-	ID     int32
+	ID     uuid.UUID
 	Status string
 }
 

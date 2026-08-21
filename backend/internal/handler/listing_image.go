@@ -106,7 +106,7 @@ func (h *Handler) DeleteListingImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageID, err := parseInt32Param(r, "imageID")
+	imageID, err := parseUUIDParam(r, "imageID")
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "invalid image id")
 		return

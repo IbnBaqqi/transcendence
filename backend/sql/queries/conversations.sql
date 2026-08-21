@@ -1,6 +1,6 @@
 -- name: CreateConversation :one
-INSERT INTO conversations (listing_id, listing_title, buyer_id, seller_id)
-VALUES ($1, $2, $3, $4)
+INSERT INTO conversations (id, listing_id, listing_title, buyer_id, seller_id)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetConversation :one

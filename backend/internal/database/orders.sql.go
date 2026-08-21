@@ -16,7 +16,7 @@ SELECT COUNT(*) FROM orders
 WHERE listing_id = $1
 `
 
-func (q *Queries) CountOrdersForListing(ctx context.Context, listingID int32) (int64, error) {
+func (q *Queries) CountOrdersForListing(ctx context.Context, listingID uuid.UUID) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countOrdersForListing, listingID)
 	var count int64
 	err := row.Scan(&count)
@@ -24,13 +24,14 @@ func (q *Queries) CountOrdersForListing(ctx context.Context, listingID int32) (i
 }
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (listing_id, buyer_id, seller_id, quantity, unit_price, total_price, listing_title)
-VALUES ($1, $2, $3, $4, $5, $5::numeric * $4::integer, $6)
+INSERT INTO orders (id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, listing_title)
+VALUES ($1, $2, $3, $4, $5, $6, $6::numeric * $5::integer, $7)
 RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title
 `
 
 type CreateOrderParams struct {
-	ListingID    int32
+	ID           uuid.UUID
+	ListingID    uuid.UUID
 	BuyerID      uuid.UUID
 	SellerID     uuid.UUID
 	Quantity     int32
@@ -40,6 +41,7 @@ type CreateOrderParams struct {
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
 	row := q.db.QueryRowContext(ctx, createOrder,
+		arg.ID,
 		arg.ListingID,
 		arg.BuyerID,
 		arg.SellerID,
@@ -71,7 +73,7 @@ SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, s
 WHERE id = $1
 `
 
-func (q *Queries) GetOrder(ctx context.Context, id int32) (Order, error) {
+func (q *Queries) GetOrder(ctx context.Context, id uuid.UUID) (Order, error) {
 	row := q.db.QueryRowContext(ctx, getOrder, id)
 	var i Order
 	err := row.Scan(
@@ -98,7 +100,7 @@ WHERE id = $1
 FOR UPDATE
 `
 
-func (q *Queries) GetOrderForUpdate(ctx context.Context, id int32) (Order, error) {
+func (q *Queries) GetOrderForUpdate(ctx context.Context, id uuid.UUID) (Order, error) {
 	row := q.db.QueryRowContext(ctx, getOrderForUpdate, id)
 	var i Order
 	err := row.Scan(
@@ -170,7 +172,7 @@ WHERE id = $1
 RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title
 `
 
-func (q *Queries) MarkOrderHandedOver(ctx context.Context, id int32) (Order, error) {
+func (q *Queries) MarkOrderHandedOver(ctx context.Context, id uuid.UUID) (Order, error) {
 	row := q.db.QueryRowContext(ctx, markOrderHandedOver, id)
 	var i Order
 	err := row.Scan(
@@ -199,7 +201,7 @@ WHERE id = $1
 RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title
 `
 
-func (q *Queries) MarkOrderReceived(ctx context.Context, id int32) (Order, error) {
+func (q *Queries) MarkOrderReceived(ctx context.Context, id uuid.UUID) (Order, error) {
 	row := q.db.QueryRowContext(ctx, markOrderReceived, id)
 	var i Order
 	err := row.Scan(
@@ -229,7 +231,7 @@ RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price
 `
 
 type UpdateOrderStatusParams struct {
-	ID     int32
+	ID     uuid.UUID
 	Status string
 }
 

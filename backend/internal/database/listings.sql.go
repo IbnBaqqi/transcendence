@@ -13,12 +13,13 @@ import (
 )
 
 const createListing = `-- name: CreateListing :one
-INSERT INTO listings (seller_id, title, description, category, price, quantity, unit)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO listings (id, seller_id, title, description, category, price, quantity, unit)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at
 `
 
 type CreateListingParams struct {
+	ID          uuid.UUID
 	SellerID    uuid.UUID
 	Title       string
 	Description sql.NullString
@@ -30,6 +31,7 @@ type CreateListingParams struct {
 
 func (q *Queries) CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error) {
 	row := q.db.QueryRowContext(ctx, createListing,
+		arg.ID,
 		arg.SellerID,
 		arg.Title,
 		arg.Description,
@@ -63,7 +65,7 @@ RETURNING id, seller_id, title, description, category, price, quantity, unit, cr
 `
 
 type DecrementListingQuantityParams struct {
-	ID       int32
+	ID       uuid.UUID
 	Quantity int32
 }
 
@@ -90,7 +92,7 @@ DELETE FROM listings
 WHERE id = $1
 `
 
-func (q *Queries) DeleteListing(ctx context.Context, id int32) error {
+func (q *Queries) DeleteListing(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteListing, id)
 	return err
 }
@@ -100,7 +102,7 @@ SELECT id, seller_id, title, description, category, price, quantity, unit, creat
 WHERE id = $1
 `
 
-func (q *Queries) GetListing(ctx context.Context, id int32) (Listing, error) {
+func (q *Queries) GetListing(ctx context.Context, id uuid.UUID) (Listing, error) {
 	row := q.db.QueryRowContext(ctx, getListing, id)
 	var i Listing
 	err := row.Scan(
@@ -124,7 +126,7 @@ WHERE id = $1
 FOR UPDATE
 `
 
-func (q *Queries) GetListingForUpdate(ctx context.Context, id int32) (Listing, error) {
+func (q *Queries) GetListingForUpdate(ctx context.Context, id uuid.UUID) (Listing, error) {
 	row := q.db.QueryRowContext(ctx, getListingForUpdate, id)
 	var i Listing
 	err := row.Scan(
@@ -151,7 +153,7 @@ RETURNING id, seller_id, title, description, category, price, quantity, unit, cr
 `
 
 type IncrementListingQuantityParams struct {
-	ID       int32
+	ID       uuid.UUID
 	Quantity int32
 }
 
@@ -227,7 +229,7 @@ RETURNING id, seller_id, title, description, category, price, quantity, unit, cr
 `
 
 type UpdateListingParams struct {
-	ID          int32
+	ID          uuid.UUID
 	Title       string
 	Description sql.NullString
 	Category    string

@@ -1,9 +1,10 @@
 -- name: CreateListingImage :one
-INSERT INTO listing_images (listing_id, filename, position)
+INSERT INTO listing_images (id, listing_id, filename, position)
 VALUES (
     $1,
     $2,
-    COALESCE((SELECT MAX(position) + 1 FROM listing_images WHERE listing_id = $1), 0)
+    $3,
+    COALESCE((SELECT MAX(position) + 1 FROM listing_images WHERE listing_id = $2), 0)
 )
 RETURNING *;
 
@@ -28,5 +29,5 @@ RETURNING filename;
 
 -- name: ListImagesForListings :many
 SELECT * FROM listing_images
-WHERE listing_id = ANY(sqlc.arg(listing_ids)::int[])
+WHERE listing_id = ANY(sqlc.arg(listing_ids)::uuid[])
 ORDER BY listing_id, position, id;

@@ -3,6 +3,8 @@ package handler
 import (
 	"net/http"
 
+	"github.com/google/uuid"
+
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
@@ -61,7 +63,7 @@ func (h *Handler) GetSavedListings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ids := make([]int32, 0, len(listings))
+	ids := make([]uuid.UUID, 0, len(listings))
 	for _, l := range listings {
 		ids = append(ids, l.ID)
 	}

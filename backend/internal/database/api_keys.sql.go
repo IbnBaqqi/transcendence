@@ -14,12 +14,13 @@ import (
 )
 
 const createKey = `-- name: CreateKey :one
-INSERT INTO api_keys (user_id, name, key_hash, key_prefix)
-VALUES ($1, $2, $3, $4)
+INSERT INTO api_keys (id, user_id, name, key_hash, key_prefix)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id, user_id, name, key_hash, key_prefix, last_used_at, revoked_at, created_at
 `
 
 type CreateKeyParams struct {
+	ID        uuid.UUID
 	UserID    uuid.UUID
 	Name      string
 	KeyHash   string
@@ -28,6 +29,7 @@ type CreateKeyParams struct {
 
 func (q *Queries) CreateKey(ctx context.Context, arg CreateKeyParams) (ApiKey, error) {
 	row := q.db.QueryRowContext(ctx, createKey,
+		arg.ID,
 		arg.UserID,
 		arg.Name,
 		arg.KeyHash,
@@ -60,7 +62,7 @@ WHERE api_keys.key_hash = $1
 `
 
 type FindLiveKeyByHashRow struct {
-	ID       int32
+	ID       uuid.UUID
 	UserID   uuid.UUID
 	Username string
 	Role     string
@@ -86,7 +88,7 @@ ORDER BY created_at DESC
 `
 
 type ListKeysForUserRow struct {
-	ID         int32
+	ID         uuid.UUID
 	UserID     uuid.UUID
 	Name       string
 	KeyPrefix  string
@@ -135,7 +137,7 @@ WHERE id = $1
 `
 
 type RevokeKeyParams struct {
-	ID     int32
+	ID     uuid.UUID
 	UserID uuid.UUID
 }
 
@@ -153,7 +155,7 @@ SET last_used_at = now()
 WHERE id = $1
 `
 
-func (q *Queries) TouchKey(ctx context.Context, id int32) error {
+func (q *Queries) TouchKey(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, touchKey, id)
 	return err
 }

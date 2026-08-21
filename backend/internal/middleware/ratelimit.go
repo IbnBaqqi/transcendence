@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const maxTrackedKeys = 10000
@@ -24,10 +26,10 @@ type keyLimiter struct {
 	refill   float64 // tokens per second
 
 	mu      sync.Mutex
-	buckets map[int32]*bucket
+	buckets map[uuid.UUID]*bucket
 }
 
-func (l *keyLimiter) allow(id int32, now time.Time) (ok bool, remaining int, retryAfter time.Duration) {
+func (l *keyLimiter) allow(id uuid.UUID, now time.Time) (ok bool, remaining int, retryAfter time.Duration) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -62,7 +64,7 @@ func (l *keyLimiter) evictFull(now time.Time) {
 	}
 
 	for len(l.buckets) >= maxTrackedKeys {
-		var oldest int32
+		var oldest uuid.UUID
 		var oldestAt time.Time
 		for id, b := range l.buckets {
 			if oldestAt.IsZero() || b.last.Before(oldestAt) {
@@ -83,7 +85,7 @@ func RateLimitByKey(perMinute int) func(http.Handler) http.Handler {
 	l := &keyLimiter{
 		capacity: float64(perMinute),
 		refill:   float64(perMinute) / 60,
-		buckets:  make(map[int32]*bucket),
+		buckets:  make(map[uuid.UUID]*bucket),
 	}
 
 	return func(next http.Handler) http.Handler {
@@ -111,7 +113,7 @@ func RateLimitByKey(perMinute int) func(http.Handler) http.Handler {
 }
 
 type keyToucher interface {
-	TouchKey(ctx context.Context, id int32) error
+	TouchKey(ctx context.Context, id uuid.UUID) error
 }
 
 type keyUsageTracker struct {
@@ -119,10 +121,10 @@ type keyUsageTracker struct {
 	interval time.Duration
 
 	mu   sync.Mutex
-	seen map[int32]time.Time
+	seen map[uuid.UUID]time.Time
 }
 
-func (k *keyUsageTracker) shouldTouch(id int32, now time.Time) bool {
+func (k *keyUsageTracker) shouldTouch(id uuid.UUID, now time.Time) bool {
 	k.mu.Lock()
 	defer k.mu.Unlock()
 
@@ -146,7 +148,7 @@ func TouchAPIKey(store keyToucher, interval time.Duration) func(http.Handler) ht
 	tracker := &keyUsageTracker{
 		store:    store,
 		interval: interval,
-		seen:     make(map[int32]time.Time),
+		seen:     make(map[uuid.UUID]time.Time),
 	}
 
 	return func(next http.Handler) http.Handler {

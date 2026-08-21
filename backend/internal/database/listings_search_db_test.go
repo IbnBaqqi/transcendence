@@ -22,16 +22,16 @@ func seller(t *testing.T, db *database.DB, name, title, location string) string 
 	}
 
 	if _, err := db.Exec(
-		`INSERT INTO listings (seller_id, title, description, category, price, quantity, unit)
-		 VALUES ($1, $2, 'fresh', 'mushrooms', 10.00, 5, 'kg')`,
-		id, title,
+		`INSERT INTO listings (id, seller_id, title, description, category, price, quantity, unit)
+		 VALUES ($1, $2, $3, 'fresh', 'mushrooms', 10.00, 5, 'kg')`,
+		database.NewID(), id, title,
 	); err != nil {
 		t.Fatalf("creating %s's listing: %v", name, err)
 	}
 
 	if location != "" {
 		if _, err := db.Exec(
-			`INSERT INTO addresses (user_id, location) VALUES ($1, $2)`, id, location,
+			`INSERT INTO addresses (id, user_id, location) VALUES ($1, $2, $3)`, database.NewID(), id, location,
 		); err != nil {
 			t.Fatalf("creating %s's address: %v", name, err)
 		}

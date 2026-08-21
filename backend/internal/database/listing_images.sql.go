@@ -8,6 +8,7 @@ package database
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
 
@@ -16,7 +17,7 @@ SELECT COUNT(*) FROM listing_images
 WHERE listing_id = $1
 `
 
-func (q *Queries) CountListingImages(ctx context.Context, listingID int32) (int64, error) {
+func (q *Queries) CountListingImages(ctx context.Context, listingID uuid.UUID) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countListingImages, listingID)
 	var count int64
 	err := row.Scan(&count)
@@ -24,22 +25,24 @@ func (q *Queries) CountListingImages(ctx context.Context, listingID int32) (int6
 }
 
 const createListingImage = `-- name: CreateListingImage :one
-INSERT INTO listing_images (listing_id, filename, position)
+INSERT INTO listing_images (id, listing_id, filename, position)
 VALUES (
     $1,
     $2,
-    COALESCE((SELECT MAX(position) + 1 FROM listing_images WHERE listing_id = $1), 0)
+    $3,
+    COALESCE((SELECT MAX(position) + 1 FROM listing_images WHERE listing_id = $2), 0)
 )
 RETURNING id, listing_id, filename, position, created_at
 `
 
 type CreateListingImageParams struct {
-	ListingID int32
+	ID        uuid.UUID
+	ListingID uuid.UUID
 	Filename  string
 }
 
 func (q *Queries) CreateListingImage(ctx context.Context, arg CreateListingImageParams) (ListingImage, error) {
-	row := q.db.QueryRowContext(ctx, createListingImage, arg.ListingID, arg.Filename)
+	row := q.db.QueryRowContext(ctx, createListingImage, arg.ID, arg.ListingID, arg.Filename)
 	var i ListingImage
 	err := row.Scan(
 		&i.ID,
@@ -57,7 +60,7 @@ WHERE listing_id = $1
 RETURNING filename
 `
 
-func (q *Queries) DeleteImagesForListing(ctx context.Context, listingID int32) ([]string, error) {
+func (q *Queries) DeleteImagesForListing(ctx context.Context, listingID uuid.UUID) ([]string, error) {
 	rows, err := q.db.QueryContext(ctx, deleteImagesForListing, listingID)
 	if err != nil {
 		return nil, err
@@ -87,8 +90,8 @@ RETURNING filename
 `
 
 type DeleteListingImageParams struct {
-	ID        int32
-	ListingID int32
+	ID        uuid.UUID
+	ListingID uuid.UUID
 }
 
 func (q *Queries) DeleteListingImage(ctx context.Context, arg DeleteListingImageParams) (string, error) {
@@ -100,11 +103,11 @@ func (q *Queries) DeleteListingImage(ctx context.Context, arg DeleteListingImage
 
 const listImagesForListings = `-- name: ListImagesForListings :many
 SELECT id, listing_id, filename, position, created_at FROM listing_images
-WHERE listing_id = ANY($1::int[])
+WHERE listing_id = ANY($1::uuid[])
 ORDER BY listing_id, position, id
 `
 
-func (q *Queries) ListImagesForListings(ctx context.Context, listingIds []int32) ([]ListingImage, error) {
+func (q *Queries) ListImagesForListings(ctx context.Context, listingIds []uuid.UUID) ([]ListingImage, error) {
 	rows, err := q.db.QueryContext(ctx, listImagesForListings, pq.Array(listingIds))
 	if err != nil {
 		return nil, err
@@ -139,7 +142,7 @@ WHERE listing_id = $1
 ORDER BY position, id
 `
 
-func (q *Queries) ListListingImages(ctx context.Context, listingID int32) ([]ListingImage, error) {
+func (q *Queries) ListListingImages(ctx context.Context, listingID uuid.UUID) ([]ListingImage, error) {
 	rows, err := q.db.QueryContext(ctx, listListingImages, listingID)
 	if err != nil {
 		return nil, err

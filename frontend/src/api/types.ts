@@ -19,13 +19,13 @@ export interface Paginated<T> {
 // --- Listings ---
 
 export interface ListingImage {
-  id: number;
+  id: string;
   url: string; // relative: "/uploads/abc.jpg"
   position: number;
 }
 
 export interface Listing {
-  id: number;
+  id: string;
   seller_id: string;
   title: string;
   description: string;
@@ -41,8 +41,8 @@ export interface Listing {
 export type OrderStatus = "pending" | "confirmed" | "completed" | "cancelled";
 
 export interface Order {
-  id: number;
-  listing_id: number;
+  id: string;
+  listing_id: string;
   listing_title: string; // snapshotted at order time
   buyer_id: string;
   seller_id: string;
@@ -76,8 +76,8 @@ export type ConversationStatus = "pending" | "accepted" | "declined";
 export type ConversationRole = "buyer" | "seller";
 
 export interface Conversation {
-  id: number;
-  listing_id: number | null; // null once the listing is deleted
+  id: string;
+  listing_id: string | null; // null once the listing is deleted
   listing_title: string;
   status: ConversationStatus;
   role: ConversationRole;
@@ -97,8 +97,8 @@ export interface ConversationListItem extends Omit<Conversation, "created_at"> {
 }
 
 export interface Message {
-  id: number;
-  conversation_id: number;
+  id: string;
+  conversation_id: string;
   sender_id: string;
   body: string;
   read_at?: Timestamp; // absent while unread

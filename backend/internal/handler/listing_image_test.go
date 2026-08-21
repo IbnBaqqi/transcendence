@@ -68,7 +68,7 @@ func TestUploadRejectsLyingContentType(t *testing.T) {
 	req = req.WithContext(auth.WithUser(req.Context(), auth.User{ID: uuid.New()}))
 
 	routeCtx := chi.NewRouteContext()
-	routeCtx.URLParams.Add("id", "1")
+	routeCtx.URLParams.Add("id", uuid.New().String())
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
 
 	rec := httptest.NewRecorder()

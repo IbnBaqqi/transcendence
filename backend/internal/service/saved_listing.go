@@ -19,7 +19,7 @@ func NewSavedListingService(db *database.Queries) *SavedListingService {
 }
 
 // SaveListing bookmarks a listing for a user.
-func (s *SavedListingService) SaveListing(ctx context.Context, userID uuid.UUID, listingID int32) error {
+func (s *SavedListingService) SaveListing(ctx context.Context, userID uuid.UUID, listingID uuid.UUID) error {
 	if _, err := s.db.GetListing(ctx, listingID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return &NotFoundError{Message: "listing not found"}
@@ -34,7 +34,7 @@ func (s *SavedListingService) SaveListing(ctx context.Context, userID uuid.UUID,
 }
 
 // UnsaveListing removes a bookmark, reporting 404 when there wasn't one.
-func (s *SavedListingService) UnsaveListing(ctx context.Context, userID uuid.UUID, listingID int32) error {
+func (s *SavedListingService) UnsaveListing(ctx context.Context, userID uuid.UUID, listingID uuid.UUID) error {
 	rows, err := s.db.UnsaveListing(ctx, database.UnsaveListingParams{
 		UserID:    userID,
 		ListingID: listingID,

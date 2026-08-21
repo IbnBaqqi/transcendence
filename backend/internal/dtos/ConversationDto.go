@@ -15,8 +15,8 @@ const (
 )
 
 type StartConversationInput struct {
-	ListingID int32  `json:"listing_id"`
-	Body      string `json:"body"`
+	ListingID uuid.UUID `json:"listing_id"`
+	Body      string    `json:"body"`
 }
 
 type SendMessageInput struct {
@@ -35,8 +35,8 @@ type ChatUserResponse struct {
 }
 
 type MessageResponse struct {
-	ID             int32      `json:"id"`
-	ConversationID int32      `json:"conversation_id"`
+	ID             uuid.UUID  `json:"id"`
+	ConversationID uuid.UUID  `json:"conversation_id"`
 	SenderID       uuid.UUID  `json:"sender_id"`
 	Body           string     `json:"body"`
 	ReadAt         *time.Time `json:"read_at,omitempty"`
@@ -49,8 +49,8 @@ type MessagePreview struct {
 }
 
 type ConversationResponse struct {
-	ID           int32            `json:"id"`
-	ListingID    *int32           `json:"listing_id"`
+	ID           uuid.UUID        `json:"id"`
+	ListingID    *uuid.UUID       `json:"listing_id"`
 	ListingTitle string           `json:"listing_title"`
 	Status       string           `json:"status"`
 	Role         string           `json:"role"`
@@ -60,8 +60,8 @@ type ConversationResponse struct {
 }
 
 type ConversationListItem struct {
-	ID           int32            `json:"id"`
-	ListingID    *int32           `json:"listing_id"`
+	ID           uuid.UUID        `json:"id"`
+	ListingID    *uuid.UUID       `json:"listing_id"`
 	ListingTitle string           `json:"listing_title"`
 	Status       string           `json:"status"`
 	Role         string           `json:"role"`
@@ -96,11 +96,13 @@ func roleFor(buyerID, viewerID uuid.UUID) string {
 	return RoleSeller
 }
 
-func nullInt32Ptr(v sql.NullInt32) *int32 {
+// nullUUIDPtr converts sqlc's uuid.NullUUID into a *uuid.UUID, so a listing
+// that has been deleted marshals as JSON null rather than a zero uuid.
+func nullUUIDPtr(v uuid.NullUUID) *uuid.UUID {
 	if !v.Valid {
 		return nil
 	}
-	id := v.Int32
+	id := v.UUID
 	return &id
 }
 
@@ -138,7 +140,7 @@ func ToConversationResponse(
 ) ConversationResponse {
 	return ConversationResponse{
 		ID:           c.ID,
-		ListingID:    nullInt32Ptr(c.ListingID),
+		ListingID:    nullUUIDPtr(c.ListingID),
 		ListingTitle: c.ListingTitle,
 		Status:       c.Status,
 		Role:         roleFor(c.BuyerID, viewerID),
@@ -155,7 +157,7 @@ func ToConversationResponse(
 func ToConversationListItem(row database.ListConversationsForUserRow, viewerID uuid.UUID) ConversationListItem {
 	item := ConversationListItem{
 		ID:           row.ID,
-		ListingID:    nullInt32Ptr(row.ListingID),
+		ListingID:    nullUUIDPtr(row.ListingID),
 		ListingTitle: row.ListingTitle,
 		Status:       row.Status,
 		Role:         roleFor(row.BuyerID, viewerID),
