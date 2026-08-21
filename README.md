@@ -165,10 +165,12 @@ That leaves the old integer schema in place while the code sends uuids, and the
 app half-works before failing on the first listing insert. Recreate it once:
 
 ```bash
-docker compose down -v
-docker compose up -d db
-cd backend && make migrate-up && make seed
+cd backend && make db-reset
 ```
+
+That drops and recreates the database, applies the migrations and re-seeds.
+Note that `make docker-down` does **not** do this — it deliberately keeps the
+volume, so the old schema comes straight back.
 
 ## Roles and the first admin
 
