@@ -83,7 +83,8 @@ export default function Profile() {
             <div>
               <Avatar
                 size="lg"
-                initials={deriveInitials(profile.username, profile.firstname, profile.lastname)}
+                // NOTE: Use first/last name for Avatar initials? Needs to be consistent across header mini avatar and profile page
+                initials={deriveInitials(profile.username)}
                 editable
                 imageUrl={avatarPreviewUrl}
                 onImageSelected={setAvatarFile}
@@ -106,27 +107,32 @@ export default function Profile() {
             <h2 className="text-foreground text-lg font-bold">Bio</h2>
             <BioSection />
           </div>
-          <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">Preferences</h2>
-            <div className="flex flex-row gap-6">
-              <Toggle
-                checked={marketing}
-                onChange={setMarketing}
-                label="Receive marketing emails from us"
-              />
-              <Toggle
-                checked={hideDetails}
-                onChange={setHideDetails}
-                label="Show only first name and initials to other users"
-              />
-            </div>
-          </div>
+          {/* NOTE: No backend for these kind of preferences yet. Discussions were held about
+              having a setting for showing personal details, but maybe now handled by the friend
+              system, in which case following toggles could be removed/changed */}
+
+          {/* <div className="space-y-1"> */}
+          {/*   <h2 className="text-foreground text-lg font-bold">Preferences</h2> */}
+          {/*   <div className="flex flex-row gap-6"> */}
+          {/*     <Toggle */}
+          {/*       checked={marketing} */}
+          {/*       onChange={setMarketing} */}
+          {/*       label="Receive marketing emails from us" */}
+          {/*     /> */}
+          {/*     <Toggle */}
+          {/*       checked={hideDetails} */}
+          {/*       onChange={setHideDetails} */}
+          {/*       label="Show only first name and initials to other users" */}
+          {/*     /> */}
+          {/*   </div> */}
+          {/* </div> */}
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">Account Management</h2>
             <div className="flex flex-row gap-4">
               <Button variant="primary" onClick={handleLogout} disabled={isLoggingOut}>
                 {isLoggingOut ? "Logging out…" : "Log Out"}
               </Button>
+              {/* NOTE: Delete Account currently waiting for backend functionality to wire into */}
               <Button variant="secondary" onClick={() => openModal("deleteAccount")}>
                 Delete Account
               </Button>
