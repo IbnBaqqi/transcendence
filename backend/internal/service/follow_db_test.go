@@ -19,6 +19,7 @@ func newFollowService(t *testing.T) (*FollowService, *database.DB, uuid.UUID, uu
 
 	mk := func(name string) uuid.UUID {
 		user, err := db.CreateUser(context.Background(), database.CreateUserParams{
+			ID:       database.NewID(),
 			Username: name,
 			Email:    name + "@example.test",
 			Password: "irrelevant",

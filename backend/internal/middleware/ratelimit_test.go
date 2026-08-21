@@ -7,14 +7,22 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+
+	"github.com/google/uuid"
 	"time"
+)
+
+// Two stable keys, so "a different key is unaffected" reads clearly.
+var (
+	keyA = uuid.New()
+	keyB = uuid.New()
 )
 
 func newTestLimiter(perMinute int) *keyLimiter {
 	return &keyLimiter{
 		capacity: float64(perMinute),
 		refill:   float64(perMinute) / 60,
-		buckets:  make(map[int32]*bucket),
+		buckets:  make(map[uuid.UUID]*bucket),
 	}
 }
 
@@ -23,13 +31,13 @@ func TestBucketAllowsABurstThenRefuses(t *testing.T) {
 	now := time.Now()
 
 	for i := 1; i <= 60; i++ {
-		ok, _, _ := l.allow(7, now)
+		ok, _, _ := l.allow(keyA, now)
 		if !ok {
 			t.Fatalf("request %d refused, want the first 60 allowed", i)
 		}
 	}
 
-	ok, remaining, retryAfter := l.allow(7, now)
+	ok, remaining, retryAfter := l.allow(keyA, now)
 	if ok {
 		t.Error("the 61st request was allowed")
 	}
@@ -48,10 +56,10 @@ func TestBucketRefillsOverTime(t *testing.T) {
 	now := time.Now()
 
 	for i := 0; i < 60; i++ {
-		l.allow(7, now)
+		l.allow(keyA, now)
 	}
 
-	ok, remaining, _ := l.allow(7, now.Add(30*time.Second))
+	ok, remaining, _ := l.allow(keyA, now.Add(30*time.Second))
 	if !ok {
 		t.Fatal("still refused after 30 seconds")
 	}
@@ -64,13 +72,13 @@ func TestBucketsAreIndependentPerKey(t *testing.T) {
 	l := newTestLimiter(2)
 	now := time.Now()
 
-	l.allow(7, now)
-	l.allow(7, now)
-	if ok, _, _ := l.allow(7, now); ok {
+	l.allow(keyA, now)
+	l.allow(keyA, now)
+	if ok, _, _ := l.allow(keyA, now); ok {
 		t.Fatal("key 7 should be out of tokens")
 	}
 
-	if ok, _, _ := l.allow(8, now); !ok {
+	if ok, _, _ := l.allow(keyB, now); !ok {
 		t.Error("key 8 was throttled by key 7 - buckets are not independent")
 	}
 }
@@ -87,7 +95,7 @@ func TestBucketIsSafeUnderConcurrency(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if ok, _, _ := l.allow(7, now); ok {
+			if ok, _, _ := l.allow(keyA, now); ok {
 				mu.Lock()
 				allowed++
 				mu.Unlock()
@@ -106,10 +114,12 @@ func TestRateLimitHeadersAndStatus(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
 
+	key := uuid.New()
 	call := func(withKey bool) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(http.MethodGet, "/listings", nil)
 		if withKey {
-			req = req.WithContext(context.WithValue(req.Context(), apiKeyIDKey{}, int32(1)))
+			// The same key every time: a fresh one would get a fresh bucket.
+			req = req.WithContext(context.WithValue(req.Context(), apiKeyIDKey{}, key))
 		}
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
@@ -153,7 +163,7 @@ func TestBrowserRequestsAreNotLimited(t *testing.T) {
 
 type countingToucher struct{ calls int }
 
-func (c *countingToucher) TouchKey(context.Context, int32) error {
+func (c *countingToucher) TouchKey(context.Context, uuid.UUID) error {
 	c.calls++
 	return nil
 }
@@ -162,9 +172,10 @@ func TestUsageIsRecordedAtMostOncePerInterval(t *testing.T) {
 	store := &countingToucher{}
 	h := TouchAPIKey(store, time.Minute)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
+	key := uuid.New()
 	for i := 0; i < 3; i++ {
 		req := httptest.NewRequest(http.MethodGet, "/listings", nil)
-		req = req.WithContext(context.WithValue(req.Context(), apiKeyIDKey{}, int32(7)))
+		req = req.WithContext(context.WithValue(req.Context(), apiKeyIDKey{}, key))
 		h.ServeHTTP(httptest.NewRecorder(), req)
 	}
 
@@ -186,7 +197,7 @@ func TestALimitBelowOneFallsBackToTheDefault(t *testing.T) {
 			}))
 
 			req := httptest.NewRequest(http.MethodGet, "/listings", nil)
-			req = req.WithContext(context.WithValue(req.Context(), apiKeyIDKey{}, int32(1)))
+			req = req.WithContext(context.WithValue(req.Context(), apiKeyIDKey{}, uuid.New()))
 			rec := httptest.NewRecorder()
 			h.ServeHTTP(rec, req)
 
@@ -204,7 +215,8 @@ func TestTheBucketMapStaysBounded(t *testing.T) {
 	l := newTestLimiter(60)
 	now := time.Now()
 
-	for id := int32(1); id <= maxTrackedKeys+500; id++ {
+	for i := 0; i < maxTrackedKeys+500; i++ {
+		id := uuid.New()
 		l.allow(id, now)
 		l.allow(id, now)
 	}

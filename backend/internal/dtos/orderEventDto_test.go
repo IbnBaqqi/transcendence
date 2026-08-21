@@ -11,10 +11,12 @@ import (
 	"github.com/google/uuid"
 )
 
+var testEventOrderID = uuid.New()
+
 func sampleEvent() database.OrderEvent {
 	return database.OrderEvent{
-		ID:         1,
-		OrderID:    7,
+		ID:         uuid.New(),
+		OrderID:    testEventOrderID,
 		ActorID:    uuid.NullUUID{UUID: uuid.MustParse("33333333-3333-3333-3333-333333333333"), Valid: true},
 		FromStatus: sql.NullString{String: "confirmed", Valid: true},
 		ToStatus:   "completed",
@@ -50,7 +52,7 @@ func TestOrderEventNullables(t *testing.T) {
 		{
 			name: "the creation event has no previous status",
 			event: database.OrderEvent{
-				ID: 1, OrderID: 7, ToStatus: "pending",
+				ID: uuid.New(), OrderID: testEventOrderID, ToStatus: "pending",
 				ActorID: uuid.NullUUID{UUID: uuid.New(), Valid: true},
 			},
 			want: []string{`"from_status":null`, `"note":null`},
@@ -58,7 +60,7 @@ func TestOrderEventNullables(t *testing.T) {
 		{
 			name: "a deleted actor leaves the event behind",
 			event: database.OrderEvent{
-				ID: 2, OrderID: 7, ToStatus: "cancelled",
+				ID: uuid.New(), OrderID: testEventOrderID, ToStatus: "cancelled",
 				FromStatus: sql.NullString{String: "pending", Valid: true},
 			},
 			want: []string{`"actor_id":null`, `"to_status":"cancelled"`},

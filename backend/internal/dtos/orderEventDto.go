@@ -9,8 +9,8 @@ import (
 )
 
 type OrderEventResponse struct {
-	ID         int32     `json:"id"`
-	OrderID    int32     `json:"order_id"`
+	ID         uuid.UUID `json:"id"`
+	OrderID    uuid.UUID `json:"order_id"`
 	ActorID    *string   `json:"actor_id"`
 	FromStatus *string   `json:"from_status"`
 	ToStatus   string    `json:"to_status"`

@@ -99,7 +99,7 @@ func isUniqueViolation(err error, constraint string) bool {
 func (s *ConversationService) StartConversation(
 	ctx context.Context,
 	buyerID uuid.UUID,
-	listingID int32,
+	listingID uuid.UUID,
 	body string,
 ) (database.Conversation, database.Message, error) {
 	trimmed, err := validateMessageBody(body)
@@ -134,7 +134,8 @@ func (s *ConversationService) StartConversation(
 	}
 
 	conv, err := qtx.CreateConversation(ctx, database.CreateConversationParams{
-		ListingID:    sql.NullInt32{Int32: listingID, Valid: true},
+		ID:           database.NewID(),
+		ListingID:    uuid.NullUUID{UUID: listingID, Valid: true},
 		ListingTitle: listing.Title,
 		BuyerID:      buyerID,
 		SellerID:     listing.SellerID,
@@ -149,6 +150,7 @@ func (s *ConversationService) StartConversation(
 	}
 
 	msg, err := qtx.CreateMessage(ctx, database.CreateMessageParams{
+		ID:             database.NewID(),
 		ConversationID: conv.ID,
 		SenderID:       buyerID,
 		Body:           trimmed,
@@ -168,7 +170,7 @@ func (s *ConversationService) StartConversation(
 func (s *ConversationService) decide(
 	ctx context.Context,
 	sellerID uuid.UUID,
-	conversationID int32,
+	conversationID uuid.UUID,
 	status string,
 ) (database.Conversation, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -210,11 +212,11 @@ func (s *ConversationService) decide(
 	return updated, nil
 }
 
-func (s *ConversationService) Accept(ctx context.Context, sellerID uuid.UUID, conversationID int32) (database.Conversation, error) {
+func (s *ConversationService) Accept(ctx context.Context, sellerID uuid.UUID, conversationID uuid.UUID) (database.Conversation, error) {
 	return s.decide(ctx, sellerID, conversationID, StatusAccepted)
 }
 
-func (s *ConversationService) Decline(ctx context.Context, sellerID uuid.UUID, conversationID int32) (database.Conversation, error) {
+func (s *ConversationService) Decline(ctx context.Context, sellerID uuid.UUID, conversationID uuid.UUID) (database.Conversation, error) {
 	return s.decide(ctx, sellerID, conversationID, StatusDeclined)
 }
 
@@ -223,7 +225,7 @@ func (s *ConversationService) Decline(ctx context.Context, sellerID uuid.UUID, c
 func (s *ConversationService) SendMessage(
 	ctx context.Context,
 	userID uuid.UUID,
-	conversationID int32,
+	conversationID uuid.UUID,
 	body string,
 ) (database.Message, error) {
 	trimmed, err := validateMessageBody(body)
@@ -256,6 +258,7 @@ func (s *ConversationService) SendMessage(
 	}
 
 	msg, err := qtx.CreateMessage(ctx, database.CreateMessageParams{
+		ID:             database.NewID(),
 		ConversationID: conversationID,
 		SenderID:       userID,
 		Body:           trimmed,
@@ -279,7 +282,7 @@ func (s *ConversationService) ListConversations(ctx context.Context, userID uuid
 	return s.db.ListConversationsForUser(ctx, userID)
 }
 
-func (s *ConversationService) GetConversation(ctx context.Context, userID uuid.UUID, conversationID int32) (database.Conversation, error) {
+func (s *ConversationService) GetConversation(ctx context.Context, userID uuid.UUID, conversationID uuid.UUID) (database.Conversation, error) {
 	conv, err := s.db.GetConversation(ctx, conversationID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -298,8 +301,8 @@ func (s *ConversationService) GetConversation(ctx context.Context, userID uuid.U
 func (s *ConversationService) ListMessages(
 	ctx context.Context,
 	userID uuid.UUID,
-	conversationID int32,
-	afterID int32,
+	conversationID uuid.UUID,
+	afterID uuid.UUID,
 	limit int32,
 ) ([]database.Message, error) {
 	if _, err := s.GetConversation(ctx, userID, conversationID); err != nil {
@@ -313,7 +316,8 @@ func (s *ConversationService) ListMessages(
 		limit = maxMessageLimit
 	}
 
-	if afterID > 0 {
+	// uuid.Nil rather than 0: the caller sends no cursor on the first page.
+	if afterID != uuid.Nil {
 		return s.db.ListMessagesAfter(ctx, database.ListMessagesAfterParams{
 			ConversationID: conversationID,
 			AfterID:        afterID,
@@ -334,7 +338,7 @@ func (s *ConversationService) ListMessages(
 }
 
 // MarkRead return how many messages were marked.
-func (s *ConversationService) MarkRead(ctx context.Context, userID uuid.UUID, conversationID int32) (int64, error) {
+func (s *ConversationService) MarkRead(ctx context.Context, userID uuid.UUID, conversationID uuid.UUID) (int64, error) {
 	if _, err := s.GetConversation(ctx, userID, conversationID); err != nil {
 		return 0, err
 	}
@@ -352,7 +356,7 @@ func (s *ConversationService) CountUnread(ctx context.Context, userID uuid.UUID)
 func (s *ConversationService) GetConversationDetail(
 	ctx context.Context,
 	userID uuid.UUID,
-	conversationID int32,
+	conversationID uuid.UUID,
 ) (database.Conversation, database.User, error) {
 	conv, err := s.GetConversation(ctx, userID, conversationID)
 	if err != nil {

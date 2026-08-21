@@ -20,6 +20,7 @@ func newProfileService(t *testing.T) (*ProfileService, uuid.UUID) {
 	db := testdb.New(t)
 
 	user, err := db.CreateUser(context.Background(), database.CreateUserParams{
+		ID:       database.NewID(),
 		Username: "aino",
 		Email:    "aino@example.test",
 		Password: "irrelevant",

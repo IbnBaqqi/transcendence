@@ -103,11 +103,11 @@ func (q *Queries) DeleteListingImage(ctx context.Context, arg DeleteListingImage
 
 const listImagesForListings = `-- name: ListImagesForListings :many
 SELECT id, listing_id, filename, position, created_at FROM listing_images
-WHERE listing_id = ANY($1::int[])
+WHERE listing_id = ANY($1::uuid[])
 ORDER BY listing_id, position, id
 `
 
-func (q *Queries) ListImagesForListings(ctx context.Context, listingIds []int32) ([]ListingImage, error) {
+func (q *Queries) ListImagesForListings(ctx context.Context, listingIds []uuid.UUID) ([]ListingImage, error) {
 	rows, err := q.db.QueryContext(ctx, listImagesForListings, pq.Array(listingIds))
 	if err != nil {
 		return nil, err

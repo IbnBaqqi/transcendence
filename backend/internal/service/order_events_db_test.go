@@ -28,6 +28,7 @@ func newOrderFixture(t *testing.T) orderFixture {
 
 	mk := func(name string) uuid.UUID {
 		user, err := db.CreateUser(ctx, database.CreateUserParams{
+			ID:       database.NewID(),
 			Username: name, Email: name + "@example.test", Password: "irrelevant",
 		})
 		if err != nil {
@@ -38,6 +39,7 @@ func newOrderFixture(t *testing.T) orderFixture {
 	seller, buyer := mk("seller"), mk("buyer")
 
 	listing, err := db.CreateListing(ctx, database.CreateListingParams{
+		ID:       database.NewID(),
 		SellerID: seller, Title: "Chanterelles", Category: "mushrooms",
 		Price: "18.10", Quantity: 10, Unit: "kg",
 	})
@@ -208,6 +210,7 @@ func TestCreateOrderByADeletedUserIsNotFound(t *testing.T) {
 	ctx := context.Background()
 
 	listing, err := f.db.CreateListing(ctx, database.CreateListingParams{
+		ID:       database.NewID(),
 		SellerID: f.seller, Title: "More chanterelles", Category: "mushrooms",
 		Price: "12.00", Quantity: 5, Unit: "kg",
 	})
@@ -216,6 +219,7 @@ func TestCreateOrderByADeletedUserIsNotFound(t *testing.T) {
 	}
 
 	ghost, err := f.db.CreateUser(ctx, database.CreateUserParams{
+		ID:       database.NewID(),
 		Username: "ghost", Email: "ghost@example.test", Password: "irrelevant",
 	})
 	if err != nil {
@@ -237,6 +241,7 @@ func TestAnUninvolvedUserCanStillBeDeleted(t *testing.T) {
 	f := newOrderFixture(t)
 
 	bystander, err := f.db.CreateUser(context.Background(), database.CreateUserParams{
+		ID:       database.NewID(),
 		Username: "bystander", Email: "bystander@example.test", Password: "irrelevant",
 	})
 	if err != nil {
@@ -253,6 +258,7 @@ func TestListEventsIsForParticipantsOnly(t *testing.T) {
 	ctx := context.Background()
 
 	stranger, err := f.db.CreateUser(ctx, database.CreateUserParams{
+		ID:       database.NewID(),
 		Username: "stranger", Email: "stranger@example.test", Password: "irrelevant",
 	})
 	if err != nil {
@@ -272,7 +278,7 @@ func TestListEventsIsForParticipantsOnly(t *testing.T) {
 	}
 
 	var notFound *NotFoundError
-	if _, err := f.svc.ListEvents(ctx, f.buyer, 999999); !errors.As(err, &notFound) {
+	if _, err := f.svc.ListEvents(ctx, f.buyer, uuid.New()); !errors.As(err, &notFound) {
 		t.Errorf("unknown order err = %v, want *NotFoundError", err)
 	}
 }

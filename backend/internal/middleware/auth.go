@@ -18,15 +18,15 @@ func sanitizeLog(s string) string {
 }
 
 type keyStore interface {
-	Authenticate(ctx context.Context, raw string) (int32, auth.User, error)
+	Authenticate(ctx context.Context, raw string) (uuid.UUID, auth.User, error)
 }
 
 const keyHeader = "X-API-Key"
 
 type apiKeyIDKey struct{}
 
-func apiKeyID(ctx context.Context) (int32, bool) {
-	id, ok := ctx.Value(apiKeyIDKey{}).(int32)
+func apiKeyID(ctx context.Context) (uuid.UUID, bool) {
+	id, ok := ctx.Value(apiKeyIDKey{}).(uuid.UUID)
 	return id, ok
 }
 

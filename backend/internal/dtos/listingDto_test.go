@@ -12,9 +12,11 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
+var testListingDtoID = uuid.MustParse("33333333-3333-4333-8333-333333333333")
+
 func TestToListingResponseJSON(t *testing.T) {
 	row := database.Listing{
-		ID:          1,
+		ID:          testListingDtoID,
 		SellerID:    uuid.MustParse("3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34"),
 		Title:       "Golden Chanterelles",
 		Description: sql.NullString{},
@@ -32,7 +34,8 @@ func TestToListingResponseJSON(t *testing.T) {
 	}
 	got := string(b)
 
-	want := `{"id":1,"seller_id":"3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34",` +
+	want := `{"id":"` + testListingDtoID.String() + `",` +
+		`"seller_id":"3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34",` +
 		`"title":"Golden Chanterelles","description":"","category":"mushrooms",` +
 		`"price":18,"quantity":4,"unit":"kg",` +
 		`"created_at":"1970-01-01T00:00:00Z","updated_at":"1970-01-01T00:00:00Z",` +

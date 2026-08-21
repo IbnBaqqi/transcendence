@@ -4,19 +4,21 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
 // CreateOrderInput is the JSON body for POST /orders.
 type CreateOrderInput struct {
-	ListingID int32 `json:"listing_id"`
-	Quantity  int32 `json:"quantity"`
+	ListingID uuid.UUID `json:"listing_id"`
+	Quantity  int32     `json:"quantity"`
 }
 
 // OrderResponse is the shape we send back to clients.
 type OrderResponse struct {
-	ID                 int32      `json:"id"`
-	ListingID          int32      `json:"listing_id"`
+	ID                 uuid.UUID  `json:"id"`
+	ListingID          uuid.UUID  `json:"listing_id"`
 	ListingTitle       string     `json:"listing_title"`
 	BuyerID            string     `json:"buyer_id"`
 	SellerID           string     `json:"seller_id"`

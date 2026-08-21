@@ -51,6 +51,7 @@ func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, 
 	}
 
 	return s.db.CreateListing(ctx, database.CreateListingParams{
+		ID:          database.NewID(),
 		SellerID:    sellerID,
 		Title:       input.Title,
 		Description: sql.NullString{String: input.Description, Valid: input.Description != ""},
@@ -61,7 +62,7 @@ func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, 
 	})
 }
 
-func (s *ListingService) GetListing(ctx context.Context, id int32) (database.Listing, error) {
+func (s *ListingService) GetListing(ctx context.Context, id uuid.UUID) (database.Listing, error) {
 	listing, err := s.db.GetListing(ctx, id)
 	if err != nil {
 		return database.Listing{}, &NotFoundError{Message: "listing not found"}
@@ -74,7 +75,7 @@ func (s *ListingService) ListListings(ctx context.Context) ([]database.Listing, 
 }
 
 // UpdateListing edits a listing the caller owns.
-func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, listingID int32, input dtos.UpdateListingInput) (database.Listing, error) {
+func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, listingID uuid.UUID, input dtos.UpdateListingInput) (database.Listing, error) {
 	if err := validateListingInput(input.Title, input.Category, input.Unit, input.Price, input.Quantity); err != nil {
 		return database.Listing{}, err
 	}
@@ -128,7 +129,7 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, li
 }
 
 // DeleteListing removes a listing the caller owns.
-func (s *ListingService) DeleteListing(ctx context.Context, userID uuid.UUID, listingID int32) error {
+func (s *ListingService) DeleteListing(ctx context.Context, userID uuid.UUID, listingID uuid.UUID) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -297,7 +298,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, err
 	}
 
-	ids := make([]int32, 0, len(items))
+	ids := make([]uuid.UUID, 0, len(items))
 	for _, item := range items {
 		ids = append(ids, item.ID)
 	}

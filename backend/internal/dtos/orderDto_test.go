@@ -14,11 +14,16 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
+var (
+	testOrderID   = uuid.MustParse("11111111-1111-4111-8111-111111111111")
+	testListingID = uuid.MustParse("22222222-2222-4222-8222-222222222222")
+)
+
 func TestNewOrderResponseJSON(t *testing.T) {
 	at := sql.NullTime{Time: time.Unix(0, 0).UTC(), Valid: true}
 	row := database.Order{
-		ID:           7,
-		ListingID:    1,
+		ID:           testOrderID,
+		ListingID:    testListingID,
 		ListingTitle: "Golden Chanterelles",
 		BuyerID:      uuid.MustParse("3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34"),
 		SellerID:     uuid.MustParse("9c2b1d40-5e6f-4a7b-8c9d-0e1f2a3b4c5d"),
@@ -36,7 +41,8 @@ func TestNewOrderResponseJSON(t *testing.T) {
 	}
 	got := string(b)
 
-	want := `{"id":7,"listing_id":1,"listing_title":"Golden Chanterelles",` +
+	want := `{"id":"` + testOrderID.String() + `","listing_id":"` + testListingID.String() + `",` +
+		`"listing_title":"Golden Chanterelles",` +
 		`"buyer_id":"3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34",` +
 		`"seller_id":"9c2b1d40-5e6f-4a7b-8c9d-0e1f2a3b4c5d",` +
 		`"quantity":4,"unit_price":18.5,"total_price":74,"status":"pending",` +

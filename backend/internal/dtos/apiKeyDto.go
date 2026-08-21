@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/google/uuid"
 )
 
 type CreateAPIKeyInput struct {
@@ -11,7 +12,7 @@ type CreateAPIKeyInput struct {
 }
 
 type APIKeyResponse struct {
-	ID         int32      `json:"id"`
+	ID         uuid.UUID  `json:"id"`
 	Name       string     `json:"name"`
 	KeyPrefix  string     `json:"key_prefix"`
 	LastUsedAt *time.Time `json:"last_used_at"`

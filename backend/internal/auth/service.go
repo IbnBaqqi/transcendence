@@ -83,6 +83,7 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 	qtx := s.db.Queries.WithTx(tx.Tx)
 
 	user, err := qtx.CreateUser(ctx, database.CreateUserParams{
+		ID:       database.NewID(),
 		Username: input.Username,
 		Email:    input.Email,
 		Password: string(hashed),

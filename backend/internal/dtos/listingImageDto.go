@@ -1,15 +1,19 @@
 package dtos
 
-import "github.com/IbnBaqqi/transcendence/internal/database"
+import (
+	"github.com/google/uuid"
+
+	"github.com/IbnBaqqi/transcendence/internal/database"
+)
 
 // UploadURLPrefix is the public path the router serves uploaded files from.
 const UploadURLPrefix = "/uploads/"
 
 // ListingImageResponse is the public JSON for one poto.
 type ListingImageResponse struct {
-	ID       int32  `json:"id"`
-	URL      string `json:"url"`
-	Position int32  `json:"position"`
+	ID       uuid.UUID `json:"id"`
+	URL      string    `json:"url"`
+	Position int32     `json:"position"`
 }
 
 // ToListingImageResponse maps a single image row into the response dto.

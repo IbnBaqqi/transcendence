@@ -22,7 +22,7 @@ func NewOrderService(db *database.DB) *OrderService {
 }
 
 func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input dtos.CreateOrderInput) (database.Order, error) {
-	if input.ListingID <= 0 {
+	if input.ListingID == uuid.Nil {
 		return database.Order{}, &ValidationError{Message: "listing_id is required"}
 	}
 	if input.Quantity <= 0 {
@@ -67,6 +67,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 	}
 
 	order, err := qtx.CreateOrder(ctx, database.CreateOrderParams{
+		ID:           database.NewID(),
 		ListingID:    listing.ID,
 		BuyerID:      buyerID,
 		SellerID:     listing.SellerID,
@@ -92,7 +93,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 	return order, nil
 }
 
-func (s *OrderService) GetOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
+func (s *OrderService) GetOrder(ctx context.Context, userID uuid.UUID, orderID uuid.UUID) (database.Order, error) {
 	order, err := s.db.GetOrder(ctx, orderID)
 	if err != nil {
 		return database.Order{}, &NotFoundError{Message: "order not found"}
@@ -164,23 +165,23 @@ var (
 	}
 )
 
-func (s *OrderService) ConfirmOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
+func (s *OrderService) ConfirmOrder(ctx context.Context, userID uuid.UUID, orderID uuid.UUID) (database.Order, error) {
 	return s.applyAction(ctx, userID, orderID, actionConfirm)
 }
 
-func (s *OrderService) HandoverOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
+func (s *OrderService) HandoverOrder(ctx context.Context, userID uuid.UUID, orderID uuid.UUID) (database.Order, error) {
 	return s.applyAction(ctx, userID, orderID, actionHandover)
 }
 
-func (s *OrderService) ReceiveOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
+func (s *OrderService) ReceiveOrder(ctx context.Context, userID uuid.UUID, orderID uuid.UUID) (database.Order, error) {
 	return s.applyAction(ctx, userID, orderID, actionReceive)
 }
 
-func (s *OrderService) CancelOrder(ctx context.Context, userID uuid.UUID, orderID int32) (database.Order, error) {
+func (s *OrderService) CancelOrder(ctx context.Context, userID uuid.UUID, orderID uuid.UUID) (database.Order, error) {
 	return s.applyAction(ctx, userID, orderID, actionCancel)
 }
 
-func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderID int32, action orderAction) (database.Order, error) {
+func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderID uuid.UUID, action orderAction) (database.Order, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return database.Order{}, err
@@ -262,7 +263,7 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 	return updated, nil
 }
 
-func (s *OrderService) ListEvents(ctx context.Context, userID uuid.UUID, orderID int32) ([]database.OrderEvent, error) {
+func (s *OrderService) ListEvents(ctx context.Context, userID uuid.UUID, orderID uuid.UUID) ([]database.OrderEvent, error) {
 	if _, err := s.GetOrder(ctx, userID, orderID); err != nil {
 		return nil, err
 	}
@@ -273,13 +274,14 @@ func (s *OrderService) ListEvents(ctx context.Context, userID uuid.UUID, orderID
 func recordEvent(
 	ctx context.Context,
 	qtx *database.Queries,
-	orderID int32,
+	orderID uuid.UUID,
 	actorID uuid.UUID,
 	from sql.NullString,
 	to string,
 	note string,
 ) error {
 	err := qtx.CreateOrderEvent(ctx, database.CreateOrderEventParams{
+		ID:         database.NewID(),
 		OrderID:    orderID,
 		ActorID:    uuid.NullUUID{UUID: actorID, Valid: true},
 		FromStatus: from,

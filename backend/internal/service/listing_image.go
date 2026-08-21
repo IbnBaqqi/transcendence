@@ -33,7 +33,7 @@ func NewListingImageService(db *database.DB, files fileStore, maxPerListing int)
 	}
 }
 
-func (s *ListingImageService) ownedListing(ctx context.Context, userID uuid.UUID, listingID int32) error {
+func (s *ListingImageService) ownedListing(ctx context.Context, userID uuid.UUID, listingID uuid.UUID) error {
 	listing, err := s.db.GetListing(ctx, listingID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -51,7 +51,7 @@ func (s *ListingImageService) ownedListing(ctx context.Context, userID uuid.UUID
 func (s *ListingImageService) AddImage(
 	ctx context.Context,
 	userID uuid.UUID,
-	listingID int32,
+	listingID uuid.UUID,
 	r io.Reader,
 	ext string,
 ) (database.ListingImage, error) {
@@ -90,7 +90,7 @@ func (s *ListingImageService) AddImage(
 // position or slip past the per-listing cap.
 func (s *ListingImageService) createImageRow(
 	ctx context.Context,
-	listingID int32,
+	listingID uuid.UUID,
 	filename string,
 ) (database.ListingImage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -123,6 +123,7 @@ func (s *ListingImageService) createImageRow(
 	}
 
 	img, err := qtx.CreateListingImage(ctx, database.CreateListingImageParams{
+		ID:        database.NewID(),
 		ListingID: listingID,
 		Filename:  filename,
 	})
@@ -138,19 +139,19 @@ func (s *ListingImageService) createImageRow(
 }
 
 // ListImages returns one listing's photos in display order.
-func (s *ListingImageService) ListImages(ctx context.Context, listingID int32) ([]database.ListingImage, error) {
+func (s *ListingImageService) ListImages(ctx context.Context, listingID uuid.UUID) ([]database.ListingImage, error) {
 	return s.db.ListListingImages(ctx, listingID)
 }
 
 // ImagesByListing groups photos for MANY listings using a single query.
-func (s *ListingImageService) ImagesByListing(ctx context.Context, listingIDs []int32) (map[int32][]database.ListingImage, error) {
+func (s *ListingImageService) ImagesByListing(ctx context.Context, listingIDs []uuid.UUID) (map[uuid.UUID][]database.ListingImage, error) {
 	return imagesByListing(ctx, s.db.Queries, listingIDs)
 }
 
 // imagesByListing groups one batch query's rows by listing, so any service can
 // attach photos to a page of listings without an N+1.
-func imagesByListing(ctx context.Context, db *database.Queries, listingIDs []int32) (map[int32][]database.ListingImage, error) {
-	out := make(map[int32][]database.ListingImage, len(listingIDs))
+func imagesByListing(ctx context.Context, db *database.Queries, listingIDs []uuid.UUID) (map[uuid.UUID][]database.ListingImage, error) {
+	out := make(map[uuid.UUID][]database.ListingImage, len(listingIDs))
 	if len(listingIDs) == 0 {
 		return out, nil
 	}
@@ -167,7 +168,7 @@ func imagesByListing(ctx context.Context, db *database.Queries, listingIDs []int
 }
 
 // DeleteImage remove one photo from a listing the caller owns.
-func (s *ListingImageService) DeleteImage(ctx context.Context, userID uuid.UUID, listingID, imageID int32) error {
+func (s *ListingImageService) DeleteImage(ctx context.Context, userID uuid.UUID, listingID, imageID uuid.UUID) error {
 	if err := s.ownedListing(ctx, userID, listingID); err != nil {
 		return err
 	}

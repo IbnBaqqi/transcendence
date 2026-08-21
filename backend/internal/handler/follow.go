@@ -3,9 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
-
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
@@ -16,7 +13,7 @@ func (h *Handler) FollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	followeeID, err := targetUserID(r)
+	followeeID, err := parseIDParam(r)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "invalid user id")
 		return
@@ -37,7 +34,7 @@ func (h *Handler) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	followeeID, err := targetUserID(r)
+	followeeID, err := parseIDParam(r)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "invalid user id")
 		return
@@ -68,7 +65,7 @@ func (h *Handler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetUserFollowing(w http.ResponseWriter, r *http.Request) {
-	userID, err := targetUserID(r)
+	userID, err := parseIDParam(r)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "invalid user id")
 		return
@@ -84,7 +81,7 @@ func (h *Handler) GetUserFollowing(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetFollowers(w http.ResponseWriter, r *http.Request) {
-	userID, err := targetUserID(r)
+	userID, err := parseIDParam(r)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "invalid user id")
 		return
@@ -97,8 +94,4 @@ func (h *Handler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, dtos.ToFollowerResponses(rows))
-}
-
-func targetUserID(r *http.Request) (uuid.UUID, error) {
-	return uuid.Parse(chi.URLParam(r, "id"))
 }

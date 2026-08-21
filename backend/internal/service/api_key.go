@@ -47,6 +47,7 @@ func (s *APIKeyService) Create(ctx context.Context, userID uuid.UUID, name strin
 	raw := KeyPrefix + randomHex()
 
 	record, err := s.db.CreateKey(ctx, database.CreateKeyParams{
+		ID:        database.NewID(),
 		UserID:    userID,
 		Name:      name,
 		KeyHash:   hashKey(raw),
@@ -63,7 +64,7 @@ func (s *APIKeyService) List(ctx context.Context, userID uuid.UUID) ([]database.
 	return s.db.ListKeysForUser(ctx, userID)
 }
 
-func (s *APIKeyService) Revoke(ctx context.Context, userID uuid.UUID, id int32) error {
+func (s *APIKeyService) Revoke(ctx context.Context, userID uuid.UUID, id uuid.UUID) error {
 	rows, err := s.db.RevokeKey(ctx, database.RevokeKeyParams{ID: id, UserID: userID})
 	if err != nil {
 		return err
@@ -74,17 +75,17 @@ func (s *APIKeyService) Revoke(ctx context.Context, userID uuid.UUID, id int32) 
 	return nil
 }
 
-func (s *APIKeyService) Authenticate(ctx context.Context, raw string) (int32, auth.User, error) {
+func (s *APIKeyService) Authenticate(ctx context.Context, raw string) (uuid.UUID, auth.User, error) {
 	if !strings.HasPrefix(raw, KeyPrefix) {
-		return 0, auth.User{}, ErrKeyNotUsable
+		return uuid.Nil, auth.User{}, ErrKeyNotUsable
 	}
 
 	row, err := s.db.FindLiveKeyByHash(ctx, hashKey(raw))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, auth.User{}, ErrKeyNotUsable
+			return uuid.Nil, auth.User{}, ErrKeyNotUsable
 		}
-		return 0, auth.User{}, err
+		return uuid.Nil, auth.User{}, err
 	}
 
 	return row.ID, auth.User{ID: row.UserID, Name: row.Username, Role: row.Role}, nil

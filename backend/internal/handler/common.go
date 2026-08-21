@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -23,19 +22,25 @@ func getUserID(r *http.Request) (uuid.UUID, error) {
 	return user.ID, nil
 }
 
-// parseInt32Param reads a named URL segment and converts it to int32.
-func parseInt32Param(r *http.Request, name string) (int32, error) {
-	idStr := chi.URLParam(r, name)
-	id, err := strconv.ParseInt(idStr, 10, 32)
-	if err != nil {
-		return 0, err
-	}
-	return int32(id), nil
+// parseUUIDParam reads a named URL segment as a uuid. Every id in the API is
+// one, so this replaced the int32 and uuid variants that used to sit alongside
+// each other.
+func parseUUIDParam(r *http.Request, name string) (uuid.UUID, error) {
+	return uuid.Parse(chi.URLParam(r, name))
 }
 
-// parseIDParam reads the {id} segment out of the URL and converts it to int32.
-func parseIDParam(r *http.Request) (int32, error) {
-	return parseInt32Param(r, "id")
+// parseIDParam reads the {id} segment, which is the common case.
+func parseIDParam(r *http.Request) (uuid.UUID, error) {
+	return parseUUIDParam(r, "id")
+}
+
+// parseOptionalUUID reads a uuid from a query string, treating an empty value
+// as absent. Cursors use it: no "after" means the first page.
+func parseOptionalUUID(raw string) (uuid.UUID, error) {
+	if raw == "" {
+		return uuid.Nil, nil
+	}
+	return uuid.Parse(raw)
 }
 
 func statusFromServiceError(err error) int {

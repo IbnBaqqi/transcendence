@@ -29,5 +29,5 @@ RETURNING filename;
 
 -- name: ListImagesForListings :many
 SELECT * FROM listing_images
-WHERE listing_id = ANY(sqlc.arg(listing_ids)::int[])
+WHERE listing_id = ANY(sqlc.arg(listing_ids)::uuid[])
 ORDER BY listing_id, position, id;
