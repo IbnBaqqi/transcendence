@@ -14,6 +14,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/service"
+	"github.com/IbnBaqqi/transcendence/internal/storage"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
 )
 
@@ -38,7 +39,13 @@ func profileRouter(t *testing.T) (http.Handler, uuid.UUID) {
 		t.Fatalf("creating the profile: %v", err)
 	}
 
-	profiles := service.NewProfileService(db)
+	files, err := storage.NewLocal(t.TempDir())
+	if err != nil {
+		t.Fatalf("creating a temporary upload dir: %v", err)
+	}
+	t.Cleanup(func() { _ = files.Close() })
+
+	profiles := service.NewProfileService(db, files)
 
 	if _, err := profiles.Update(ctx, user.ID, dtos.UpdateProfileInput{
 		Firstname:   dtos.SetString("Aino"),
