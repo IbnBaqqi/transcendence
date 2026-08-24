@@ -39,6 +39,10 @@ WHERE id = $1
 FOR UPDATE;
 
 -- name: SetAvatar :one
+-- FOR UPDATE is load-bearing. Without it the CTE reads the statement snapshot
+-- while the UPDATE re-reads the row after the lock is released, so two
+-- overlapping uploads both report the same previous filename - and the one
+-- neither of them named is never deleted.
 WITH previous AS (
     SELECT avatar_filename FROM profiles WHERE id = $1 FOR UPDATE
 )
