@@ -149,10 +149,6 @@ func (s *ConversationService) StartConversation(
 		}
 	}
 
-	if err := checkNotBlocked(ctx, qtx, buyerID, listing.SellerID); err != nil {
-		return database.Conversation{}, database.Message{}, err
-	}
-
 	conv, err := qtx.CreateConversation(ctx, database.CreateConversationParams{
 		ID:           database.NewID(),
 		ListingID:    uuid.NullUUID{UUID: listingID, Valid: true},
@@ -166,6 +162,10 @@ func (s *ConversationService) StartConversation(
 				Message: "you have already contacted this seller about this listing",
 			}
 		}
+		return database.Conversation{}, database.Message{}, err
+	}
+
+	if err := checkNotBlocked(ctx, qtx, buyerID, listing.SellerID); err != nil {
 		return database.Conversation{}, database.Message{}, err
 	}
 

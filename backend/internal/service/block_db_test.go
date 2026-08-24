@@ -193,6 +193,66 @@ func TestBlockDoesNotChangeAPendingThreadsRefusal(t *testing.T) {
 	}
 }
 
+func TestBlockKeepsTheUnreadCountAgreeingWithTheInbox(t *testing.T) {
+	f := newBlockFixture(t)
+	ctx := context.Background()
+
+	if _, err := f.chat.SendMessage(ctx, f.seller, f.conv, "yes, picked this morning"); err != nil {
+		t.Fatalf("seller replying: %v", err)
+	}
+
+	unread, err := f.chat.CountUnread(ctx, f.buyer)
+	if err != nil {
+		t.Fatalf("counting unread: %v", err)
+	}
+	if unread != 1 {
+		t.Fatalf("unread = %d before the block, want 1", unread)
+	}
+
+	if err := f.blocks.Block(ctx, f.buyer, f.seller); err != nil {
+		t.Fatalf("blocking: %v", err)
+	}
+
+	inbox, err := f.chat.ListConversations(ctx, f.buyer)
+	if err != nil {
+		t.Fatalf("listing the inbox: %v", err)
+	}
+	unread, err = f.chat.CountUnread(ctx, f.buyer)
+	if err != nil {
+		t.Fatalf("counting unread: %v", err)
+	}
+
+	if len(inbox) != 0 {
+		t.Errorf("inbox = %d threads, want 0", len(inbox))
+	}
+	if unread != 0 {
+		t.Errorf("unread = %d, want 0 - the badge counts a thread the inbox hides", unread)
+	}
+}
+
+func TestBlockDoesNotChangeTheDuplicateThreadRefusal(t *testing.T) {
+	f := newBlockFixture(t)
+	ctx := context.Background()
+
+	_, _, before := f.chat.StartConversation(ctx, f.buyer, f.listing, "asking again")
+	if before == nil {
+		t.Fatal("expected the duplicate conversation to be refused")
+	}
+
+	if err := f.blocks.Block(ctx, f.seller, f.buyer); err != nil {
+		t.Fatalf("blocking: %v", err)
+	}
+
+	_, _, after := f.chat.StartConversation(ctx, f.buyer, f.listing, "asking again")
+	if after == nil {
+		t.Fatal("expected the duplicate conversation to be refused")
+	}
+
+	if before.Error() != after.Error() {
+		t.Errorf("the refusal changed after blocking: %q then %q - that is observable", before, after)
+	}
+}
+
 func TestBlockIsIdempotent(t *testing.T) {
 	f := newBlockFixture(t)
 	ctx := context.Background()
