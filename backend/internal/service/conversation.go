@@ -58,6 +58,22 @@ func checkCanDecide(c database.Conversation, userID uuid.UUID) error {
 	return nil
 }
 
+const blockedMessage = "This conversation is closed"
+
+func checkNotBlocked(ctx context.Context, q *database.Queries, a, b uuid.UUID) error {
+	blocked, err := q.BlockExistsBetween(ctx, database.BlockExistsBetweenParams{
+		UserA: a,
+		UserB: b,
+	})
+	if err != nil {
+		return err
+	}
+	if blocked {
+		return &ForbiddenError{Message: blockedMessage}
+	}
+	return nil
+}
+
 // checkCanSend is the state machine for messaging.
 func checkCanSend(c database.Conversation, userID uuid.UUID) error {
 	if err := checkParticipant(c, userID); err != nil {
@@ -131,6 +147,10 @@ func (s *ConversationService) StartConversation(
 		return database.Conversation{}, database.Message{}, &ValidationError{
 			Message: "you cannot start a chat about your own listing",
 		}
+	}
+
+	if err := checkNotBlocked(ctx, qtx, buyerID, listing.SellerID); err != nil {
+		return database.Conversation{}, database.Message{}, err
 	}
 
 	conv, err := qtx.CreateConversation(ctx, database.CreateConversationParams{
@@ -254,6 +274,10 @@ func (s *ConversationService) SendMessage(
 	}
 
 	if err := checkCanSend(conv, userID); err != nil {
+		return database.Message{}, err
+	}
+
+	if err := checkNotBlocked(ctx, qtx, conv.BuyerID, conv.SellerID); err != nil {
 		return database.Message{}, err
 	}
 
