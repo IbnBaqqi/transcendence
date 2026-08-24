@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/oauth"
 )
 
 type OAuthLogin struct {
@@ -62,6 +63,15 @@ func (s *Service) LoginWithIdentity(ctx context.Context, in OAuthLogin) (LoginRe
 	user, err := qtx.GetUserByEmail(ctx, in.Email)
 	switch {
 	case err == nil:
+		// Signup does not verify addresses, so a password account may belong to
+		// someone who does not own this one. Only link password-less rows.
+		if user.Password.Valid {
+			return LoginResult{}, &AccountExistsError{
+				Message: fmt.Sprintf(
+					"An account with this email already exists — sign in with your password to link %s",
+					providerLabel(in.Provider)),
+			}
+		}
 	case errors.Is(err, sql.ErrNoRows):
 		user, err = createOAuthUser(ctx, qtx, in.Email)
 		if err != nil {
@@ -134,8 +144,8 @@ func createOAuthUser(ctx context.Context, q *database.Queries, email string) (da
 		Password: sql.NullString{},
 	})
 	if err != nil {
-		if conflict := duplicateUserError(err); conflict != nil {
-			return database.User{}, conflict
+		if duplicateUserError(err) != nil {
+			return database.User{}, &RetryError{Message: "That email was just registered — try again"}
 		}
 		return database.User{}, fmt.Errorf("oauth login: create user: %w", err)
 	}
@@ -203,7 +213,7 @@ func randomSuffix() string {
 func duplicateIdentityError(err error, provider string) error {
 	switch {
 	case isUniqueViolation(err, identityConstraint):
-		return &ConflictError{Message: "That sign-in was already completed - try again"}
+		return &RetryError{Message: "That sign-in was already completed — try again"}
 	case isUniqueViolation(err, userProviderConstraint):
 		return &ConflictError{
 			Message: fmt.Sprintf("This account is already linked to a different %s account", providerLabel(provider)),
@@ -214,9 +224,9 @@ func duplicateIdentityError(err error, provider string) error {
 
 func providerLabel(provider string) string {
 	switch provider {
-	case "google":
+	case oauth.ProviderGoogle:
 		return "Google"
-	case "github":
+	case oauth.ProviderGitHub:
 		return "GitHub"
 	}
 	return provider

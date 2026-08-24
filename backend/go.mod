@@ -15,6 +15,7 @@ require (
 	github.com/pressly/goose/v3 v3.27.3
 	github.com/swaggest/swgui v1.8.9
 	golang.org/x/crypto v0.54.0
+	golang.org/x/oauth2 v0.36.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -23,6 +24,5 @@ require (
 	github.com/sethvargo/go-retry v0.4.0 // indirect
 	github.com/vearutop/statigz v1.4.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 )

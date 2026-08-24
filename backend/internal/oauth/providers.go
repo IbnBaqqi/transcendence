@@ -86,7 +86,7 @@ func newGitHub(cfg config.OAuthConfig, publicURL string) *Provider {
 			ClientID:     cfg.ClientID,
 			ClientSecret: cfg.ClientSecret,
 			RedirectURL:  RedirectURI(publicURL, ProviderGitHub),
-			Scopes:       []string{"read:user", "user:email"},
+			Scopes:       []string{"user:email"},
 			Endpoint: oauth2.Endpoint{
 				AuthURL:   "https://github.com/login/oauth/authorize",
 				TokenURL:  "https://github.com/login/oauth/access_token",

@@ -16,10 +16,11 @@ CREATE TABLE oauth_identities (
         REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_oauth_identities_user_id ON oauth_identities (user_id);
-
 ALTER TABLE users ALTER COLUMN password DROP NOT NULL;
 
 -- +goose Down
+-- Destructive: provider accounts have no password and cannot satisfy the
+-- NOT NULL below, so rolling back deletes them.
+DELETE FROM users WHERE password IS NULL;
 ALTER TABLE users ALTER COLUMN password SET NOT NULL;
 DROP TABLE IF EXISTS oauth_identities;

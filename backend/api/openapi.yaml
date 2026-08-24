@@ -1186,7 +1186,14 @@ paths:
         failure — the caller is a browser following a redirect, so every
         outcome is a 302 to the frontend's `/auth/callback` carrying either
         `status=ok` or an `error` slug: `access_denied`, `invalid_state`,
-        `invalid_request`, `no_email`, `already_linked`, `server_error`.
+        `invalid_request`, `no_email`, `email_in_use`, `already_linked`,
+        `retry`, `server_error`.
+
+        `email_in_use` means the address belongs to an account that has a
+        password. Signup does not verify addresses, so that account may have
+        been registered by someone who does not own this one — linking it
+        automatically would be an account takeover. The owner signs in with
+        their password instead.
 
         On success only the `refresh_token` cookie is set — an access token in
         a redirect URL would end up in browser history and proxy logs. The

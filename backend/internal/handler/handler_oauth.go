@@ -18,14 +18,20 @@ import (
 )
 
 const (
-	oauthStateCookie  = "oauth_state"
+	oauthStatePrefix  = "oauth_state_"
 	oauthStatePath    = "/api/v1/auth/oauth"
 	oauthStateTTL     = 10 * time.Minute
 	oauthFrontendPath = "/auth/callback"
 )
 
+func oauthStateCookie(provider string) string {
+	return oauthStatePrefix + provider
+}
+
 func (h *Handler) OAuthStart(w http.ResponseWriter, r *http.Request) {
-	provider, ok := h.oauth.Get(chi.URLParam(r, "provider"))
+	name := chi.URLParam(r, "provider")
+
+	provider, ok := h.oauth.Get(name)
 	if !ok {
 		respondWithError(w, http.StatusNotFound, "Unknown sign-in provider")
 		return
@@ -39,7 +45,7 @@ func (h *Handler) OAuthStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.setOAuthStateCookie(w, state, oauthStateTTL)
+	h.setOAuthStateCookie(w, name, state, oauthStateTTL)
 
 	http.Redirect(w, r, provider.AuthCodeURL(state), http.StatusFound)
 }
@@ -55,7 +61,7 @@ func (h *Handler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Referrer-Policy", "no-referrer")
 
-	h.setOAuthStateCookie(w, "", -1)
+	h.setOAuthStateCookie(w, name, "", -1)
 
 	query := r.URL.Query()
 
@@ -64,7 +70,7 @@ func (h *Handler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie(oauthStateCookie)
+	cookie, err := r.Cookie(oauthStateCookie(name))
 	if err != nil || !sameState(cookie.Value, query.Get("state")) {
 		h.redirectToFrontend(w, r, "invalid_state")
 		return
@@ -101,10 +107,16 @@ func (h *Handler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) oauthFailure(w http.ResponseWriter, r *http.Request, err error) {
 	var validation *auth.ValidationError
 	var conflict *auth.ConflictError
+	var accountExists *auth.AccountExistsError
+	var retry *auth.RetryError
 
 	switch {
 	case errors.As(err, &validation):
 		h.redirectToFrontend(w, r, "no_email")
+	case errors.As(err, &accountExists):
+		h.redirectToFrontend(w, r, "email_in_use")
+	case errors.As(err, &retry):
+		h.redirectToFrontend(w, r, "retry")
 	case errors.As(err, &conflict):
 		h.redirectToFrontend(w, r, "already_linked")
 	default:
@@ -136,14 +148,14 @@ func (h *Handler) redirectToFrontend(w http.ResponseWriter, r *http.Request, slu
 	http.Redirect(w, r, target.String(), http.StatusFound)
 }
 
-func (h *Handler) setOAuthStateCookie(w http.ResponseWriter, value string, ttl time.Duration) {
+func (h *Handler) setOAuthStateCookie(w http.ResponseWriter, provider, value string, ttl time.Duration) {
 	maxAge := int(ttl.Seconds())
 	if ttl < 0 {
 		maxAge = -1
 	}
 	// #nosec G124 -- Secure follows COOKIE_SECURE, true by default
 	http.SetCookie(w, &http.Cookie{
-		Name:     oauthStateCookie,
+		Name:     oauthStateCookie(provider),
 		Value:    value,
 		Path:     oauthStatePath,
 		MaxAge:   maxAge,
