@@ -14,7 +14,7 @@ import (
 
 const clearAvatar = `-- name: ClearAvatar :one
 WITH previous AS (
-  SELECT avatar_filename FROM profiles WHERE id = $1
+    SELECT avatar_filename FROM profiles WHERE id = $1 FOR UPDATE
 )
 UPDATE profiles
 SET avatar_filename = NULL
@@ -23,6 +23,8 @@ WHERE profiles.id = $1
 RETURNING previous.avatar_filename
 `
 
+// Locked for the same reason as SetAvatar: a DELETE racing a POST orphans a
+// file in exactly the same way.
 func (q *Queries) ClearAvatar(ctx context.Context, id uuid.UUID) (sql.NullString, error) {
 	row := q.db.QueryRowContext(ctx, clearAvatar, id)
 	var avatar_filename sql.NullString
@@ -169,8 +171,8 @@ func (q *Queries) ListProfiles(ctx context.Context) ([]Profile, error) {
 }
 
 const setAvatar = `-- name: SetAvatar :one
- WITH previous AS (
-    SELECT avatar_filename FROM profiles WHERE id = $1
+WITH previous AS (
+    SELECT avatar_filename FROM profiles WHERE id = $1 FOR UPDATE
 )
 UPDATE profiles
 SET avatar_filename = $2
@@ -184,6 +186,10 @@ type SetAvatarParams struct {
 	AvatarFilename sql.NullString
 }
 
+// FOR UPDATE is load-bearing. Without it the CTE reads the statement snapshot
+// while the UPDATE re-reads the row after the lock is released, so two
+// overlapping uploads both report the same previous filename - and the one
+// neither of them named is never deleted.
 func (q *Queries) SetAvatar(ctx context.Context, arg SetAvatarParams) (sql.NullString, error) {
 	row := q.db.QueryRowContext(ctx, setAvatar, arg.ID, arg.AvatarFilename)
 	var avatar_filename sql.NullString

@@ -39,8 +39,8 @@ WHERE id = $1
 FOR UPDATE;
 
 -- name: SetAvatar :one
- WITH previous AS (
-    SELECT avatar_filename FROM profiles WHERE id = $1
+WITH previous AS (
+    SELECT avatar_filename FROM profiles WHERE id = $1 FOR UPDATE
 )
 UPDATE profiles
 SET avatar_filename = $2
@@ -49,8 +49,10 @@ WHERE profiles.id = $1
 RETURNING previous.avatar_filename;
 
 -- name: ClearAvatar :one
+-- Locked for the same reason as SetAvatar: a DELETE racing a POST orphans a
+-- file in exactly the same way.
 WITH previous AS (
-  SELECT avatar_filename FROM profiles WHERE id = $1
+    SELECT avatar_filename FROM profiles WHERE id = $1 FOR UPDATE
 )
 UPDATE profiles
 SET avatar_filename = NULL
