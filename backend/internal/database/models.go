@@ -104,12 +104,13 @@ type OrderEvent struct {
 }
 
 type Profile struct {
-	ID          uuid.UUID
-	Firstname   sql.NullString
-	Lastname    sql.NullString
-	Bio         sql.NullString
-	PhoneNumber sql.NullString
-	DateOfBirth sql.NullTime
+	ID             uuid.UUID
+	Firstname      sql.NullString
+	Lastname       sql.NullString
+	Bio            sql.NullString
+	PhoneNumber    sql.NullString
+	DateOfBirth    sql.NullTime
+	AvatarFilename sql.NullString
 }
 
 type RefreshToken struct {

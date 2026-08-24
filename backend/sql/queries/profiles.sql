@@ -37,3 +37,23 @@ ON CONFLICT (id) DO NOTHING;
 SELECT * FROM profiles
 WHERE id = $1
 FOR UPDATE;
+
+-- name: SetAvatar :one
+ WITH previous AS (
+    SELECT avatar_filename FROM profiles WHERE id = $1
+)
+UPDATE profiles
+SET avatar_filename = $2
+FROM previous
+WHERE profiles.id = $1
+RETURNING previous.avatar_filename;
+
+-- name: ClearAvatar :one
+WITH previous AS (
+  SELECT avatar_filename FROM profiles WHERE id = $1
+)
+UPDATE profiles
+SET avatar_filename = NULL
+FROM previous
+WHERE profiles.id = $1
+RETURNING previous.avatar_filename;

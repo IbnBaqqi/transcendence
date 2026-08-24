@@ -12,12 +12,30 @@ import (
 	"github.com/google/uuid"
 )
 
+const clearAvatar = `-- name: ClearAvatar :one
+WITH previous AS (
+  SELECT avatar_filename FROM profiles WHERE id = $1
+)
+UPDATE profiles
+SET avatar_filename = NULL
+FROM previous
+WHERE profiles.id = $1
+RETURNING previous.avatar_filename
+`
+
+func (q *Queries) ClearAvatar(ctx context.Context, id uuid.UUID) (sql.NullString, error) {
+	row := q.db.QueryRowContext(ctx, clearAvatar, id)
+	var avatar_filename sql.NullString
+	err := row.Scan(&avatar_filename)
+	return avatar_filename, err
+}
+
 const createProfile = `-- name: CreateProfile :one
 INSERT INTO profiles (id, firstname, lastname, bio, phone_number, date_of_birth)
 VALUES (
     $1, $2, $3, $4, $5, $6
 )
-RETURNING id, firstname, lastname, bio, phone_number, date_of_birth
+RETURNING id, firstname, lastname, bio, phone_number, date_of_birth, avatar_filename
 `
 
 type CreateProfileParams struct {
@@ -46,6 +64,7 @@ func (q *Queries) CreateProfile(ctx context.Context, arg CreateProfileParams) (P
 		&i.Bio,
 		&i.PhoneNumber,
 		&i.DateOfBirth,
+		&i.AvatarFilename,
 	)
 	return i, err
 }
@@ -72,7 +91,7 @@ func (q *Queries) EnsureProfile(ctx context.Context, id uuid.UUID) error {
 }
 
 const getProfile = `-- name: GetProfile :one
-SELECT id, firstname, lastname, bio, phone_number, date_of_birth FROM profiles
+SELECT id, firstname, lastname, bio, phone_number, date_of_birth, avatar_filename FROM profiles
 WHERE id = $1
 LIMIT 1
 `
@@ -87,12 +106,13 @@ func (q *Queries) GetProfile(ctx context.Context, id uuid.UUID) (Profile, error)
 		&i.Bio,
 		&i.PhoneNumber,
 		&i.DateOfBirth,
+		&i.AvatarFilename,
 	)
 	return i, err
 }
 
 const getProfileForUpdate = `-- name: GetProfileForUpdate :one
-SELECT id, firstname, lastname, bio, phone_number, date_of_birth FROM profiles
+SELECT id, firstname, lastname, bio, phone_number, date_of_birth, avatar_filename FROM profiles
 WHERE id = $1
 FOR UPDATE
 `
@@ -107,12 +127,13 @@ func (q *Queries) GetProfileForUpdate(ctx context.Context, id uuid.UUID) (Profil
 		&i.Bio,
 		&i.PhoneNumber,
 		&i.DateOfBirth,
+		&i.AvatarFilename,
 	)
 	return i, err
 }
 
 const listProfiles = `-- name: ListProfiles :many
-SELECT id, firstname, lastname, bio, phone_number, date_of_birth FROM profiles
+SELECT id, firstname, lastname, bio, phone_number, date_of_birth, avatar_filename FROM profiles
 ORDER BY id
 `
 
@@ -132,6 +153,7 @@ func (q *Queries) ListProfiles(ctx context.Context) ([]Profile, error) {
 			&i.Bio,
 			&i.PhoneNumber,
 			&i.DateOfBirth,
+			&i.AvatarFilename,
 		); err != nil {
 			return nil, err
 		}
@@ -146,6 +168,29 @@ func (q *Queries) ListProfiles(ctx context.Context) ([]Profile, error) {
 	return items, nil
 }
 
+const setAvatar = `-- name: SetAvatar :one
+ WITH previous AS (
+    SELECT avatar_filename FROM profiles WHERE id = $1
+)
+UPDATE profiles
+SET avatar_filename = $2
+FROM previous
+WHERE profiles.id = $1
+RETURNING previous.avatar_filename
+`
+
+type SetAvatarParams struct {
+	ID             uuid.UUID
+	AvatarFilename sql.NullString
+}
+
+func (q *Queries) SetAvatar(ctx context.Context, arg SetAvatarParams) (sql.NullString, error) {
+	row := q.db.QueryRowContext(ctx, setAvatar, arg.ID, arg.AvatarFilename)
+	var avatar_filename sql.NullString
+	err := row.Scan(&avatar_filename)
+	return avatar_filename, err
+}
+
 const updateProfile = `-- name: UpdateProfile :one
 UPDATE profiles
 SET firstname     = $2,
@@ -154,7 +199,7 @@ SET firstname     = $2,
     phone_number  = $5,
     date_of_birth = $6
 WHERE id = $1
-RETURNING id, firstname, lastname, bio, phone_number, date_of_birth
+RETURNING id, firstname, lastname, bio, phone_number, date_of_birth, avatar_filename
 `
 
 type UpdateProfileParams struct {
@@ -183,6 +228,7 @@ func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) (P
 		&i.Bio,
 		&i.PhoneNumber,
 		&i.DateOfBirth,
+		&i.AvatarFilename,
 	)
 	return i, err
 }
