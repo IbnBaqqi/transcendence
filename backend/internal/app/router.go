@@ -26,6 +26,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.User,
 		appService.Profile,
 		appService.Follow,
+		appService.Block,
 		appService.APIKey,
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
