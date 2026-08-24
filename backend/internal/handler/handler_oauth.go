@@ -47,6 +47,8 @@ func (h *Handler) OAuthStart(w http.ResponseWriter, r *http.Request) {
 
 	h.setOAuthStateCookie(w, name, state, oauthStateTTL)
 
+	// #nosec G710 -- the URL is built from the provider's configured endpoint,
+	// never from the request; only the registry decides which provider applies
 	http.Redirect(w, r, provider.AuthCodeURL(state), http.StatusFound)
 }
 

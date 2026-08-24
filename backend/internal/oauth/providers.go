@@ -51,6 +51,7 @@ func newGoogle(cfg config.OAuthConfig, publicURL string) *Provider {
 			ClientSecret: cfg.ClientSecret,
 			RedirectURL:  RedirectURI(publicURL, ProviderGoogle),
 			Scopes:       []string{"openid", "email"},
+			// #nosec G101 -- published endpoint URLs, not credentials
 			Endpoint: oauth2.Endpoint{
 				AuthURL:  "https://accounts.google.com/o/oauth2/v2/auth",
 				TokenURL: "https://oauth2.googleapis.com/token",
@@ -87,6 +88,7 @@ func newGitHub(cfg config.OAuthConfig, publicURL string) *Provider {
 			ClientSecret: cfg.ClientSecret,
 			RedirectURL:  RedirectURI(publicURL, ProviderGitHub),
 			Scopes:       []string{"user:email"},
+			// #nosec G101 -- published endpoint URLs, not credentials
 			Endpoint: oauth2.Endpoint{
 				AuthURL:   "https://github.com/login/oauth/authorize",
 				TokenURL:  "https://github.com/login/oauth/access_token",
