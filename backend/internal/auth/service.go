@@ -14,17 +14,20 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 )
 
 type Service struct {
-	db  *database.DB
-	jwt *JwtService
+	db     *database.DB
+	jwt    *JwtService
+	notify notify.Notifier
 }
 
-func NewService(db *database.DB, jwt *JwtService) *Service {
+func NewService(db *database.DB, jwt *JwtService, notifier notify.Notifier) *Service {
 	return &Service{
-		db:  db,
-		jwt: jwt,
+		db:     db,
+		jwt:    jwt,
+		notify: notifier,
 	}
 }
 
@@ -107,6 +110,8 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 	if err := tx.Commit(); err != nil {
 		return SignupResponse{}, signupFailed("commit", err)
 	}
+
+	s.notify.Notify(ctx, notify.Welcome(user.Email, user.Username))
 
 	accessToken, err := s.jwt.IssueAccessToken(user)
 	if err != nil {

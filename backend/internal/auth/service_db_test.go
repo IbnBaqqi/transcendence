@@ -8,6 +8,7 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
 )
 
@@ -15,7 +16,7 @@ func newService(t *testing.T) (*Service, *database.DB) {
 	t.Helper()
 
 	db := testdb.New(t)
-	return NewService(db, NewJwtService("test-secret", time.Minute)), db
+	return NewService(db, NewJwtService("test-secret", time.Minute), notify.Disabled{}), db
 }
 
 func countUsers(t *testing.T, db *database.DB) int {

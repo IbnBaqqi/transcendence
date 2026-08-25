@@ -10,15 +10,17 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/google/uuid"
 )
 
 type OrderService struct {
-	db *database.DB
+	db     *database.DB
+	notify notify.Notifier
 }
 
-func NewOrderService(db *database.DB) *OrderService {
-	return &OrderService{db: db}
+func NewOrderService(db *database.DB, notifier notify.Notifier) *OrderService {
+	return &OrderService{db: db, notify: notifier}
 }
 
 func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input dtos.CreateOrderInput) (database.Order, error) {
@@ -89,6 +91,11 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 	if err := tx.Commit(); err != nil {
 		return database.Order{}, err
 	}
+
+	notifyUser(ctx, s.db.Queries, s.notify, order.SellerID,
+		func(email, _ string) notify.Message {
+			return notify.OrderPlaced(email, order.ListingTitle, order.Quantity, listing.Unit)
+		})
 
 	return order, nil
 }
@@ -239,6 +246,7 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 			if err := tx.Commit(); err != nil {
 				return database.Order{}, err
 			}
+			s.notifyOrderAction(ctx, action, marked, userID)
 			return marked, nil
 		}
 	}
@@ -260,7 +268,34 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 		return database.Order{}, err
 	}
 
+	s.notifyOrderAction(ctx, action, updated, userID)
+
 	return updated, nil
+}
+
+func (s *OrderService) notifyOrderAction(
+	ctx context.Context,
+	action orderAction,
+	order database.Order,
+	actorID uuid.UUID,
+) {
+	switch action.name {
+	case actionHandover.name:
+		notifyUser(ctx, s.db.Queries, s.notify, order.BuyerID,
+			func(email, _ string) notify.Message {
+				return notify.OrderHandedOver(email, order.ListingTitle)
+			})
+
+	case actionCancel.name:
+		recipient := order.BuyerID
+		if actorID == order.BuyerID {
+			recipient = order.SellerID
+		}
+		notifyUser(ctx, s.db.Queries, s.notify, recipient,
+			func(email, _ string) notify.Message {
+				return notify.OrderCancelled(email, order.ListingTitle)
+			})
+	}
 }
 
 func (s *OrderService) ListEvents(ctx context.Context, userID uuid.UUID, orderID uuid.UUID) ([]database.OrderEvent, error) {

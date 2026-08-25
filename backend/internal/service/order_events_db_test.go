@@ -9,6 +9,7 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
 )
 
@@ -47,7 +48,7 @@ func newOrderFixture(t *testing.T) orderFixture {
 		t.Fatalf("creating a listing: %v", err)
 	}
 
-	svc := NewOrderService(db)
+	svc := NewOrderService(db, notify.Disabled{})
 	order, err := svc.CreateOrder(ctx, buyer, dtos.CreateOrderInput{ListingID: listing.ID, Quantity: 2})
 	if err != nil {
 		t.Fatalf("placing the order: %v", err)

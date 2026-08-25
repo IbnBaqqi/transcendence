@@ -60,7 +60,7 @@ func run() error {
 	notifier := notify.New(cfg.Mail)
 	defer notifier.Close()
 
-	appService, err := app.New(cfg, db)
+	appService, err := app.New(cfg, db, notifier)
 	if err != nil {
 		return fmt.Errorf("failed to initialize app services: %w", err)
 	}
