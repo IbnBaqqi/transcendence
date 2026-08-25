@@ -281,6 +281,9 @@ func (s *OrderService) notifyOrderAction(
 ) {
 	switch action.name {
 	case actionHandover.name:
+		if order.Status == actionHandover.to {
+			return
+		}
 		notifyUser(ctx, s.db.Queries, s.notify, order.BuyerID,
 			func(email, _ string) notify.Message {
 				return notify.OrderHandedOver(email, order.ListingTitle)

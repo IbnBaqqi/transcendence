@@ -17,9 +17,11 @@ func notifyUser(
 	userID uuid.UUID,
 	build func(email, username string) notify.Message,
 ) {
+	ctx = context.WithoutCancel(ctx)
+
 	user, err := q.GetUser(ctx, userID)
 	if err != nil {
-		slog.Error("could not look up a notification recipient",
+		slog.Warn("could not look up a notification recipient",
 			"user_id", userID, "error", err)
 		return
 	}

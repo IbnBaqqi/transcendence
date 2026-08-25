@@ -144,6 +144,46 @@ func TestHandoverNotifiesTheBuyerBeforeTheOrderCompletes(t *testing.T) {
 	f.rec.only(t, notify.KindOrderHandedOver, f.buyerEmail)
 }
 
+func TestHandoverAfterReceiveDoesNotAnnounceAShipment(t *testing.T) {
+	f := newNotifyFixture(t)
+	ctx := context.Background()
+
+	order := f.placeOrder(t)
+	if _, err := f.orders.ConfirmOrder(ctx, f.seller, order.ID); err != nil {
+		t.Fatalf("confirming: %v", err)
+	}
+	if _, err := f.orders.ReceiveOrder(ctx, f.buyer, order.ID); err != nil {
+		t.Fatalf("receiving: %v", err)
+	}
+	f.rec.reset()
+
+	done, err := f.orders.HandoverOrder(ctx, f.seller, order.ID)
+	if err != nil {
+		t.Fatalf("handing over: %v", err)
+	}
+	if done.Status != "completed" {
+		t.Fatalf("status = %q, want completed - this is not exercising the second commit point", done.Status)
+	}
+
+	if msgs := f.rec.messages(); len(msgs) != 0 {
+		t.Errorf("sent %d notifications for an order that was already received: %+v", len(msgs), msgs)
+	}
+}
+
+func TestADisconnectedClientStillNotifies(t *testing.T) {
+	f := newNotifyFixture(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	notifyUser(ctx, f.db.Queries, f.rec, f.seller,
+		func(email, _ string) notify.Message {
+			return notify.OrderPlaced(email, "Chanterelles", 2, "kg")
+		})
+
+	f.rec.only(t, notify.KindOrderPlaced, f.sellerEmail)
+}
+
 func TestCancellingNotifiesTheOtherParty(t *testing.T) {
 	t.Run("buyer cancels, seller hears", func(t *testing.T) {
 		f := newNotifyFixture(t)
