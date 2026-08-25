@@ -269,12 +269,47 @@ instance counts separately — two instances behind a load balancer give one key
 double its limit. That is fine for this project, and a shared store is what
 production would need instead.
 
+## Notifications
+
+The app emails people when something happens to them: signup, an order placed,
+handed over or cancelled, and a new chat request. Nothing else — emailing on
+every create/update/delete would be spam, and it is how a sending domain gets
+blacklisted.
+
+### Nothing leaves your machine
+
+`docker compose up` starts [Mailpit](https://mailpit.axllent.org/), which
+accepts mail and shows it in a browser instead of delivering it. Read what was
+"sent" at **http://localhost:8025**.
+
+Leave `SMTP_HOST` empty and notifications are logged instead, so nobody needs a
+mail server to place an order.
+
+### How it works, and what it does not guarantee
+
+Sending happens **after** the database transaction commits, on a worker
+goroutine. Two consequences worth knowing:
+
+- **An email failure never fails the action.** The order is what the user asked
+  for; the email is a courtesy. A dead relay is a log line.
+- **Delivery is at-most-once.** The database and the mail server are two
+  systems with no shared transaction, so "row written" and "mail sent" cannot
+  be atomic. If the process dies between them the mail is lost — nobody is ever
+  emailed about something that did not happen, but a notification can go
+  missing. The upgrade path is an outbox table; it is not built, because a
+  missed "your order shipped" is a nuisance and an outbox is a table, a worker
+  and a migration.
+
+A full queue drops rather than blocks, for the same reason: blocking would put
+the mail server back on the request path.
+
 ## Running the tests
 
 ```bash
 cd backend
 make test        # everything that runs without a database
 make test-db     # the above, plus the tests that talk to Postgres
+make test-race   # test-db with the race detector, which is what CI runs
 ```
 
 `make test-db` needs the database up:

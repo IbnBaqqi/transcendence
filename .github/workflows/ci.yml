@@ -46,7 +46,7 @@ jobs:
         env:
           # Without this the database tests skip; with it they run for real.
           TEST_DB_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
-        run: go test -cover ./...
+        run: go test -race -cover ./...
 
       - name: Install gosec
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
