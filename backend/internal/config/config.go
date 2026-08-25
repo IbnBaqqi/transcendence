@@ -17,12 +17,25 @@ type Config struct {
 	DB     DBConfig
 	Auth   AuthConfig
 	Upload UploadConfig
+	Mail   MailConfig
 }
 
 type UploadConfig struct {
 	Dir           string
 	MaxBytes      int64
 	MaxPerListing int
+}
+
+type MailConfig struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	From string
+}
+
+func (c MailConfig) Configured() bool {
+	return c.Host != "" && c.From != ""
 }
 
 type AuthConfig struct {
@@ -85,6 +98,14 @@ func Load() (*Config, error) {
 			Dir:           getEnv("UPLOAD_DIR", "./uploads"),
 			MaxBytes:      getEnvAsInt64("MAX_UPLOAD_BYTES", 5<<20),
 			MaxPerListing: getEnvAsInt("MAX_IMAGES_PER_LISTING", 5),
+		},
+
+		Mail: MailConfig{
+			Host:     getEnv("SMTP_HOST", ""),
+			Port:     getEnv("SMTP_PORT", "1025"),
+			Username: getEnv("SMTP_USERNAME", ""),
+			Password: getEnv("SMTP_PASSWORD", ""),
+			From:     getEnv("MAIL_FROM", ""),
 		},
 	}
 
