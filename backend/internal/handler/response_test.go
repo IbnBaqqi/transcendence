@@ -21,7 +21,7 @@ func TestServiceErrorPassesTypedMessagesThrough(t *testing.T) {
 		{"validation", &service.ValidationError{Message: "Price must be greater than 0"}, http.StatusBadRequest},
 		{"not found", &service.NotFoundError{Message: "Listing not found"}, http.StatusNotFound},
 		{"forbidden", &service.ForbiddenError{Message: "You do not own this listing"}, http.StatusForbidden},
-		{"conflict", &service.ConflictError{Message: "listing has orders"}, http.StatusConflict},
+		{"conflict", &service.ConflictError{Message: "Listing has orders"}, http.StatusConflict},
 	}
 
 	for _, tt := range tests {
