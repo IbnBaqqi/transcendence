@@ -4,7 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+
+	"github.com/IbnBaqqi/transcendence/internal/config"
 )
+
+func New(cfg config.MailConfig) Notifier {
+	if !cfg.Configured() {
+		slog.Info("mail is not configured, notifications will be logged only")
+		return Disabled{}
+	}
+	return NewDispatcher(NewSMTP(cfg))
+}
 
 type Kind string
 
@@ -25,9 +35,12 @@ type Message struct {
 
 type Notifier interface {
 	Notify(ctx context.Context, m Message)
+	Close()
 }
 
 type Disabled struct{}
+
+func (Disabled) Close() {}
 
 func (Disabled) Notify(_ context.Context, m Message) {
 	slog.Debug("notification not sent, mail is not configured",

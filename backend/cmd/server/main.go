@@ -14,6 +14,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/config"
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/logger"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 )
 
 func main() {
@@ -55,6 +56,9 @@ func run() error {
 			log.Error("failed to close database connection", "error", err)
 		}
 	}()
+
+	notifier := notify.New(cfg.Mail)
+	defer notifier.Close()
 
 	appService, err := app.New(cfg, db)
 	if err != nil {
