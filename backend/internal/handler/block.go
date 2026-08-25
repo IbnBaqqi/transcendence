@@ -9,13 +9,13 @@ import (
 func (h *Handler) BlockUser(w http.ResponseWriter, r *http.Request) {
 	blockerID, err := getUserID(r)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "authentication required")
+		respondWithError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 
 	blockedID, err := parseIDParam(r)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "invalid user id")
+		respondWithError(w, http.StatusBadRequest, "Invalid user id")
 		return
 	}
 
@@ -30,13 +30,13 @@ func (h *Handler) BlockUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UnblockUser(w http.ResponseWriter, r *http.Request) {
 	blockerID, err := getUserID(r)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "authentication required")
+		respondWithError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 
 	blockedID, err := parseIDParam(r)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "invalid user id")
+		respondWithError(w, http.StatusBadRequest, "Invalid user id")
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *Handler) UnblockUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetBlocks(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "authentication required")
+		respondWithError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 

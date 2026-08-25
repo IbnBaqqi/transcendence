@@ -23,7 +23,7 @@ func NewBlockService(db *database.Queries) *BlockService {
 
 func (s *BlockService) Block(ctx context.Context, blockerID, blockedID uuid.UUID) error {
 	if blockerID == blockedID {
-		return &ValidationError{Message: "you cannot block yourself"}
+		return &ValidationError{Message: "You cannot block yourself"}
 	}
 
 	err := s.db.BlockUser(ctx, database.BlockUserParams{
@@ -31,7 +31,7 @@ func (s *BlockService) Block(ctx context.Context, blockerID, blockedID uuid.UUID
 		BlockedID: blockedID,
 	})
 	if isForeignKeyViolation(err, blockerConstraint, blockedConstraint) {
-		return &NotFoundError{Message: "user not found"}
+		return &NotFoundError{Message: "User not found"}
 	}
 	return err
 }
