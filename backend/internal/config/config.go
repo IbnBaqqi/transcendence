@@ -31,7 +31,7 @@ type MailConfig struct {
 	Port     string
 	Username string
 	Password string
-	From string
+	From     string
 }
 
 func (c MailConfig) Configured() bool {
