@@ -57,8 +57,7 @@ func (d *Dispatcher) work() {
 		cancel()
 
 		if err != nil {
-			slog.Error("sending a notification failed",
-				"kind", m.Kind, "to", m.To, "error", err)
+			slog.Warn("sending a notification failed", "kind", m.Kind, "error", err)
 		}
 	}
 }
