@@ -9,13 +9,13 @@ import (
 func (h *Handler) UploadListingImage(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "authentication required")
+		respondWithError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 
 	listingID, err := parseIDParam(r)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "invalid listing id")
+		respondWithError(w, http.StatusBadRequest, "Invalid listing id")
 		return
 	}
 
@@ -28,7 +28,7 @@ func (h *Handler) UploadListingImage(w http.ResponseWriter, r *http.Request) {
 	img, err := h.ListingImage.AddImage(r.Context(), userID, listingID, upload.Body, upload.Ext)
 	if err != nil {
 		if isTooLarge(err) {
-			respondWithError(w, http.StatusRequestEntityTooLarge, "image is too large")
+			respondWithError(w, http.StatusRequestEntityTooLarge, "Image is too large")
 			return
 		}
 		respondWithServiceError(w, r, err)
@@ -41,7 +41,7 @@ func (h *Handler) UploadListingImage(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetListingImages(w http.ResponseWriter, r *http.Request) {
 	listingID, err := parseIDParam(r)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "invalid listing id")
+		respondWithError(w, http.StatusBadRequest, "Invalid listing id")
 		return
 	}
 
@@ -56,19 +56,19 @@ func (h *Handler) GetListingImages(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteListingImage(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "authentication required")
+		respondWithError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 
 	listingID, err := parseIDParam(r)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "invalid listing id")
+		respondWithError(w, http.StatusBadRequest, "Invalid listing id")
 		return
 	}
 
 	imageID, err := parseUUIDParam(r, "imageID")
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "invalid image id")
+		respondWithError(w, http.StatusBadRequest, "Invalid image id")
 		return
 	}
 

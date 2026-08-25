@@ -33,7 +33,7 @@ func (h *Handler) readImageUpload(w http.ResponseWriter, r *http.Request, field 
 	file, _, err := r.FormFile(field)
 	if err != nil {
 		if isTooLarge(err) {
-			respondWithError(w, http.StatusRequestEntityTooLarge, "image is too large")
+			respondWithError(w, http.StatusRequestEntityTooLarge, "Image is too large")
 			return imageUpload{}, false
 		}
 		respondWithError(w, http.StatusBadRequest,
@@ -46,10 +46,10 @@ func (h *Handler) readImageUpload(w http.ResponseWriter, r *http.Request, field 
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
 		_ = file.Close()
 		if isTooLarge(err) {
-			respondWithError(w, http.StatusRequestEntityTooLarge, "image is too large")
+			respondWithError(w, http.StatusRequestEntityTooLarge, "Image is too large")
 			return imageUpload{}, false
 		}
-		respondWithError(w, http.StatusBadRequest, "could not read uploaded file")
+		respondWithError(w, http.StatusBadRequest, "Could not read uploaded file")
 		return imageUpload{}, false
 	}
 	head = head[:n]
@@ -57,7 +57,7 @@ func (h *Handler) readImageUpload(w http.ResponseWriter, r *http.Request, field 
 	ext, ok := detectImageExt(head)
 	if !ok {
 		_ = file.Close()
-		respondWithError(w, http.StatusUnsupportedMediaType, "only JPEG, PNG and WebP images are allowed")
+		respondWithError(w, http.StatusUnsupportedMediaType, "Only JPEG, PNG and WebP images are allowed")
 		return imageUpload{}, false
 	}
 

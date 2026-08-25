@@ -9,7 +9,7 @@ import (
 func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "authentication required")
+		respondWithError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 
@@ -22,7 +22,7 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	filename, err := h.Profile.SetAvatar(r.Context(), userID, upload.Body, upload.Ext)
 	if err != nil {
 		if isTooLarge(err) {
-			respondWithError(w, http.StatusRequestEntityTooLarge, "image is too large")
+			respondWithError(w, http.StatusRequestEntityTooLarge, "Image is too large")
 			return
 		}
 		respondWithServiceError(w, r, err)
@@ -37,7 +37,7 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteAvatar(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "authentication required")
+		respondWithError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 
