@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/IbnBaqqi/transcendence/internal/config"
 )
@@ -24,6 +25,7 @@ const (
 	KindOrderHandedOver Kind = "order_handed_over"
 	KindOrderCancelled  Kind = "order_cancelled"
 	KindChatRequest     Kind = "chat_request"
+	KindPasswordReset   Kind = "password_reset"
 )
 
 type Message struct {
@@ -97,5 +99,18 @@ func ChatRequest(to, listingTitle string) Message {
 		Body: fmt.Sprintf(
 			"You have a new chat request about %s. Accept it to reply.\n",
 			listingTitle),
+	}
+}
+
+func PasswordReset(to, link string, validFor time.Duration) Message {
+	return Message{
+		Kind:    KindPasswordReset,
+		To:      to,
+		Subject: "Reset your password",
+		Body: fmt.Sprintf(
+			"Follow this link to set a new password:\n\n%s\n\n"+
+				"It works once and expires in %d minutes. "+
+				"If you did not ask for this, ignore this email - nothing has changed.\n",
+			link, int(validFor.Minutes())),
 	}
 }
