@@ -28,6 +28,11 @@ info:
     exchanges it for a new access token and rotates it. Only its hash is
     stored, so a database leak cannot resume a session.
 
+    `POST /auth/reset-password` ends **every** session for that user, since a
+    forgotten password is often a compromised one. Existing tabs stop working,
+    so a client should treat the next 401 as "log in again" rather than as a
+    bug.
+
     When an access token expires, the 401 carries
     `WWW-Authenticate: Bearer error="invalid_token"` - the signal to refresh
     rather than to show a login screen. `GET /auth/me` returns the identity
@@ -338,6 +343,29 @@ components:
           format: password
       # The login handler uses DisallowUnknownFields, so an extra key is a 400.
       # Signup does NOT - that asymmetry is real, not a typo here.
+      additionalProperties: false
+
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+      additionalProperties: false
+
+    ResetPasswordRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+          description: The value from the emailed link's `?token=`.
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 72
       additionalProperties: false
 
     UserInfo:
@@ -1048,6 +1076,99 @@ paths:
           description: |
             Wrong password, or no such account. Deliberately the same message
             either way, so this cannot be used to discover which emails exist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /auth/forgot-password:
+    post:
+      tags: [auth]
+      summary: Ask for a password reset link
+      operationId: forgotPassword
+      security: []
+      description: |
+        **Always 202**, whether or not an account exists for that address.
+        Reporting "no such account" would let anyone test an address list and
+        learn who is registered, so the response is deliberately uninformative
+        — a typo looks exactly like success.
+
+        A new link supersedes any earlier one, so asking twice leaves one
+        working key rather than two. Requests inside a short cooldown are
+        silently ignored, which is also indistinguishable from success: this
+        endpoint is unauthenticated and sends mail, so without a cooldown it is
+        a way to make this server send email on someone else's behalf.
+
+        The link expires in an hour and works once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+      responses:
+        "202":
+          description: |
+            Accepted. This says nothing about whether an account exists, or
+            whether an email was in fact sent.
+        "400":
+          description: |
+            Bad body, an unknown field, or an empty email. This distinguishes
+            malformed input from everything else — never whether an address is
+            registered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /auth/reset-password:
+    post:
+      tags: [auth]
+      summary: Set a new password from a reset link
+      operationId: resetPassword
+      security: []
+      description: |
+        Spends the token, sets the password and **revokes every existing
+        session**, all in one transaction. Revoking is the point rather than a
+        detail: people reset precisely when they think someone else has their
+        password, and a surviving session would mean nothing was fixed.
+
+        No session is returned and no cookie is set. Following the link proves
+        control of the mailbox, not of the account, so the next step is
+        `POST /auth/login` with the new password.
+
+        Unknown, expired and already-used tokens are one 401 with one message.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "204":
+          description: Password changed and every session ended. No body.
+        "400":
+          description: |
+            Bad body, an unknown field, or a password outside the 8–72 byte
+            limits. The limits are bytes, not characters — bcrypt truncates
+            past 72.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: |
+            The link is unknown, expired or already used — deliberately not
+            distinguished, so the endpoint cannot confirm which tokens once
+            existed.
           content:
             application/json:
               schema:
