@@ -28,10 +28,11 @@ info:
     exchanges it for a new access token and rotates it. Only its hash is
     stored, so a database leak cannot resume a session.
 
-    `POST /auth/reset-password` ends **every** session for that user, since a
-    forgotten password is often a compromised one. Existing tabs stop working,
-    so a client should treat the next 401 as "log in again" rather than as a
-    bug.
+    `POST /auth/reset-password` revokes every refresh token and API key for
+    that user, since a forgotten password is often a compromised one. Existing
+    tabs stop working once their access token expires, so a client should treat
+    the next 401 as "log in again" rather than as a bug. An access token issued
+    before the reset keeps working until it expires - it cannot be revoked.
 
     When an access token expires, the 401 carries
     `WWW-Authenticate: Bearer error="invalid_token"` - the signal to refresh
@@ -1136,10 +1137,18 @@ paths:
       operationId: resetPassword
       security: []
       description: |
-        Spends the token, sets the password and **revokes every existing
-        session**, all in one transaction. Revoking is the point rather than a
-        detail: people reset precisely when they think someone else has their
-        password, and a surviving session would mean nothing was fixed.
+        Spends the token, sets the password, and revokes **every refresh token
+        and every API key** for that user, all in one transaction. Revoking is
+        the point rather than a detail: people reset precisely when they think
+        someone else has their password. API keys matter especially, because
+        they never expire — one created during a compromise would otherwise
+        outlive the reset indefinitely.
+
+        **One thing survives**: an access token already issued stays valid until
+        it expires, up to `ACCESS_TOKEN_TTL` (15 minutes by default). JWTs are
+        verified by signature alone and nothing consults the database, so there
+        is no way to revoke one. An attacker holding a live access token keeps
+        access for the remainder of that window; they simply cannot renew it.
 
         No session is returned and no cookie is set. Following the link proves
         control of the mailbox, not of the account, so the next step is
