@@ -11,13 +11,14 @@ import (
 )
 
 type Config struct {
-	Env    string
-	Server ServerConfig
-	Logger LoggerConfig
-	DB     DBConfig
-	Auth   AuthConfig
-	Upload UploadConfig
-	Mail   MailConfig
+	Env         string
+	Server      ServerConfig
+	Logger      LoggerConfig
+	DB          DBConfig
+	Auth        AuthConfig
+	Upload      UploadConfig
+	Mail        MailConfig
+	FrontendURL string
 }
 
 type UploadConfig struct {
@@ -99,6 +100,8 @@ func Load() (*Config, error) {
 			MaxBytes:      getEnvAsInt64("MAX_UPLOAD_BYTES", 5<<20),
 			MaxPerListing: getEnvAsInt("MAX_IMAGES_PER_LISTING", 5),
 		},
+
+		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:5173"),
 
 		Mail: MailConfig{
 			Host:     getEnv("SMTP_HOST", ""),

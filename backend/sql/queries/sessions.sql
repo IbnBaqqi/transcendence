@@ -44,3 +44,11 @@ WHERE user_id = $1
         expires_at < now()
         OR (revoked_at IS NOT NULL AND revoked_at < sqlc.arg(revoked_before))
       );
+
+-- name: RevokeSessionsForPasswordReset :exec
+UPDATE refresh_tokens
+SET revoked_at = now(),
+    revoked_reason = 'password_reset'
+WHERE user_id = $1
+    AND expires_at > now()
+    AND (revoked_at IS NULL OR revoked_reason = 'rotated');
