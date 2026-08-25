@@ -29,7 +29,6 @@ export const nameSchema = z
   });
 export const passwordSchema = z
   .string()
-  .trim()
   .min(8, "Password must be at least 8 characters long")
   .max(64, "Password must be less than 64 characters")
   .regex(/^\S+$/, "Password cannot contain spaces");
