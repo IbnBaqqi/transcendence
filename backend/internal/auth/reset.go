@@ -39,18 +39,6 @@ func (s *Service) RequestReset(ctx context.Context, email string) error {
 		return fmt.Errorf("password reset: look up email: %w", err)
 	}
 
-	last, err := s.db.LastResetRequestAt(ctx, user.ID)
-	switch {
-	case err == nil:
-		if time.Since(last) < resetCooldown {
-			slog.Info("password reset request ignored, inside cooldown", "user_id", user.ID)
-			return nil
-		}
-	case errors.Is(err, sql.ErrNoRows):
-	default:
-		return fmt.Errorf("password reset: check cooldown: %w", err)
-	}
-
 	raw := MakeRefreshToken()
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -64,6 +52,22 @@ func (s *Service) RequestReset(ctx context.Context, email string) error {
 	}()
 
 	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	if _, err := qtx.GetUserForUpdate(ctx, user.ID); err != nil {
+		return fmt.Errorf("password reset: lock user: %w", err)
+	}
+
+	last, err := qtx.LastResetRequestAt(ctx, user.ID)
+	switch {
+	case err == nil:
+		if time.Since(last) < resetCooldown {
+			slog.Info("password reset request ignored, inside cooldown", "user_id", user.ID)
+			return nil
+		}
+	case errors.Is(err, sql.ErrNoRows):
+	default:
+		return fmt.Errorf("password reset: check cooldown: %w", err)
+	}
 
 	// Supersede any outstanding link, so asking twice leaves one key, not two.
 	if err := qtx.InvalidateResetTokensForUser(ctx, user.ID); err != nil {
@@ -145,9 +149,13 @@ func (s *Service) ResetPassword(ctx context.Context, rawToken, newPassword strin
 	}
 
 	// The point of the flow: you reset because someone else may have your
-	// password, so their session must not outlive it.
+	// password, so their access must not outlive it.
 	if err := qtx.RevokeSessionsForPasswordReset(ctx, row.UserID); err != nil {
 		return fmt.Errorf("password reset: revoke sessions: %w", err)
+	}
+
+	if err := qtx.RevokeKeysForUser(ctx, row.UserID); err != nil {
+		return fmt.Errorf("password reset: revoke api keys: %w", err)
 	}
 
 	return tx.Commit()

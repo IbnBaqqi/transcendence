@@ -59,3 +59,8 @@ UPDATE users
 SET password = $2,
     updated_at = now()
 WHERE id = $1;
+
+-- name: GetUserForUpdate :one
+SELECT * FROM users
+WHERE id = $1
+FOR UPDATE;

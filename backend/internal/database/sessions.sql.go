@@ -114,9 +114,6 @@ WHERE user_id = $1
     AND (revoked_at IS NULL OR revoked_reason = 'rotated')
 `
 
-// A copy of RevokeSessionsForUser with a different reason rather than a
-// parameter on it: parameterising would change the signature every logout call
-// site uses, to save five lines.
 func (q *Queries) RevokeSessionsForPasswordReset(ctx context.Context, userID uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, revokeSessionsForPasswordReset, userID)
 	return err
