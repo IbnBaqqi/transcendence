@@ -41,7 +41,7 @@ func (h *Handler) OAuthStart(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("oauth: generating state failed",
 			"request_id", middleware.GetReqID(r.Context()), "error", err)
-		respondWithError(w, http.StatusInternalServerError, "something went wrong")
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
 
@@ -133,7 +133,7 @@ func (h *Handler) redirectToFrontend(w http.ResponseWriter, r *http.Request, slu
 	if err != nil {
 		slog.Error("oauth: FRONTEND_URL is not a valid URL",
 			"value", h.frontendURL, "error", err)
-		respondWithError(w, http.StatusInternalServerError, "something went wrong")
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
 
