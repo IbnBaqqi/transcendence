@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"sync"
 	"testing"
 
@@ -75,7 +76,8 @@ func newNotifyFixture(t *testing.T) notifyFixture {
 	mk := func(name string) uuid.UUID {
 		user, err := db.CreateUser(ctx, database.CreateUserParams{
 			ID:       database.NewID(),
-			Username: name, Email: name + "@example.test", Password: "irrelevant",
+			Username: name, Email: name + "@example.test",
+			Password: sql.NullString{String: "irrelevant", Valid: true},
 		})
 		if err != nil {
 			t.Fatalf("creating %s: %v", name, err)

@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -23,7 +24,7 @@ type CreateUserParams struct {
 	ID       uuid.UUID
 	Username string
 	Email    string
-	Password string
+	Password sql.NullString
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {

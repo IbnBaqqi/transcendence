@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,7 +30,7 @@ func profileRouter(t *testing.T) (http.Handler, uuid.UUID) {
 		ID:       database.NewID(),
 		Username: "aino",
 		Email:    "aino@example.test",
-		Password: "irrelevant",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
 	})
 	if err != nil {
 		t.Fatalf("creating a user: %v", err)
@@ -49,7 +50,7 @@ func profileRouter(t *testing.T) (http.Handler, uuid.UUID) {
 		t.Fatalf("filling the profile: %v", err)
 	}
 
-	h := New(db, nil, nil, nil, nil, nil, nil, profiles, nil, nil, nil, 0, true)
+	h := New(db, nil, nil, nil, nil, nil, nil, profiles, nil, nil, nil, 0, true, nil, "")
 
 	r := chi.NewRouter()
 	r.Get("/users/{id}", h.GetPublicProfile)

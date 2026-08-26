@@ -43,6 +43,10 @@ type AuthConfig struct {
 	AccessTokenTTL     time.Duration
 	CookieSecure       bool
 	RateLimitPerMinute int
+	Google             OAuthConfig
+	GitHub             OAuthConfig
+	PublicURL          string
+	FrontendURL        string
 }
 
 type ServerConfig struct {
@@ -61,6 +65,15 @@ type DBConfig struct {
 	MaxOpenConns    int
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
+}
+
+type OAuthConfig struct {
+	ClientID     string
+	ClientSecret string
+}
+
+func (c OAuthConfig) Configured() bool {
+	return c.ClientID != "" && c.ClientSecret != ""
 }
 
 func Load() (*Config, error) {
@@ -92,6 +105,18 @@ func Load() (*Config, error) {
 			CookieSecure:   getEnvAsBool("COOKIE_SECURE", true),
 
 			RateLimitPerMinute: getEnvAsInt("RATE_LIMIT_PER_MINUTE", 60),
+
+			Google: OAuthConfig{
+				ClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+				ClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
+			},
+			GitHub: OAuthConfig{
+				ClientID:     getEnv("GITHUB_CLIENT_ID", ""),
+				ClientSecret: getEnv("GITHUB_CLIENT_SECRET", ""),
+			},
+
+			PublicURL:   getEnv("PUBLIC_URL", "http://localhost:8080"),
+			FrontendURL: getEnv("FRONTEND_URL", "http://localhost:5173"),
 		},
 
 		Upload: UploadConfig{

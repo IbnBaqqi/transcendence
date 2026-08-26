@@ -8,7 +8,7 @@ export
 unexport TEST_DB_URL
 
 .PHONY: run build test test-db test-race test-coverage clean dev lint sqlc fmt deps \
-        migrate-up migrate-down migrate-status seed demo \
+        migrate-up migrate-down migrate-status seed db-reset demo \
         docker-build docker-up docker-down docker-logs
 
 # Run the application
@@ -88,6 +88,24 @@ require-test-db-url = @test -n "$(TEST_DB_URL)" || { echo "TEST_DB_URL not set -
 migrate-up:
 	$(require-db-url)
 	@goose -dir sql/migrations postgres "$(DB_URL)" up
+
+# Wipes the database and rebuilds it from the baseline. Needed after a schema
+# change goose cannot migrate into - it only counts versions, so a database on
+# older numbering sees the baseline, reports "no migrations to run", and keeps
+# the old schema.
+#
+# Drops the database rather than the volume: `docker compose down -v` would
+# take the uploads and the Go module cache with it, and the volume's name
+# depends on the compose project name.
+db-reset:
+	$(require-db-url)
+	@docker compose up -d db
+	@docker compose exec -T db psql -U $(POSTGRES_USER) -d postgres \
+		-c "DROP DATABASE IF EXISTS $(POSTGRES_DB) WITH (FORCE)"
+	@docker compose exec -T db psql -U $(POSTGRES_USER) -d postgres \
+		-c "CREATE DATABASE $(POSTGRES_DB)"
+	@$(MAKE) --no-print-directory migrate-up
+	@$(MAKE) --no-print-directory seed
 
 # Fills an empty database with a few users and listings to click around.
 # Truncates first, so it is safe to re-run.
