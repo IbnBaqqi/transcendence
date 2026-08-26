@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 
@@ -146,6 +148,58 @@ func TestADifferentPersonCanReportTheSameListing(t *testing.T) {
 	}
 	if n != 2 {
 		t.Errorf("reports = %d, want 2", n)
+	}
+}
+
+func TestADetailWithANullByteIsRefused(t *testing.T) {
+	f := newReportFixture(t)
+
+	err := f.report(t, f.reporter, "spam", "a\x00b")
+
+	var validation *ValidationError
+	if !errors.As(err, &validation) {
+		t.Fatalf("err = %#v, want *ValidationError - Postgres cannot store NUL, so anything else is a 500", err)
+	}
+}
+
+func TestDetailLengthIsCountedInCharacters(t *testing.T) {
+	f := newReportFixture(t)
+
+	detail := strings.Repeat("ä", 400)
+
+	if err := f.report(t, f.reporter, "other", detail); err != nil {
+		t.Fatalf("a 400-character detail was refused: %v", err)
+	}
+
+	var stored string
+	if err := f.db.QueryRow(`SELECT detail FROM listing_reports`).Scan(&stored); err != nil {
+		t.Fatalf("reading the detail back: %v", err)
+	}
+	if utf8.RuneCountInString(stored) != 400 {
+		t.Errorf("stored %d characters, want 400", utf8.RuneCountInString(stored))
+	}
+}
+
+func TestDetailIsStrippedOfControlCharacters(t *testing.T) {
+	f := newReportFixture(t)
+
+	if err := f.report(t, f.reporter, "other", "red \x1b[31mtext\x1b[0m and ‮reversed"); err != nil {
+		t.Fatalf("reporting: %v", err)
+	}
+
+	var stored string
+	if err := f.db.QueryRow(`SELECT detail FROM listing_reports`).Scan(&stored); err != nil {
+		t.Fatalf("reading the detail back: %v", err)
+	}
+
+	if strings.ContainsRune(stored, 0x1b) {
+		t.Errorf("an ANSI escape reached the moderator: %q", stored)
+	}
+	if strings.ContainsRune(stored, '‮') {
+		t.Errorf("a bidi override reached the moderator: %q", stored)
+	}
+	if !strings.Contains(stored, "red") || !strings.Contains(stored, "reversed") {
+		t.Errorf("the readable text was destroyed: %q", stored)
 	}
 }
 
