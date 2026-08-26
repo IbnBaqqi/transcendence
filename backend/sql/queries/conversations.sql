@@ -49,5 +49,10 @@ LEFT JOIN LATERAL (
      ORDER BY id DESC
      LIMIT 1
 ) lm ON TRUE
-WHERE c.buyer_id = sqlc.arg(user_id) OR c.seller_id = sqlc.arg(user_id)
-ORDER BY c.updated_at DESC NULLS LAST;
+WHERE (c.buyer_id = sqlc.arg(user_id) OR c.seller_id = sqlc.arg(user_id))
+  AND NOT EXISTS (
+      SELECT 1
+        FROM blocks
+        WHERE blocks.blocker_id = sqlc.arg(user_id)
+          AND blocks.blocked_id = u.id
+  );

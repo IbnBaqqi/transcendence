@@ -28,4 +28,10 @@ SELECT COUNT(*) FROM messages m
 JOIN conversations c ON c.id = m.conversation_id
 WHERE (c.buyer_id = sqlc.arg(user_id) OR c.seller_id = sqlc.arg(user_id))
   AND m.sender_id <> sqlc.arg(user_id)
-  AND m.read_at IS NULL;
+  AND m.read_at IS NULL
+  AND NOT EXISTS (
+      SELECT 1
+        FROM blocks
+       WHERE blocks.blocker_id = sqlc.arg(user_id)
+         AND blocks.blocked_id = m.sender_id
+  );
