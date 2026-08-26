@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"io"
 	"log/slog"
 	"strings"
 	"time"
@@ -30,11 +31,12 @@ type ProfileDetail struct {
 }
 
 type ProfileService struct {
-	db *database.DB
+	db    *database.DB
+	files fileStore
 }
 
-func NewProfileService(db *database.DB) *ProfileService {
-	return &ProfileService{db: db}
+func NewProfileService(db *database.DB, files fileStore) *ProfileService {
+	return &ProfileService{db: db, files: files}
 }
 
 func (s *ProfileService) Get(ctx context.Context, userID uuid.UUID) (ProfileDetail, error) {
@@ -211,4 +213,60 @@ func validateProfileInput(input dtos.UpdateProfileInput) error {
 		}
 	}
 	return nil
+}
+
+func (s *ProfileService) SetAvatar(
+	ctx context.Context,
+	userID uuid.UUID,
+	r io.Reader,
+	ext string,
+) (string, error) {
+	filename, err := s.files.Save(r, ext)
+	if err != nil {
+		return "", err
+	}
+
+	previous, err := s.db.SetAvatar(ctx, database.SetAvatarParams{
+		ID:             userID,
+		AvatarFilename: sql.NullString{String: filename, Valid: true},
+	})
+	if err != nil {
+		if delErr := s.files.Delete(filename); delErr != nil {
+			slog.Error("orphaned upload: file written but avatar update failed",
+				"filename", filename, "error", delErr)
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", &NotFoundError{Message: "Profile not found"}
+		}
+		return "", err
+	}
+
+	s.deleteReplaced(previous)
+
+	return filename, nil
+}
+
+func (s *ProfileService) RemoveAvatar(ctx context.Context, userID uuid.UUID) error {
+	previous, err := s.db.ClearAvatar(ctx, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &NotFoundError{Message: "Profile not found"}
+		}
+		return err
+	}
+
+	s.deleteReplaced(previous)
+	return nil
+}
+
+// deleteReplaced is cleanup, not part of the request: the row is already
+// correct, so a failure here is a stray file and a log line, not a 500.
+func (s *ProfileService) deleteReplaced(previous sql.NullString) {
+	if !previous.Valid {
+		return
+	}
+	if err := s.files.Delete(previous.String); err != nil {
+		slog.Error("replaced avatar left on disk",
+			"filename", previous.String, "error", err)
+	}
 }
