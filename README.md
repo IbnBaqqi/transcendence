@@ -328,7 +328,19 @@ production would need instead.
 cd backend
 make test        # everything that runs without a database
 make test-db     # the above, plus the tests that talk to Postgres
+make lint        # what CI's style and security checks run
 ```
+
+**Run `make lint` before pushing.** It is the one that catches the failure
+you cannot see locally otherwise: `go build` does not compile test files, so a
+call site left stale by a merge builds fine and fails CI. `go vet` compiles
+them, and `make lint` runs it alongside `gofmt`, `staticcheck` and `gosec`.
+
+Nothing to install — the two linters run through `go run` at the versions
+pinned in the Makefile, which are the versions CI uses. An installed binary
+would be whatever you happened to install, and a local pass would stop meaning
+a CI pass. The first run downloads and builds them, so give it a minute; after
+that it is seconds.
 
 `make test-db` needs the database up:
 
