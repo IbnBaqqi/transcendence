@@ -143,7 +143,7 @@ func (s *Service) ResetPassword(ctx context.Context, rawToken, newPassword strin
 
 	if err := qtx.UpdateUserPassword(ctx, database.UpdateUserPasswordParams{
 		ID:       row.UserID,
-		Password: string(hashed),
+		Password: sql.NullString{String: string(hashed), Valid: true},
 	}); err != nil {
 		return fmt.Errorf("password reset: update password: %w", err)
 	}

@@ -35,8 +35,8 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 	}
 
 	jwtService := auth.NewJwtService(cfg.Auth.JWTSecret, cfg.Auth.AccessTokenTTL)
-	authService := auth.NewService(db, jwtService, notifier, cfg.FrontendURL) // needs *DB for transaction
-	listingService := service.NewListingService(db, files)                    // needs *DB for transaction
+	authService := auth.NewService(db, jwtService, notifier, cfg.Auth.FrontendURL) // needs *DB for transaction
+	listingService := service.NewListingService(db, files)                         // needs *DB for transaction
 	orderService := service.NewOrderService(db, notifier)
 	savedService := service.NewSavedListingService(db.Queries)
 	conversationService := service.NewConversationService(db, notifier)
