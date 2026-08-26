@@ -37,3 +37,29 @@ ON CONFLICT (id) DO NOTHING;
 SELECT * FROM profiles
 WHERE id = $1
 FOR UPDATE;
+
+-- name: SetAvatar :one
+-- FOR UPDATE is load-bearing. Without it the CTE reads the statement snapshot
+-- while the UPDATE re-reads the row after the lock is released, so two
+-- overlapping uploads both report the same previous filename - and the one
+-- neither of them named is never deleted.
+WITH previous AS (
+    SELECT avatar_filename FROM profiles WHERE id = $1 FOR UPDATE
+)
+UPDATE profiles
+SET avatar_filename = $2
+FROM previous
+WHERE profiles.id = $1
+RETURNING previous.avatar_filename;
+
+-- name: ClearAvatar :one
+-- Locked for the same reason as SetAvatar: a DELETE racing a POST orphans a
+-- file in exactly the same way.
+WITH previous AS (
+    SELECT avatar_filename FROM profiles WHERE id = $1 FOR UPDATE
+)
+UPDATE profiles
+SET avatar_filename = NULL
+FROM previous
+WHERE profiles.id = $1
+RETURNING previous.avatar_filename;

@@ -153,6 +153,15 @@ components:
           description: Display order, ascending. Unique per listing.
           examples: [0]
 
+    Avatar:
+      type: object
+      required: [avatar_url]
+      properties:
+        avatar_url:
+          type: string
+          description: Path served by the API, for use in an `img` tag.
+          examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
+
     Listing:
       type: object
       # Every field without omitempty in ListingResponse is always present.
@@ -838,7 +847,7 @@ components:
         Your own profile. Unset fields are `null` rather than absent, so a form
         can render an empty input without deciding whether the key exists.
       required:
-        [id, username, email, firstname, lastname, bio, phone_number, date_of_birth, location]
+        [id, username, email, firstname, lastname, bio, phone_number, date_of_birth, location, avatar_url]
       properties:
         id:
           type: string
@@ -862,6 +871,12 @@ components:
           examples: ["2001-05-14"]
         location:
           type: [string, "null"]
+        avatar_url:
+          type: [string, "null"]
+          description: |
+            Path served by the API, or `null` when none is set. The default
+            avatar is the client's decision, not a URL the API invents.
+          examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
 
     PublicProfile:
       type: object
@@ -869,7 +884,7 @@ components:
         Somebody else's profile. `email`, `phone_number` and `date_of_birth`
         are not blanked here - the shape has no such fields, so they cannot be
         exposed by an oversight.
-      required: [id, username, firstname, lastname, bio, location, presence]
+      required: [id, username, firstname, lastname, bio, location, avatar_url, presence]
       properties:
         id:
           type: string
@@ -884,6 +899,12 @@ components:
           type: [string, "null"]
         location:
           type: [string, "null"]
+        avatar_url:
+          type: [string, "null"]
+          description: |
+            Path served by the API, or `null` when none is set. The default
+            avatar is the client's decision, not a URL the API invents.
+          examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
         presence:
           $ref: "#/components/schemas/Presence"
 
@@ -1922,6 +1943,80 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /me/avatar:
+    post:
+      tags: [me]
+      summary: Set or replace your avatar
+      operationId: uploadAvatar
+      description: |
+        `multipart/form-data` with one file field named `avatar`. The type is
+        decided by sniffing the file's first 512 bytes, not by the filename or
+        the client's Content-Type — so a `.png` that is really a PDF is a 415.
+        `MAX_UPLOAD_BYTES` (default 5 MiB) caps the size.
+
+        200 rather than 201: an avatar is singular, so posting again replaces
+        the current one and deletes the file it displaced. Uploading twice is
+        not a conflict, and there is never more than one to address.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [avatar]
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Stored, and any file it replaced deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Avatar"
+        "400":
+          description: Not a multipart form, or no `avatar` field in it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          description: The upload exceeded `MAX_UPLOAD_BYTES`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "415":
+          description: Not a JPEG, PNG or WebP.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    delete:
+      tags: [me]
+      summary: Revert to the default avatar
+      operationId: deleteAvatar
+      description: |
+        Clears the avatar and deletes the stored file. Idempotent — clearing an
+        avatar nobody set is still a 204, since the end state is identical.
+      responses:
+        "204":
+          description: No avatar is set; `avatar_url` is now `null`.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":

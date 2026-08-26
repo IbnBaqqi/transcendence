@@ -10,6 +10,7 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
+	"github.com/IbnBaqqi/transcendence/internal/storage"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
 )
 
@@ -33,7 +34,13 @@ func newProfileService(t *testing.T) (*ProfileService, uuid.UUID) {
 		t.Fatalf("creating the profile: %v", err)
 	}
 
-	return NewProfileService(db), user.ID
+	files, err := storage.NewLocal(t.TempDir())
+	if err != nil {
+		t.Fatalf("creating a temporary upload dir: %v", err)
+	}
+	t.Cleanup(func() { _ = files.Close() })
+
+	return NewProfileService(db, files), user.ID
 }
 
 func TestProfileUpdateKeepsFieldsThePatchOmits(t *testing.T) {
