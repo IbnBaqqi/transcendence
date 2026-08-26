@@ -5,7 +5,7 @@ CREATE TABLE oauth_identities (
     user_id          uuid NOT NULL,
     created_at       timestamptz NOT NULL DEFAULT now(),
 
-    PRIMARY KEY (provider, provider_user_id),
+    CONSTRAINT oauth_identities_pkey PRIMARY KEY (provider, provider_user_id),
 
     CONSTRAINT oauth_identities_user_provider_uq UNIQUE (user_id, provider),
 
