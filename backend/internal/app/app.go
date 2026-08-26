@@ -20,6 +20,7 @@ type api struct {
 	User         *service.UserService
 	Profile      *service.ProfileService
 	Follow       *service.FollowService
+	Block        *service.BlockService
 	APIKey       *service.APIKeyService
 	ListingImage *service.ListingImageService
 	Files        *storage.Local
@@ -42,6 +43,7 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 	userService := service.NewUserService(db.Queries)
 	profileService := service.NewProfileService(db, files) // needs *DB for transaction
 	followService := service.NewFollowService(db.Queries)
+	blockService := service.NewBlockService(db.Queries)
 	apiKeyService := service.NewAPIKeyService(db.Queries)
 	listingImageService := service.NewListingImageService(db, files, cfg.Upload.MaxPerListing)
 
@@ -56,6 +58,7 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 		User:         userService,
 		Profile:      profileService,
 		Follow:       followService,
+		Block:        blockService,
 		APIKey:       apiKeyService,
 		ListingImage: listingImageService,
 		Files:        files,

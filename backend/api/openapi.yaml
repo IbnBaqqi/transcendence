@@ -79,6 +79,8 @@ tags:
     description: Buyer/seller conversations
   - name: follows
     description: The social graph - who follows whom
+  - name: blocks
+    description: Who has refused contact with whom
   - name: me
     description: The authenticated user's own resources
 
@@ -582,6 +584,23 @@ components:
           type: string
         presence:
           $ref: "#/components/schemas/Presence"
+
+    BlockedUser:
+      type: object
+      description: |
+        One person you have blocked. Deliberately not `ChatUser` — that carries
+        `presence`, and whether someone you blocked is online is exactly what
+        should stop being visible to you.
+      required: [id, username, blocked_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        blocked_at:
+          type: [string, "null"]
+          format: date-time
 
     Message:
       type: object
@@ -1864,6 +1883,71 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
+  /users/{id}/block:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [blocks]
+      summary: Block a user
+      operationId: blockUser
+      description: |
+        Stops messaging in **both** directions: neither of you can start a
+        conversation with the other or send into an existing one. One-way would
+        leave the blocker able to open a thread the blocked party cannot answer.
+
+        Idempotent — blocking someone already blocked is still a 204.
+
+        A block does **not** remove a follow, and it does not affect orders. If
+        the two of you have a sale in progress, `confirm`, `handover` and
+        `receive` keep working: blocking is about messaging, and letting it
+        strand an order would turn a safety feature into a way to break
+        someone's transaction.
+      responses:
+        "204":
+          description: Blocked. No body.
+        "400":
+          description: The id is not a uuid, or it is your own - you cannot block yourself.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags: [blocks]
+      summary: Unblock a user
+      operationId: unblockUser
+      description: |
+        Restores messaging both ways, and the existing thread reappears in your
+        inbox. Idempotent, like unfollow: unblocking someone who was not
+        blocked is still a 204, since that is the state you asked for.
+      responses:
+        "204":
+          description: Unblocked. No body.
+        "400":
+          description: The id is not a uuid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /users/{id}/followers:
     parameters:
       - name: id
@@ -2082,6 +2166,32 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /me/blocks:
+    get:
+      tags: [blocks, me]
+      summary: List the people you have blocked
+      operationId: getBlocks
+      description: |
+        Alphabetical by username, unpaginated. No `presence` — see `BlockedUser`.
+
+        There is no endpoint for who *someone else* has blocked, or for who has
+        blocked you. Both are deliberately absent rather than filtered.
+      responses:
+        "200":
+          description: The people you have blocked.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BlockedUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -2522,6 +2632,15 @@ paths:
                 $ref: "#/components/schemas/Error"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: |
+            A block exists between you and the seller, in either direction. The
+            message does not say so — it reads the same as any other closed
+            thread.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
@@ -2746,6 +2865,11 @@ paths:
       description: |
         Only once the conversation is `accepted`. While it is `pending` the
         buyer's opening message is the only one allowed, so this is a 409.
+
+        A block between the two participants is a 403, checked after the status
+        rules — so a `pending` thread still returns its 409 first, and blocking
+        does not change the response for a thread that was already refusing
+        messages.
       requestBody:
         required: true
         content:
@@ -2767,6 +2891,15 @@ paths:
                 $ref: "#/components/schemas/Error"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: |
+            A block exists between the two participants, in either direction.
+            Checked after the status rules, so a pending thread still returns
+            its 409.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           $ref: "#/components/responses/NotFound"
         "409":

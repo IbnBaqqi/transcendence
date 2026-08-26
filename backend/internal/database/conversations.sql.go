@@ -116,8 +116,13 @@ LEFT JOIN LATERAL (
      ORDER BY id DESC
      LIMIT 1
 ) lm ON TRUE
-WHERE c.buyer_id = $1 OR c.seller_id = $1
-ORDER BY c.updated_at DESC NULLS LAST
+WHERE (c.buyer_id = $1 OR c.seller_id = $1)
+  AND NOT EXISTS (
+      SELECT 1
+        FROM blocks
+        WHERE blocks.blocker_id = $1
+          AND blocks.blocked_id = u.id
+  )
 `
 
 type ListConversationsForUserRow struct {
