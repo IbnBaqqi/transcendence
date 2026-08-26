@@ -22,6 +22,7 @@ type api struct {
 	Follow       *service.FollowService
 	APIKey       *service.APIKeyService
 	ListingImage *service.ListingImageService
+	Report       *service.ReportService
 	Files        *storage.Local
 	Upload       config.UploadConfig
 	AuthConfig   config.AuthConfig
@@ -44,6 +45,7 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 	followService := service.NewFollowService(db.Queries)
 	apiKeyService := service.NewAPIKeyService(db.Queries)
 	listingImageService := service.NewListingImageService(db, files, cfg.Upload.MaxPerListing)
+	reportService := service.NewReportService(db.Queries)
 
 	return &api{
 		DB:           db,
@@ -58,6 +60,7 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 		Follow:       followService,
 		APIKey:       apiKeyService,
 		ListingImage: listingImageService,
+		Report:       reportService,
 		Files:        files,
 		Upload:       cfg.Upload,
 		AuthConfig:   cfg.Auth,
