@@ -17,6 +17,12 @@ JOIN conversations c ON c.id = m.conversation_id
 WHERE (c.buyer_id = $1 OR c.seller_id = $1)
   AND m.sender_id <> $1
   AND m.read_at IS NULL
+  AND NOT EXISTS (
+      SELECT 1
+        FROM blocks
+       WHERE blocks.blocker_id = $1
+         AND blocks.blocked_id = m.sender_id
+  )
 `
 
 func (q *Queries) CountUnreadForUser(ctx context.Context, userID uuid.UUID) (int64, error) {

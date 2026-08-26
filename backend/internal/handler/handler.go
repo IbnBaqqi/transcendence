@@ -17,6 +17,7 @@ type Handler struct {
 	User           *service.UserService
 	Profile        *service.ProfileService
 	Follow         *service.FollowService
+	Block          *service.BlockService
 	APIKey         *service.APIKeyService
 	ListingImage   *service.ListingImageService
 	Report         *service.ReportService
@@ -36,6 +37,7 @@ func New(
 	userService *service.UserService,
 	profileService *service.ProfileService,
 	followService *service.FollowService,
+	blockService *service.BlockService,
 	apiKeyService *service.APIKeyService,
 	listingImageService *service.ListingImageService,
 	reportService *service.ReportService,
@@ -54,6 +56,7 @@ func New(
 		User:           userService,
 		Profile:        profileService,
 		Follow:         followService,
+		Block:          blockService,
 		APIKey:         apiKeyService,
 		ListingImage:   listingImageService,
 		Report:         reportService,

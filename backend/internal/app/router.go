@@ -27,6 +27,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.User,
 		appService.Profile,
 		appService.Follow,
+		appService.Block,
 		appService.APIKey,
 		appService.ListingImage,
 		appService.Report,
@@ -118,6 +119,9 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Get("/users/{id}/followers", h.GetFollowers)
 			r.Get("/users/{id}/following", h.GetUserFollowing)
 			r.Get("/me/following", h.GetFollowing)
+			r.Post("/users/{id}/block", h.BlockUser)
+			r.Delete("/users/{id}/block", h.UnblockUser)
+			r.Get("/me/blocks", h.GetBlocks)
 
 			r.Post("/orders", h.CreateOrder)
 			r.Get("/orders", h.GetOrders)

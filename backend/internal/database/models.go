@@ -30,6 +30,12 @@ type ApiKey struct {
 	CreatedAt  time.Time
 }
 
+type Block struct {
+	BlockerID uuid.UUID
+	BlockedID uuid.UUID
+	CreatedAt sql.NullTime
+}
+
 type Conversation struct {
 	ID           uuid.UUID
 	ListingID    uuid.NullUUID
