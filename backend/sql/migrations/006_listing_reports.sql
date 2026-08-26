@@ -17,7 +17,8 @@ CREATE TABLE listing_reports (
 
     CONSTRAINT listing_reports_listing_id_fkey FOREIGN KEY (listing_id)
         REFERENCES listings(id) ON DELETE CASCADE,
-      CONSTRAINT listing_reports_reporter_id_fkey FOREIGN KEY (reporter_id)
+
+    CONSTRAINT listing_reports_reporter_id_fkey FOREIGN KEY (reporter_id)
         REFERENCES users(id) ON DELETE SET NULL
 );
 
