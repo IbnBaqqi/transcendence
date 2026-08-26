@@ -26,3 +26,22 @@ type AuthError struct {
 func (e *AuthError) Error() string {
 	return e.Message
 }
+
+// AccountExistsError indicates an OAuth sign-in matched an account that has a
+// password, which has to be proven before the identity can be linked.
+type AccountExistsError struct {
+	Message string
+}
+
+func (e *AccountExistsError) Error() string {
+	return e.Message
+}
+
+// RetryError indicates a transient conflict; the same request may succeed.
+type RetryError struct {
+	Message string
+}
+
+func (e *RetryError) Error() string {
+	return e.Message
+}

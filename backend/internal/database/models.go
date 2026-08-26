@@ -77,6 +77,13 @@ type Message struct {
 	CreatedAt      sql.NullTime
 }
 
+type OauthIdentity struct {
+	Provider       string
+	ProviderUserID string
+	UserID         uuid.UUID
+	CreatedAt      time.Time
+}
+
 type Order struct {
 	ID                 uuid.UUID
 	ListingID          uuid.UUID
@@ -132,7 +139,7 @@ type User struct {
 	ID               uuid.UUID
 	Email            string
 	Username         string
-	Password         string
+	Password         sql.NullString
 	Role             string
 	CreatedAt        sql.NullTime
 	UpdatedAt        sql.NullTime

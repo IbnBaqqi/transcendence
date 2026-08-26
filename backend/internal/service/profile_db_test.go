@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
@@ -24,7 +25,7 @@ func newProfileService(t *testing.T) (*ProfileService, uuid.UUID) {
 		ID:       database.NewID(),
 		Username: "aino",
 		Email:    "aino@example.test",
-		Password: "irrelevant",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
 	})
 	if err != nil {
 		t.Fatalf("creating a user: %v", err)
