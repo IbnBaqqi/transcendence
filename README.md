@@ -113,6 +113,57 @@ field" would deserve that. Four things make this a lifecycle:
 **What it adds.** Disputes become answerable. "Who cancelled this, and when?"
 has a row to point at rather than a word in a column — which is what a
 marketplace needs the moment two people disagree about what happened.
+
+### OAuth login
+
+**What we built.** Sign in with Google or GitHub via the authorization code
+flow, linking to an existing account when the email matches.
+
+**What was technically interesting.**
+
+- **The account pre-hijacking defence is the whole feature.** Linking on a
+  matching email is the obvious design and it is a takeover: signup does not
+  verify addresses, so an attacker registers `victim@gmail.com` with a password
+  of their choosing, and when the victim later signs in with Google they are
+  silently dropped into the attacker's account. Auto-linking is therefore
+  limited to *password-less* rows, which can only have come from this flow;
+  anything else is refused and told to sign in with its password first. The
+  branch review found this, and the test that pins it is the most valuable one
+  in the feature.
+- **Emails are only trusted when the provider says they are verified.** GitHub
+  lets anyone add any address to their account, so an unverified one proves
+  nothing. With no verified address the sign-in is refused rather than
+  inventing one, because `users.email` is `NOT NULL` and a synthesised row
+  outlives the mistake.
+- **`SameSite=Lax` on the state cookie is load-bearing, not a default.**
+  `Strict` is the instinct for a CSRF token and it breaks the flow 100% of the
+  time: the callback is a top-level cross-site navigation from the provider,
+  which is exactly the case `Strict` suppresses. It would fail every sign-in
+  with nothing in the logs — so the server now refuses to boot if `PUBLIC_URL`
+  and `FRONTEND_URL` cannot deliver that cookie.
+- **No access token in the redirect.** A browser redirect can only carry data
+  in the URL, and an access token there lands in history, proxy logs and the
+  next `Referer`. The callback sets only the refresh cookie and the SPA calls
+  the existing `POST /auth/refresh`.
+- **One dependency, not two.** Only the root `golang.org/x/oauth2` is imported;
+  `oauth2/google` exists mostly for GCE service-account credentials and would
+  pull in `cloud.google.com/go`, so the two endpoint URLs are declared by hand.
+
+**PKCE is deliberately not implemented.** It is the first thing an
+OAuth-familiar reader looks for, so: PKCE exists to protect *public* clients —
+mobile apps and SPAs that cannot hold a secret — where an intercepted
+authorization code can be redeemed by whoever intercepts it. This is a
+confidential client: the code is exchanged server-to-server with a
+`client_secret` the browser never sees, so a stolen code is useless without it.
+CSRF, the other thing PKCE is sometimes pressed into covering, is handled by
+the `state` cookie. Adding PKCE would not be wrong, and it is what we would add
+first if the frontend ever exchanged codes itself — it simply is not what
+protects this flow today.
+
+**What it adds.** One fewer password for the user, and one fewer password for
+us to store. It also makes `users.password` nullable, which is what lets an
+account exist without one at all.
+
 ## API documentation
 
 The API describes itself. With the stack up (`docker compose up`):
