@@ -58,27 +58,31 @@ fmt:
 	@go fmt ./...
 	@echo "✓ Formatted code"
 
+# Pinned to the versions ci.yml uses - change both together. Run through
+# `go run` rather than from $$PATH: an installed binary can be any version, so
+# `command -v` proves presence but not agreement with CI, and it vanishes
+# entirely when ~/go/bin is not on PATH - which reports as "not installed" even
+# right after you install it.
+STATICCHECK := honnef.co/go/tools/cmd/staticcheck@v0.7.0
+GOSEC       := github.com/securego/gosec/v2/cmd/gosec@v2.29.0
+
 # Everything CI checks except running the tests: formatting and staticcheck from
 # the style job, gosec from the tests job, plus go vet.
 #
 # Worth running before a push. `go build` does not compile test files, so a
 # stale call site or a changed type passes it and fails CI - go vet compiles
 # them and is what catches it.
+#
+# The first run downloads and builds the two linters; later runs are seconds.
 lint:
 	@echo "→ gofmt"
 	@test -z "$$(gofmt -l .)" || { gofmt -l .; echo "✗ not formatted - run make fmt"; exit 1; }
 	@echo "→ go vet"
 	@go vet ./...
 	@echo "→ staticcheck"
-	@command -v staticcheck >/dev/null || { \
-		echo "✗ staticcheck not installed:"; \
-		echo "    go install honnef.co/go/tools/cmd/staticcheck@v0.7.0"; exit 1; }
-	@staticcheck ./...
+	@go run $(STATICCHECK) ./...
 	@echo "→ gosec"
-	@command -v gosec >/dev/null || { \
-		echo "✗ gosec not installed:"; \
-		echo "    go install github.com/securego/gosec/v2/cmd/gosec@latest"; exit 1; }
-	@gosec -quiet ./...
+	@go run $(GOSEC) -quiet ./...
 	@echo "✓ lint clean"
 
 # Install dependencies

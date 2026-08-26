@@ -335,7 +335,12 @@ make lint        # what CI's style and security checks run
 you cannot see locally otherwise: `go build` does not compile test files, so a
 call site left stale by a merge builds fine and fails CI. `go vet` compiles
 them, and `make lint` runs it alongside `gofmt`, `staticcheck` and `gosec`.
-The two linters are not vendored — it will tell you how to install them.
+
+Nothing to install — the two linters run through `go run` at the versions
+pinned in the Makefile, which are the versions CI uses. An installed binary
+would be whatever you happened to install, and a local pass would stop meaning
+a CI pass. The first run downloads and builds them, so give it a minute; after
+that it is seconds.
 
 `make test-db` needs the database up:
 
