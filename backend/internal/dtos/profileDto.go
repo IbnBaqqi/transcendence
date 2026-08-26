@@ -8,10 +8,8 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
-// The date_of_birth column is a DATE, not a timestamp.
 const DateLayout = "2006-01-02"
 
-// UpdateProfileInput is the PATCH body.
 type UpdateProfileInput struct {
 	Firstname   OptionalString `json:"firstname"`
 	Lastname    OptionalString `json:"lastname"`
@@ -21,8 +19,6 @@ type UpdateProfileInput struct {
 	Location    OptionalString `json:"location"`
 }
 
-// OwnProfileResponse is what you get about YOURSELF: everything, including
-// the fields nobody else may see.
 type OwnProfileResponse struct {
 	ID          uuid.UUID `json:"id"`
 	Username    string    `json:"username"`
@@ -33,11 +29,13 @@ type OwnProfileResponse struct {
 	PhoneNumber *string   `json:"phone_number"`
 	DateOfBirth *string   `json:"date_of_birth"`
 	Location    *string   `json:"location"`
+	AvatarURL   *string   `json:"avatar_url"`
 }
 
-// PublicProfileResponse is what everyone else gets. Email, phone number and
-// date of birth are not blanked here - they do not EXIST here, so no future
-// handler can leak them by forgetting a step.
+type AvatarResponse struct {
+	AvatarURL string `json:"avatar_url"`
+}
+
 type PublicProfileResponse struct {
 	ID        uuid.UUID        `json:"id"`
 	Username  string           `json:"username"`
@@ -45,12 +43,10 @@ type PublicProfileResponse struct {
 	Lastname  *string          `json:"lastname"`
 	Bio       *string          `json:"bio"`
 	Location  *string          `json:"location"`
+	AvatarURL *string          `json:"avatar_url"`
 	Presence  PresenceResponse `json:"presence"`
 }
 
-// Both mappers take location separately rather than a database.Address,
-// because a user may have no address row at all - the service passes an
-// invalid NullString for that case instead of a zero-valued struct.
 func ToOwnProfileResponse(u database.User, p database.Profile, location sql.NullString) OwnProfileResponse {
 	return OwnProfileResponse{
 		ID:          u.ID,
@@ -62,6 +58,7 @@ func ToOwnProfileResponse(u database.User, p database.Profile, location sql.Null
 		PhoneNumber: nullStringPtr(p.PhoneNumber),
 		DateOfBirth: nullDatePtr(p.DateOfBirth),
 		Location:    nullStringPtr(location),
+		AvatarURL:   avatarURL(p.AvatarFilename),
 	}
 }
 
@@ -73,11 +70,19 @@ func ToPublicProfileResponse(u database.User, p database.Profile, location sql.N
 		Lastname:  nullStringPtr(p.Lastname),
 		Bio:       nullStringPtr(p.Bio),
 		Location:  nullStringPtr(location),
+		AvatarURL: avatarURL(p.AvatarFilename),
 		Presence:  toPresence(u.LastSeenAt, u.ShowOnlineStatus),
 	}
 }
 
-// nullStringPtr turns sqlc's NullString into the *string the JSON wants.
+func avatarURL(filename sql.NullString) *string {
+	if !filename.Valid {
+		return nil
+	}
+	url := UploadURLPrefix + filename.String
+	return &url
+}
+
 func nullStringPtr(v sql.NullString) *string {
 	if !v.Valid {
 		return nil
@@ -86,7 +91,6 @@ func nullStringPtr(v sql.NullString) *string {
 	return &s
 }
 
-// nullDatePtr formats a DATE as YYYY-MM-DD, dropping the time entirely.
 func nullDatePtr(t sql.NullTime) *string {
 	if !t.Valid {
 		return nil

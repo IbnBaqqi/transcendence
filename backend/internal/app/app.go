@@ -41,7 +41,7 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 	savedService := service.NewSavedListingService(db.Queries)
 	conversationService := service.NewConversationService(db)
 	userService := service.NewUserService(db.Queries)
-	profileService := service.NewProfileService(db) // needs *DB for transaction
+	profileService := service.NewProfileService(db, files) // needs *DB for transaction
 	followService := service.NewFollowService(db.Queries)
 	blockService := service.NewBlockService(db.Queries)
 	apiKeyService := service.NewAPIKeyService(db.Queries)

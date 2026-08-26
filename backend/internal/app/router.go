@@ -110,6 +110,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 			r.Get("/me/profile", h.GetOwnProfile)
 			r.Patch("/me/profile", h.UpdateOwnProfile)
+			r.Post("/me/avatar", h.UploadAvatar)
+			r.Delete("/me/avatar", h.DeleteAvatar)
 			r.Post("/users/{id}/follow", h.FollowUser)
 			r.Delete("/users/{id}/follow", h.UnfollowUser)
 			r.Get("/users/{id}/followers", h.GetFollowers)
