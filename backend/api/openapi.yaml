@@ -1154,6 +1154,108 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
+  /auth/oauth/{provider}:
+    get:
+      tags: [auth]
+      summary: Start signing in with a provider
+      operationId: oauthStart
+      security: []
+      description: |
+        A redirect, not an API call — link to it, do not fetch it. Sends the
+        browser to the provider's consent screen and sets a short-lived
+        HttpOnly `oauth_state` cookie that the callback checks.
+
+        Returns 404 when the provider has no credentials configured for this
+        deployment, so a build with no Google client id simply has no Google
+        button.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, github]
+      responses:
+        "302":
+          description: Redirect to the provider.
+          headers:
+            Location:
+              schema:
+                type: string
+            Set-Cookie:
+              description: HttpOnly `oauth_state`, valid for 10 minutes.
+              schema:
+                type: string
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /auth/oauth/{provider}/callback:
+    get:
+      tags: [auth]
+      summary: Finish signing in with a provider
+      operationId: oauthCallback
+      security: []
+      description: |
+        Where the provider sends the browser back. Never returns JSON on
+        failure — the caller is a browser following a redirect, so every
+        outcome is a 302 to the frontend's `/auth/callback` carrying either
+        `status=ok` or an `error` slug: `access_denied`, `invalid_state`,
+        `invalid_request`, `no_email`, `email_in_use`, `already_linked`,
+        `retry`, `server_error`.
+
+        `email_in_use` means the address belongs to an account that has a
+        password. Signup does not verify addresses, so that account may have
+        been registered by someone who does not own this one — linking it
+        automatically would be an account takeover. The owner signs in with
+        their password instead.
+
+        On success only the `refresh_token` cookie is set — an access token in
+        a redirect URL would end up in browser history and proxy logs. The
+        frontend calls `POST /auth/refresh` to get one.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, github]
+        - name: code
+          in: query
+          description: The authorization code, exchanged server-side.
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: Must match the `oauth_state` cookie, or the flow stops.
+          schema:
+            type: string
+        - name: error
+          in: query
+          description: Set by the provider when the user declined.
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to the frontend, signed in or with an error slug.
+          headers:
+            Location:
+              schema:
+                type: string
+            Set-Cookie:
+              description: HttpOnly `refresh_token`, valid for 7 days, on success.
+              schema:
+                type: string
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /auth/me:
     get:
       tags: [auth]

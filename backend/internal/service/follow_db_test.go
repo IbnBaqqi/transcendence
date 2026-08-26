@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
@@ -22,7 +23,7 @@ func newFollowService(t *testing.T) (*FollowService, *database.DB, uuid.UUID, uu
 			ID:       database.NewID(),
 			Username: name,
 			Email:    name + "@example.test",
-			Password: "irrelevant",
+			Password: sql.NullString{String: "irrelevant", Valid: true},
 		})
 		if err != nil {
 			t.Fatalf("creating %s: %v", name, err)
