@@ -183,7 +183,7 @@ func TestDetailLengthIsCountedInCharacters(t *testing.T) {
 func TestDetailIsStrippedOfControlCharacters(t *testing.T) {
 	f := newReportFixture(t)
 
-	if err := f.report(t, f.reporter, "other", "red \x1b[31mtext\x1b[0m and ‮reversed"); err != nil {
+	if err := f.report(t, f.reporter, "other", "red \x1b[31mtext\x1b[0m and \u202ereversed"); err != nil {
 		t.Fatalf("reporting: %v", err)
 	}
 
@@ -195,7 +195,7 @@ func TestDetailIsStrippedOfControlCharacters(t *testing.T) {
 	if strings.ContainsRune(stored, 0x1b) {
 		t.Errorf("an ANSI escape reached the moderator: %q", stored)
 	}
-	if strings.ContainsRune(stored, '‮') {
+	if strings.ContainsRune(stored, '\u202e') {
 		t.Errorf("a bidi override reached the moderator: %q", stored)
 	}
 	if !strings.Contains(stored, "red") || !strings.Contains(stored, "reversed") {
