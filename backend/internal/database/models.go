@@ -68,6 +68,16 @@ type ListingImage struct {
 	CreatedAt sql.NullTime
 }
 
+type ListingReport struct {
+	ID         uuid.UUID
+	ListingID  uuid.UUID
+	ReporterID uuid.NullUUID
+	Reason     string
+	Detail     sql.NullString
+	Status     string
+	CreatedAt  time.Time
+}
+
 type Message struct {
 	ID             uuid.UUID
 	ConversationID uuid.UUID
