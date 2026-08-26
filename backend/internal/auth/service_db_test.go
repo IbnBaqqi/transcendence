@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -87,6 +88,62 @@ func TestSignupRejectsADuplicateEmail(t *testing.T) {
 	}
 	if conflict.Message != "Email already in use" {
 		t.Errorf("message = %q, want %q", conflict.Message, "Email already in use")
+	}
+}
+
+// An account created through an OAuth provider has no password, so no password
+// may open it - and the refusal must look exactly like a wrong one. Saying
+// "this account uses Google" would confirm the address is registered and tell
+// an attacker which door to try.
+//
+// Note this passes with or without the explicit Valid check in Login: bcrypt
+// rejects the empty hash too. The test pins the behaviour a client sees, not
+// which line produces it.
+func TestLoginRejectsAPasswordlessAccount(t *testing.T) {
+	svc, db := newService(t)
+	ctx := context.Background()
+
+	if _, err := db.Exec(
+		`INSERT INTO users (id, email, username) VALUES ($1, $2, $3)`,
+		database.NewID(), "oauth@example.test", "oauthonly",
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	// What a wrong password gets, for comparison.
+	if _, err := svc.Signup(ctx, signupInput("withpassword")); err != nil {
+		t.Fatal(err)
+	}
+	var wrongPassword *AuthError
+	_, err := svc.Login(ctx, dtos.LoginRequest{
+		Email: "withpassword@example.test", Password: "not the password",
+	})
+	if !errors.As(err, &wrongPassword) {
+		t.Fatalf("a wrong password gave %v, want *AuthError", err)
+	}
+
+	// An empty password is rejected earlier still, as a malformed request, so
+	// it never reaches the lookup and cannot leak anything either.
+	var invalid *ValidationError
+	if _, err := svc.Login(ctx, dtos.LoginRequest{Email: "oauth@example.test"}); !errors.As(err, &invalid) {
+		t.Errorf("an empty password gave %v, want *ValidationError", err)
+	}
+
+	for _, attempt := range []string{"password123", "null", "NULL", "seed-placeholder-password"} {
+		t.Run("password "+attempt, func(t *testing.T) {
+			_, err := svc.Login(ctx, dtos.LoginRequest{
+				Email: "oauth@example.test", Password: attempt,
+			})
+
+			var authErr *AuthError
+			if !errors.As(err, &authErr) {
+				t.Fatalf("err = %v, want *AuthError", err)
+			}
+			if authErr.Message != wrongPassword.Message {
+				t.Errorf("message = %q, want %q - it must not reveal that the\n"+
+					"account exists but has no password", authErr.Message, wrongPassword.Message)
+			}
+		})
 	}
 }
 
@@ -208,7 +265,7 @@ func TestTheUniqueIndexIsTheBackstop(t *testing.T) {
 		ID:       database.NewID(),
 		Username: "forager",
 		Email:    "someone.else@example.test",
-		Password: "irrelevant",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
 	})
 	if err == nil {
 		t.Fatal("the index let a case-variant username through")
@@ -234,7 +291,7 @@ func TestTheEmailIndexIsTheBackstop(t *testing.T) {
 		ID:       database.NewID(),
 		Username: "someoneelse",
 		Email:    "aino@example.test",
-		Password: "irrelevant",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
 	})
 	if err == nil {
 		t.Fatal("the index let a case-variant email through")

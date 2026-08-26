@@ -8,6 +8,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/handler"
 	mw "github.com/IbnBaqqi/transcendence/internal/middleware"
+	"github.com/IbnBaqqi/transcendence/internal/oauth"
 	"github.com/IbnBaqqi/transcendence/internal/presence"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -31,6 +32,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.ListingImage,
 		appService.Upload.MaxBytes,
 		appService.AuthConfig.CookieSecure,
+		oauth.NewRegistry(appService.AuthConfig),
+		appService.AuthConfig.FrontendURL,
 	)
 
 	r.Use(middleware.RequestID)
@@ -59,6 +62,9 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		r.Post("/auth/login", h.Login)
 		r.Post("/auth/logout", h.Logout)
 		r.Post("/auth/refresh", h.Refresh)
+
+		r.Get("/auth/oauth/{provider}", h.OAuthStart)
+		r.Get("/auth/oauth/{provider}/callback", h.OAuthCallback)
 
 		r.Get("/listings", h.GetListings)
 		r.Get("/listings/search", h.SearchListings)

@@ -14,6 +14,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/config"
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/logger"
+	"github.com/IbnBaqqi/transcendence/internal/oauth"
 )
 
 func main() {
@@ -48,6 +49,10 @@ func run() error {
 	}
 
 	if err := database.AssertSchemaCurrent(ctx, db.DB); err != nil {
+		return err
+	}
+
+	if err := oauth.AssertURLs(cfg.Auth); err != nil {
 		return err
 	}
 	defer func() {

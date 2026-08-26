@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/oauth"
 	"github.com/IbnBaqqi/transcendence/internal/service"
 )
 
@@ -21,6 +22,8 @@ type Handler struct {
 	ListingImage   *service.ListingImageService
 	maxUploadBytes int64
 	cookieSecure   bool
+	oauth          *oauth.Registry
+	frontendURL    string
 }
 
 func New(
@@ -38,6 +41,8 @@ func New(
 	listingImageService *service.ListingImageService,
 	maxUploadBytes int64,
 	cookieSecure bool,
+	oauthRegistry *oauth.Registry,
+	frontendURL string,
 ) *Handler {
 	return &Handler{
 		db:             db,
@@ -54,5 +59,7 @@ func New(
 		ListingImage:   listingImageService,
 		maxUploadBytes: maxUploadBytes,
 		cookieSecure:   cookieSecure,
+		oauth:          oauthRegistry,
+		frontendURL:    frontendURL,
 	}
 }
