@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
@@ -338,5 +339,91 @@ func TestResetRejectsAShortPassword(t *testing.T) {
 	var validation *ValidationError
 	if !errors.As(err, &validation) {
 		t.Fatalf("err = %#v, want *ValidationError", err)
+	}
+}
+
+func TestDeadResetTokensDoNotAccumulate(t *testing.T) {
+	svc, db, rec := newResetService(t)
+	ctx := context.Background()
+
+	if _, err := svc.Signup(ctx, signupInput("aino")); err != nil {
+		t.Fatalf("signup: %v", err)
+	}
+
+	// Four superseded requests. Each one spends the previous link, so without
+	// cleanup every one of them leaves a row behind for the life of the account.
+	for range 4 {
+		requestReset(t, svc, rec, "aino@example.test")
+		if _, err := db.Exec(
+			`UPDATE password_reset_tokens SET created_at = now() - interval '1 hour'`,
+		); err != nil {
+			t.Fatalf("ageing the request: %v", err)
+		}
+	}
+
+	var rows int
+	if err := db.QueryRow(`SELECT count(*) FROM password_reset_tokens`).Scan(&rows); err != nil {
+		t.Fatalf("counting tokens: %v", err)
+	}
+
+	if rows > 2 {
+		t.Errorf("%d token rows after four requests, want at most 2 - spent tokens are never cleaned up", rows)
+	}
+}
+
+func TestTheCooldownSurvivesTheCleanup(t *testing.T) {
+	svc, _, rec := newResetService(t)
+	ctx := context.Background()
+
+	if _, err := svc.Signup(ctx, signupInput("aino")); err != nil {
+		t.Fatalf("signup: %v", err)
+	}
+
+	token := requestReset(t, svc, rec, "aino@example.test")
+	if err := svc.ResetPassword(ctx, token, "a-brand-new-password"); err != nil {
+		t.Fatalf("resetting: %v", err)
+	}
+
+	// The link is spent, so the cleanup would delete its row - and that row is
+	// what LastResetRequestAt reads. Deleting it before the cooldown check
+	// would turn "spend your link" into "bypass the cooldown".
+	before := rec.resetCount()
+	if err := svc.RequestReset(ctx, "aino@example.test"); err != nil {
+		t.Fatalf("requesting a reset: %v", err)
+	}
+
+	if rec.resetCount() != before {
+		t.Error("a spent link let the next request through the cooldown")
+	}
+}
+
+func TestAGarbageTokenIsRejectedWithoutHashing(t *testing.T) {
+	svc, _, _ := newResetService(t)
+	ctx := context.Background()
+
+	if _, err := svc.Signup(ctx, signupInput("aino")); err != nil {
+		t.Fatalf("signup: %v", err)
+	}
+
+	// Self-calibrating: whatever bcrypt costs on this machine, rejecting an
+	// unknown token must not pay it.
+	start := time.Now()
+	if _, err := bcrypt.GenerateFromPassword([]byte("a-brand-new-password"), bcrypt.DefaultCost); err != nil {
+		t.Fatalf("hashing: %v", err)
+	}
+	hashCost := time.Since(start)
+
+	start = time.Now()
+	err := svc.ResetPassword(ctx, "not-a-real-token", "a-brand-new-password")
+	rejected := time.Since(start)
+
+	var authErr *AuthError
+	if !errors.As(err, &authErr) {
+		t.Fatalf("err = %#v, want *AuthError", err)
+	}
+
+	if rejected > hashCost/2 {
+		t.Errorf("rejecting an unknown token took %v against a %v hash - it is hashing before checking the token",
+			rejected, hashCost)
 	}
 }

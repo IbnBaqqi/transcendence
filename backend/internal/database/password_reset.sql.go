@@ -28,6 +28,25 @@ func (q *Queries) CreateResetToken(ctx context.Context, arg CreateResetTokenPara
 	return err
 }
 
+const deleteDeadResetTokensForUser = `-- name: DeleteDeadResetTokensForUser :exec
+DELETE FROM password_reset_tokens
+WHERE user_id = $1
+    AND (expires_at < now() OR used_at IS NOT NULL)
+`
+
+// Tokens that can never be redeemed again: expired, or already spent. Runs on
+// the user's own rows as they ask for a new link, so growth is bounded by live
+// requests rather than by lifetime resets - no scheduler, and the user_id
+// index already covers it. Mirrors DeleteDeadSessionsForUser.
+//
+// Must run AFTER the cooldown check: LastResetRequestAt reads the newest row
+// whether or not it is spent, so deleting first would let anyone bypass the
+// cooldown by spending or expiring their link.
+func (q *Queries) DeleteDeadResetTokensForUser(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteDeadResetTokensForUser, userID)
+	return err
+}
+
 const findLiveResetToken = `-- name: FindLiveResetToken :one
 SELECT token_hash, user_id, expires_at, used_at, created_at FROM password_reset_tokens
 WHERE token_hash = $1

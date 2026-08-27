@@ -69,6 +69,11 @@ func (s *Service) RequestReset(ctx context.Context, email string) error {
 		return fmt.Errorf("password reset: check cooldown: %w", err)
 	}
 
+	// After the cooldown read above, never before it - see the query's comment.
+	if err := qtx.DeleteDeadResetTokensForUser(ctx, user.ID); err != nil {
+		return fmt.Errorf("password reset: clean up dead tokens: %w", err)
+	}
+
 	// Supersede any outstanding link, so asking twice leaves one key, not two.
 	if err := qtx.InvalidateResetTokensForUser(ctx, user.ID); err != nil {
 		return fmt.Errorf("password reset: invalidate previous: %w", err)
@@ -105,6 +110,18 @@ func (s *Service) ResetPassword(ctx context.Context, rawToken, newPassword strin
 		return err
 	}
 
+	// A garbage token should cost one indexed lookup, not ~70ms of bcrypt on an
+	// endpoint nothing rate-limits by session. Only a gate: the transaction
+	// below re-reads and spends the token, which is where correctness lives.
+	if _, err := s.db.FindLiveResetToken(ctx, hashSession(rawToken)); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &AuthError{Message: resetFailedMessage}
+		}
+		return fmt.Errorf("password reset: find token: %w", err)
+	}
+
+	// Outside the transaction on purpose - bcrypt would hold the row locks open
+	// for the whole hash.
 	hashed, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("password reset: hash password: %w", err)
