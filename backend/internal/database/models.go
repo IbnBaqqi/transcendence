@@ -64,6 +64,7 @@ type Listing struct {
 	Unit        string
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
+	RemovedAt   sql.NullTime
 }
 
 type ListingImage struct {
@@ -91,6 +92,15 @@ type Message struct {
 	Body           string
 	ReadAt         sql.NullTime
 	CreatedAt      sql.NullTime
+}
+
+type ModerationAction struct {
+	ID          uuid.UUID
+	ListingID   uuid.UUID
+	ModeratorID uuid.NullUUID
+	Action      string
+	Note        sql.NullString
+	CreatedAt   time.Time
 }
 
 type OauthIdentity struct {

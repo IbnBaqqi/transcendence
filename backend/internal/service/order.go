@@ -51,6 +51,10 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 		return database.Order{}, err
 	}
 
+	if listing.RemovedAt.Valid {
+		return database.Order{}, &NotFoundError{Message: "Listing not found"}
+	}
+
 	if listing.SellerID == buyerID {
 		return database.Order{}, &ValidationError{Message: "You cannot order your own listing"}
 	}

@@ -25,6 +25,7 @@ type api struct {
 	APIKey       *service.APIKeyService
 	ListingImage *service.ListingImageService
 	Report       *service.ReportService
+	Moderation   *service.ModerationService
 	Files        *storage.Local
 	Upload       config.UploadConfig
 	AuthConfig   config.AuthConfig
@@ -49,6 +50,7 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 	apiKeyService := service.NewAPIKeyService(db.Queries)
 	listingImageService := service.NewListingImageService(db, files, cfg.Upload.MaxPerListing)
 	reportService := service.NewReportService(db.Queries)
+	moderationService := service.NewModerationService(db, files) // needs *DB for transaction
 
 	return &api{
 		DB:           db,
@@ -65,6 +67,7 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 		APIKey:       apiKeyService,
 		ListingImage: listingImageService,
 		Report:       reportService,
+		Moderation:   moderationService,
 		Files:        files,
 		Upload:       cfg.Upload,
 		AuthConfig:   cfg.Auth,

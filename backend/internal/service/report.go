@@ -99,6 +99,9 @@ func (s *ReportService) Report(
 		}
 		return err
 	}
+	if listing.RemovedAt.Valid {
+		return &NotFoundError{Message: "Listing not found"}
+	}
 	if listing.SellerID == reporterID {
 		return &ValidationError{Message: "You cannot report your own listing"}
 	}

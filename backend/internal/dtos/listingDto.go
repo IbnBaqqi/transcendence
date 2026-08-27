@@ -64,6 +64,7 @@ type ListingResponse struct {
 	CreatedAt   time.Time              `json:"created_at"`
 	UpdatedAt   time.Time              `json:"updated_at"`
 	Images      []ListingImageResponse `json:"images"`
+	RemovedAt   *time.Time             `json:"removed_at,omitempty"`
 }
 
 // ToListingResponse map single listing row into the response dto.
@@ -82,6 +83,7 @@ func ToListingResponse(l database.Listing) ListingResponse {
 		CreatedAt:   l.CreatedAt.Time,
 		UpdatedAt:   l.UpdatedAt.Time,
 		Images:      []ListingImageResponse{},
+		RemovedAt:   nullTimePtr(l.RemovedAt),
 	}
 }
 
