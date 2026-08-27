@@ -319,11 +319,71 @@ func TestBlockingDoesNotRemoveAFollow(t *testing.T) {
 		t.Fatalf("blocking: %v", err)
 	}
 
-	following, err := follows.ListFollowing(ctx, f.buyer)
+	following, err := follows.ListFollowing(ctx, f.buyer, f.buyer)
 	if err != nil {
 		t.Fatalf("listing follows: %v", err)
 	}
 	if len(following) != 1 {
 		t.Errorf("following = %d rows, want 1 - the block deleted it", len(following))
+	}
+}
+
+func TestABlockHidesPresenceInBothDirections(t *testing.T) {
+	f := newBlockFixture(t)
+	ctx := context.Background()
+
+	// Both sides advertise presence, so a false below is the block, not a
+	// setting.
+	for _, id := range []uuid.UUID{f.buyer, f.seller} {
+		if _, err := f.db.ExecContext(ctx,
+			`UPDATE users SET show_online_status = true, last_seen_at = now() WHERE id = $1`, id,
+		); err != nil {
+			t.Fatalf("enabling presence: %v", err)
+		}
+	}
+
+	// The buyer blocks the seller. The buyer stops seeing the thread entirely;
+	// the seller keeps it, deliberately, so the block is not announced - which
+	// is exactly why the seller must not keep seeing the buyer come online.
+	if err := f.blocks.Block(ctx, f.buyer, f.seller); err != nil {
+		t.Fatalf("blocking: %v", err)
+	}
+
+	inbox, err := f.chat.ListConversations(ctx, f.seller)
+	if err != nil {
+		t.Fatalf("listing the blocked party's inbox: %v", err)
+	}
+	if len(inbox) != 1 {
+		t.Fatalf("blocked party sees %d threads, want 1", len(inbox))
+	}
+	if inbox[0].OtherShowOnlineStatus {
+		t.Error("the blocked party still sees the blocker's online status in the inbox")
+	}
+
+	follows := NewFollowService(f.db.Queries)
+	if err := follows.Follow(ctx, f.seller, f.buyer); err != nil {
+		t.Fatalf("following: %v", err)
+	}
+
+	following, err := follows.ListFollowing(ctx, f.seller, f.seller)
+	if err != nil {
+		t.Fatalf("listing follows: %v", err)
+	}
+	if len(following) != 1 {
+		t.Fatalf("following = %d rows, want 1", len(following))
+	}
+	if following[0].ShowOnlineStatus {
+		t.Error("the blocked party still sees the blocker's online status in their follow list")
+	}
+
+	// And the blocker's own view of the person they blocked.
+	blockerFollowers, err := follows.ListFollowers(ctx, f.buyer, f.buyer)
+	if err != nil {
+		t.Fatalf("listing followers: %v", err)
+	}
+	for _, row := range blockerFollowers {
+		if row.ID == f.seller && row.ShowOnlineStatus {
+			t.Error("the blocker still sees the blocked user's online status")
+		}
 	}
 }

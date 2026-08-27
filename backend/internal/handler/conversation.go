@@ -193,6 +193,8 @@ func (h *Handler) respondWithConversation(
 		return
 	}
 
+	h.hidePresenceIfBlocked(r, userID, &other)
+
 	respondWithJSON(w, status, dtos.ToConversationResponse(conv, other, userID))
 }
 

@@ -64,5 +64,7 @@ func (h *Handler) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hidePresenceIfBlocked(r, viewerID(r), &detail.User)
+
 	respondWithJSON(w, http.StatusOK, dtos.ToPublicProfileResponse(detail.User, detail.Profile, detail.Location))
 }

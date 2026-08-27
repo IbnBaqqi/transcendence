@@ -97,7 +97,14 @@ SELECT
     u.id                    AS other_user_id,
     u.username              AS other_username,
     u.last_seen_at          AS other_last_seen_at,
-    u.show_online_status    AS other_show_online_status,
+    -- A block in EITHER direction hides presence. The blocker never sees the
+    -- thread at all (see the WHERE below), so the direction that matters here
+    -- is the blocked party still watching the blocker go online.
+    COALESCE(u.show_online_status AND NOT EXISTS (
+        SELECT 1 FROM blocks b
+        WHERE (b.blocker_id = $1 AND b.blocked_id = u.id)
+           OR (b.blocker_id = u.id AND b.blocked_id = $1)
+    ), false)::boolean AS other_show_online_status,
     COALESCE(lm.body, '')   AS last_message_body,
     lm.created_at           AS last_message_at,
     (SELECT COUNT(*)
