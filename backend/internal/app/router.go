@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/handler"
 	mw "github.com/IbnBaqqi/transcendence/internal/middleware"
@@ -31,6 +32,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.APIKey,
 		appService.ListingImage,
 		appService.Report,
+		appService.Moderation,
 		appService.Upload.MaxBytes,
 		appService.AuthConfig.CookieSecure,
 		oauth.NewRegistry(appService.AuthConfig),
@@ -86,6 +88,15 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/listings/{id}/images", h.UploadListingImage)
 			r.Delete("/listings/{id}/images/{imageID}", h.DeleteListingImage)
 			r.Post("/listings/{id}/report", h.ReportListing)
+
+			r.Group(func(r chi.Router) {
+				r.Use(mw.RequireRole(appService.DB.Queries, auth.RoleAdmin))
+
+				r.Get("/admin/reports", h.GetReportQueue)
+				r.Get("/admin/listings/{id}/reports", h.GetListingReports)
+				r.Get("/admin/listings/{id}/moderation", h.GetModerationHistory)
+				r.Post("/admin/listings/{id}/moderate", h.ModerateListing)
+			})
 
 			r.Post("/conversations", h.StartConversation)
 			r.Get("/conversations", h.GetConversations)

@@ -83,6 +83,8 @@ tags:
     description: Who has refused contact with whom
   - name: me
     description: The authenticated user's own resources
+  - name: moderation
+    description: Admin-only review of reported listings
 
 # A list here means OR: send either a bearer token or an API key. Individual
 # public operations switch it off with an empty "security: []", and the
@@ -568,6 +570,127 @@ components:
             Free text, and the only place to say what `other` means. Shown to a
             moderator as plain text — never rendered as HTML.
       additionalProperties: false
+
+    ModerateListingRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [remove, restore, dismiss]
+          description: |
+            `remove` hides the listing and marks its open reports `upheld`.
+            `dismiss` leaves the listing alone and marks them `dismissed`.
+            `restore` puts a removed listing back.
+
+            There is no `escalate`: every moderator holds the same ADMIN role,
+            so it would move a report from one queue to the same queue.
+        note:
+          type: string
+          maxLength: 500
+          description: |
+            Why. **Required for `remove`** — an audit trail whose reason is
+            empty is only a timestamp. Optional for the other two.
+      additionalProperties: false
+
+    ModerateListingResponse:
+      type: object
+      required: [listing, reports_resolved]
+      properties:
+        listing:
+          $ref: "#/components/schemas/Listing"
+        reports_resolved:
+          type: integer
+          format: int64
+          description: |
+            How many open reports this one action closed. Moderators act on a
+            listing, not on a report, so three complaints about one listing are
+            resolved together. Zero means it was acted on with nothing pending.
+
+    ReportedListing:
+      type: object
+      required: [listing_id, title, seller_id, report_count, first_reported_at]
+      description: |
+        One row of the queue: a listing with at least one open report, oldest
+        complaint first.
+      properties:
+        listing_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        seller_id:
+          type: string
+          format: uuid
+        removed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Null when the listing is still visible.
+        report_count:
+          type: integer
+          format: int64
+        first_reported_at:
+          type: string
+          format: date-time
+
+    Report:
+      type: object
+      required: [id, reason, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reporter_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            Null once the reporter deletes their account — the report survives
+            them, since the complaint is about the listing, not the person.
+        reason:
+          type: string
+          enum: [spam, prohibited, misleading, offensive, other]
+        detail:
+          type: string
+          description: |
+            Attacker-controlled text, stripped of control characters at write
+            time. Render it as plain text.
+        status:
+          type: string
+          enum: [open, upheld, dismissed]
+        created_at:
+          type: string
+          format: date-time
+
+    ModerationAction:
+      type: object
+      required: [id, listing_id, action, created_at]
+      description: One entry in the audit trail. Nothing here is ever edited.
+      properties:
+        id:
+          type: string
+          format: uuid
+        listing_id:
+          type: string
+          format: uuid
+        moderator_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            Null once that admin's account is deleted. The record outlives
+            them deliberately — an audit row that vanishes with its author is
+            not an audit row.
+        action:
+          type: string
+          enum: [removed, restored, dismissed]
+          description: Past tense, because the log records what was done.
+        note:
+          type: string
+        created_at:
+          type: string
+          format: date-time
 
     Presence:
       type: object
@@ -3197,5 +3320,158 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "429":
           $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /admin/reports:
+    get:
+      tags: [moderation]
+      summary: The moderation queue
+      operationId: getReportQueue
+      description: |
+        Every listing with at least one open report, oldest complaint first.
+
+        Grouped **by listing, not by report** — three people reporting one
+        listing is one problem, and one decision resolves all three.
+      responses:
+        "200":
+          description: The queue. An empty array means nothing is pending.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReportedListing"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /admin/listings/{id}/reports:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [moderation]
+      summary: Every report filed against one listing
+      operationId: getListingReports
+      description: |
+        The detail behind a queue row, resolved ones included, newest first —
+        a listing reported before and cleared is context for deciding again.
+      responses:
+        "200":
+          description: The reports. Empty if the listing was never reported.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Report"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /admin/listings/{id}/moderation:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [moderation]
+      summary: What moderators have done to this listing
+      operationId: getModerationHistory
+      description: |
+        The audit trail, newest first. Append-only: nothing here is edited or
+        deleted, so a listing removed and restored shows both.
+      responses:
+        "200":
+          description: The actions. Empty if it was never moderated.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ModerationAction"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /admin/listings/{id}/moderate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [moderation]
+      summary: Decide a reported listing
+      operationId: moderateListing
+      description: |
+        One transaction: set or clear the listing's removed state, resolve
+        every open report against it, and write the audit row. Either all
+        three happen or none do.
+
+        Removal is a state, not a delete — a listing anyone has ordered cannot
+        be deleted at all, and deleting one would take the reports explaining
+        why with it.
+
+        A removed listing is **404 everywhere** — browse, search, fetch by id,
+        ordering, chat and saving. Only its seller and admins can still fetch
+        it, and only then does `removed_at` appear on the listing. Anything
+        else would let the API confirm that a named seller was moderated.
+
+        Orders placed before removal are untouched and stay cancellable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerateListingRequest"
+      responses:
+        "200":
+          description: Done.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerateListingResponse"
+        "400":
+          description: |
+            Bad body, an unknown action, a note over 500 characters, or a
+            `remove` with no reason.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: |
+            Removing an already-removed listing, or restoring one that is not
+            removed. Usually means another moderator got there first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           $ref: "#/components/responses/ServerError"
