@@ -143,6 +143,10 @@ func (s *ConversationService) StartConversation(
 		return database.Conversation{}, database.Message{}, err
 	}
 
+	if listing.RemovedAt.Valid {
+		return database.Conversation{}, database.Message{}, &NotFoundError{Message: "Listing not found"}
+	}
+
 	if listing.SellerID == buyerID {
 		return database.Conversation{}, database.Message{}, &ValidationError{
 			Message: "You cannot start a chat about your own listing",

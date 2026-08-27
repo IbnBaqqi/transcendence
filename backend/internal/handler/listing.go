@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
@@ -63,6 +64,14 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return
+	}
+
+	if listing.RemovedAt.Valid {
+		viewer, ok := auth.UserFromContext(r.Context())
+		if !ok || (viewer.ID != listing.SellerID && viewer.Role != auth.RoleAdmin) {
+			respondWithError(w, http.StatusNotFound, "Listing not found")
+			return
+		}
 	}
 
 	imgs, err := h.ListingImage.ListImages(r.Context(), id)
