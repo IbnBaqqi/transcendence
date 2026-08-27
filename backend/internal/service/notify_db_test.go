@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"sync"
 	"testing"
 
@@ -249,5 +250,31 @@ func TestAFailedActionNotifiesNobody(t *testing.T) {
 
 	if msgs := f.rec.messages(); len(msgs) != 0 {
 		t.Errorf("sent %d notifications for a refused order: %+v", len(msgs), msgs)
+	}
+}
+
+func TestTheCancellationEmailReadsForBothSides(t *testing.T) {
+	f := newNotifyFixture(t)
+	ctx := context.Background()
+
+	order := f.placeOrder(t)
+	f.rec.reset()
+
+	if _, err := f.orders.CancelOrder(ctx, f.seller, order.ID); err != nil {
+		t.Fatalf("cancelling: %v", err)
+	}
+
+	msgs := f.rec.messages()
+	if len(msgs) != 1 {
+		t.Fatalf("sent %d notifications, want 1", len(msgs))
+	}
+
+	// The seller cancelled, so this reaches the buyer. Seller-facing detail
+	// ("the stock released") is nonsense to them, and there is no real money
+	// in this flow to refund.
+	for _, phrase := range []string{"stock", "refund"} {
+		if strings.Contains(strings.ToLower(msgs[0].Body), phrase) {
+			t.Errorf("the buyer's cancellation email mentions %q:\n%s", phrase, msgs[0].Body)
+		}
 	}
 }

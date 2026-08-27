@@ -131,7 +131,20 @@ const (
 	markBuyer
 )
 
+// key identifies the action in code; name is the words a user reads. They are
+// deliberately separate - switching on name meant rewording the UI silently
+// disabled a notification.
+type orderActionKey string
+
+const (
+	keyConfirm  orderActionKey = "confirm"
+	keyHandover orderActionKey = "handover"
+	keyReceive  orderActionKey = "receive"
+	keyCancel   orderActionKey = "cancel"
+)
+
 type orderAction struct {
+	key              orderActionKey
 	name             string
 	from             []string
 	to               string
@@ -143,12 +156,14 @@ type orderAction struct {
 
 var (
 	actionConfirm = orderAction{
+		key:   keyConfirm,
 		name:  "confirm",
 		from:  []string{"pending"},
 		to:    "confirmed",
 		actor: actorSeller,
 	}
 	actionHandover = orderAction{
+		key:   keyHandover,
 		name:  "hand over",
 		from:  []string{"confirmed"},
 		to:    "completed",
@@ -156,6 +171,7 @@ var (
 		mark:  markSeller,
 	}
 	actionReceive = orderAction{
+		key:   keyReceive,
 		name:  "confirm receipt of",
 		from:  []string{"confirmed"},
 		to:    "completed",
@@ -163,6 +179,7 @@ var (
 		mark:  markBuyer,
 	}
 	actionCancel = orderAction{
+		key:              keyCancel,
 		name:             "cancel",
 		from:             []string{"pending", "confirmed"},
 		to:               "cancelled",
@@ -279,8 +296,8 @@ func (s *OrderService) notifyOrderAction(
 	order database.Order,
 	actorID uuid.UUID,
 ) {
-	switch action.name {
-	case actionHandover.name:
+	switch action.key {
+	case keyHandover:
 		if order.Status == actionHandover.to {
 			return
 		}
@@ -289,7 +306,7 @@ func (s *OrderService) notifyOrderAction(
 				return notify.OrderHandedOver(email, order.ListingTitle)
 			})
 
-	case actionCancel.name:
+	case keyCancel:
 		recipient := order.BuyerID
 		if actorID == order.BuyerID {
 			recipient = order.SellerID

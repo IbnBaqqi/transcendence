@@ -8,8 +8,11 @@ import (
 )
 
 const (
-	queueSize    = 256
-	drainTimeout = 10 * time.Second
+	queueSize = 256
+
+	// Longer than sendTimeout on purpose: equal budgets mean a drain can time
+	// out while the send it is waiting for is still legitimately in flight.
+	drainTimeout = sendTimeout + 5*time.Second
 )
 
 type Dispatcher struct {

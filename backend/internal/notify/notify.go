@@ -83,8 +83,11 @@ func OrderCancelled(to, listingTitle string) Message {
 		Kind:    KindOrderCancelled,
 		To:      to,
 		Subject: "An order was cancelled",
+		// Neutral wording: this goes to whichever side did not cancel, so it
+		// cannot talk about released stock (seller-facing) or a refund (there
+		// is no real money in this flow).
 		Body: fmt.Sprintf(
-			"The order for %s has been cancelled and the stock released.\n",
+			"The order for %s has been cancelled.\n",
 			listingTitle),
 	}
 }
