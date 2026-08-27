@@ -9,7 +9,7 @@ WHERE id = $1;
 
 -- name: ListListings :many
 SELECT * FROM listings
-WHERE quantity > 0
+WHERE quantity > 0 AND removed_at IS NULL
 ORDER BY created_at DESC;
 
 -- name: UpdateListing :one
