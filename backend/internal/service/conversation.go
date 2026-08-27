@@ -62,6 +62,10 @@ func checkCanDecide(c database.Conversation, userID uuid.UUID) error {
 
 const blockedMessage = "This conversation is closed"
 
+// Same race as reporting a listing: the seller can delete it between the read
+// and the insert, and an unmapped 23503 reaches the client as a 500.
+const conversationListingConstraint = "conversations_listing_id_fkey"
+
 func checkNotBlocked(ctx context.Context, q *database.Queries, a, b uuid.UUID) error {
 	blocked, err := q.BlockExistsBetween(ctx, database.BlockExistsBetweenParams{
 		UserA: a,
@@ -159,6 +163,9 @@ func (s *ConversationService) StartConversation(
 		SellerID:     listing.SellerID,
 	})
 	if err != nil {
+		if isForeignKeyViolation(err, conversationListingConstraint) {
+			return database.Conversation{}, database.Message{}, &NotFoundError{Message: "Listing not found"}
+		}
 		if isUniqueViolation(err, "conversations_listing_buyer_uq") {
 			return database.Conversation{}, database.Message{}, &ConflictError{
 				Message: "You have already contacted this seller about this listing",

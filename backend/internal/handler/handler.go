@@ -20,6 +20,7 @@ type Handler struct {
 	Block          *service.BlockService
 	APIKey         *service.APIKeyService
 	ListingImage   *service.ListingImageService
+	Report         *service.ReportService
 	maxUploadBytes int64
 	cookieSecure   bool
 	oauth          *oauth.Registry
@@ -39,6 +40,7 @@ func New(
 	blockService *service.BlockService,
 	apiKeyService *service.APIKeyService,
 	listingImageService *service.ListingImageService,
+	reportService *service.ReportService,
 	maxUploadBytes int64,
 	cookieSecure bool,
 	oauthRegistry *oauth.Registry,
@@ -57,6 +59,7 @@ func New(
 		Block:          blockService,
 		APIKey:         apiKeyService,
 		ListingImage:   listingImageService,
+		Report:         reportService,
 		maxUploadBytes: maxUploadBytes,
 		cookieSecure:   cookieSecure,
 		oauth:          oauthRegistry,
