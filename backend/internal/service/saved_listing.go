@@ -20,11 +20,15 @@ func NewSavedListingService(db *database.Queries) *SavedListingService {
 
 // SaveListing bookmarks a listing for a user.
 func (s *SavedListingService) SaveListing(ctx context.Context, userID uuid.UUID, listingID uuid.UUID) error {
-	if _, err := s.db.GetListing(ctx, listingID); err != nil {
+	listing, err := s.db.GetListing(ctx, listingID)
+	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return &NotFoundError{Message: "Listing not found"}
 		}
 		return err
+	}
+	if listing.RemovedAt.Valid {
+		return &NotFoundError{Message: "Listing not found"}
 	}
 
 	return s.db.SaveListing(ctx, database.SaveListingParams{

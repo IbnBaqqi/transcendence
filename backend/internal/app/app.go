@@ -5,6 +5,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/IbnBaqqi/transcendence/internal/config"
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/IbnBaqqi/transcendence/internal/service"
 	"github.com/IbnBaqqi/transcendence/internal/storage"
 )
@@ -23,29 +24,33 @@ type api struct {
 	Block        *service.BlockService
 	APIKey       *service.APIKeyService
 	ListingImage *service.ListingImageService
+	Report       *service.ReportService
+	Moderation   *service.ModerationService
 	Files        *storage.Local
 	Upload       config.UploadConfig
 	AuthConfig   config.AuthConfig
 }
 
-func New(cfg *config.Config, db *database.DB) (*api, error) {
+func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, error) {
 	files, err := storage.NewLocal(cfg.Upload.Dir)
 	if err != nil {
 		return nil, err
 	}
 
 	jwtService := auth.NewJwtService(cfg.Auth.JWTSecret, cfg.Auth.AccessTokenTTL)
-	authService := auth.NewService(db, jwtService)         // needs *DB for transaction
-	listingService := service.NewListingService(db, files) // needs *DB for transaction
-	orderService := service.NewOrderService(db)
+	authService := auth.NewService(db, jwtService, notifier, cfg.Auth.FrontendURL) // needs *DB for transaction
+	listingService := service.NewListingService(db, files)                         // needs *DB for transaction
+	orderService := service.NewOrderService(db, notifier)
 	savedService := service.NewSavedListingService(db.Queries)
-	conversationService := service.NewConversationService(db)
+	conversationService := service.NewConversationService(db, notifier)
 	userService := service.NewUserService(db.Queries)
 	profileService := service.NewProfileService(db, files) // needs *DB for transaction
 	followService := service.NewFollowService(db.Queries)
 	blockService := service.NewBlockService(db.Queries)
 	apiKeyService := service.NewAPIKeyService(db.Queries)
 	listingImageService := service.NewListingImageService(db, files, cfg.Upload.MaxPerListing)
+	reportService := service.NewReportService(db.Queries)
+	moderationService := service.NewModerationService(db, files) // needs *DB for transaction
 
 	return &api{
 		DB:           db,
@@ -61,6 +66,8 @@ func New(cfg *config.Config, db *database.DB) (*api, error) {
 		Block:        blockService,
 		APIKey:       apiKeyService,
 		ListingImage: listingImageService,
+		Report:       reportService,
+		Moderation:   moderationService,
 		Files:        files,
 		Upload:       cfg.Upload,
 		AuthConfig:   cfg.Auth,

@@ -15,7 +15,7 @@ import (
 const createListing = `-- name: CreateListing :one
 INSERT INTO listings (id, seller_id, title, description, category, price, quantity, unit)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at
+RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at
 `
 
 type CreateListingParams struct {
@@ -52,6 +52,7 @@ func (q *Queries) CreateListing(ctx context.Context, arg CreateListingParams) (L
 		&i.Unit,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RemovedAt,
 	)
 	return i, err
 }
@@ -61,7 +62,7 @@ UPDATE listings
 SET quantity = quantity - $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND quantity >= $2
-RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at
+RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at
 `
 
 type DecrementListingQuantityParams struct {
@@ -83,6 +84,7 @@ func (q *Queries) DecrementListingQuantity(ctx context.Context, arg DecrementLis
 		&i.Unit,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RemovedAt,
 	)
 	return i, err
 }
@@ -98,7 +100,7 @@ func (q *Queries) DeleteListing(ctx context.Context, id uuid.UUID) error {
 }
 
 const getListing = `-- name: GetListing :one
-SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at FROM listings
+SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at FROM listings
 WHERE id = $1
 `
 
@@ -116,12 +118,13 @@ func (q *Queries) GetListing(ctx context.Context, id uuid.UUID) (Listing, error)
 		&i.Unit,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RemovedAt,
 	)
 	return i, err
 }
 
 const getListingForUpdate = `-- name: GetListingForUpdate :one
-SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at FROM listings
+SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at FROM listings
 WHERE id = $1
 FOR UPDATE
 `
@@ -140,6 +143,7 @@ func (q *Queries) GetListingForUpdate(ctx context.Context, id uuid.UUID) (Listin
 		&i.Unit,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RemovedAt,
 	)
 	return i, err
 }
@@ -149,7 +153,7 @@ UPDATE listings
 SET quantity = quantity + $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at
+RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at
 `
 
 type IncrementListingQuantityParams struct {
@@ -171,13 +175,14 @@ func (q *Queries) IncrementListingQuantity(ctx context.Context, arg IncrementLis
 		&i.Unit,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RemovedAt,
 	)
 	return i, err
 }
 
 const listListings = `-- name: ListListings :many
-SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at FROM listings
-WHERE quantity > 0
+SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at FROM listings
+WHERE quantity > 0 AND removed_at IS NULL
 ORDER BY created_at DESC
 `
 
@@ -201,6 +206,7 @@ func (q *Queries) ListListings(ctx context.Context) ([]Listing, error) {
 			&i.Unit,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.RemovedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -225,7 +231,7 @@ SET title = $2,
     unit = $7,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at
+RETURNING id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at
 `
 
 type UpdateListingParams struct {
@@ -260,6 +266,7 @@ func (q *Queries) UpdateListing(ctx context.Context, arg UpdateListingParams) (L
 		&i.Unit,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RemovedAt,
 	)
 	return i, err
 }

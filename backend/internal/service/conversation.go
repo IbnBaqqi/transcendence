@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -29,11 +30,12 @@ const (
 
 // ConversationService holds the chat rules: who may talk to whom, when.
 type ConversationService struct {
-	db *database.DB
+	db     *database.DB
+	notify notify.Notifier
 }
 
-func NewConversationService(db *database.DB) *ConversationService {
-	return &ConversationService{db: db}
+func NewConversationService(db *database.DB, notifier notify.Notifier) *ConversationService {
+	return &ConversationService{db: db, notify: notifier}
 }
 
 func checkParticipant(c database.Conversation, userID uuid.UUID) error {
@@ -59,6 +61,10 @@ func checkCanDecide(c database.Conversation, userID uuid.UUID) error {
 }
 
 const blockedMessage = "This conversation is closed"
+
+// Same race as reporting a listing: the seller can delete it between the read
+// and the insert, and an unmapped 23503 reaches the client as a 500.
+const conversationListingConstraint = "conversations_listing_id_fkey"
 
 func checkNotBlocked(ctx context.Context, q *database.Queries, a, b uuid.UUID) error {
 	blocked, err := q.BlockExistsBetween(ctx, database.BlockExistsBetweenParams{
@@ -143,6 +149,10 @@ func (s *ConversationService) StartConversation(
 		return database.Conversation{}, database.Message{}, err
 	}
 
+	if listing.RemovedAt.Valid {
+		return database.Conversation{}, database.Message{}, &NotFoundError{Message: "Listing not found"}
+	}
+
 	if listing.SellerID == buyerID {
 		return database.Conversation{}, database.Message{}, &ValidationError{
 			Message: "You cannot start a chat about your own listing",
@@ -157,6 +167,9 @@ func (s *ConversationService) StartConversation(
 		SellerID:     listing.SellerID,
 	})
 	if err != nil {
+		if isForeignKeyViolation(err, conversationListingConstraint) {
+			return database.Conversation{}, database.Message{}, &NotFoundError{Message: "Listing not found"}
+		}
 		if isUniqueViolation(err, "conversations_listing_buyer_uq") {
 			return database.Conversation{}, database.Message{}, &ConflictError{
 				Message: "You have already contacted this seller about this listing",
@@ -182,6 +195,11 @@ func (s *ConversationService) StartConversation(
 	if err := tx.Commit(); err != nil {
 		return database.Conversation{}, database.Message{}, err
 	}
+
+	notifyUser(ctx, s.db.Queries, s.notify, conv.SellerID,
+		func(email, _ string) notify.Message {
+			return notify.ChatRequest(email, conv.ListingTitle)
+		})
 
 	return conv, msg, nil
 }

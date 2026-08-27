@@ -153,6 +153,13 @@ func (s *ListingService) DeleteListing(ctx context.Context, userID uuid.UUID, li
 		return &ForbiddenError{Message: "You do not own this listing"}
 	}
 
+	// moderation_actions and listing_reports both cascade from listings, so
+	// deleting a removed listing would erase the reports and the record of
+	// the decision along with it.
+	if existing.RemovedAt.Valid {
+		return &ForbiddenError{Message: "This listing was removed by a moderator and cannot be deleted"}
+	}
+
 	orderCount, err := qtx.CountOrdersForListing(ctx, listingID)
 	if err != nil {
 		return err

@@ -80,3 +80,42 @@ func (l *Local) Delete(name string) error {
 	}
 	return nil
 }
+
+// QuarantineDir holds files that are still owned by a listing but must stop
+// being served. It is a subdirectory of the upload root on purpose: the router
+// refuses any request path containing a separator, so nothing under it is
+// reachable by URL, and staying on the same filesystem makes the move an
+// atomic rename rather than a copy.
+const QuarantineDir = "quarantine"
+
+// Quarantine moves a served file out of reach without destroying it, so a
+// moderator's removal can be undone. Missing files are not an error - the
+// point is that the file is not being served, and it already is not.
+func (l *Local) Quarantine(name string) error {
+	if name == "" || name != filepath.Base(name) {
+		return ErrInvalidName
+	}
+
+	if err := l.root.MkdirAll(QuarantineDir, 0o750); err != nil {
+		return fmt.Errorf("create quarantine dir: %w", err)
+	}
+
+	err := l.root.Rename(name, filepath.Join(QuarantineDir, name))
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("quarantine file: %w", err)
+	}
+	return nil
+}
+
+// Release moves a quarantined file back into the served directory.
+func (l *Local) Release(name string) error {
+	if name == "" || name != filepath.Base(name) {
+		return ErrInvalidName
+	}
+
+	err := l.root.Rename(filepath.Join(QuarantineDir, name), name)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("release file: %w", err)
+	}
+	return nil
+}

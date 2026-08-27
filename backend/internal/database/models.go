@@ -64,6 +64,7 @@ type Listing struct {
 	Unit        string
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
+	RemovedAt   sql.NullTime
 }
 
 type ListingImage struct {
@@ -74,6 +75,16 @@ type ListingImage struct {
 	CreatedAt sql.NullTime
 }
 
+type ListingReport struct {
+	ID         uuid.UUID
+	ListingID  uuid.UUID
+	ReporterID uuid.NullUUID
+	Reason     string
+	Detail     sql.NullString
+	Status     string
+	CreatedAt  time.Time
+}
+
 type Message struct {
 	ID             uuid.UUID
 	ConversationID uuid.UUID
@@ -81,6 +92,15 @@ type Message struct {
 	Body           string
 	ReadAt         sql.NullTime
 	CreatedAt      sql.NullTime
+}
+
+type ModerationAction struct {
+	ID          uuid.UUID
+	ListingID   uuid.UUID
+	ModeratorID uuid.NullUUID
+	Action      string
+	Note        sql.NullString
+	CreatedAt   time.Time
 }
 
 type OauthIdentity struct {
@@ -114,6 +134,14 @@ type OrderEvent struct {
 	ToStatus   string
 	Note       sql.NullString
 	CreatedAt  time.Time
+}
+
+type PasswordResetToken struct {
+	TokenHash string
+	UserID    uuid.UUID
+	ExpiresAt time.Time
+	UsedAt    sql.NullTime
+	CreatedAt time.Time
 }
 
 type Profile struct {

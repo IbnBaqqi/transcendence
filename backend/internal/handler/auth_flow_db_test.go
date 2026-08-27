@@ -12,6 +12,7 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/auth"
 	mw "github.com/IbnBaqqi/transcendence/internal/middleware"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/IbnBaqqi/transcendence/internal/service"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
 )
@@ -21,8 +22,8 @@ func authRouter(t *testing.T) http.Handler {
 
 	db := testdb.New(t)
 	jwt := auth.NewJwtService("test-secret", time.Hour)
-	h := New(db, auth.NewService(db, jwt), nil, nil, nil, nil,
-		service.NewUserService(db.Queries), nil, nil, nil, nil, nil, 0, true, nil, "")
+	h := New(db, auth.NewService(db, jwt, notify.Disabled{}, "http://frontend.test"), nil, nil, nil, nil,
+		service.NewUserService(db.Queries), nil, nil, nil, nil, nil, nil, nil, 0, true, nil, "")
 
 	r := chi.NewRouter()
 	r.Use(mw.Authenticate(jwt, nil))
