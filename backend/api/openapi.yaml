@@ -596,6 +596,11 @@ components:
           description: |
             Free text, and the only place to say what `other` means. Shown to a
             moderator as plain text — never rendered as HTML.
+
+            **Required when `reason` is `other`**, and whitespace does not
+            count: every other reason states the problem by itself, while
+            `other` says only that none of them fit, which is nothing to act
+            on.
       additionalProperties: false
 
     Presence:
@@ -1751,8 +1756,8 @@ paths:
           description: Filed. No body — there is no status for you to follow.
         "400":
           description: |
-            Bad body, an unknown reason, detail over 500 characters, or your own
-            listing.
+            Bad body, an unknown reason, detail over 500 characters, a
+            missing detail on an `other` report, or your own listing.
           content:
             application/json:
               schema:

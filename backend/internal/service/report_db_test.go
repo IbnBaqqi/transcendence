@@ -337,3 +337,30 @@ func TestAVanishedListingViolatesTheConstraintsWeMap(t *testing.T) {
 		t.Errorf("chatting about a vanished listing: err = %v, want a violation of %s", convErr, conversationListingConstraint)
 	}
 }
+
+func TestOtherNeedsADetail(t *testing.T) {
+	f := newReportFixture(t)
+
+	var invalid *ValidationError
+
+	if err := f.report(t, f.reporter, "other", ""); !errors.As(err, &invalid) {
+		t.Errorf("err = %#v, want *ValidationError - \"other\" alone tells a moderator nothing", err)
+	}
+
+	// Sanitising runs first, so whitespace is not a way around it.
+	if err := f.report(t, f.reporter, "other", "   \n\t "); !errors.As(err, &invalid) {
+		t.Errorf("whitespace passed as a detail: err = %#v", err)
+	}
+
+	if err := f.report(t, f.reporter, "other", "sells a protected species"); err != nil {
+		t.Errorf("a real detail was refused: %v", err)
+	}
+}
+
+func TestTheOtherReasonsDoNotNeedADetail(t *testing.T) {
+	f := newReportFixture(t)
+
+	if err := f.report(t, f.reporter, "spam", ""); err != nil {
+		t.Errorf("spam with no detail was refused: %v", err)
+	}
+}

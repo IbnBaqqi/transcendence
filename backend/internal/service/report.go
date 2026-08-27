@@ -35,6 +35,8 @@ func sanitizeReportDetail(detail string) string {
 
 const maxReportDetail = 500
 
+const reasonOther = "other"
+
 var reportReasons = map[string]bool{
 	"spam":       true,
 	"prohibited": true,
@@ -80,6 +82,14 @@ func (s *ReportService) Report(
 
 	if utf8.RuneCountInString(detail) > maxReportDetail {
 		return &ValidationError{Message: "Report detail is too long"}
+	}
+
+	// Checked after sanitising, so whitespace and stripped control characters
+	// count as empty. Every other reason says what is wrong by itself; "other"
+	// says only that none of them fit, which is nothing for a moderator to act
+	// on.
+	if reason == reasonOther && detail == "" {
+		return &ValidationError{Message: "Report detail is required when the reason is other"}
 	}
 
 	listing, err := s.db.GetListing(ctx, listingID)
