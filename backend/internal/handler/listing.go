@@ -10,6 +10,13 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
+// A removed listing must look like one that never existed, so every route
+// that can reach one asks this rather than re-deriving the rule.
+func maySeeRemovedListing(r *http.Request, sellerID uuid.UUID) bool {
+	viewer, ok := auth.UserFromContext(r.Context())
+	return ok && (viewer.ID == sellerID || viewer.Role == auth.RoleAdmin)
+}
+
 func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
@@ -66,12 +73,9 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if listing.RemovedAt.Valid {
-		viewer, ok := auth.UserFromContext(r.Context())
-		if !ok || (viewer.ID != listing.SellerID && viewer.Role != auth.RoleAdmin) {
-			respondWithError(w, http.StatusNotFound, "Listing not found")
-			return
-		}
+	if listing.RemovedAt.Valid && !maySeeRemovedListing(r, listing.SellerID) {
+		respondWithError(w, http.StatusNotFound, "Listing not found")
+		return
 	}
 
 	imgs, err := h.ListingImage.ListImages(r.Context(), id)

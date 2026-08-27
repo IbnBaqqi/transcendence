@@ -45,6 +45,17 @@ func (h *Handler) GetListingImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	listing, err := h.Listing.GetListing(r.Context(), listingID)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	if listing.RemovedAt.Valid && !maySeeRemovedListing(r, listing.SellerID) {
+		respondWithError(w, http.StatusNotFound, "Listing not found")
+		return
+	}
+
 	imgs, err := h.ListingImage.ListImages(r.Context(), listingID)
 	if err != nil {
 		respondWithServiceError(w, r, err)

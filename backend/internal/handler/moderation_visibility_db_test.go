@@ -98,4 +98,34 @@ func TestARemovedListingIsHiddenFromEveryoneButItsSellerAndAdmins(t *testing.T) 
 			t.Errorf("status = %d, want 200", code)
 		}
 	})
+
+	fetchImagesAs := func(t *testing.T, viewer *auth.User) int {
+		t.Helper()
+
+		req := httptest.NewRequest(http.MethodGet, "/listings/"+listing.ID.String()+"/images", nil)
+
+		routeCtx := chi.NewRouteContext()
+		routeCtx.URLParams.Add("id", listing.ID.String())
+		ctx := context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx)
+		if viewer != nil {
+			ctx = auth.WithUser(ctx, *viewer)
+		}
+
+		rec := httptest.NewRecorder()
+		h.GetListingImages(rec, req.WithContext(ctx))
+		return rec.Code
+	}
+
+	t.Run("its images are 404 for an outsider", func(t *testing.T) {
+		if code := fetchImagesAs(t, nil); code != http.StatusNotFound {
+			t.Errorf("status = %d, want 404 - a 200 here confirms the listing exists and was moderated", code)
+		}
+	})
+
+	t.Run("its images stay visible to the seller", func(t *testing.T) {
+		viewer := auth.User{ID: seller, Role: auth.RoleUser}
+		if code := fetchImagesAs(t, &viewer); code != http.StatusOK {
+			t.Errorf("status = %d, want 200", code)
+		}
+	})
 }

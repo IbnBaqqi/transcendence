@@ -14,7 +14,7 @@ import (
 const listSavedListings = `-- name: ListSavedListings :many
 SELECT l.id, l.seller_id, l.title, l.description, l.category, l.price, l.quantity, l.unit, l.created_at, l.updated_at, l.removed_at FROM saved_listings s
 JOIN listings l ON l.id = s.listing_id
-WHERE s.user_id = $1
+WHERE s.user_id = $1 AND l.removed_at IS NULL
 ORDER BY s.created_at DESC
 `
 

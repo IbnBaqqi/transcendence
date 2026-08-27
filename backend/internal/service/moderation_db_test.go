@@ -249,6 +249,79 @@ func TestARemovedListingLeavesEveryReadPath(t *testing.T) {
 	}
 }
 
+func TestARemovedListingDropsOutOfTheWishlist(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	if err := f.saved.SaveListing(ctx, f.buyer, f.listing); err != nil {
+		t.Fatalf("saving: %v", err)
+	}
+
+	f.remove(t)
+
+	saved, err := f.saved.ListSaved(ctx, f.buyer)
+	if err != nil {
+		t.Fatalf("listing the wishlist: %v", err)
+	}
+	for _, l := range saved {
+		if l.ID == f.listing {
+			t.Error("a listing saved before removal is still in the wishlist, and carries removed_at")
+		}
+	}
+}
+
+func TestTheSellerCannotDeleteAModeratorRemovedListing(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	f.reportBy(t, f.buyer)
+	f.remove(t)
+
+	err := f.listings.DeleteListing(ctx, f.seller, f.listing)
+
+	var forbidden *ForbiddenError
+	if !errors.As(err, &forbidden) {
+		t.Fatalf("err = %#v, want *ForbiddenError - deleting it would erase the reports and the audit trail", err)
+	}
+
+	reports, err := f.db.ListReportsForListing(ctx, f.listing)
+	if err != nil {
+		t.Fatalf("listing reports: %v", err)
+	}
+	if len(reports) != 1 {
+		t.Errorf("reports = %d, want 1 - the evidence must survive", len(reports))
+	}
+
+	actions, err := f.mod.History(ctx, f.listing)
+	if err != nil {
+		t.Fatalf("reading the history: %v", err)
+	}
+	if len(actions) != 1 {
+		t.Errorf("audit rows = %d, want 1", len(actions))
+	}
+}
+
+func TestReportingARemovedListingLooksLikeReportingANonexistentOne(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	f.remove(t)
+
+	removed := f.reports.Report(ctx, f.buyer, f.listing, "prohibited", "")
+	if !isNotFound(removed) {
+		t.Fatalf("reporting a removed listing: err = %#v, want *NotFoundError", removed)
+	}
+
+	missing := f.reports.Report(ctx, f.buyer, database.NewID(), "prohibited", "")
+	if !isNotFound(missing) {
+		t.Fatalf("reporting a nonexistent listing: err = %#v, want *NotFoundError", missing)
+	}
+
+	if removed.Error() != missing.Error() {
+		t.Errorf("the two refusals differ: %q then %q - that tells the reporter it was moderated", removed, missing)
+	}
+}
+
 func TestTheSellerCanStillFetchTheirRemovedListing(t *testing.T) {
 	f := newModerationFixture(t)
 
