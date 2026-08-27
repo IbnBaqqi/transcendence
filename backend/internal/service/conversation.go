@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -29,11 +30,12 @@ const (
 
 // ConversationService holds the chat rules: who may talk to whom, when.
 type ConversationService struct {
-	db *database.DB
+	db     *database.DB
+	notify notify.Notifier
 }
 
-func NewConversationService(db *database.DB) *ConversationService {
-	return &ConversationService{db: db}
+func NewConversationService(db *database.DB, notifier notify.Notifier) *ConversationService {
+	return &ConversationService{db: db, notify: notifier}
 }
 
 func checkParticipant(c database.Conversation, userID uuid.UUID) error {
@@ -182,6 +184,11 @@ func (s *ConversationService) StartConversation(
 	if err := tx.Commit(); err != nil {
 		return database.Conversation{}, database.Message{}, err
 	}
+
+	notifyUser(ctx, s.db.Queries, s.notify, conv.SellerID,
+		func(email, _ string) notify.Message {
+			return notify.ChatRequest(email, conv.ListingTitle)
+		})
 
 	return conv, msg, nil
 }

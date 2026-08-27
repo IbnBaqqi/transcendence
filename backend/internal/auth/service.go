@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/mail"
 	"strings"
 	"unicode/utf8"
 
@@ -14,17 +15,20 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 )
 
 type Service struct {
-	db  *database.DB
-	jwt *JwtService
+	db     *database.DB
+	jwt    *JwtService
+	notify notify.Notifier
 }
 
-func NewService(db *database.DB, jwt *JwtService) *Service {
+func NewService(db *database.DB, jwt *JwtService, notifier notify.Notifier) *Service {
 	return &Service{
-		db:  db,
-		jwt: jwt,
+		db:     db,
+		jwt:    jwt,
+		notify: notifier,
 	}
 }
 
@@ -107,6 +111,8 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 	if err := tx.Commit(); err != nil {
 		return SignupResponse{}, signupFailed("commit", err)
 	}
+
+	s.notify.Notify(ctx, notify.Welcome(user.Email, user.Username))
 
 	accessToken, err := s.jwt.IssueAccessToken(user)
 	if err != nil {
@@ -195,6 +201,9 @@ func validateSignupInput(input dtos.CreateUserRequest) error {
 	if utf8.RuneCountInString(input.Email) > maxEmailLength {
 		return &ValidationError{Message: tooLong("Email", maxEmailLength)}
 	}
+	if err := validateEmailFormat(input.Email); err != nil {
+		return err
+	}
 	if len(input.Password) < minPasswordLength {
 		return &ValidationError{
 			Message: fmt.Sprintf("Password must be at least %d bytes", minPasswordLength),
@@ -202,6 +211,25 @@ func validateSignupInput(input dtos.CreateUserRequest) error {
 	}
 	if len(input.Password) > maxPasswordLength {
 		return &ValidationError{Message: passwordTooLong(maxPasswordLength)}
+	}
+	return nil
+}
+
+// validateEmailFormat rejects anything that is not a single bare address.
+//
+// This is where the SMTP header-injection concern is actually settled. The
+// sender sanitises the To header as well, but that is defence in depth resting
+// on stdlib call ordering (client.Rcpt runs before Data and rejects CRLF).
+// Refusing a malformed address at the point it enters the system means no
+// later component has to be careful.
+//
+// mail.ParseAddress accepts a display-name form - `Aino <a@b.test>` - which is
+// a valid address but not a valid identity here, so the parsed address has to
+// match what was submitted.
+func validateEmailFormat(email string) error {
+	addr, err := mail.ParseAddress(email)
+	if err != nil || addr.Address != email {
+		return &ValidationError{Message: "Email is not a valid address"}
 	}
 	return nil
 }
