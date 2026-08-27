@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/mail"
 	"strings"
 	"unicode/utf8"
 
@@ -202,6 +203,9 @@ func validateSignupInput(input dtos.CreateUserRequest) error {
 	if utf8.RuneCountInString(input.Email) > maxEmailLength {
 		return &ValidationError{Message: tooLong("Email", maxEmailLength)}
 	}
+	if err := validateEmailFormat(input.Email); err != nil {
+		return err
+	}
 	return validatePassword(input.Password)
 }
 
@@ -213,6 +217,25 @@ func validatePassword(password string) error {
 	}
 	if len(password) > maxPasswordLength {
 		return &ValidationError{Message: passwordTooLong(maxPasswordLength)}
+	}
+	return nil
+}
+
+// validateEmailFormat rejects anything that is not a single bare address.
+//
+// This is where the SMTP header-injection concern is actually settled. The
+// sender sanitises the To header as well, but that is defence in depth resting
+// on stdlib call ordering (client.Rcpt runs before Data and rejects CRLF).
+// Refusing a malformed address at the point it enters the system means no
+// later component has to be careful.
+//
+// mail.ParseAddress accepts a display-name form - `Aino <a@b.test>` - which is
+// a valid address but not a valid identity here, so the parsed address has to
+// match what was submitted.
+func validateEmailFormat(email string) error {
+	addr, err := mail.ParseAddress(email)
+	if err != nil || addr.Address != email {
+		return &ValidationError{Message: "Email is not a valid address"}
 	}
 	return nil
 }

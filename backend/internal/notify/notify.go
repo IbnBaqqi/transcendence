@@ -1,3 +1,29 @@
+// Package notify sends transactional email: welcome, order and chat events,
+// and the password-reset link.
+//
+// # Delivery is at-most-once, deliberately
+//
+// Notify hands a message to a background dispatcher and returns immediately.
+// The send is not part of the caller's database transaction, and nothing is
+// retried or persisted, so a message can be lost: the queue is full, the
+// process stops, or the relay is down. That is the trade. Making it
+// at-least-once means an outbox table and a worker, which is a lot of
+// machinery for "you have a new message" - and the alternative, sending inside
+// the transaction, is worse: the mail goes out and the transaction then rolls
+// back, telling someone about an order that does not exist.
+//
+// The consequence for callers: never make a notification a precondition for
+// anything. A failed send is logged, never returned, and never rolls back the
+// work that triggered it.
+//
+// # Configuration
+//
+// An empty MAIL_USERNAME means an unauthenticated relay - that is what Mailpit
+// wants locally, and it is why the username is checked rather than assumed. A
+// real relay needs both username and password.
+//
+// Disabled{} is the no-op notifier used when mail is switched off, so callers
+// never nil-check.
 package notify
 
 import (
@@ -85,8 +111,11 @@ func OrderCancelled(to, listingTitle string) Message {
 		Kind:    KindOrderCancelled,
 		To:      to,
 		Subject: "An order was cancelled",
+		// Neutral wording: this goes to whichever side did not cancel, so it
+		// cannot talk about released stock (seller-facing) or a refund (there
+		// is no real money in this flow).
 		Body: fmt.Sprintf(
-			"The order for %s has been cancelled and the stock released.\n",
+			"The order for %s has been cancelled.\n",
 			listingTitle),
 	}
 }
