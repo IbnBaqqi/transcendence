@@ -21,12 +21,20 @@ var moderationActions = map[string]string{
 	"dismiss": "dismissed",
 }
 
-type ModerationService struct {
-	db *database.DB
+// quarantineStore is the slice of the file store moderation needs: removal
+// must stop the images being served, and restore must bring them back.
+type quarantineStore interface {
+	Quarantine(name string) error
+	Release(name string) error
 }
 
-func NewModerationService(db *database.DB) *ModerationService {
-	return &ModerationService{db: db}
+type ModerationService struct {
+	db    *database.DB
+	files quarantineStore
+}
+
+func NewModerationService(db *database.DB, files quarantineStore) *ModerationService {
+	return &ModerationService{db: db, files: files}
 }
 
 func (s *ModerationService) Queue(ctx context.Context) ([]database.ListReportedListingsRow, error) {
@@ -134,5 +142,41 @@ func (s *ModerationService) Moderate(
 		return database.Listing{}, 0, err
 	}
 
+	// After the commit, like every other file move in this codebase: the
+	// database is the record, the filesystem follows it. A failure here leaves
+	// the listing correctly removed but its images still served, which is why
+	// it is logged loudly rather than swallowed.
+	s.applyToImages(ctx, action, listingID)
+
 	return listing, resolved, nil
+}
+
+// applyToImages stops serving a removed listing's photos, or starts again when
+// it is restored. Filenames stay in listing_images either way - they are how a
+// restore finds the files.
+func (s *ModerationService) applyToImages(ctx context.Context, action string, listingID uuid.UUID) {
+	if s.files == nil || action == "dismiss" {
+		return
+	}
+
+	images, err := s.db.ListListingImages(ctx, listingID)
+	if err != nil {
+		slog.Error("could not list images to move", "listing_id", listingID, "error", err)
+		return
+	}
+
+	for _, img := range images {
+		var moveErr error
+		if action == "remove" {
+			moveErr = s.files.Quarantine(img.Filename)
+		} else {
+			moveErr = s.files.Release(img.Filename)
+		}
+
+		if moveErr != nil {
+			slog.Error("could not move a moderated listing's image",
+				"listing_id", listingID, "filename", img.Filename,
+				"action", action, "error", moveErr)
+		}
+	}
 }

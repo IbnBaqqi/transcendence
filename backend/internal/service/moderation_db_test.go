@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -11,6 +14,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/notify"
+	"github.com/IbnBaqqi/transcendence/internal/storage"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
 )
 
@@ -22,6 +26,7 @@ type moderationFixture struct {
 	saved    *SavedListingService
 	listings *ListingService
 	db       *database.DB
+	files    *storage.Local
 	admin    uuid.UUID
 	seller   uuid.UUID
 	buyer    uuid.UUID
@@ -57,14 +62,21 @@ func newModerationFixture(t *testing.T) moderationFixture {
 		t.Fatalf("creating a listing: %v", err)
 	}
 
+	files, err := storage.NewLocal(t.TempDir())
+	if err != nil {
+		t.Fatalf("creating a temporary upload dir: %v", err)
+	}
+	t.Cleanup(func() { _ = files.Close() })
+
 	return moderationFixture{
-		mod:      NewModerationService(db),
+		mod:      NewModerationService(db, files),
 		reports:  NewReportService(db.Queries),
 		orders:   NewOrderService(db, notify.Disabled{}),
 		chat:     NewConversationService(db, notify.Disabled{}),
 		saved:    NewSavedListingService(db.Queries),
-		listings: NewListingService(db, nil),
+		listings: NewListingService(db, files),
 		db:       db,
+		files:    files,
 		admin:    admin, seller: seller, buyer: buyer, other: other,
 		listing: listing.ID,
 	}
@@ -467,5 +479,79 @@ func TestAnOrderPlacedBeforeRemovalStaysCancellable(t *testing.T) {
 	}
 	if listing.Quantity != 5 {
 		t.Errorf("quantity = %d, want 5 - cancelling must still return the stock", listing.Quantity)
+	}
+}
+
+// Option C from #147: removal stops the bytes being served, restore brings
+// them back. Hiding the listing while its photos stayed fetchable left the
+// content that caused the removal reachable to anyone holding the URL.
+func TestRemovalQuarantinesTheImagesAndRestoreReleasesThem(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	name, err := f.files.Save(strings.NewReader("a photo"), ".jpg")
+	if err != nil {
+		t.Fatalf("saving an image: %v", err)
+	}
+	if _, err := f.db.CreateListingImage(ctx, database.CreateListingImageParams{
+		ID:        database.NewID(),
+		ListingID: f.listing,
+		Filename:  name,
+	}); err != nil {
+		t.Fatalf("recording the image: %v", err)
+	}
+
+	served := func() bool {
+		_, err := os.Stat(filepath.Join(f.files.Dir(), name))
+		return err == nil
+	}
+
+	if !served() {
+		t.Fatal("the image was not where it is served from")
+	}
+
+	f.remove(t)
+	if served() {
+		t.Error("a removed listing's image is still served")
+	}
+
+	if _, _, err := f.mod.Moderate(ctx, f.admin, f.listing, "restore", "reported in error"); err != nil {
+		t.Fatalf("restoring: %v", err)
+	}
+	if !served() {
+		t.Error("restoring the listing did not bring its image back")
+	}
+
+	// The rows are what a restore uses to find the files, so they must survive.
+	images, err := f.db.ListListingImages(ctx, f.listing)
+	if err != nil {
+		t.Fatalf("listing images: %v", err)
+	}
+	if len(images) != 1 {
+		t.Errorf("listing_images rows = %d, want 1", len(images))
+	}
+}
+
+func TestDismissLeavesTheImagesAlone(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	name, err := f.files.Save(strings.NewReader("a photo"), ".jpg")
+	if err != nil {
+		t.Fatalf("saving an image: %v", err)
+	}
+	if _, err := f.db.CreateListingImage(ctx, database.CreateListingImageParams{
+		ID: database.NewID(), ListingID: f.listing, Filename: name,
+	}); err != nil {
+		t.Fatalf("recording the image: %v", err)
+	}
+
+	f.reportBy(t, f.buyer)
+	if _, _, err := f.mod.Moderate(ctx, f.admin, f.listing, "dismiss", "nothing wrong"); err != nil {
+		t.Fatalf("dismissing: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(f.files.Dir(), name)); err != nil {
+		t.Errorf("dismissing a report moved the listing's image: %v", err)
 	}
 }

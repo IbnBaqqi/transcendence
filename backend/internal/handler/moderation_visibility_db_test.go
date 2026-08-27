@@ -14,6 +14,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/service"
+	"github.com/IbnBaqqi/transcendence/internal/storage"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
 )
 
@@ -66,13 +67,19 @@ func TestARemovedListingIsHiddenFromEveryoneButItsSellerAndAdmins(t *testing.T) 
 		t.Fatalf("promoting the admin: %v", err)
 	}
 
-	mod := service.NewModerationService(db)
+	files, err := storage.NewLocal(t.TempDir())
+	if err != nil {
+		t.Fatalf("creating a temporary upload dir: %v", err)
+	}
+	t.Cleanup(func() { _ = files.Close() })
+
+	mod := service.NewModerationService(db, files)
 	if _, _, err := mod.Moderate(ctx, admin, listing.ID, "remove", "prohibited species"); err != nil {
 		t.Fatalf("removing: %v", err)
 	}
 
-	h := New(db, nil, service.NewListingService(db, nil), nil, nil, nil, nil, nil, nil, nil, nil,
-		service.NewListingImageService(db, nil, 5), nil, nil, 0, true, nil, "")
+	h := New(db, nil, service.NewListingService(db, files), nil, nil, nil, nil, nil, nil, nil, nil,
+		service.NewListingImageService(db, files, 5), nil, nil, 0, true, nil, "")
 
 	t.Run("anonymous gets 404", func(t *testing.T) {
 		if code := fetchListingAs(t, h, listing.ID, nil).Code; code != http.StatusNotFound {

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,4 +90,76 @@ func newTestStore(t *testing.T) *Local {
 		t.Fatalf("NewLocal failed: %v", err)
 	}
 	return store
+}
+
+func TestQuarantineHidesAFileAndReleaseBringsItBack(t *testing.T) {
+	dir := t.TempDir()
+	s, err := NewLocal(dir)
+	if err != nil {
+		t.Fatalf("creating the store: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	name, err := s.Save(strings.NewReader("a photo"), ".jpg")
+	if err != nil {
+		t.Fatalf("saving: %v", err)
+	}
+
+	served := func() bool {
+		_, err := os.Stat(filepath.Join(dir, name))
+		return err == nil
+	}
+
+	if !served() {
+		t.Fatal("the file was not saved where it is served from")
+	}
+
+	if err := s.Quarantine(name); err != nil {
+		t.Fatalf("quarantining: %v", err)
+	}
+	if served() {
+		t.Error("the file is still in the served directory")
+	}
+
+	// Moved, not destroyed - a restore has to be able to undo it.
+	if _, err := os.Stat(filepath.Join(dir, QuarantineDir, name)); err != nil {
+		t.Errorf("the file was not kept in quarantine: %v", err)
+	}
+
+	if err := s.Release(name); err != nil {
+		t.Fatalf("releasing: %v", err)
+	}
+	if !served() {
+		t.Error("the file did not come back")
+	}
+
+	body, err := os.ReadFile(filepath.Join(dir, name))
+	if err != nil || string(body) != "a photo" {
+		t.Errorf("contents changed across the round trip: %q, %v", body, err)
+	}
+}
+
+func TestQuarantineIsForgivingAndStillGuardsNames(t *testing.T) {
+	s, err := NewLocal(t.TempDir())
+	if err != nil {
+		t.Fatalf("creating the store: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+
+	// A listing whose file is already gone must not fail a moderation.
+	if err := s.Quarantine("does-not-exist.jpg"); err != nil {
+		t.Errorf("quarantining a missing file: %v", err)
+	}
+	if err := s.Release("does-not-exist.jpg"); err != nil {
+		t.Errorf("releasing a missing file: %v", err)
+	}
+
+	for _, bad := range []string{"", "../escape.jpg", "sub/dir.jpg"} {
+		if err := s.Quarantine(bad); !errors.Is(err, ErrInvalidName) {
+			t.Errorf("Quarantine(%q) = %v, want ErrInvalidName", bad, err)
+		}
+		if err := s.Release(bad); !errors.Is(err, ErrInvalidName) {
+			t.Errorf("Release(%q) = %v, want ErrInvalidName", bad, err)
+		}
+	}
 }

@@ -50,7 +50,7 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 	apiKeyService := service.NewAPIKeyService(db.Queries)
 	listingImageService := service.NewListingImageService(db, files, cfg.Upload.MaxPerListing)
 	reportService := service.NewReportService(db.Queries)
-	moderationService := service.NewModerationService(db) // needs *DB for transaction
+	moderationService := service.NewModerationService(db, files) // needs *DB for transaction
 
 	return &api{
 		DB:           db,

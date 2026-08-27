@@ -3586,8 +3586,14 @@ paths:
         be deleted at all, and deleting one would take the reports explaining
         why with it.
 
+        **The listing's images stop being served too.** Removal moves the files
+        out of the public upload directory and `restore` moves them back, so a
+        URL handed out before the removal stops working. Without that the
+        listing would be hidden while the content that caused the removal kept
+        serving to anyone holding the link.
+
         A removed listing is **404 everywhere** — browse, search, fetch by id,
-        ordering, chat and saving. Only its seller and admins can still fetch
+        images, ordering, chat and saving. Only its seller and admins can still fetch
         it, and only then does `removed_at` appear on the listing. Anything
         else would let the API confirm that a named seller was moderated.
 
