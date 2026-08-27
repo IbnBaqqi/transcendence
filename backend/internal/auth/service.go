@@ -19,16 +19,18 @@ import (
 )
 
 type Service struct {
-	db     *database.DB
-	jwt    *JwtService
-	notify notify.Notifier
+	db          *database.DB
+	jwt         *JwtService
+	notify      notify.Notifier
+	frontendURL string
 }
 
-func NewService(db *database.DB, jwt *JwtService, notifier notify.Notifier) *Service {
+func NewService(db *database.DB, jwt *JwtService, notifier notify.Notifier, frontendURL string) *Service {
 	return &Service{
-		db:     db,
-		jwt:    jwt,
-		notify: notifier,
+		db:          db,
+		jwt:         jwt,
+		notify:      notifier,
+		frontendURL: frontendURL,
 	}
 }
 
@@ -204,12 +206,16 @@ func validateSignupInput(input dtos.CreateUserRequest) error {
 	if err := validateEmailFormat(input.Email); err != nil {
 		return err
 	}
-	if len(input.Password) < minPasswordLength {
+	return validatePassword(input.Password)
+}
+
+func validatePassword(password string) error {
+	if len(password) < minPasswordLength {
 		return &ValidationError{
 			Message: fmt.Sprintf("Password must be at least %d bytes", minPasswordLength),
 		}
 	}
-	if len(input.Password) > maxPasswordLength {
+	if len(password) > maxPasswordLength {
 		return &ValidationError{Message: passwordTooLong(maxPasswordLength)}
 	}
 	return nil

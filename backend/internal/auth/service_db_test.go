@@ -17,7 +17,7 @@ func newService(t *testing.T) (*Service, *database.DB) {
 	t.Helper()
 
 	db := testdb.New(t)
-	return NewService(db, NewJwtService("test-secret", time.Minute), notify.Disabled{}), db
+	return NewService(db, NewJwtService("test-secret", time.Minute), notify.Disabled{}, "http://frontend.test"), db
 }
 
 func countUsers(t *testing.T, db *database.DB) int {

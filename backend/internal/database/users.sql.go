@@ -128,6 +128,29 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 	return i, err
 }
 
+const getUserForUpdate = `-- name: GetUserForUpdate :one
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status FROM users
+WHERE id = $1
+FOR UPDATE
+`
+
+func (q *Queries) GetUserForUpdate(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserForUpdate, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LastSeenAt,
+		&i.ShowOnlineStatus,
+	)
+	return i, err
+}
+
 const getUserRole = `-- name: GetUserRole :one
 SELECT role FROM users
 WHERE id = $1
@@ -238,5 +261,22 @@ type UpdateUserParams struct {
 // through this door.
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 	_, err := q.db.ExecContext(ctx, updateUser, arg.ID, arg.Username, arg.Email)
+	return err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users
+SET password = $2,
+    updated_at = now()
+WHERE id = $1
+`
+
+type UpdateUserPasswordParams struct {
+	ID       uuid.UUID
+	Password sql.NullString
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.ID, arg.Password)
 	return err
 }
