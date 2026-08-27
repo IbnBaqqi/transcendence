@@ -554,6 +554,21 @@ components:
           type: string
           maxLength: 2000
 
+    ReportListingRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          enum: [spam, prohibited, misleading, offensive, other]
+        detail:
+          type: string
+          maxLength: 500
+          description: |
+            Free text, and the only place to say what `other` means. Shown to a
+            moderator as plain text — never rendered as HTML.
+      additionalProperties: false
+
     Presence:
       type: object
       required: [is_online]
@@ -1550,6 +1565,62 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           description: The listing has orders and cannot be deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /listings/{id}/report:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [listings]
+      summary: Report a listing
+      operationId: reportListing
+      description: |
+        Files a flag for a moderator. **The listing is not changed in any way** —
+        not hidden, not flagged publicly, and the seller is not told. A report
+        that hid a listing would let anyone with two accounts remove a
+        competitor's.
+
+        One report per person per listing; a second is a 409, which tells you
+        your concern is already on record.
+
+        There is no way to read reports here, or to see how many a listing has.
+        The moderation queue is admin-only, and a public count would itself be
+        a weapon.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportListingRequest"
+      responses:
+        "204":
+          description: Filed. No body — there is no status for you to follow.
+        "400":
+          description: |
+            Bad body, an unknown reason, detail over 500 characters, or your own
+            listing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: You have already reported this listing.
           content:
             application/json:
               schema:

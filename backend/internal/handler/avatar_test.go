@@ -32,7 +32,7 @@ func TestUploadAvatarRequiresTheAvatarField(t *testing.T) {
 	req = req.WithContext(auth.WithUser(req.Context(), auth.User{ID: uuid.New()}))
 
 	rec := httptest.NewRecorder()
-	New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, 5<<20, true, nil, "").UploadAvatar(rec, req)
+	New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, 5<<20, true, nil, "").UploadAvatar(rec, req)
 
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d (body: %s)", rec.Code, http.StatusBadRequest, rec.Body.String())

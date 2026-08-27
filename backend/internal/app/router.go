@@ -30,6 +30,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		appService.Block,
 		appService.APIKey,
 		appService.ListingImage,
+		appService.Report,
 		appService.Upload.MaxBytes,
 		appService.AuthConfig.CookieSecure,
 		oauth.NewRegistry(appService.AuthConfig),
@@ -84,6 +85,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Get("/me/saved", h.GetSavedListings)
 			r.Post("/listings/{id}/images", h.UploadListingImage)
 			r.Delete("/listings/{id}/images/{imageID}", h.DeleteListingImage)
+			r.Post("/listings/{id}/report", h.ReportListing)
 
 			r.Post("/conversations", h.StartConversation)
 			r.Get("/conversations", h.GetConversations)
