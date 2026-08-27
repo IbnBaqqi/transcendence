@@ -271,3 +271,96 @@ func TestReportsGoWithTheListing(t *testing.T) {
 		t.Errorf("reports = %d, want 0", n)
 	}
 }
+
+func TestTheCascadingForeignKeysAreIndexed(t *testing.T) {
+	db := testdb.New(t)
+	ctx := context.Background()
+
+	for _, want := range []struct{ table, index string }{
+		{"blocks", "idx_blocks_blocked_id"},
+		{"listing_reports", "idx_listing_reports_reporter_id"},
+	} {
+		var exists bool
+		if err := db.QueryRowContext(ctx,
+			`SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE tablename = $1 AND indexname = $2)`,
+			want.table, want.index,
+		).Scan(&exists); err != nil {
+			t.Fatalf("checking %s: %v", want.index, err)
+		}
+		if !exists {
+			t.Errorf("%s.%s is missing - deleting a user sequentially scans the table", want.table, want.index)
+		}
+	}
+}
+
+// The constraint names are the fragile half of that mapping: a typo leaves
+// dead code that never fires, and the client keeps getting 500s. These assert
+// the names against what Postgres actually reports.
+func TestAVanishedListingViolatesTheConstraintsWeMap(t *testing.T) {
+	db := testdb.New(t)
+	ctx := context.Background()
+
+	mk := func(name string) uuid.UUID {
+		user, err := db.CreateUser(ctx, database.CreateUserParams{
+			ID:       database.NewID(),
+			Username: name, Email: name + "@example.test",
+			Password: sql.NullString{String: "irrelevant", Valid: true},
+		})
+		if err != nil {
+			t.Fatalf("creating %s: %v", name, err)
+		}
+		return user.ID
+	}
+	seller, buyer := mk("seller"), mk("buyer")
+
+	// A listing id that was valid when the service read it and is gone now.
+	missing := database.NewID()
+
+	reportErr := db.CreateReport(ctx, database.CreateReportParams{
+		ID:         database.NewID(),
+		ListingID:  missing,
+		ReporterID: uuid.NullUUID{UUID: buyer, Valid: true},
+		Reason:     "spam",
+	})
+	if !isForeignKeyViolation(reportErr, reportListingConstraint) {
+		t.Errorf("reporting a vanished listing: err = %v, want a violation of %s", reportErr, reportListingConstraint)
+	}
+
+	_, convErr := db.CreateConversation(ctx, database.CreateConversationParams{
+		ID:           database.NewID(),
+		ListingID:    uuid.NullUUID{UUID: missing, Valid: true},
+		ListingTitle: "Chanterelles",
+		BuyerID:      buyer,
+		SellerID:     seller,
+	})
+	if !isForeignKeyViolation(convErr, conversationListingConstraint) {
+		t.Errorf("chatting about a vanished listing: err = %v, want a violation of %s", convErr, conversationListingConstraint)
+	}
+}
+
+func TestOtherNeedsADetail(t *testing.T) {
+	f := newReportFixture(t)
+
+	var invalid *ValidationError
+
+	if err := f.report(t, f.reporter, "other", ""); !errors.As(err, &invalid) {
+		t.Errorf("err = %#v, want *ValidationError - \"other\" alone tells a moderator nothing", err)
+	}
+
+	// Sanitising runs first, so whitespace is not a way around it.
+	if err := f.report(t, f.reporter, "other", "   \n\t "); !errors.As(err, &invalid) {
+		t.Errorf("whitespace passed as a detail: err = %#v", err)
+	}
+
+	if err := f.report(t, f.reporter, "other", "sells a protected species"); err != nil {
+		t.Errorf("a real detail was refused: %v", err)
+	}
+}
+
+func TestTheOtherReasonsDoNotNeedADetail(t *testing.T) {
+	f := newReportFixture(t)
+
+	if err := f.report(t, f.reporter, "spam", ""); err != nil {
+		t.Errorf("spam with no detail was refused: %v", err)
+	}
+}

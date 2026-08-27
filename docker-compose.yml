@@ -31,6 +31,16 @@ services:
       db:
         condition: service_healthy     # same wait the backend uses
 
+  # --- mailpit (catches outgoing mail, dev only) ---
+  mailpit:
+    image: axllent/mailpit:v1.31     # no bare-major tag exists, so pin the minor
+    restart: unless-stopped
+    # No `profiles` unlike adminer: the backend connects to this one, so an
+    # opt-in service would mean a dial error on every notification.
+    ports:
+      - "127.0.0.1:1025:1025"        # SMTP, what the backend sends to
+      - "127.0.0.1:8025:8025"        # web UI, where you read what was sent
+
   # --- backend (Go) ---
   backend:
     image: golang:1.26.3-alpine

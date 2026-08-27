@@ -136,6 +136,14 @@ type OrderEvent struct {
 	CreatedAt  time.Time
 }
 
+type PasswordResetToken struct {
+	TokenHash string
+	UserID    uuid.UUID
+	ExpiresAt time.Time
+	UsedAt    sql.NullTime
+	CreatedAt time.Time
+}
+
 type Profile struct {
 	ID             uuid.UUID
 	Firstname      sql.NullString

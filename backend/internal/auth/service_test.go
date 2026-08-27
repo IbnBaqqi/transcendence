@@ -51,9 +51,9 @@ func TestValidateSignupInput(t *testing.T) {
 		{"multi-byte username over the limit", func(i *dtos.CreateUserRequest) { i.Username = strings.Repeat("ä", 51) }, "Username must be 50 characters or fewer"},
 
 		{"no email", func(i *dtos.CreateUserRequest) { i.Email = "" }, "Email is required"},
-		{"email at the limit", func(i *dtos.CreateUserRequest) { i.Email = strings.Repeat("a", 150) }, ""},
+		{"email at the limit", func(i *dtos.CreateUserRequest) { i.Email = strings.Repeat("a", 141) + "@test.com" }, ""},
 		{"email over the limit", func(i *dtos.CreateUserRequest) { i.Email = strings.Repeat("a", 151) }, "Email must be 150 characters or fewer"},
-		{"multi-byte email under the character limit", func(i *dtos.CreateUserRequest) { i.Email = strings.Repeat("ä", 100) }, ""},
+		{"multi-byte email under the character limit", func(i *dtos.CreateUserRequest) { i.Email = strings.Repeat("ä", 100) + "@test.com" }, ""},
 
 		{"password too short", func(i *dtos.CreateUserRequest) { i.Password = strings.Repeat("a", 7) }, "Password must be at least 8 bytes"},
 		{"password at the floor", func(i *dtos.CreateUserRequest) { i.Password = strings.Repeat("a", 8) }, ""},
@@ -123,6 +123,36 @@ func TestDuplicateUserError(t *testing.T) {
 			}
 			if conflict.Message != tt.wantMsg {
 				t.Errorf("message = %q, want %q", conflict.Message, tt.wantMsg)
+			}
+		})
+	}
+}
+
+func TestSignupRejectsMalformedEmails(t *testing.T) {
+	tests := []struct {
+		name  string
+		email string
+		want  bool // true = accepted
+	}{
+		{"a plain address", "aino@example.test", true},
+		{"unicode local part", "äiti@example.test", true},
+		{"unicode domain", "aino@exämple.test", true},
+
+		{"a header injection", "aino@example.test\r\nBcc: attacker@evil.test", false},
+		{"a bare newline", "aino@example.test\nBcc: attacker@evil.test", false},
+		{"a display name form", "Aino <aino@example.test>", false},
+		{"two addresses", "aino@example.test, attacker@evil.test", false},
+		{"no at sign", "not-an-email", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateEmailFormat(tc.email)
+			if tc.want && err != nil {
+				t.Errorf("rejected a usable address %q: %v", tc.email, err)
+			}
+			if !tc.want && err == nil {
+				t.Errorf("accepted %q", tc.email)
 			}
 		})
 	}

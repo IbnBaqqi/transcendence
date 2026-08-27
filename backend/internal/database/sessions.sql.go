@@ -105,6 +105,20 @@ func (q *Queries) RevokeSession(ctx context.Context, arg RevokeSessionParams) (i
 	return result.RowsAffected()
 }
 
+const revokeSessionsForPasswordReset = `-- name: RevokeSessionsForPasswordReset :exec
+UPDATE refresh_tokens
+SET revoked_at = now(),
+    revoked_reason = 'password_reset'
+WHERE user_id = $1
+    AND expires_at > now()
+    AND (revoked_at IS NULL OR revoked_reason = 'rotated')
+`
+
+func (q *Queries) RevokeSessionsForPasswordReset(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, revokeSessionsForPasswordReset, userID)
+	return err
+}
+
 const revokeSessionsForUser = `-- name: RevokeSessionsForUser :exec
 UPDATE refresh_tokens
 SET revoked_at = now(),

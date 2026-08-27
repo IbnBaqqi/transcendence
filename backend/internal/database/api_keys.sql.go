@@ -149,6 +149,18 @@ func (q *Queries) RevokeKey(ctx context.Context, arg RevokeKeyParams) (int64, er
 	return result.RowsAffected()
 }
 
+const revokeKeysForUser = `-- name: RevokeKeysForUser :exec
+UPDATE api_keys
+SET revoked_at = now()
+WHERE user_id = $1
+    AND revoked_at IS NULL
+`
+
+func (q *Queries) RevokeKeysForUser(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, revokeKeysForUser, userID)
+	return err
+}
+
 const touchKey = `-- name: TouchKey :exec
 UPDATE api_keys
 SET last_used_at = now()

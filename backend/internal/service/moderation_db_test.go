@@ -10,6 +10,7 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
 )
 
@@ -59,8 +60,8 @@ func newModerationFixture(t *testing.T) moderationFixture {
 	return moderationFixture{
 		mod:      NewModerationService(db),
 		reports:  NewReportService(db.Queries),
-		orders:   NewOrderService(db),
-		chat:     NewConversationService(db),
+		orders:   NewOrderService(db, notify.Disabled{}),
+		chat:     NewConversationService(db, notify.Disabled{}),
 		saved:    NewSavedListingService(db.Queries),
 		listings: NewListingService(db, nil),
 		db:       db,

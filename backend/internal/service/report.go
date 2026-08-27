@@ -35,6 +35,8 @@ func sanitizeReportDetail(detail string) string {
 
 const maxReportDetail = 500
 
+const reasonOther = "other"
+
 var reportReasons = map[string]bool{
 	"spam":       true,
 	"prohibited": true,
@@ -43,7 +45,15 @@ var reportReasons = map[string]bool{
 	"other":      true,
 }
 
-const reportedConstraint = "listing_reports_listing_reporter_uq"
+const (
+	reportedConstraint = "listing_reports_listing_reporter_uq"
+
+	// The seller can delete the listing between the read above and this
+	// insert. The read takes no lock, so wrapping the pair in a transaction
+	// would not close the window - mapping the violation is what turns a 500
+	// into the 404 it always was.
+	reportListingConstraint = "listing_reports_listing_id_fkey"
+)
 
 type ReportService struct {
 	db *database.Queries
@@ -74,6 +84,14 @@ func (s *ReportService) Report(
 		return &ValidationError{Message: "Report detail is too long"}
 	}
 
+	// Checked after sanitising, so whitespace and stripped control characters
+	// count as empty. Every other reason says what is wrong by itself; "other"
+	// says only that none of them fit, which is nothing for a moderator to act
+	// on.
+	if reason == reasonOther && detail == "" {
+		return &ValidationError{Message: "Report detail is required when the reason is other"}
+	}
+
 	listing, err := s.db.GetListing(ctx, listingID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -95,6 +113,9 @@ func (s *ReportService) Report(
 		Reason:     reason,
 		Detail:     sql.NullString{String: detail, Valid: detail != ""},
 	})
+	if isForeignKeyViolation(err, reportListingConstraint) {
+		return &NotFoundError{Message: "Listing not found"}
+	}
 	if isUniqueViolation(err, reportedConstraint) {
 		return &ConflictError{Message: "You have already reported this listing"}
 	}
