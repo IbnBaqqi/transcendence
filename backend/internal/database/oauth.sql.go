@@ -65,3 +65,32 @@ func (q *Queries) LinkIdentity(ctx context.Context, arg LinkIdentityParams) erro
 	_, err := q.db.ExecContext(ctx, linkIdentity, arg.Provider, arg.ProviderUserID, arg.UserID)
 	return err
 }
+
+const listProvidersForUser = `-- name: ListProvidersForUser :many
+SELECT provider FROM oauth_identities
+WHERE user_id = $1
+ORDER BY provider
+`
+
+func (q *Queries) ListProvidersForUser(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listProvidersForUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var provider string
+		if err := rows.Scan(&provider); err != nil {
+			return nil, err
+		}
+		items = append(items, provider)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

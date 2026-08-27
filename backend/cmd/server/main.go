@@ -14,6 +14,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/config"
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/logger"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/IbnBaqqi/transcendence/internal/oauth"
 )
 
@@ -61,7 +62,10 @@ func run() error {
 		}
 	}()
 
-	appService, err := app.New(cfg, db)
+	notifier := notify.New(cfg.Mail)
+	defer notifier.Close()
+
+	appService, err := app.New(cfg, db, notifier)
 	if err != nil {
 		return fmt.Errorf("failed to initialize app services: %w", err)
 	}

@@ -31,3 +31,9 @@ WHERE id = $1
 UPDATE api_keys
 SET last_used_at = now()
 WHERE id = $1;
+
+-- name: RevokeKeysForUser :exec
+UPDATE api_keys
+SET revoked_at = now()
+WHERE user_id = $1
+    AND revoked_at IS NULL;

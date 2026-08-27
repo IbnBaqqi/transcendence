@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
 )
 
@@ -50,7 +51,7 @@ func newBlockFixture(t *testing.T) blockFixture {
 		t.Fatalf("creating a listing: %v", err)
 	}
 
-	chat := NewConversationService(db)
+	chat := NewConversationService(db, notify.Disabled{})
 
 	conv, _, err := chat.StartConversation(ctx, buyer, listing.ID, "are these fresh?")
 	if err != nil {
