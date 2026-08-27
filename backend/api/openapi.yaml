@@ -565,6 +565,12 @@ components:
         status off, and also when they have never been seen. An offline user
         who has NOT hidden their status still sends `last_seen_at`, so an
         absent timestamp does not by itself mean "offline".
+
+        Presence also goes dark when **either** of you has blocked the other,
+        and it is never sent to an unauthenticated caller. Do not render an
+        absent `last_seen_at` as "this user hid their status" - it is
+        deliberately indistinguishable from a block, because telling someone
+        they have been blocked is the one thing blocking must not do.
       properties:
         is_online:
           type: boolean
@@ -2239,7 +2245,13 @@ paths:
         Public, like the listing reads - a seller's profile should be readable
         while browsing. `presence` honours that user's `show_online_status`:
         with it off, the response is `{"is_online": false}` with no
-        `last_seen_at`, identical to a user who has never been seen.
+        `last_seen_at`.
+
+        **Presence needs a token.** Called without one it is always
+        `{"is_online": false}` - the rest of the profile is public, but an
+        anonymous caller cannot read anyone's online status. Otherwise a
+        blocked user could read the blocker's presence by logging out.
+        Presence is also hidden when either party has blocked the other.
       responses:
         "200":
           description: The public view of that profile.
