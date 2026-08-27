@@ -13,3 +13,8 @@ WHERE oauth_identities.provider = $1
 -- swallow.
 INSERT INTO oauth_identities (provider, provider_user_id, user_id)
 VALUES ($1, $2, $3);
+
+-- name: ListProvidersForUser :many
+SELECT provider FROM oauth_identities
+WHERE user_id = $1
+ORDER BY provider;

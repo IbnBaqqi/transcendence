@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"strings"
 	"sync"
@@ -425,5 +426,89 @@ func TestAGarbageTokenIsRejectedWithoutHashing(t *testing.T) {
 	if rejected > hashCost/2 {
 		t.Errorf("rejecting an unknown token took %v against a %v hash - it is hashing before checking the token",
 			rejected, hashCost)
+	}
+}
+
+// A provider account has no password, and a reset must not create one: for
+// GitHub the verified address can live anywhere, so minting a password would
+// drop the account to the weaker of mailbox and provider.
+func TestAProviderAccountGetsNoResetLink(t *testing.T) {
+	svc, db, rec := newResetService(t)
+	ctx := context.Background()
+
+	user, err := db.CreateUser(ctx, database.CreateUserParams{
+		ID:       database.NewID(),
+		Username: "aino",
+		Email:    "aino@example.test",
+		Password: sql.NullString{}, // signed up with a provider
+	})
+	if err != nil {
+		t.Fatalf("creating the user: %v", err)
+	}
+	if err := db.LinkIdentity(ctx, database.LinkIdentityParams{
+		Provider:       "github",
+		ProviderUserID: "gh-12345",
+		UserID:         user.ID,
+	}); err != nil {
+		t.Fatalf("linking the identity: %v", err)
+	}
+
+	if err := svc.RequestReset(ctx, "aino@example.test"); err != nil {
+		t.Fatalf("requesting a reset: %v", err)
+	}
+
+	if n := rec.resetCount(); n != 0 {
+		t.Errorf("sent %d reset links to a password-less account, want 0", n)
+	}
+
+	msgs := rec.messages()
+	if len(msgs) != 1 {
+		t.Fatalf("sent %d emails, want 1 - silence leaves the owner waiting for mail that never comes", len(msgs))
+	}
+	if msgs[0].Kind != notify.KindPasswordResetUnavailable {
+		t.Errorf("kind = %q, want %q", msgs[0].Kind, notify.KindPasswordResetUnavailable)
+	}
+	if !strings.Contains(msgs[0].Body, "GitHub") {
+		t.Errorf("the email does not name the provider:\n%s", msgs[0].Body)
+	}
+
+	// The decisive part: no usable password may exist afterwards.
+	after, err := db.GetUserByEmail(ctx, "aino@example.test")
+	if err != nil {
+		t.Fatalf("re-reading the user: %v", err)
+	}
+	if after.Password.Valid {
+		t.Error("the account gained a password")
+	}
+}
+
+func TestTheCooldownStillAppliesToAProviderAccount(t *testing.T) {
+	svc, db, rec := newResetService(t)
+	ctx := context.Background()
+
+	user, err := db.CreateUser(ctx, database.CreateUserParams{
+		ID:       database.NewID(),
+		Username: "aino",
+		Email:    "aino@example.test",
+		Password: sql.NullString{},
+	})
+	if err != nil {
+		t.Fatalf("creating the user: %v", err)
+	}
+	if err := db.LinkIdentity(ctx, database.LinkIdentityParams{
+		Provider: "google", ProviderUserID: "g-1", UserID: user.ID,
+	}); err != nil {
+		t.Fatalf("linking the identity: %v", err)
+	}
+
+	// Without a cooldown this path is a mail bomb aimed at the address.
+	for range 3 {
+		if err := svc.RequestReset(ctx, "aino@example.test"); err != nil {
+			t.Fatalf("requesting a reset: %v", err)
+		}
+	}
+
+	if n := len(rec.messages()); n != 1 {
+		t.Errorf("sent %d emails for three requests, want 1", n)
 	}
 }

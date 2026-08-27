@@ -1148,6 +1148,18 @@ paths:
         a way to make this server send email on someone else's behalf.
 
         The link expires in an hour and works once.
+
+        **An account that signs in with Google or GitHub has no password, and
+        this will not create one.** That address gets an email naming the
+        provider instead of a link. A reset cannot mint a credential for an
+        account that never had one: GitHub hands over a verified address that
+        may live at any mailbox, so a password would drop the account to the
+        weaker of mailbox and provider and walk past the provider's 2FA.
+
+        The response, the timing and the cooldown are identical either way —
+        only the words in the email differ, and only the mailbox owner reads
+        them. Adding a password to a provider account is an authenticated
+        action, not something an unauthenticated endpoint can do.
       requestBody:
         required: true
         content:

@@ -39,6 +39,24 @@ func (s *Service) RequestReset(ctx context.Context, email string) error {
 		return fmt.Errorf("password reset: look up email: %w", err)
 	}
 
+	// An account created through a provider has no password, and a reset must
+	// not mint one. For Google that would be harmless - the address is the
+	// Google mailbox, so anyone holding it can already sign in - but GitHub
+	// hands over a verified address that can live anywhere. If that mailbox is
+	// weaker than the GitHub account, minting a password drops the account to
+	// the weaker of the two and walks past the provider's 2FA.
+	//
+	// The request still runs the cooldown and still sends mail, so the response
+	// and the timing are unchanged; only the words differ, and only the mailbox
+	// owner reads them.
+	var providers []string
+	if !user.Password.Valid {
+		providers, err = s.db.ListProvidersForUser(ctx, user.ID)
+		if err != nil {
+			return fmt.Errorf("password reset: look up providers: %w", err)
+		}
+	}
+
 	raw := MakeRefreshToken()
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -91,7 +109,14 @@ func (s *Service) RequestReset(ctx context.Context, email string) error {
 		return fmt.Errorf("password reset: commit: %w", err)
 	}
 
-	s.notify.Notify(ctx, notify.PasswordReset(user.Email, s.resetLink(raw), resetTokenTTL))
+	if user.Password.Valid {
+		s.notify.Notify(ctx, notify.PasswordReset(user.Email, s.resetLink(raw), resetTokenTTL))
+	} else {
+		// The token row above still exists - it is what anchors the cooldown
+		// and what the cleanup prunes. No link is ever composed from it, so the
+		// raw value dies with this call and the row is unreachable.
+		s.notify.Notify(ctx, notify.PasswordResetUnavailable(user.Email, providers))
+	}
 
 	return nil
 }

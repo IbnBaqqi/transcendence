@@ -30,6 +30,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/IbnBaqqi/transcendence/internal/config"
@@ -46,12 +47,13 @@ func New(cfg config.MailConfig) Notifier {
 type Kind string
 
 const (
-	KindWelcome         Kind = "welcome"
-	KindOrderPlaced     Kind = "order_placed"
-	KindOrderHandedOver Kind = "order_handed_over"
-	KindOrderCancelled  Kind = "order_cancelled"
-	KindChatRequest     Kind = "chat_request"
-	KindPasswordReset   Kind = "password_reset"
+	KindWelcome                  Kind = "welcome"
+	KindOrderPlaced              Kind = "order_placed"
+	KindOrderHandedOver          Kind = "order_handed_over"
+	KindOrderCancelled           Kind = "order_cancelled"
+	KindChatRequest              Kind = "chat_request"
+	KindPasswordReset            Kind = "password_reset"
+	KindPasswordResetUnavailable Kind = "password_reset_unavailable"
 )
 
 type Message struct {
@@ -128,6 +130,52 @@ func ChatRequest(to, listingTitle string) Message {
 		Body: fmt.Sprintf(
 			"You have a new chat request about %s. Accept it to reply.\n",
 			listingTitle),
+	}
+}
+
+// providerNames turns the stored identifiers into the words on the sign-in
+// button, which is what the reader is looking for.
+var providerNames = map[string]string{
+	"google": "Google",
+	"github": "GitHub",
+}
+
+func namedProviders(providers []string) string {
+	names := make([]string, 0, len(providers))
+	for _, p := range providers {
+		if name, ok := providerNames[p]; ok {
+			names = append(names, name)
+		}
+	}
+
+	switch len(names) {
+	case 0:
+		return "a connected account"
+	case 1:
+		return names[0]
+	default:
+		return strings.Join(names[:len(names)-1], ", ") + " or " + names[len(names)-1]
+	}
+}
+
+// PasswordResetUnavailable answers a reset request for an account that has no
+// password because it signs in through a provider.
+//
+// The HTTP response is identical to a normal request, so this reveals nothing
+// to anyone who does not already control the mailbox. Sending nothing at all
+// would be worse for the one person who matters: they asked for a link, were
+// told it was on its way, and would sit waiting for mail that never comes.
+func PasswordResetUnavailable(to string, providers []string) Message {
+	return Message{
+		Kind:    KindPasswordResetUnavailable,
+		To:      to,
+		Subject: "Reset your password",
+		Body: fmt.Sprintf(
+			"Someone asked to reset the password for this address.\n\n"+
+				"There is no password to reset - this account signs in with %s. "+
+				"Use that button on the sign-in page.\n\n"+
+				"If this was not you, nothing has changed and there is nothing to do.\n",
+			namedProviders(providers)),
 	}
 }
 
