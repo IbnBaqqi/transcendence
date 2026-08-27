@@ -371,6 +371,37 @@ func TestRemovingTwiceIsAConflict(t *testing.T) {
 	}
 }
 
+func TestDismissingARemovedListingIsAConflict(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	f.reportBy(t, f.buyer)
+	f.remove(t)
+
+	_, _, err := f.mod.Moderate(ctx, f.admin, f.listing, "dismiss", "looks fine to me")
+
+	var conflict *ConflictError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("err = %#v, want *ConflictError - dismissing a removed listing leaves it invisible", err)
+	}
+
+	listing, err := f.db.GetListing(ctx, f.listing)
+	if err != nil {
+		t.Fatalf("re-reading the listing: %v", err)
+	}
+	if !listing.RemovedAt.Valid {
+		t.Error("the refused dismiss changed the listing")
+	}
+
+	actions, err := f.mod.History(ctx, f.listing)
+	if err != nil {
+		t.Fatalf("reading the history: %v", err)
+	}
+	if len(actions) != 1 {
+		t.Errorf("audit rows = %d, want 1 - a refused action must not be logged", len(actions))
+	}
+}
+
 func TestRestoreBringsTheListingBack(t *testing.T) {
 	f := newModerationFixture(t)
 	ctx := context.Background()

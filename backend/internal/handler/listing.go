@@ -12,9 +12,24 @@ import (
 
 // A removed listing must look like one that never existed, so every route
 // that can reach one asks this rather than re-deriving the rule.
-func maySeeRemovedListing(r *http.Request, sellerID uuid.UUID) bool {
+//
+// The admin case re-reads the role from the database rather than trusting the
+// token's claim, matching mw.RequireRole - otherwise a demoted admin keeps
+// seeing removed listings until their access token expires.
+func (h *Handler) maySeeRemovedListing(r *http.Request, sellerID uuid.UUID) bool {
 	viewer, ok := auth.UserFromContext(r.Context())
-	return ok && (viewer.ID == sellerID || viewer.Role == auth.RoleAdmin)
+	if !ok {
+		return false
+	}
+	if viewer.ID == sellerID {
+		return true
+	}
+
+	role, err := h.db.GetUserRole(r.Context(), viewer.ID)
+	if err != nil {
+		return false
+	}
+	return role == auth.RoleAdmin
 }
 
 func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +88,7 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if listing.RemovedAt.Valid && !maySeeRemovedListing(r, listing.SellerID) {
+	if listing.RemovedAt.Valid && !h.maySeeRemovedListing(r, listing.SellerID) {
 		respondWithError(w, http.StatusNotFound, "Listing not found")
 		return
 	}

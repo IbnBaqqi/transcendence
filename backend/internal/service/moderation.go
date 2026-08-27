@@ -95,6 +95,13 @@ func (s *ModerationService) Moderate(
 			return database.Listing{}, 0, &ConflictError{Message: "Listing is not removed"}
 		}
 		listing, err = qtx.RestoreListing(ctx, listingID)
+	case "dismiss":
+		// Dismissing would clear the queue while the listing stayed invisible,
+		// and nothing lists removed listings - it would be reachable only by
+		// uuid. Restore it first, or uphold what is already done.
+		if listing.RemovedAt.Valid {
+			return database.Listing{}, 0, &ConflictError{Message: "Listing is removed; restore it before dismissing its reports"}
+		}
 	}
 	if err != nil {
 		return database.Listing{}, 0, err

@@ -78,8 +78,14 @@ func (h *Handler) ModerateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	imgs, err := h.ListingImage.ListImages(r.Context(), listingID)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
 	respondWithJSON(w, http.StatusOK, dtos.ModerateListingResponse{
-		Listing:         dtos.ToListingResponse(listing),
+		Listing:         dtos.ToListingResponseWithImages(listing, imgs),
 		ReportsResolved: resolved,
 	})
 }

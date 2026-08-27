@@ -226,6 +226,13 @@ components:
           items:
             # $ref = "reuse that definition here". This is why schemas exist.
             $ref: "#/components/schemas/ListingImage"
+        removed_at:
+          type: string
+          format: date-time
+          description: |
+            When a moderator removed this listing. **Absent** unless it was
+            removed *and* you are its seller or an admin — for everyone else a
+            removed listing is 404, so the field can never appear.
 
     PaginatedListings:
       type: object
@@ -3467,8 +3474,11 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           description: |
-            Removing an already-removed listing, or restoring one that is not
-            removed. Usually means another moderator got there first.
+            Removing an already-removed listing, restoring one that is not
+            removed, or dismissing the reports on a removed one. The first two
+            usually mean another moderator got there first; the third would
+            clear the queue while leaving the listing invisible and reachable
+            only by uuid, so restore it first.
           content:
             application/json:
               schema:

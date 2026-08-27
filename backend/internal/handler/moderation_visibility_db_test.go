@@ -60,6 +60,12 @@ func TestARemovedListingIsHiddenFromEveryoneButItsSellerAndAdmins(t *testing.T) 
 		t.Fatalf("creating a listing: %v", err)
 	}
 
+	// The visibility check re-reads the role from the database, so a token
+	// claiming ADMIN is not enough - the row has to say so too.
+	if _, err := db.ExecContext(ctx, `UPDATE users SET role = 'ADMIN' WHERE id = $1`, admin); err != nil {
+		t.Fatalf("promoting the admin: %v", err)
+	}
+
 	mod := service.NewModerationService(db)
 	if _, _, err := mod.Moderate(ctx, admin, listing.ID, "remove", "prohibited species"); err != nil {
 		t.Fatalf("removing: %v", err)
@@ -96,6 +102,13 @@ func TestARemovedListingIsHiddenFromEveryoneButItsSellerAndAdmins(t *testing.T) 
 		viewer := auth.User{ID: admin, Role: auth.RoleAdmin}
 		if code := fetchListingAs(t, h, listing.ID, &viewer).Code; code != http.StatusOK {
 			t.Errorf("status = %d, want 200", code)
+		}
+	})
+
+	t.Run("a token claiming ADMIN over a demoted account gets 404", func(t *testing.T) {
+		viewer := auth.User{ID: stranger, Role: auth.RoleAdmin}
+		if code := fetchListingAs(t, h, listing.ID, &viewer).Code; code != http.StatusNotFound {
+			t.Errorf("status = %d, want 404 - the role must come from the database, like RequireRole", code)
 		}
 	})
 
