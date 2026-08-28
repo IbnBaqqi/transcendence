@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "./client";
+import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
 import type { Listing, ListingImage, Paginated } from "./types";
 
@@ -45,7 +45,7 @@ export function useListings() {
 export function useListing(id: string) {
   return useQuery({
     queryKey: keys.listings.detail(id),
-    queryFn: async () => (await api.get<Listing>(`/listings/${id}`)).data,
+    queryFn: async () => (await api.get<Listing>(apiPath`/listings/${id}`)).data,
     enabled: id !== "", // skip while a route param is still being parsed
   });
 }
@@ -64,7 +64,8 @@ export function useSearchListings(params: ListingSearchParams) {
 export function useListingImages(id: string) {
   return useQuery({
     queryKey: keys.listings.images(id),
-    queryFn: async () => (await api.get<ListingImage[]>(`/listings/${id}/images`)).data ?? [],
+    queryFn: async () =>
+      (await api.get<ListingImage[]>(apiPath`/listings/${id}/images`)).data ?? [],
     enabled: id !== "",
   });
 }
@@ -72,7 +73,7 @@ export function useListingImages(id: string) {
 async function uploadListingImage(listingId: string, file: File): Promise<ListingImage> {
   const body = new FormData();
   body.append("image", file);
-  const res = await api.post<ListingImage>(`/listings/${listingId}/images`, body);
+  const res = await api.post<ListingImage>(apiPath`/listings/${listingId}/images`, body);
   return res.data;
 }
 
@@ -89,7 +90,7 @@ export function useUploadListingImage(listingId: string | undefined) {
 }
 
 async function deleteListingImage(listingId: string, imageId: string): Promise<void> {
-  await api.delete(`/listings/${listingId}/images/${imageId}`);
+  await api.delete(apiPath`/listings/${listingId}/images/${imageId}`);
 }
 
 export function useDeleteListingImage(listingId: string | undefined) {
