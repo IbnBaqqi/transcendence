@@ -2,12 +2,30 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "./client";
 import { keys } from "./queryKeys";
-import type { OwnProfile, ProfileUpdateInput } from "./types";
+import type { OwnProfile, ProfileUpdateInput, PublicProfile } from "./types";
 
 export function useOwnProfile() {
   return useQuery({
     queryKey: keys.me.profile(),
     queryFn: async () => (await api.get<OwnProfile>("/me/profile")).data,
+  });
+}
+
+// GET /users/{id} - somebody else's profile.
+// `id` is optional because it comes from a route param, which is
+// string | undefined until React Router has matched the URL.
+export function usePublicProfile(id: string | undefined) {
+  return useQuery({
+    // A key must be a valid string even while the query is disabled.
+    queryKey: keys.users.detail(id ?? ""),
+    queryFn: async () => (await api.get<PublicProfile>(`/users/${id}`)).data,
+
+    // Don't request "/users/undefined" before the param is read.
+    enabled: Boolean(id),
+
+    // The default is retry: 1 (lib/queryClient.ts). A 404 here is a real
+    // answer - no point asking twice.
+    retry: false,
   });
 }
 
