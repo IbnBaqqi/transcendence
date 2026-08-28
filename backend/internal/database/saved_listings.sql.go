@@ -11,6 +11,15 @@ import (
 	"github.com/google/uuid"
 )
 
+const deleteSavedForUser = `-- name: DeleteSavedForUser :exec
+DELETE FROM saved_listings WHERE user_id = $1
+`
+
+func (q *Queries) DeleteSavedForUser(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteSavedForUser, userID)
+	return err
+}
+
 const listSavedListings = `-- name: ListSavedListings :many
 SELECT l.id, l.seller_id, l.title, l.description, l.category, l.price, l.quantity, l.unit, l.created_at, l.updated_at, l.removed_at FROM saved_listings s
 JOIN listings l ON l.id = s.listing_id

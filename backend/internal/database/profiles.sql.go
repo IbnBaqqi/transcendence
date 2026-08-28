@@ -170,6 +170,33 @@ func (q *Queries) ListProfiles(ctx context.Context) ([]Profile, error) {
 	return items, nil
 }
 
+const scrubProfile = `-- name: ScrubProfile :one
+WITH previous AS (
+    SELECT avatar_filename FROM profiles WHERE id = $1 FOR UPDATE
+)
+UPDATE profiles
+SET firstname       = NULL,
+    lastname        = NULL,
+    bio             = NULL,
+    phone_number    = NULL,
+    date_of_birth   = NULL,
+    avatar_filename = NULL
+FROM previous
+WHERE profiles.id = $1
+RETURNING previous.avatar_filename
+`
+
+// Same CTE-with-FOR-UPDATE shape as ClearAvatar, and for the same two reasons:
+// the lock stops an avatar upload racing the scrub and orphaning a file, and
+// the CTE reads the pre-update filename - a plain RETURNING avatar_filename
+// would hand back the NULL we just wrote, leaving the file on disk forever.
+func (q *Queries) ScrubProfile(ctx context.Context, id uuid.UUID) (sql.NullString, error) {
+	row := q.db.QueryRowContext(ctx, scrubProfile, id)
+	var avatar_filename sql.NullString
+	err := row.Scan(&avatar_filename)
+	return avatar_filename, err
+}
+
 const setAvatar = `-- name: SetAvatar :one
 WITH previous AS (
     SELECT avatar_filename FROM profiles WHERE id = $1 FOR UPDATE

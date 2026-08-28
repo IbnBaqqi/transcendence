@@ -12,12 +12,51 @@ import (
 	"github.com/google/uuid"
 )
 
+const anonymiseUser = `-- name: AnonymiseUser :one
+UPDATE users
+SET email        = 'deleted-' || id::text || '@deleted.invalid',
+    username     = 'deleted-' || id::text,
+    password     = NULL,
+    last_seen_at = NULL,
+    deleted_at   = now(),
+    updated_at   = now()
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at
+`
+
+// The placeholders embed the id because both columns are NOT NULL under unique
+// indexes on lower() - a fixed string would collide on the second deletion, and
+// case cannot be what separates them. What a client shows is "Deleted user",
+// derived at the DTO boundary; this is only what keeps the row valid.
+//
+// .invalid is RFC 2606 reserved, so the address can never route anywhere.
+//
+// The deleted_at IS NULL guard is what makes a second delete return no rows
+// rather than re-scrubbing an already anonymous row.
+func (q *Queries) AnonymiseUser(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRowContext(ctx, anonymiseUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LastSeenAt,
+		&i.ShowOnlineStatus,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, username, email, password)
 VALUES (
 	$1, $2, $3, $4
 )
-RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at
 `
 
 type CreateUserParams struct {
@@ -45,6 +84,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.UpdatedAt,
 		&i.LastSeenAt,
 		&i.ShowOnlineStatus,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -83,7 +123,7 @@ func (q *Queries) EmailOrUsernameTaken(ctx context.Context, arg EmailOrUsernameT
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at FROM users
 WHERE id = $1
 LIMIT 1
 `
@@ -101,16 +141,22 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.UpdatedAt,
 		&i.LastSeenAt,
 		&i.ShowOnlineStatus,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at FROM users
 WHERE lower(email) = lower($1)
+  AND deleted_at IS NULL
 LIMIT 1
 `
 
+// deleted_at excluded: this is the login and password-reset lookup, and a
+// deleted account must not be findable by the address it used to have. The
+// address is scrubbed anyway, so this is belt and braces - but it is the
+// braces that matter if the scrub ever changes.
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
 	var i User
@@ -124,12 +170,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.UpdatedAt,
 		&i.LastSeenAt,
 		&i.ShowOnlineStatus,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getUserForUpdate = `-- name: GetUserForUpdate :one
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at FROM users
 WHERE id = $1
 FOR UPDATE
 `
@@ -147,6 +194,7 @@ func (q *Queries) GetUserForUpdate(ctx context.Context, id uuid.UUID) (User, err
 		&i.UpdatedAt,
 		&i.LastSeenAt,
 		&i.ShowOnlineStatus,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -164,7 +212,7 @@ func (q *Queries) GetUserRole(ctx context.Context, id uuid.UUID) (string, error)
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at FROM users
 ORDER BY created_at DESC
 `
 
@@ -187,6 +235,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.UpdatedAt,
 			&i.LastSeenAt,
 			&i.ShowOnlineStatus,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -217,7 +266,7 @@ UPDATE users
 SET show_online_status = $2,
   updated_at = now()
 WHERE id = $1
-RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at
 `
 
 type UpdateShowOnlineStatusParams struct {
@@ -238,6 +287,7 @@ func (q *Queries) UpdateShowOnlineStatus(ctx context.Context, arg UpdateShowOnli
 		&i.UpdatedAt,
 		&i.LastSeenAt,
 		&i.ShowOnlineStatus,
+		&i.DeletedAt,
 	)
 	return i, err
 }

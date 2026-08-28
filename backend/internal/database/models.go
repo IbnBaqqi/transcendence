@@ -179,4 +179,5 @@ type User struct {
 	UpdatedAt        sql.NullTime
 	LastSeenAt       sql.NullTime
 	ShowOnlineStatus bool
+	DeletedAt        sql.NullTime
 }

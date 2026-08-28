@@ -49,6 +49,17 @@ func (q *Queries) BlockUser(ctx context.Context, arg BlockUserParams) error {
 	return err
 }
 
+const deleteBlocksForUser = `-- name: DeleteBlocksForUser :exec
+DELETE FROM blocks WHERE blocker_id = $1 OR blocked_id = $1
+`
+
+// Both directions. A departed user's block left in place would keep
+// suppressing someone else's presence forever, with nobody able to undo it.
+func (q *Queries) DeleteBlocksForUser(ctx context.Context, blockerID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteBlocksForUser, blockerID)
+	return err
+}
+
 const listBlocks = `-- name: ListBlocks :many
 SELECT
     users.id,

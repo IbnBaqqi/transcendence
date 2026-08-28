@@ -11,3 +11,5 @@ ON CONFLICT (user_id) DO UPDATE
 SET location   = EXCLUDED.location,
   updated_at = CURRENT_TIMESTAMP
 RETURNING *;
+-- name: DeleteAddressesForUser :exec
+DELETE FROM addresses WHERE user_id = $1;

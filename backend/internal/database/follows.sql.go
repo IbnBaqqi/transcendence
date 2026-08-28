@@ -12,6 +12,15 @@ import (
 	"github.com/google/uuid"
 )
 
+const deleteFollowsForUser = `-- name: DeleteFollowsForUser :exec
+DELETE FROM follows WHERE follower_id = $1 OR followee_id = $1
+`
+
+func (q *Queries) DeleteFollowsForUser(ctx context.Context, followerID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteFollowsForUser, followerID)
+	return err
+}
+
 const followUser = `-- name: FollowUser :exec
 INSERT INTO follows (follower_id, followee_id)
 VALUES ($1, $2)

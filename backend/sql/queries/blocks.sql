@@ -24,3 +24,7 @@ SELECT EXISTS (
     WHERE (blocker_id = sqlc.arg(user_a) AND blocked_id = sqlc.arg(user_b))
         OR (blocker_id = sqlc.arg(user_b) AND blocked_id = sqlc.arg(user_a))
 );
+-- name: DeleteBlocksForUser :exec
+-- Both directions. A departed user's block left in place would keep
+-- suppressing someone else's presence forever, with nobody able to undo it.
+DELETE FROM blocks WHERE blocker_id = $1 OR blocked_id = $1;

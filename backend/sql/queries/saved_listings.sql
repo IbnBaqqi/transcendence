@@ -12,3 +12,5 @@ SELECT l.* FROM saved_listings s
 JOIN listings l ON l.id = s.listing_id
 WHERE s.user_id = $1 AND l.removed_at IS NULL
 ORDER BY s.created_at DESC;
+-- name: DeleteSavedForUser :exec
+DELETE FROM saved_listings WHERE user_id = $1;
