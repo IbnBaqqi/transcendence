@@ -28,6 +28,7 @@ type ProfileDetail struct {
 	User     database.User
 	Profile  database.Profile
 	Location sql.NullString
+	Rating   database.SellerRatingRow
 }
 
 type ProfileService struct {
@@ -65,7 +66,12 @@ func (s *ProfileService) Get(ctx context.Context, userID uuid.UUID) (ProfileDeta
 		return ProfileDetail{}, err
 	}
 
-	return ProfileDetail{User: user, Profile: profile, Location: location}, nil
+	rating, err := s.db.SellerRating(ctx, userID)
+	if err != nil {
+		return ProfileDetail{}, err
+	}
+
+	return ProfileDetail{User: user, Profile: profile, Location: location, Rating: rating}, nil
 }
 
 func (s *ProfileService) Update(ctx context.Context, userID uuid.UUID, input dtos.UpdateProfileInput) (ProfileDetail, error) {

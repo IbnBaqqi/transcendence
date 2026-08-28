@@ -76,5 +76,5 @@ func (h *Handler) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK,
-		dtos.ToPublicProfileResponse(detail.User, detail.Profile, detail.Location, viewer != uuid.Nil))
+		dtos.ToPublicProfileResponse(detail.User, detail.Profile, detail.Location, detail.Rating, viewer != uuid.Nil))
 }
