@@ -5,11 +5,12 @@ RETURNING *;
 
 -- name: GetListing :one
 SELECT * FROM listings
-WHERE id = $1;
+WHERE listings.id = $1;
 
 -- name: ListListings :many
 SELECT * FROM listings
-WHERE quantity > 0 AND removed_at IS NULL
+WHERE listings.quantity > 0 AND listings.removed_at IS NULL
+  AND EXISTS (SELECT 1 FROM users u WHERE u.id = listings.seller_id AND u.deleted_at IS NULL)
 ORDER BY created_at DESC;
 
 -- name: UpdateListing :one

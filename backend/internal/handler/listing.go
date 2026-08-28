@@ -2,7 +2,10 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
+
+	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/google/uuid"
 
@@ -10,8 +13,9 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
-// A removed listing must look like one that never existed, so every route
-// that can reach one asks this rather than re-deriving the rule.
+// maySeeRemovedListing decides who may still see a hidden listing. A removed
+// one must look like it never existed, so every route that can reach one asks
+// this rather than re-deriving the rule.
 //
 // The admin case re-reads the role from the database rather than trusting the
 // token's claim, matching mw.RequireRole - otherwise a demoted admin keeps
@@ -30,6 +34,23 @@ func (h *Handler) maySeeRemovedListing(r *http.Request, sellerID uuid.UUID) bool
 		return false
 	}
 	return role == auth.RoleAdmin
+}
+
+// sellerIsGone reports whether the listing's seller has deleted their account.
+// Kept out of the shared GetListing query on purpose: every service reads
+// through it, and filtering there would 404 a reported listing for the admin
+// judging the report.
+//
+// Fails closed, and says so in the log: without the line an outage would look
+// like listings quietly vanishing.
+func (h *Handler) sellerIsGone(r *http.Request, sellerID uuid.UUID) bool {
+	seller, err := h.db.GetUser(r.Context(), sellerID)
+	if err != nil {
+		slog.Error("could not check whether the seller is deleted, hiding the listing",
+			"seller_id", sellerID, "request_id", middleware.GetReqID(r.Context()), "error", err)
+		return true
+	}
+	return seller.DeletedAt.Valid
 }
 
 func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
@@ -88,7 +109,8 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if listing.RemovedAt.Valid && !h.maySeeRemovedListing(r, listing.SellerID) {
+	hidden := listing.RemovedAt.Valid || h.sellerIsGone(r, listing.SellerID)
+	if hidden && !h.maySeeRemovedListing(r, listing.SellerID) {
 		respondWithError(w, http.StatusNotFound, "Listing not found")
 		return
 	}

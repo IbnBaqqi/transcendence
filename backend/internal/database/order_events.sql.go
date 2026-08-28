@@ -38,6 +38,15 @@ func (q *Queries) CreateOrderEvent(ctx context.Context, arg CreateOrderEventPara
 	return err
 }
 
+const detachEventActor = `-- name: DetachEventActor :exec
+UPDATE order_events SET actor_id = NULL WHERE actor_id = $1::uuid
+`
+
+func (q *Queries) DetachEventActor(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, detachEventActor, userID)
+	return err
+}
+
 const listOrderEvents = `-- name: ListOrderEvents :many
 SELECT id, order_id, actor_id, from_status, to_status, note, created_at
 FROM order_events

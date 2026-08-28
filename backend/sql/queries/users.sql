@@ -4,8 +4,13 @@ WHERE id = $1
 LIMIT 1;
 
 -- name: GetUserByEmail :one
+-- deleted_at excluded: this is the login and password-reset lookup, and a
+-- deleted account must not be findable by the address it used to have. The
+-- address is scrubbed anyway, so this is belt and braces - but it is the
+-- braces that matter if the scrub ever changes.
 SELECT * FROM users
 WHERE lower(email) = lower(sqlc.arg(email))
+  AND deleted_at IS NULL
 LIMIT 1;
 
 -- name: ListUsers :many
@@ -34,9 +39,14 @@ DELETE FROM users
 WHERE id = $1;
 
 -- name: TouchLastSeen :exec
+-- Guarded here rather than at a route: this middleware runs at the /api/v1
+-- level, outside the group RequireActiveUser protects, so a token that
+-- outlived its account would otherwise write last_seen_at back into the row
+-- the deletion scrubbed - and the counterparty would see "Deleted user"
+-- showing as online.
 UPDATE users
 SET last_seen_at = CURRENT_TIMESTAMP
-WHERE id = $1;
+WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: UpdateShowOnlineStatus :one
 UPDATE users
@@ -64,3 +74,27 @@ WHERE id = $1;
 SELECT * FROM users
 WHERE id = $1
 FOR UPDATE;
+
+-- name: AnonymiseUser :one
+-- The placeholders embed the id because both columns are NOT NULL under unique
+-- indexes on lower() - a fixed string would collide on the second deletion, and
+-- case cannot be what separates them. What a client shows is "Deleted user",
+-- derived at the DTO boundary; this is only what keeps the row valid.
+--
+-- .invalid is RFC 2606 reserved, so the address can never route anywhere.
+--
+-- The deleted_at IS NULL guard is what makes a second delete return no rows
+-- rather than re-scrubbing an already anonymous row.
+UPDATE users
+SET email              = 'deleted-' || id::text || '@deleted.invalid',
+    username           = 'deleted-' || id::text,
+    password           = NULL,
+    last_seen_at       = NULL,
+    show_online_status = false,
+    deleted_at         = now(),
+    updated_at         = now()
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING *;
+
+-- name: UserIsActive :one
+SELECT EXISTS (SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL);

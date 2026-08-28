@@ -18,3 +18,5 @@ VALUES ($1, $2, $3);
 SELECT provider FROM oauth_identities
 WHERE user_id = $1
 ORDER BY provider;
+-- name: DeleteIdentitiesForUser :exec
+DELETE FROM oauth_identities WHERE user_id = $1;

@@ -96,6 +96,7 @@ SELECT
     c.id, c.listing_id, c.listing_title, c.buyer_id, c.seller_id, c.status, c.created_at, c.updated_at,
     u.id                    AS other_user_id,
     u.username              AS other_username,
+    u.deleted_at            AS other_deleted_at,
     u.last_seen_at          AS other_last_seen_at,
     -- A block in EITHER direction hides presence. The blocker never sees the
     -- thread at all (see the WHERE below), so the direction that matters here
@@ -143,6 +144,7 @@ type ListConversationsForUserRow struct {
 	UpdatedAt             sql.NullTime
 	OtherUserID           uuid.UUID
 	OtherUsername         string
+	OtherDeletedAt        sql.NullTime
 	OtherLastSeenAt       sql.NullTime
 	OtherShowOnlineStatus bool
 	LastMessageBody       string
@@ -170,6 +172,7 @@ func (q *Queries) ListConversationsForUser(ctx context.Context, userID uuid.UUID
 			&i.UpdatedAt,
 			&i.OtherUserID,
 			&i.OtherUsername,
+			&i.OtherDeletedAt,
 			&i.OtherLastSeenAt,
 			&i.OtherShowOnlineStatus,
 			&i.LastMessageBody,

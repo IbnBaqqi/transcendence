@@ -49,6 +49,20 @@ func (q *Queries) BlockUser(ctx context.Context, arg BlockUserParams) error {
 	return err
 }
 
+const deleteBlocksForUser = `-- name: DeleteBlocksForUser :exec
+DELETE FROM blocks WHERE blocker_id = $1
+`
+
+// Only the blocks this user made. Rows where they are the blocked party belong
+// to someone else: if A blocked B and B then deletes their account, removing
+// A's row would bring B's thread back into A's inbox - a person A deliberately
+// hid, returning as "Deleted user". A departed user cannot act, so being
+// blocked by someone else costs nothing.
+func (q *Queries) DeleteBlocksForUser(ctx context.Context, blockerID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteBlocksForUser, blockerID)
+	return err
+}
+
 const listBlocks = `-- name: ListBlocks :many
 SELECT
     users.id,

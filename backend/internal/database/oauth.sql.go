@@ -11,8 +11,17 @@ import (
 	"github.com/google/uuid"
 )
 
+const deleteIdentitiesForUser = `-- name: DeleteIdentitiesForUser :exec
+DELETE FROM oauth_identities WHERE user_id = $1
+`
+
+func (q *Queries) DeleteIdentitiesForUser(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteIdentitiesForUser, userID)
+	return err
+}
+
 const findUserByProviderIdentity = `-- name: FindUserByProviderIdentity :one
-SELECT users.id, users.email, users.username, users.password, users.role, users.created_at, users.updated_at, users.last_seen_at, users.show_online_status
+SELECT users.id, users.email, users.username, users.password, users.role, users.created_at, users.updated_at, users.last_seen_at, users.show_online_status, users.deleted_at
 FROM oauth_identities
 JOIN users ON users.id = oauth_identities.user_id
 WHERE oauth_identities.provider = $1
@@ -43,6 +52,7 @@ func (q *Queries) FindUserByProviderIdentity(ctx context.Context, arg FindUserBy
 		&i.User.UpdatedAt,
 		&i.User.LastSeenAt,
 		&i.User.ShowOnlineStatus,
+		&i.User.DeletedAt,
 	)
 	return i, err
 }

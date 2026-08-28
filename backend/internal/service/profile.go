@@ -48,6 +48,10 @@ func (s *ProfileService) Get(ctx context.Context, userID uuid.UUID) (ProfileDeta
 		return ProfileDetail{}, err
 	}
 
+	if user.DeletedAt.Valid {
+		return ProfileDetail{}, &NotFoundError{Message: "User not found"}
+	}
+
 	profile, err := s.db.GetProfile(ctx, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

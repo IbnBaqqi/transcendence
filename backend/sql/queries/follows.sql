@@ -38,3 +38,5 @@ FROM follows
 JOIN users ON users.id = follows.follower_id
 WHERE follows.followee_id = sqlc.arg(subject_id)
 ORDER BY users.username;
+-- name: DeleteFollowsForUser :exec
+DELETE FROM follows WHERE follower_id = $1 OR followee_id = $1;

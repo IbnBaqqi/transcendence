@@ -59,6 +59,7 @@ FROM api_keys
 JOIN users ON users.id = api_keys.user_id
 WHERE api_keys.key_hash = $1
     AND api_keys.revoked_at IS NULL
+    AND users.deleted_at IS NULL
 `
 
 type FindLiveKeyByHashRow struct {
