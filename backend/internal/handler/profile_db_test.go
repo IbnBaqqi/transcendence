@@ -57,7 +57,7 @@ func profileRouter(t *testing.T) (http.Handler, uuid.UUID) {
 		t.Fatalf("filling the profile: %v", err)
 	}
 
-	h := New(db, nil, nil, nil, nil, nil, nil, profiles, nil, nil, nil, nil, nil, nil, 0, true, nil, "")
+	h := New(Deps{DB: db, Profile: profiles})
 
 	r := chi.NewRouter()
 	r.Get("/users/{id}", h.GetPublicProfile)
