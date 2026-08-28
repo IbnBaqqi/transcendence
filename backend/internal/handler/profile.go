@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/google/uuid"
+
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
@@ -64,7 +66,15 @@ func (h *Handler) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hidePresenceIfBlocked(r, viewerID(r), &detail.User)
+	// Presence is for signed-in callers only. Anonymous ones get the profile
+	// without the field at all, rather than a blanket "offline" that would be
+	// false for every user on the site - and that a client cannot tell apart
+	// from a real one.
+	viewer := viewerID(r)
+	if viewer != uuid.Nil {
+		h.hidePresenceIfBlocked(r, viewer, &detail.User)
+	}
 
-	respondWithJSON(w, http.StatusOK, dtos.ToPublicProfileResponse(detail.User, detail.Profile, detail.Location))
+	respondWithJSON(w, http.StatusOK,
+		dtos.ToPublicProfileResponse(detail.User, detail.Profile, detail.Location, viewer != uuid.Nil))
 }

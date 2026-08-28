@@ -106,9 +106,17 @@ func TestThePublicProfileHidesPresenceFromBlockedViewersAndStrangers(t *testing.
 	})
 
 	// Without this the whole rule is a speed bump: log out and read it anyway.
-	t.Run("an anonymous caller gets no presence at all", func(t *testing.T) {
-		if body := profileOf(t, alice, nil); online(body) {
+	// The field is omitted rather than sent as offline, so a client can tell
+	// "you are not signed in" apart from "this person is offline" - otherwise
+	// every public profile renders a permanent, false "Offline".
+	t.Run("an anonymous caller gets no presence field at all", func(t *testing.T) {
+		body := profileOf(t, alice, nil)
+
+		if strings.Contains(body, "presence") {
 			t.Errorf("presence was served without a token:\n%s", body)
+		}
+		if !strings.Contains(body, `"username"`) {
+			t.Errorf("the rest of the profile should still be public:\n%s", body)
 		}
 	})
 }
