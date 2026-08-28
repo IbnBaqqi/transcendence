@@ -36,6 +36,12 @@ func (s *BlockService) Block(ctx context.Context, blockerID, blockedID uuid.UUID
 	return err
 }
 
+// ExistsBetween reports whether either user has blocked the other. Presence is
+// hidden on a block in either direction, so callers do not care who blocked whom.
+func (s *BlockService) ExistsBetween(ctx context.Context, a, b uuid.UUID) (bool, error) {
+	return s.db.BlockExistsBetween(ctx, database.BlockExistsBetweenParams{UserA: a, UserB: b})
+}
+
 func (s *BlockService) Unblock(ctx context.Context, blockerID, blockedID uuid.UUID) error {
 	_, err := s.db.UnblockUser(ctx, database.UnblockUserParams{
 		BlockerID: blockerID,

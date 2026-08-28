@@ -33,12 +33,22 @@ SELECT
     users.id,
     users.username,
     users.last_seen_at,
-    users.show_online_status
+    -- Same rule as the inbox: a block in either direction hides presence.
+    COALESCE(users.show_online_status AND NOT EXISTS (
+        SELECT 1 FROM blocks b
+        WHERE (b.blocker_id = $1 AND b.blocked_id = users.id)
+           OR (b.blocker_id = users.id AND b.blocked_id = $1)
+    ), false)::boolean AS show_online_status
 FROM follows
 JOIN users ON users.id = follows.follower_id
-WHERE follows.followee_id = $1
+WHERE follows.followee_id = $2
 ORDER BY users.username
 `
+
+type ListFollowersParams struct {
+	ViewerID  uuid.UUID
+	SubjectID uuid.UUID
+}
 
 type ListFollowersRow struct {
 	ID               uuid.UUID
@@ -47,8 +57,8 @@ type ListFollowersRow struct {
 	ShowOnlineStatus bool
 }
 
-func (q *Queries) ListFollowers(ctx context.Context, followeeID uuid.UUID) ([]ListFollowersRow, error) {
-	rows, err := q.db.QueryContext(ctx, listFollowers, followeeID)
+func (q *Queries) ListFollowers(ctx context.Context, arg ListFollowersParams) ([]ListFollowersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listFollowers, arg.ViewerID, arg.SubjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -80,12 +90,22 @@ SELECT
     users.id,
     users.username,
     users.last_seen_at,
-    users.show_online_status
+    -- Same rule as the inbox: a block in either direction hides presence.
+    COALESCE(users.show_online_status AND NOT EXISTS (
+        SELECT 1 FROM blocks b
+        WHERE (b.blocker_id = $1 AND b.blocked_id = users.id)
+           OR (b.blocker_id = users.id AND b.blocked_id = $1)
+    ), false)::boolean AS show_online_status
 FROM follows
 JOIN users ON users.id = follows.followee_id
-WHERE follows.follower_id = $1
+WHERE follows.follower_id = $2
 ORDER BY users.username
 `
+
+type ListFollowingParams struct {
+	ViewerID  uuid.UUID
+	SubjectID uuid.UUID
+}
 
 type ListFollowingRow struct {
 	ID               uuid.UUID
@@ -94,8 +114,8 @@ type ListFollowingRow struct {
 	ShowOnlineStatus bool
 }
 
-func (q *Queries) ListFollowing(ctx context.Context, followerID uuid.UUID) ([]ListFollowingRow, error) {
-	rows, err := q.db.QueryContext(ctx, listFollowing, followerID)
+func (q *Queries) ListFollowing(ctx context.Context, arg ListFollowingParams) ([]ListFollowingRow, error) {
+	rows, err := q.db.QueryContext(ctx, listFollowing, arg.ViewerID, arg.SubjectID)
 	if err != nil {
 		return nil, err
 	}

@@ -744,6 +744,12 @@ components:
         status off, and also when they have never been seen. An offline user
         who has NOT hidden their status still sends `last_seen_at`, so an
         absent timestamp does not by itself mean "offline".
+
+        Presence also goes dark when **either** of you has blocked the other,
+        and it is never sent to an unauthenticated caller. Do not render an
+        absent `last_seen_at` as "this user hid their status" - it is
+        deliberately indistinguishable from a block, because telling someone
+        they have been blocked is the one thing blocking must not do.
       properties:
         is_online:
           type: boolean
@@ -1082,7 +1088,9 @@ components:
         Somebody else's profile. `email`, `phone_number` and `date_of_birth`
         are not blanked here - the shape has no such fields, so they cannot be
         exposed by an oversight.
-      required: [id, username, firstname, lastname, bio, location, avatar_url, presence]
+      # presence is NOT required: it is omitted entirely for an unauthenticated
+      # caller. See the property's description.
+      required: [id, username, firstname, lastname, bio, location, avatar_url]
       properties:
         id:
           type: string
@@ -1104,7 +1112,21 @@ components:
             avatar is the client's decision, not a URL the API invents.
           examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
         presence:
-          $ref: "#/components/schemas/Presence"
+          allOf:
+            - $ref: "#/components/schemas/Presence"
+          description: |
+            **Absent entirely for an unauthenticated caller.** Presence needs a
+            token; the rest of the profile does not.
+
+            It is omitted rather than sent as `{"is_online": false}` because a
+            blanket false is indistinguishable from a real one — a client would
+            render "Offline" on every profile on the site and be wrong about
+            all of them. An absent field says "you are not signed in", which
+            the caller already knows, and reveals nothing about the subject.
+
+            For a signed-in caller it is always present, and reads offline when
+            the subject hid their status **or** when either of you has blocked
+            the other. That ambiguity is deliberate.
 
   # Whole reusable responses, not just schemas - status code descriptions we
   # would otherwise retype on all 35 operations.
@@ -2587,7 +2609,17 @@ paths:
         Public, like the listing reads - a seller's profile should be readable
         while browsing. `presence` honours that user's `show_online_status`:
         with it off, the response is `{"is_online": false}` with no
-        `last_seen_at`, identical to a user who has never been seen.
+        `last_seen_at`.
+
+        **Presence needs a token.** Called without one, the `presence` field is
+        omitted from the response entirely - the rest of the profile is public,
+        but an anonymous caller cannot read anyone's online status. Otherwise a
+        blocked user could read the blocker's presence by logging out.
+
+        Omitted rather than sent as offline: a blanket false cannot be told
+        apart from a real one, so a client would show "Offline" on every
+        profile. Presence is also hidden - present, but offline - when either
+        party has blocked the other.
       responses:
         "200":
           description: The public view of that profile.

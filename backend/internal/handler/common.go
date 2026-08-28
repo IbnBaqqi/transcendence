@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/IbnBaqqi/transcendence/internal/auth"
+	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/service"
 )
 
@@ -89,4 +90,48 @@ func respondWithServiceError(w http.ResponseWriter, r *http.Request, err error) 
 	}
 
 	respondWithError(w, status, err.Error())
+}
+
+// viewerID is the authenticated user, or uuid.Nil on a public route where
+// nobody is signed in. Used where a response is shaped by who is reading it -
+// unlike getUserID, an anonymous viewer is not an error here.
+func viewerID(r *http.Request) uuid.UUID {
+	user, ok := auth.UserFromContext(r.Context())
+	if !ok {
+		return uuid.Nil
+	}
+	return user.ID
+}
+
+// hidePresenceIfBlocked blanks a user's online status when the viewer must not
+// see it. The list endpoints do this in SQL; these are the paths that fetch one
+// user at a time.
+//
+// Anonymous viewers get no presence at all. GET /users/{id} is public, so
+// leaving them alone would let a blocked user read the blocker's status simply
+// by logging out - which would make the whole rule a speed bump.
+//
+// Fails closed on a lookup error: a wrong "hidden" is cosmetic, a wrong
+// "online" means someone keeps watching a person who blocked them.
+func (h *Handler) hidePresenceIfBlocked(r *http.Request, viewer uuid.UUID, other *database.User) {
+	if viewer == other.ID {
+		return
+	}
+
+	if viewer == uuid.Nil {
+		other.ShowOnlineStatus = false
+		return
+	}
+
+	blocked, err := h.Block.ExistsBetween(r.Context(), viewer, other.ID)
+	if err != nil {
+		slog.Warn("presence block check failed, hiding presence",
+			"error", err, "request_id", middleware.GetReqID(r.Context()))
+		other.ShowOnlineStatus = false
+		return
+	}
+
+	if blocked {
+		other.ShowOnlineStatus = false
+	}
 }

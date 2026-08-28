@@ -37,14 +37,14 @@ type AvatarResponse struct {
 }
 
 type PublicProfileResponse struct {
-	ID        uuid.UUID        `json:"id"`
-	Username  string           `json:"username"`
-	Firstname *string          `json:"firstname"`
-	Lastname  *string          `json:"lastname"`
-	Bio       *string          `json:"bio"`
-	Location  *string          `json:"location"`
-	AvatarURL *string          `json:"avatar_url"`
-	Presence  PresenceResponse `json:"presence"`
+	ID        uuid.UUID         `json:"id"`
+	Username  string            `json:"username"`
+	Firstname *string           `json:"firstname"`
+	Lastname  *string           `json:"lastname"`
+	Bio       *string           `json:"bio"`
+	Location  *string           `json:"location"`
+	AvatarURL *string           `json:"avatar_url"`
+	Presence  *PresenceResponse `json:"presence,omitempty"`
 }
 
 func ToOwnProfileResponse(u database.User, p database.Profile, location sql.NullString) OwnProfileResponse {
@@ -62,7 +62,21 @@ func ToOwnProfileResponse(u database.User, p database.Profile, location sql.Null
 	}
 }
 
-func ToPublicProfileResponse(u database.User, p database.Profile, location sql.NullString) PublicProfileResponse {
+// includePresence is false for an unauthenticated caller, and then the field
+// is omitted rather than sent as offline. Sending `{"is_online": false}` to
+// everyone signed out would be a claim about the subject that is not true; an
+// absent field says only "you are not signed in", which the caller knows.
+//
+// For a signed-in viewer presence stays present-but-offline when a block
+// exists, and that ambiguity is deliberate - it is what stops the response
+// announcing the block.
+func ToPublicProfileResponse(u database.User, p database.Profile, location sql.NullString, includePresence bool) PublicProfileResponse {
+	var presence *PresenceResponse
+	if includePresence {
+		p := toPresence(u.LastSeenAt, u.ShowOnlineStatus)
+		presence = &p
+	}
+
 	return PublicProfileResponse{
 		ID:        u.ID,
 		Username:  u.Username,
@@ -71,7 +85,7 @@ func ToPublicProfileResponse(u database.User, p database.Profile, location sql.N
 		Bio:       nullStringPtr(p.Bio),
 		Location:  nullStringPtr(location),
 		AvatarURL: avatarURL(p.AvatarFilename),
-		Presence:  toPresence(u.LastSeenAt, u.ShowOnlineStatus),
+		Presence:  presence,
 	}
 }
 

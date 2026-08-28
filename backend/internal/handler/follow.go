@@ -55,7 +55,7 @@ func (h *Handler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.Follow.ListFollowing(r.Context(), userID)
+	rows, err := h.Follow.ListFollowing(r.Context(), userID, userID)
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return
@@ -71,7 +71,7 @@ func (h *Handler) GetUserFollowing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.Follow.ListFollowing(r.Context(), userID)
+	rows, err := h.Follow.ListFollowing(r.Context(), viewerID(r), userID)
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return
@@ -87,7 +87,7 @@ func (h *Handler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.Follow.ListFollowers(r.Context(), userID)
+	rows, err := h.Follow.ListFollowers(r.Context(), viewerID(r), userID)
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return

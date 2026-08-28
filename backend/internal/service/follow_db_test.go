@@ -45,7 +45,7 @@ func TestFollowIsIdempotent(t *testing.T) {
 		t.Fatalf("second follow: %v", err)
 	}
 
-	following, err := svc.ListFollowing(ctx, aino)
+	following, err := svc.ListFollowing(ctx, aino, aino)
 	if err != nil {
 		t.Fatalf("listing: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestUnfollowIsIdempotent(t *testing.T) {
 		t.Errorf("unfollowing twice = %v, want nil", err)
 	}
 
-	following, err := svc.ListFollowing(ctx, aino)
+	following, err := svc.ListFollowing(ctx, aino, aino)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func TestFollowIsOneDirectional(t *testing.T) {
 		t.Fatalf("follow: %v", err)
 	}
 
-	beaFollowing, err := svc.ListFollowing(ctx, bea)
+	beaFollowing, err := svc.ListFollowing(ctx, bea, bea)
 	if err != nil {
 		t.Fatalf("listing bea's following: %v", err)
 	}
@@ -149,7 +149,7 @@ func TestFollowIsOneDirectional(t *testing.T) {
 		t.Errorf("bea follows %d, want 0 - the edge went both ways", len(beaFollowing))
 	}
 
-	ainoFollowers, err := svc.ListFollowers(ctx, aino)
+	ainoFollowers, err := svc.ListFollowers(ctx, aino, aino)
 	if err != nil {
 		t.Fatalf("listing aino's followers: %v", err)
 	}
@@ -157,7 +157,7 @@ func TestFollowIsOneDirectional(t *testing.T) {
 		t.Errorf("aino has %d followers, want 0", len(ainoFollowers))
 	}
 
-	beaFollowers, err := svc.ListFollowers(ctx, bea)
+	beaFollowers, err := svc.ListFollowers(ctx, bea, bea)
 	if err != nil {
 		t.Fatalf("listing bea's followers: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestFollowIsOneDirectional(t *testing.T) {
 func TestListFollowersOfAnUnknownUser(t *testing.T) {
 	svc, _, _, _ := newFollowService(t)
 
-	_, err := svc.ListFollowers(context.Background(), uuid.New())
+	_, err := svc.ListFollowers(context.Background(), uuid.New(), uuid.New())
 
 	var notFound *NotFoundError
 	if !errors.As(err, &notFound) {
@@ -180,7 +180,7 @@ func TestListFollowersOfAnUnknownUser(t *testing.T) {
 func TestListFollowingOfAnUnknownUser(t *testing.T) {
 	svc, _, _, _ := newFollowService(t)
 
-	_, err := svc.ListFollowing(context.Background(), uuid.New())
+	_, err := svc.ListFollowing(context.Background(), uuid.New(), uuid.New())
 
 	var notFound *NotFoundError
 	if !errors.As(err, &notFound) {
@@ -195,7 +195,7 @@ func TestListFollowingOfADeletedCaller(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := svc.ListFollowing(context.Background(), aino)
+	_, err := svc.ListFollowing(context.Background(), aino, aino)
 
 	var notFound *NotFoundError
 	if !errors.As(err, &notFound) {

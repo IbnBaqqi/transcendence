@@ -37,7 +37,7 @@ func filledProfile() (database.User, database.Profile, sql.NullString) {
 func TestPublicProfileHasNoPrivateFields(t *testing.T) {
 	user, profile, location := filledProfile()
 
-	body, err := json.Marshal(ToPublicProfileResponse(user, profile, location))
+	body, err := json.Marshal(ToPublicProfileResponse(user, profile, location, true))
 	if err != nil {
 		t.Fatalf("marshalling: %v", err)
 	}
@@ -51,6 +51,32 @@ func TestPublicProfileHasNoPrivateFields(t *testing.T) {
 	for _, expected := range []string{"username", "firstname", "bio", "location", "presence"} {
 		if !strings.Contains(string(body), expected) {
 			t.Errorf("public profile is missing %q:\n%s", expected, body)
+		}
+	}
+}
+
+// Presence is omitted entirely for an anonymous caller, not sent as offline:
+// a client cannot tell a blanket false apart from a real one, so it would be
+// a claim about every user on the site that happens to be untrue.
+func TestAnAnonymousViewerGetsNoPresenceField(t *testing.T) {
+	user, profile, location := filledProfile()
+
+	body, err := json.Marshal(ToPublicProfileResponse(user, profile, location, false))
+	if err != nil {
+		t.Fatalf("marshalling: %v", err)
+	}
+
+	if strings.Contains(string(body), "presence") {
+		t.Errorf("presence was sent to an anonymous viewer:\n%s", body)
+	}
+	if strings.Contains(string(body), "is_online") {
+		t.Errorf("an online claim reached an anonymous viewer:\n%s", body)
+	}
+
+	// The rest of the profile is still public.
+	for _, expected := range []string{"username", "firstname", "bio", "location"} {
+		if !strings.Contains(string(body), expected) {
+			t.Errorf("anonymous profile is missing %q:\n%s", expected, body)
 		}
 	}
 }

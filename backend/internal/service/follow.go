@@ -48,18 +48,26 @@ func (s *FollowService) Unfollow(ctx context.Context, followerID, followeeID uui
 	return err
 }
 
-func (s *FollowService) ListFollowing(ctx context.Context, userID uuid.UUID) ([]database.ListFollowingRow, error) {
-	if err := s.requireUser(ctx, userID); err != nil {
+// viewerID decides whose blocks hide presence in the result - it is the person
+// reading the list, not the person the list is about.
+func (s *FollowService) ListFollowing(ctx context.Context, viewerID, subjectID uuid.UUID) ([]database.ListFollowingRow, error) {
+	if err := s.requireUser(ctx, subjectID); err != nil {
 		return nil, err
 	}
-	return s.db.ListFollowing(ctx, userID)
+	return s.db.ListFollowing(ctx, database.ListFollowingParams{
+		ViewerID:  viewerID,
+		SubjectID: subjectID,
+	})
 }
 
-func (s *FollowService) ListFollowers(ctx context.Context, userID uuid.UUID) ([]database.ListFollowersRow, error) {
-	if err := s.requireUser(ctx, userID); err != nil {
+func (s *FollowService) ListFollowers(ctx context.Context, viewerID, subjectID uuid.UUID) ([]database.ListFollowersRow, error) {
+	if err := s.requireUser(ctx, subjectID); err != nil {
 		return nil, err
 	}
-	return s.db.ListFollowers(ctx, userID)
+	return s.db.ListFollowers(ctx, database.ListFollowersParams{
+		ViewerID:  viewerID,
+		SubjectID: subjectID,
+	})
 }
 
 func (s *FollowService) requireUser(ctx context.Context, userID uuid.UUID) error {
