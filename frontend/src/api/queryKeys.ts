@@ -32,13 +32,6 @@ export const keys = {
     messages: (id: string) => [...keys.conversations.all, "messages", id] as const,
   },
 
-  users: {
-    all: ["users"] as const,
-    // The id is part of the key, so each user is cached separately -
-    // otherwise every profile would overwrite the last one.
-    detail: (id: string) => [...keys.users.all, "detail", id] as const,
-  },
-
   me: {
     all: ["me"] as const,
     profile: () => [...keys.me.all, "profile"] as const,

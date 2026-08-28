@@ -169,21 +169,6 @@ export type ProfileUpdateInput = Partial<{
   location: string | null;
 }>;
 
-// GET /users/{id}. What everyone else sees.
-//
-// No email, phone_number or date_of_birth: the backend doesn't blank them
-// out here, it never sends them at all (see PublicProfileResponse in
-// backend/internal/dtos/profileDto.go). Don't add them to this type.
-export interface PublicProfile {
-  id: string;
-  username: string;
-  firstname: string | null;
-  lastname: string | null;
-  bio: string | null;
-  location: string | null;
-  presence: Presence; // online status, declared above for chat
-}
-
 // TODO: add an ApiError interface? e.g.
 // export interface ApiError {
 //   error: string;
