@@ -113,6 +113,21 @@ api.interceptors.response.use(
   },
 );
 
+// Builds a request path with every interpolated value encoded.
+//
+//   apiPath`/users/${"../me/profile"}`  ->  "/users/..%2Fme%2Fprofile"
+//
+// A raw ${id} would let a value containing "/" or ".." change WHICH endpoint
+// is called: URLs collapse "../" before the request is sent, so "/users/" plus
+// "../me/profile" resolves to a different route entirely. React Router hands
+// back decoded params, so the encoding has to be put back here.
+export function apiPath(parts: TemplateStringsArray, ...values: (string | number)[]): string {
+  return parts.reduce(
+    (out, part, i) => out + part + (i < values.length ? encodeURIComponent(String(values[i])) : ""),
+    "",
+  );
+}
+
 // catch clauses are typed `unknown`, so callers need this to narrow.
 export function isApiError(e: unknown): e is ApiError {
   return typeof e === "object" && e !== null && "status" in e && "message" in e;
