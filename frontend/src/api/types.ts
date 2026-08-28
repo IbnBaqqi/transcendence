@@ -155,6 +155,9 @@ export interface OwnProfile {
   phone_number: string | null;
   date_of_birth: string | null;
   location: string | null;
+  // Always sent, null when no avatar is set - unlike presence below, the key
+  // is never absent. The default avatar is the client's decision.
+  avatar_url: string | null;
 }
 
 // PATCH /me/profile body. Each field has three states: key absent keeps the
@@ -181,7 +184,11 @@ export interface PublicProfile {
   lastname: string | null;
   bio: string | null;
   location: string | null;
-  presence: Presence; // online status, declared above for chat
+  avatar_url: string | null;
+  // Absent for an anonymous caller: the API refuses to claim someone is
+  // offline just because you are not signed in. Absent means "not shown",
+  // which is a different fact from is_online: false.
+  presence?: Presence;
 }
 
 // TODO: add an ApiError interface? e.g.

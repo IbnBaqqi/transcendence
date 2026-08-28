@@ -24,6 +24,7 @@ const PROFILE: OwnProfile = {
   phone_number: "+358 123456",
   date_of_birth: null,
   location: "Espoo",
+  avatar_url: null,
 };
 
 function profileQuery(overrides: Partial<ReturnType<typeof useOwnProfile>> = {}) {
