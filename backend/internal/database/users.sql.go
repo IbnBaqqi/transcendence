@@ -14,12 +14,13 @@ import (
 
 const anonymiseUser = `-- name: AnonymiseUser :one
 UPDATE users
-SET email        = 'deleted-' || id::text || '@deleted.invalid',
-    username     = 'deleted-' || id::text,
-    password     = NULL,
-    last_seen_at = NULL,
-    deleted_at   = now(),
-    updated_at   = now()
+SET email              = 'deleted-' || id::text || '@deleted.invalid',
+    username           = 'deleted-' || id::text,
+    password           = NULL,
+    last_seen_at       = NULL,
+    show_online_status = false,
+    deleted_at         = now(),
+    updated_at         = now()
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at
 `
@@ -253,9 +254,14 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 const touchLastSeen = `-- name: TouchLastSeen :exec
 UPDATE users
 SET last_seen_at = CURRENT_TIMESTAMP
-WHERE id = $1
+WHERE id = $1 AND deleted_at IS NULL
 `
 
+// Guarded here rather than at a route: this middleware runs at the /api/v1
+// level, outside the group RequireActiveUser protects, so a token that
+// outlived its account would otherwise write last_seen_at back into the row
+// the deletion scrubbed - and the counterparty would see "Deleted user"
+// showing as online.
 func (q *Queries) TouchLastSeen(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, touchLastSeen, id)
 	return err

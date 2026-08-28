@@ -3711,6 +3711,14 @@ paths:
 
         Your listings stop appearing anywhere and can no longer be bought.
 
+        **Orders already in flight are not blocked or unwound.** You can delete
+        with a pending order, and the other party is left able to cancel it and
+        nothing else — they cannot message you, and you can no longer confirm or
+        hand over. That is deliberate: an order is a record of what happened, so
+        it is never destroyed, and refusing deletion until every order settles
+        would let one counterparty hold an account open indefinitely. Cancel
+        what is outstanding first if you would rather not leave it to them.
+
         Send your own username in the body to confirm. Requires a browser
         session: an API key cannot delete the account it authenticates.
 

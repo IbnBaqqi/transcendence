@@ -428,3 +428,32 @@ func TestDeletingDoesNotUndoSomeoneElsesBlock(t *testing.T) {
 		t.Error("the seller's block died with the person it hid")
 	}
 }
+
+// Deletion has to hold, not just happen. mw.TouchLastSeen runs at the
+// /api/v1 level - outside the group RequireActiveUser guards - so a token
+// that outlived its account writes last_seen_at straight back into the
+// scrubbed row, and the counterparty sees "Deleted user" showing as online.
+func TestTheScrubStaysScrubbed(t *testing.T) {
+	f := newDeletionFixture(t)
+	ctx := context.Background()
+
+	if err := f.users.DeleteAccount(ctx, f.buyer, "buyer"); err != nil {
+		t.Fatalf("deleting: %v", err)
+	}
+
+	if err := f.db.TouchLastSeen(ctx, f.buyer); err != nil {
+		t.Fatalf("touching: %v", err)
+	}
+
+	user, err := f.db.GetUser(ctx, f.buyer)
+	if err != nil {
+		t.Fatalf("re-reading: %v", err)
+	}
+
+	if user.LastSeenAt.Valid {
+		t.Error("a request re-wrote last_seen_at on a deleted account, so it reads as online")
+	}
+	if user.ShowOnlineStatus {
+		t.Error("show_online_status survived the scrub")
+	}
+}

@@ -39,9 +39,14 @@ DELETE FROM users
 WHERE id = $1;
 
 -- name: TouchLastSeen :exec
+-- Guarded here rather than at a route: this middleware runs at the /api/v1
+-- level, outside the group RequireActiveUser protects, so a token that
+-- outlived its account would otherwise write last_seen_at back into the row
+-- the deletion scrubbed - and the counterparty would see "Deleted user"
+-- showing as online.
 UPDATE users
 SET last_seen_at = CURRENT_TIMESTAMP
-WHERE id = $1;
+WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: UpdateShowOnlineStatus :one
 UPDATE users
@@ -81,12 +86,13 @@ FOR UPDATE;
 -- The deleted_at IS NULL guard is what makes a second delete return no rows
 -- rather than re-scrubbing an already anonymous row.
 UPDATE users
-SET email        = 'deleted-' || id::text || '@deleted.invalid',
-    username     = 'deleted-' || id::text,
-    password     = NULL,
-    last_seen_at = NULL,
-    deleted_at   = now(),
-    updated_at   = now()
+SET email              = 'deleted-' || id::text || '@deleted.invalid',
+    username           = 'deleted-' || id::text,
+    password           = NULL,
+    last_seen_at       = NULL,
+    show_online_status = false,
+    deleted_at         = now(),
+    updated_at         = now()
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
 
