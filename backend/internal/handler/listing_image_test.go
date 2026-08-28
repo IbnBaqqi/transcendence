@@ -72,7 +72,7 @@ func TestUploadRejectsLyingContentType(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
 
 	rec := httptest.NewRecorder()
-	New(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, 5<<20, true, nil, "").UploadListingImage(rec, req)
+	New(Deps{MaxUploadBytes: 5 << 20, CookieSecure: true}).UploadListingImage(rec, req)
 
 	if rec.Code != http.StatusUnsupportedMediaType {
 		t.Errorf("status = %d, want %d (body: %s)", rec.Code, http.StatusUnsupportedMediaType, rec.Body.String())

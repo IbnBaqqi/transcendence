@@ -28,44 +28,54 @@ type Handler struct {
 	frontendURL    string
 }
 
-func New(
-	db *database.DB,
-	authService *auth.Service,
-	listingService *service.ListingService,
-	orderService *service.OrderService,
-	savedService *service.SavedListingService,
-	conversationService *service.ConversationService,
-	userService *service.UserService,
-	profileService *service.ProfileService,
-	followService *service.FollowService,
-	blockService *service.BlockService,
-	apiKeyService *service.APIKeyService,
-	listingImageService *service.ListingImageService,
-	reportService *service.ReportService,
-	moderationService *service.ModerationService,
-	maxUploadBytes int64,
-	cookieSecure bool,
-	oauthRegistry *oauth.Registry,
-	frontendURL string,
-) *Handler {
+// Deps is everything a Handler needs, by name.
+//
+// This was eighteen positional parameters, fourteen of them
+// *service.Something. Transposing two compiled cleanly and produced a handler
+// that called the wrong service - and `go build` could not catch it, because
+// it does not compile tests. Named fields make that a compile error, and let a
+// test set the two dependencies it exercises and omit the rest.
+type Deps struct {
+	DB           *database.DB
+	Auth         *auth.Service
+	Listing      *service.ListingService
+	Order        *service.OrderService
+	Saved        *service.SavedListingService
+	Conversation *service.ConversationService
+	User         *service.UserService
+	Profile      *service.ProfileService
+	Follow       *service.FollowService
+	Block        *service.BlockService
+	APIKey       *service.APIKeyService
+	ListingImage *service.ListingImageService
+	Report       *service.ReportService
+	Moderation   *service.ModerationService
+
+	MaxUploadBytes int64
+	CookieSecure   bool
+	OAuth          *oauth.Registry
+	FrontendURL    string
+}
+
+func New(d Deps) *Handler {
 	return &Handler{
-		db:             db,
-		Auth:           authService,
-		Listing:        listingService,
-		Order:          orderService,
-		Saved:          savedService,
-		Conversation:   conversationService,
-		User:           userService,
-		Profile:        profileService,
-		Follow:         followService,
-		Block:          blockService,
-		APIKey:         apiKeyService,
-		ListingImage:   listingImageService,
-		Report:         reportService,
-		Moderation:     moderationService,
-		maxUploadBytes: maxUploadBytes,
-		cookieSecure:   cookieSecure,
-		oauth:          oauthRegistry,
-		frontendURL:    frontendURL,
+		db:             d.DB,
+		Auth:           d.Auth,
+		Listing:        d.Listing,
+		Order:          d.Order,
+		Saved:          d.Saved,
+		Conversation:   d.Conversation,
+		User:           d.User,
+		Profile:        d.Profile,
+		Follow:         d.Follow,
+		Block:          d.Block,
+		APIKey:         d.APIKey,
+		ListingImage:   d.ListingImage,
+		Report:         d.Report,
+		Moderation:     d.Moderation,
+		maxUploadBytes: d.MaxUploadBytes,
+		cookieSecure:   d.CookieSecure,
+		oauth:          d.OAuth,
+		frontendURL:    d.FrontendURL,
 	}
 }

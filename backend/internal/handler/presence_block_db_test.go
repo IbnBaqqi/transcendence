@@ -60,8 +60,12 @@ func TestThePublicProfileHidesPresenceFromBlockedViewersAndStrangers(t *testing.
 		t.Fatalf("blocking: %v", err)
 	}
 
-	h := New(db, nil, nil, nil, nil, nil, nil, service.NewProfileService(db, files),
-		nil, blocks, nil, nil, nil, nil, 0, true, nil, "")
+	h := New(Deps{
+		DB:           db,
+		Profile:      service.NewProfileService(db, files),
+		Block:        blocks,
+		CookieSecure: true,
+	})
 
 	profileOf := func(t *testing.T, subject uuid.UUID, viewer *uuid.UUID) string {
 		t.Helper()

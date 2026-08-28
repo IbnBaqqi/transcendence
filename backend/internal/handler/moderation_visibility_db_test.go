@@ -78,8 +78,12 @@ func TestARemovedListingIsHiddenFromEveryoneButItsSellerAndAdmins(t *testing.T) 
 		t.Fatalf("removing: %v", err)
 	}
 
-	h := New(db, nil, service.NewListingService(db, files), nil, nil, nil, nil, nil, nil, nil, nil,
-		service.NewListingImageService(db, files, 5), nil, nil, 0, true, nil, "")
+	h := New(Deps{
+		DB:           db,
+		Listing:      service.NewListingService(db, files),
+		ListingImage: service.NewListingImageService(db, files, 5),
+		CookieSecure: true,
+	})
 
 	t.Run("anonymous gets 404", func(t *testing.T) {
 		if code := fetchListingAs(t, h, listing.ID, nil).Code; code != http.StatusNotFound {

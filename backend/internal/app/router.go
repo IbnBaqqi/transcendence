@@ -18,26 +18,27 @@ import (
 func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	r := chi.NewRouter()
 
-	h := handler.New(
-		appService.DB,
-		appService.Auth,
-		appService.Listing,
-		appService.Order,
-		appService.Saved,
-		appService.Conversation,
-		appService.User,
-		appService.Profile,
-		appService.Follow,
-		appService.Block,
-		appService.APIKey,
-		appService.ListingImage,
-		appService.Report,
-		appService.Moderation,
-		appService.Upload.MaxBytes,
-		appService.AuthConfig.CookieSecure,
-		oauth.NewRegistry(appService.AuthConfig),
-		appService.AuthConfig.FrontendURL,
-	)
+	h := handler.New(handler.Deps{
+		DB:           appService.DB,
+		Auth:         appService.Auth,
+		Listing:      appService.Listing,
+		Order:        appService.Order,
+		Saved:        appService.Saved,
+		Conversation: appService.Conversation,
+		User:         appService.User,
+		Profile:      appService.Profile,
+		Follow:       appService.Follow,
+		Block:        appService.Block,
+		APIKey:       appService.APIKey,
+		ListingImage: appService.ListingImage,
+		Report:       appService.Report,
+		Moderation:   appService.Moderation,
+
+		MaxUploadBytes: appService.Upload.MaxBytes,
+		CookieSecure:   appService.AuthConfig.CookieSecure,
+		OAuth:          oauth.NewRegistry(appService.AuthConfig),
+		FrontendURL:    appService.AuthConfig.FrontendURL,
+	})
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.ClientIPFromRemoteAddr)
