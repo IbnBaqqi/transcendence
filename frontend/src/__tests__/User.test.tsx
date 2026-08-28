@@ -90,6 +90,15 @@ describe("User", () => {
     expect(screen.queryByText("Telephone")).not.toBeInTheDocument();
   });
 
+  // The guard is `{profile.presence && ...}`, which works because an object is
+  // truthy even when is_online is false. Rewriting it as `presence?.is_online &&`
+  // would silently drop this row for every offline user, with nothing else failing.
+  test("shows Offline for a signed-in viewer when the user is offline", () => {
+    renderPage({ profile: { data: makePublicProfile({ presence: { is_online: false } }) } });
+
+    expect(screen.getByText("Offline")).toBeInTheDocument();
+  });
+
   // The API omits presence for an anonymous caller, so this is what every
   // logged-out visitor receives. Dereferencing it unguarded throws, and the
   // boundary above the router would replace the whole app.

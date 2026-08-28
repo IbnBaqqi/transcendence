@@ -115,7 +115,7 @@ api.interceptors.response.use(
 
 // Builds a request path with every interpolated value encoded.
 //
-//   apiPath`/users/${id}`   ->   "/users/..%2Fme%2Fprofile"
+//   apiPath`/users/${"../me/profile"}`  ->  "/users/..%2Fme%2Fprofile"
 //
 // A raw ${id} would let a value containing "/" or ".." change WHICH endpoint
 // is called: URLs collapse "../" before the request is sent, so "/users/" plus
