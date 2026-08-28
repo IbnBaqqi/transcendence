@@ -6,11 +6,16 @@ RETURNING *;
 -- name: UpdateReview :one
 -- Scoped to the author, so "not yours" and "does not exist" are the same
 -- no-rows answer.
+-- comment_set carries the difference between "absent" and "explicitly
+-- cleared": absent leaves the column alone, so a rating fix cannot silently
+-- destroy text the author never touched.
 UPDATE reviews
-SET rating     = $2,
-    comment    = $3,
+SET rating     = sqlc.arg(rating),
+    comment    = CASE WHEN sqlc.arg(comment_set)::boolean
+                      THEN sqlc.narg(comment)
+                      ELSE comment END,
     updated_at = now()
-WHERE id = $1 AND reviewer_id = sqlc.arg(reviewer_id)::uuid
+WHERE id = sqlc.arg(id) AND reviewer_id = sqlc.arg(reviewer_id)::uuid
 RETURNING *;
 
 -- name: GetReviewForOrder :one

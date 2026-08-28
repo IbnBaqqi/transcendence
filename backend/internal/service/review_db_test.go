@@ -108,6 +108,29 @@ func (f reviewFixture) completedOrder(t *testing.T) database.Order {
 	return done
 }
 
+func (f reviewFixture) completedOrderFor(t *testing.T, buyer uuid.UUID) database.Order {
+	t.Helper()
+	ctx := context.Background()
+
+	order, err := f.orders.CreateOrder(ctx, buyer, dtos.CreateOrderInput{
+		ListingID: f.listing, Quantity: 1,
+	})
+	if err != nil {
+		t.Fatalf("ordering: %v", err)
+	}
+	if _, err := f.orders.ConfirmOrder(ctx, f.seller, order.ID); err != nil {
+		t.Fatalf("confirming: %v", err)
+	}
+	if _, err := f.orders.HandoverOrder(ctx, f.seller, order.ID); err != nil {
+		t.Fatalf("handing over: %v", err)
+	}
+	done, err := f.orders.ReceiveOrder(ctx, buyer, order.ID)
+	if err != nil {
+		t.Fatalf("receiving: %v", err)
+	}
+	return done
+}
+
 func TestAReviewNeedsACompletedOrder(t *testing.T) {
 	f := newReviewFixture(t)
 	ctx := context.Background()
@@ -122,6 +145,55 @@ func TestAReviewNeedsACompletedOrder(t *testing.T) {
 	var conflict *ConflictError
 	if _, err := f.reviews.Create(ctx, f.buyer, order.ID, 5, ""); !errors.As(err, &conflict) {
 		t.Errorf("reviewing a pending order: err = %#v, want *ConflictError", err)
+	}
+}
+
+// "Completed" means both parties acted. Handed over but not yet received is
+// the state that distinguishes that from a seller declaring it done alone.
+func TestAHandoverAloneDoesNotAllowAReview(t *testing.T) {
+	f := newReviewFixture(t)
+	ctx := context.Background()
+
+	order, err := f.orders.CreateOrder(ctx, f.buyer, dtos.CreateOrderInput{
+		ListingID: f.listing, Quantity: 1,
+	})
+	if err != nil {
+		t.Fatalf("ordering: %v", err)
+	}
+	if _, err := f.orders.ConfirmOrder(ctx, f.seller, order.ID); err != nil {
+		t.Fatalf("confirming: %v", err)
+	}
+	handed, err := f.orders.HandoverOrder(ctx, f.seller, order.ID)
+	if err != nil {
+		t.Fatalf("handing over: %v", err)
+	}
+	if handed.Status == "completed" {
+		t.Fatal("a handover alone completed the order, so this test proves nothing")
+	}
+
+	var conflict *ConflictError
+	if _, err := f.reviews.Create(ctx, f.buyer, order.ID, 5, ""); !errors.As(err, &conflict) {
+		t.Errorf("reviewing a handed-over order: err = %#v, want *ConflictError", err)
+	}
+}
+
+func TestACancelledOrderCannotBeReviewed(t *testing.T) {
+	f := newReviewFixture(t)
+	ctx := context.Background()
+
+	order, err := f.orders.CreateOrder(ctx, f.buyer, dtos.CreateOrderInput{
+		ListingID: f.listing, Quantity: 1,
+	})
+	if err != nil {
+		t.Fatalf("ordering: %v", err)
+	}
+	if _, err := f.orders.CancelOrder(ctx, f.buyer, order.ID); err != nil {
+		t.Fatalf("cancelling: %v", err)
+	}
+
+	var conflict *ConflictError
+	if _, err := f.reviews.Create(ctx, f.buyer, order.ID, 5, ""); !errors.As(err, &conflict) {
+		t.Errorf("reviewing a cancelled order: err = %#v, want *ConflictError", err)
 	}
 }
 
@@ -155,8 +227,8 @@ func TestOneReviewPerOrder(t *testing.T) {
 	}
 }
 
-// The service check is a read; two submissions race past it. The unique index
-// is what actually holds, so it is what this test exercises.
+// There is no service-level "already reviewed?" check - the insert is the only
+// gate, and the unique index is what makes it hold. This test is what says so.
 func TestConcurrentReviewsCannotBothLand(t *testing.T) {
 	f := newReviewFixture(t)
 	ctx := context.Background()
@@ -205,15 +277,15 @@ func TestAnEditClearsTheSameBarAsTheOriginal(t *testing.T) {
 	}
 
 	var invalid *ValidationError
-	if _, err := f.reviews.Update(ctx, f.buyer, review.ID, 7, "good"); !errors.As(err, &invalid) {
+	if _, err := f.reviews.Update(ctx, f.buyer, review.ID, 7, dtos.SetString("good")); !errors.As(err, &invalid) {
 		t.Errorf("editing to an out-of-range rating: err = %#v, want *ValidationError", err)
 	}
 
-	if _, err := f.reviews.Update(ctx, f.other, review.ID, 1, "not theirs"); !isNotFound(err) {
+	if _, err := f.reviews.Update(ctx, f.other, review.ID, 1, dtos.SetString("not theirs")); !isNotFound(err) {
 		t.Errorf("editing someone else's review: err = %#v, want *NotFoundError", err)
 	}
 
-	updated, err := f.reviews.Update(ctx, f.buyer, review.ID, 3, "on reflection")
+	updated, err := f.reviews.Update(ctx, f.buyer, review.ID, 3, dtos.SetString("on reflection"))
 	if err != nil {
 		t.Fatalf("editing: %v", err)
 	}
@@ -243,7 +315,7 @@ func TestTheAverageReflectsEveryReviewAndItsEdits(t *testing.T) {
 		t.Errorf("average = %v over %d, want 5 over 1", rating.Average, rating.Total)
 	}
 
-	if _, err := f.reviews.Update(ctx, f.buyer, review.ID, 1, ""); err != nil {
+	if _, err := f.reviews.Update(ctx, f.buyer, review.ID, 1, dtos.OptionalString{}); err != nil {
 		t.Fatalf("editing: %v", err)
 	}
 
@@ -325,5 +397,137 @@ func TestACommentIsSanitisedAndCapped(t *testing.T) {
 	}
 	if strings.ContainsRune(review.Comment.String, '\u202e') {
 		t.Errorf("a bidi override survived into stored text: %q", review.Comment.String)
+	}
+}
+
+// Every other test has exactly one review, where AVG equals the single value
+// and a broken aggregate is invisible. This one has two, and checks a second
+// seller's reviews do not bleed into the first's.
+func TestTheAverageIsPerSellerAndOverEveryReview(t *testing.T) {
+	f := newReviewFixture(t)
+	ctx := context.Background()
+
+	first := f.completedOrder(t)
+	if _, err := f.reviews.Create(ctx, f.buyer, first.ID, 4, "solid"); err != nil {
+		t.Fatalf("first review: %v", err)
+	}
+
+	second := f.completedOrderFor(t, f.other)
+	if _, err := f.reviews.Create(ctx, f.other, second.ID, 5, "excellent"); err != nil {
+		t.Fatalf("second review: %v", err)
+	}
+
+	rating, err := f.reviews.RatingFor(ctx, f.seller)
+	if err != nil {
+		t.Fatalf("reading: %v", err)
+	}
+	if rating.Total != 2 {
+		t.Fatalf("count = %d, want 2", rating.Total)
+	}
+	if rating.Average != 4.5 {
+		t.Errorf("average = %v, want 4.5", rating.Average)
+	}
+
+	// A seller with no reviews of their own must not inherit anyone else's.
+	other, err := f.reviews.RatingFor(ctx, f.buyer)
+	if err != nil {
+		t.Fatalf("reading the buyer's rating: %v", err)
+	}
+	if other.Total != 0 {
+		t.Errorf("an unrelated user has %d reviews - the seller_id filter is not holding", other.Total)
+	}
+}
+
+// The "Deleted user" string is what the whole outlives-its-author design is
+// for, and until now nothing asserted it past the database row.
+func TestADepartedAuthorRendersAsDeletedUser(t *testing.T) {
+	f := newReviewFixture(t)
+	ctx := context.Background()
+
+	order := f.completedOrder(t)
+	if _, err := f.reviews.Create(ctx, f.buyer, order.ID, 4, "picked fresh"); err != nil {
+		t.Fatalf("creating: %v", err)
+	}
+
+	if err := f.users.DeleteAccount(ctx, f.buyer, "buyer"); err != nil {
+		t.Fatalf("deleting: %v", err)
+	}
+
+	rows, err := f.reviews.ListForSeller(ctx, f.seller)
+	if err != nil {
+		t.Fatalf("listing: %v", err)
+	}
+
+	out := dtos.ToReviewResponses(rows)
+	if len(out) != 1 {
+		t.Fatalf("responses = %d, want 1", len(out))
+	}
+	if out[0].Reviewer != "Deleted user" {
+		t.Errorf("reviewer = %q, want %q", out[0].Reviewer, "Deleted user")
+	}
+	if strings.Contains(out[0].Reviewer, "deleted-") {
+		t.Errorf("the machine placeholder leaked to a client: %q", out[0].Reviewer)
+	}
+	if out[0].Comment != "picked fresh" {
+		t.Errorf("comment = %q, want it intact", out[0].Comment)
+	}
+}
+
+// The reason Comment is an OptionalString: a rating fix must not destroy text
+// the author never touched, and reviews keep no history to recover it from.
+func TestEditingTheRatingAloneKeepsTheComment(t *testing.T) {
+	f := newReviewFixture(t)
+	ctx := context.Background()
+
+	order := f.completedOrder(t)
+	if _, err := f.reviews.Create(ctx, f.buyer, order.ID, 1, "a paragraph they wrote"); err != nil {
+		t.Fatalf("creating: %v", err)
+	}
+
+	review, err := f.reviews.GetForOrder(ctx, order.ID)
+	if err != nil {
+		t.Fatalf("reading back: %v", err)
+	}
+
+	// A body of {"rating": 4} - comment absent, not empty.
+	updated, err := f.reviews.Update(ctx, f.buyer, review.ID, 4, dtos.OptionalString{})
+	if err != nil {
+		t.Fatalf("editing the rating: %v", err)
+	}
+
+	if updated.Rating != 4 {
+		t.Errorf("rating = %d, want 4", updated.Rating)
+	}
+	if updated.Comment.String != "a paragraph they wrote" {
+		t.Errorf("comment = %q, want it untouched - an omitted field destroyed it", updated.Comment.String)
+	}
+
+	// An explicit null still clears it.
+	cleared, err := f.reviews.Update(ctx, f.buyer, review.ID, 4, dtos.ClearString())
+	if err != nil {
+		t.Fatalf("clearing: %v", err)
+	}
+	if cleared.Comment.Valid {
+		t.Errorf("an explicit null did not clear the comment: %q", cleared.Comment.String)
+	}
+}
+
+func TestADepartedSellerHasNoPublicReviewPage(t *testing.T) {
+	f := newReviewFixture(t)
+	ctx := context.Background()
+
+	order := f.completedOrder(t)
+	if _, err := f.reviews.Create(ctx, f.buyer, order.ID, 5, "great mushrooms"); err != nil {
+		t.Fatalf("creating: %v", err)
+	}
+
+	if err := f.users.DeleteAccount(ctx, f.seller, "seller"); err != nil {
+		t.Fatalf("deleting the seller: %v", err)
+	}
+
+	// GET /users/{id} 404s for them, so their review page must too - otherwise
+	// public commentary outlives the profile it describes.
+	if _, err := f.reviews.ListForSeller(ctx, f.seller); !isNotFound(err) {
+		t.Errorf("a departed seller still has a review page: err = %#v, want *NotFoundError", err)
 	}
 }

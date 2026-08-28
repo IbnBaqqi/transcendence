@@ -8,9 +8,13 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
+// Comment is optional on a PATCH, so absent has to mean "leave it alone".
+// A plain string cannot say that - an omitted key and "" look identical, and
+// the update would wipe text the author never asked to remove. Reviews are
+// not deletable and keep no history, so that loss is permanent.
 type ReviewRequest struct {
-	Rating  int32  `json:"rating"`
-	Comment string `json:"comment"`
+	Rating  int32          `json:"rating"`
+	Comment OptionalString `json:"comment"`
 }
 
 type ReviewResponse struct {

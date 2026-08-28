@@ -25,13 +25,13 @@ func (h *Handler) CreateReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	review, err := h.Review.Create(r.Context(), userID, orderID, req.Rating, req.Comment)
+	review, err := h.Review.Create(r.Context(), userID, orderID, req.Rating, commentOf(req.Comment))
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, dtos.ToReviewResponse(review, ""))
+	respondWithJSON(w, http.StatusCreated, dtos.ToReviewResponse(review, viewerName(r)))
 }
 
 func (h *Handler) UpdateReview(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +58,7 @@ func (h *Handler) UpdateReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.ToReviewResponse(review, ""))
+	respondWithJSON(w, http.StatusOK, dtos.ToReviewResponse(review, viewerName(r)))
 }
 
 func (h *Handler) GetSellerReviews(w http.ResponseWriter, r *http.Request) {
@@ -75,6 +75,15 @@ func (h *Handler) GetSellerReviews(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, dtos.ToReviewResponses(rows))
+}
+
+// commentOf flattens the optional to a plain string for create, where absent
+// and empty mean the same thing - there is no prior text to preserve.
+func commentOf(c dtos.OptionalString) string {
+	if c.Set && c.Value != nil {
+		return *c.Value
+	}
+	return ""
 }
 
 func decodeReview(w http.ResponseWriter, r *http.Request) (dtos.ReviewRequest, bool) {

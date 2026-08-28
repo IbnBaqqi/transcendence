@@ -166,27 +166,34 @@ func (q *Queries) SellerRating(ctx context.Context, sellerID uuid.UUID) (SellerR
 
 const updateReview = `-- name: UpdateReview :one
 UPDATE reviews
-SET rating     = $2,
-    comment    = $3,
+SET rating     = $1,
+    comment    = CASE WHEN $2::boolean
+                      THEN $3
+                      ELSE comment END,
     updated_at = now()
-WHERE id = $1 AND reviewer_id = $4::uuid
+WHERE id = $4 AND reviewer_id = $5::uuid
 RETURNING id, order_id, seller_id, reviewer_id, rating, comment, created_at, updated_at
 `
 
 type UpdateReviewParams struct {
-	ID         uuid.UUID
 	Rating     int32
+	CommentSet bool
 	Comment    sql.NullString
+	ID         uuid.UUID
 	ReviewerID uuid.UUID
 }
 
 // Scoped to the author, so "not yours" and "does not exist" are the same
 // no-rows answer.
+// comment_set carries the difference between "absent" and "explicitly
+// cleared": absent leaves the column alone, so a rating fix cannot silently
+// destroy text the author never touched.
 func (q *Queries) UpdateReview(ctx context.Context, arg UpdateReviewParams) (Review, error) {
 	row := q.db.QueryRowContext(ctx, updateReview,
-		arg.ID,
 		arg.Rating,
+		arg.CommentSet,
 		arg.Comment,
+		arg.ID,
 		arg.ReviewerID,
 	)
 	var i Review
