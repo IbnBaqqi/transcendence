@@ -330,3 +330,14 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.ID, arg.Password)
 	return err
 }
+
+const userIsActive = `-- name: UserIsActive :one
+SELECT EXISTS (SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL)
+`
+
+func (q *Queries) UserIsActive(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRowContext(ctx, userIsActive, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}

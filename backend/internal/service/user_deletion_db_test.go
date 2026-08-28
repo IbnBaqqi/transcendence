@@ -24,6 +24,7 @@ type deletionFixture struct {
 	orders   *OrderService
 	chat     *ConversationService
 	profiles *ProfileService
+	saved    *SavedListingService
 	db       *database.DB
 	files    *storage.Local
 	seller   uuid.UUID
@@ -74,6 +75,7 @@ func newDeletionFixture(t *testing.T) deletionFixture {
 		orders:   NewOrderService(db, notify.Disabled{}),
 		chat:     NewConversationService(db, notify.Disabled{}),
 		profiles: NewProfileService(db, files),
+		saved:    NewSavedListingService(db.Queries),
 		db:       db,
 		files:    files,
 		seller:   seller,
@@ -278,11 +280,151 @@ func TestADeletedSellersListingsLeaveEveryReadPath(t *testing.T) {
 		}
 	}
 
-	if _, err := f.listings.GetListing(ctx, f.listing); err == nil {
-		t.Error("a deleted seller's listing can still be fetched by id")
+	// GetListing deliberately still returns it. Every service reads through
+	// that query, and filtering it would 404 a reported listing for the admin
+	// judging the report. Public visibility is enforced at the handler - see
+	// TestADepartedSellersListingIsHiddenFromEveryoneButAdmins.
+	if _, err := f.listings.GetListing(ctx, f.listing); err != nil {
+		t.Errorf("the shared getter should still resolve it for moderation: %v", err)
 	}
 
 	if _, err := f.profiles.Get(ctx, f.seller); err == nil {
 		t.Error("a deleted user's profile is still readable")
+	}
+}
+
+// Everything the scrub touches beyond the users row. Each of these is a
+// separate statement in DeleteAccount's step list, and none of them was
+// asserted before - a refactor dropping one would have gone unnoticed.
+func TestDeletionClearsTheOwnedRows(t *testing.T) {
+	f := newDeletionFixture(t)
+	ctx := context.Background()
+
+	if err := f.db.SaveListing(ctx, database.SaveListingParams{
+		UserID: f.buyer, ListingID: f.listing,
+	}); err != nil {
+		t.Fatalf("saving: %v", err)
+	}
+	if err := f.db.FollowUser(ctx, database.FollowUserParams{
+		FollowerID: f.buyer, FolloweeID: f.seller,
+	}); err != nil {
+		t.Fatalf("following: %v", err)
+	}
+	if err := f.db.LinkIdentity(ctx, database.LinkIdentityParams{
+		Provider: "github", ProviderUserID: "gh-1", UserID: f.buyer,
+	}); err != nil {
+		t.Fatalf("linking: %v", err)
+	}
+
+	if err := f.users.DeleteAccount(ctx, f.buyer, "buyer"); err != nil {
+		t.Fatalf("deleting: %v", err)
+	}
+
+	profile, err := f.db.GetProfile(ctx, f.buyer)
+	if err != nil {
+		t.Fatalf("reading the profile: %v", err)
+	}
+	if profile.Firstname.Valid || profile.Bio.Valid || profile.PhoneNumber.Valid || profile.DateOfBirth.Valid {
+		t.Errorf("profile fields survived: %+v", profile)
+	}
+
+	saved, err := f.db.ListSavedListings(ctx, f.buyer)
+	if err != nil {
+		t.Fatalf("listing saved: %v", err)
+	}
+	if len(saved) != 0 {
+		t.Errorf("saved listings = %d, want 0", len(saved))
+	}
+
+	following, err := f.db.ListFollowing(ctx, database.ListFollowingParams{
+		ViewerID: f.buyer, SubjectID: f.buyer,
+	})
+	if err != nil {
+		t.Fatalf("listing follows: %v", err)
+	}
+	if len(following) != 0 {
+		t.Errorf("follows = %d, want 0", len(following))
+	}
+
+	providers, err := f.db.ListProvidersForUser(ctx, f.buyer)
+	if err != nil {
+		t.Fatalf("listing providers: %v", err)
+	}
+	if len(providers) != 0 {
+		t.Errorf("oauth identities = %d, want 0", len(providers))
+	}
+}
+
+// The spec promises reports and moderation actions survive "with your id
+// detached". ON DELETE SET NULL cannot deliver that, because nothing is ever
+// deleted - it has to be explicit.
+func TestDeletionDetachesTheAuthorIds(t *testing.T) {
+	f := newDeletionFixture(t)
+	ctx := context.Background()
+
+	reports := NewReportService(f.db.Queries)
+	if err := reports.Report(ctx, f.buyer, f.listing, "spam", ""); err != nil {
+		t.Fatalf("reporting: %v", err)
+	}
+
+	if err := f.users.DeleteAccount(ctx, f.buyer, "buyer"); err != nil {
+		t.Fatalf("deleting: %v", err)
+	}
+
+	rows, err := f.db.ListReportsForListing(ctx, f.listing)
+	if err != nil {
+		t.Fatalf("listing reports: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("reports = %d, want 1 - the report itself must survive", len(rows))
+	}
+	if rows[0].ReporterID.Valid {
+		t.Error("the report still names its reporter")
+	}
+}
+
+func TestADepartedSellerCannotBeOrderedFromOrMessaged(t *testing.T) {
+	f := newDeletionFixture(t)
+	ctx := context.Background()
+
+	if err := f.users.DeleteAccount(ctx, f.seller, "seller"); err != nil {
+		t.Fatalf("deleting the seller: %v", err)
+	}
+
+	if _, err := f.orders.CreateOrder(ctx, f.buyer, dtos.CreateOrderInput{
+		ListingID: f.listing, Quantity: 1,
+	}); !isNotFound(err) {
+		t.Errorf("ordering from a departed seller: err = %#v, want *NotFoundError", err)
+	}
+
+	if _, _, err := f.chat.StartConversation(ctx, f.buyer, f.listing, "hello?"); !isNotFound(err) {
+		t.Errorf("messaging a departed seller: err = %#v, want *NotFoundError", err)
+	}
+
+	if err := f.saved.SaveListing(ctx, f.buyer, f.listing); !isNotFound(err) {
+		t.Errorf("saving a departed seller's listing: err = %#v, want *NotFoundError", err)
+	}
+}
+
+// A block belongs to the person who made it, not to the person it hides.
+func TestDeletingDoesNotUndoSomeoneElsesBlock(t *testing.T) {
+	f := newDeletionFixture(t)
+	ctx := context.Background()
+
+	blocks := NewBlockService(f.db.Queries)
+	if err := blocks.Block(ctx, f.seller, f.buyer); err != nil {
+		t.Fatalf("blocking: %v", err)
+	}
+
+	if err := f.users.DeleteAccount(ctx, f.buyer, "buyer"); err != nil {
+		t.Fatalf("deleting the blocked user: %v", err)
+	}
+
+	still, err := blocks.ExistsBetween(ctx, f.seller, f.buyer)
+	if err != nil {
+		t.Fatalf("checking the block: %v", err)
+	}
+	if !still {
+		t.Error("the seller's block died with the person it hid")
 	}
 }

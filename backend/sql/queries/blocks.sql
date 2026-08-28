@@ -25,6 +25,9 @@ SELECT EXISTS (
         OR (blocker_id = sqlc.arg(user_b) AND blocked_id = sqlc.arg(user_a))
 );
 -- name: DeleteBlocksForUser :exec
--- Both directions. A departed user's block left in place would keep
--- suppressing someone else's presence forever, with nobody able to undo it.
-DELETE FROM blocks WHERE blocker_id = $1 OR blocked_id = $1;
+-- Only the blocks this user made. Rows where they are the blocked party belong
+-- to someone else: if A blocked B and B then deletes their account, removing
+-- A's row would bring B's thread back into A's inbox - a person A deliberately
+-- hid, returning as "Deleted user". A departed user cannot act, so being
+-- blocked by someone else costs nothing.
+DELETE FROM blocks WHERE blocker_id = $1;

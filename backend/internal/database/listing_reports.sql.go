@@ -35,3 +35,14 @@ func (q *Queries) CreateReport(ctx context.Context, arg CreateReportParams) erro
 	)
 	return err
 }
+
+const detachReporter = `-- name: DetachReporter :exec
+UPDATE listing_reports SET reporter_id = NULL WHERE reporter_id = $1::uuid
+`
+
+// The FK is ON DELETE SET NULL, but that only fires on a real row delete -
+// which account deletion deliberately never does. Detaching has to be explicit.
+func (q *Queries) DetachReporter(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, detachReporter, userID)
+	return err
+}

@@ -5,8 +5,7 @@ RETURNING *;
 
 -- name: GetListing :one
 SELECT * FROM listings
-WHERE listings.id = $1
-  AND EXISTS (SELECT 1 FROM users u WHERE u.id = listings.seller_id AND u.deleted_at IS NULL);
+WHERE listings.id = $1;
 
 -- name: ListListings :many
 SELECT * FROM listings

@@ -55,6 +55,14 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 		return database.Order{}, &NotFoundError{Message: "Listing not found"}
 	}
 
+	seller, err := qtx.GetUser(ctx, listing.SellerID)
+	if err != nil {
+		return database.Order{}, err
+	}
+	if seller.DeletedAt.Valid {
+		return database.Order{}, &NotFoundError{Message: "Listing not found"}
+	}
+
 	if listing.SellerID == buyerID {
 		return database.Order{}, &ValidationError{Message: "You cannot order your own listing"}
 	}

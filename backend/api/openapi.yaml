@@ -3714,9 +3714,9 @@ paths:
         Send your own username in the body to confirm. Requires a browser
         session: an API key cannot delete the account it authenticates.
 
-        ⚠️ **This is not an instant logout.** Sessions and API keys are revoked
-        immediately, so nothing new can be issued, but an access token already
-        issued stays valid until it expires.
+        Access ends immediately. Sessions and API keys are revoked, and every
+        authenticated route re-checks the account against the database, so an
+        access token issued moments before the deletion stops working too.
       requestBody:
         required: true
         content:

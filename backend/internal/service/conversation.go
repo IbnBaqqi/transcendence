@@ -153,6 +153,14 @@ func (s *ConversationService) StartConversation(
 		return database.Conversation{}, database.Message{}, &NotFoundError{Message: "Listing not found"}
 	}
 
+	seller, err := qtx.GetUser(ctx, listing.SellerID)
+	if err != nil {
+		return database.Conversation{}, database.Message{}, err
+	}
+	if seller.DeletedAt.Valid {
+		return database.Conversation{}, database.Message{}, &NotFoundError{Message: "Listing not found"}
+	}
+
 	if listing.SellerID == buyerID {
 		return database.Conversation{}, database.Message{}, &ValidationError{
 			Message: "You cannot start a chat about your own listing",

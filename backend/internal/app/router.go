@@ -80,6 +80,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 		r.Group(func(r chi.Router) {
 			r.Use(mw.RequiredAuth)
+			r.Use(mw.RequireActiveUser(appService.DB.Queries))
 
 			r.Post("/listings", h.CreateListing)
 			r.Put("/listings/{id}", h.UpdateListing)

@@ -89,3 +89,6 @@ SET email        = 'deleted-' || id::text || '@deleted.invalid',
     updated_at   = now()
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
+
+-- name: UserIsActive :one
+SELECT EXISTS (SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL);

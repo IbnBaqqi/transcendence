@@ -87,6 +87,10 @@ func (s *UserService) DeleteAccount(ctx context.Context, userID uuid.UUID, confi
 		qtx.DeleteBlocksForUser,
 		qtx.DeleteSavedForUser,
 		qtx.DeleteIdentitiesForUser,
+		qtx.InvalidateResetTokensForUser,
+		qtx.DetachReporter,
+		qtx.DetachModerator,
+		qtx.DetachEventActor,
 		qtx.RevokeSessionsForUser,
 		qtx.RevokeKeysForUser,
 	} {

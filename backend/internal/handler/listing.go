@@ -16,6 +16,15 @@ import (
 // The admin case re-reads the role from the database rather than trusting the
 // token's claim, matching mw.RequireRole - otherwise a demoted admin keeps
 // seeing removed listings until their access token expires.
+// sellerIsGone reports whether the listing's seller has deleted their account.
+// Kept out of the shared GetListing query on purpose: every service reads
+// through it, and filtering there would 404 a reported listing for the admin
+// judging the report.
+func (h *Handler) sellerIsGone(r *http.Request, sellerID uuid.UUID) bool {
+	seller, err := h.db.GetUser(r.Context(), sellerID)
+	return err != nil || seller.DeletedAt.Valid
+}
+
 func (h *Handler) maySeeRemovedListing(r *http.Request, sellerID uuid.UUID) bool {
 	viewer, ok := auth.UserFromContext(r.Context())
 	if !ok {
@@ -88,7 +97,8 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if listing.RemovedAt.Valid && !h.maySeeRemovedListing(r, listing.SellerID) {
+	hidden := listing.RemovedAt.Valid || h.sellerIsGone(r, listing.SellerID)
+	if hidden && !h.maySeeRemovedListing(r, listing.SellerID) {
 		respondWithError(w, http.StatusNotFound, "Listing not found")
 		return
 	}
