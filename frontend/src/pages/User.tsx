@@ -56,7 +56,13 @@ export default function User() {
 
       <div className="flex flex-row gap-4">
         <div>
-          <Avatar size="lg" initials={deriveInitials(profile.username)} />
+          {/* null when no avatar is set, and Avatar falls back to initials.
+              ?? undefined because the prop is optional, not nullable. */}
+          <Avatar
+            size="lg"
+            initials={deriveInitials(profile.username)}
+            imageUrl={profile.avatar_url ?? undefined}
+          />
         </div>
         <div className="text-accent my-auto flex flex-col text-base">
           <div className="font-bold">{profile.username}</div>
