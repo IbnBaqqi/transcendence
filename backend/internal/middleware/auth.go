@@ -93,7 +93,7 @@ func Authenticate(authService *auth.JwtService, keys keyStore) func(http.Handler
 func SessionOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, viaKey := apiKeyID(r.Context()); viaKey {
-			writeAuthzError(w, http.StatusForbidden, "Log in to manage API keys")
+			writeAuthzError(w, http.StatusForbidden, "Log in to do this")
 			return
 		}
 		next.ServeHTTP(w, r)

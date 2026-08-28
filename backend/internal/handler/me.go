@@ -68,3 +68,29 @@ func (h *Handler) GetUnreadCount(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusOK, dtos.UnreadCountResponse{UnreadCount: count})
 }
+
+func (h *Handler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserID(r)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	var req dtos.DeleteAccountRequest
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&req); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if err := h.User.DeleteAccount(r.Context(), userID, req.Username); err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	h.setRefreshTokenCookie(w, "", -1)
+	w.WriteHeader(http.StatusNoContent)
+}

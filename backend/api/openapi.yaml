@@ -592,6 +592,19 @@ components:
           type: string
           maxLength: 2000
 
+    DeleteAccountRequest:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
+          description: |
+            Your own username, typed exactly. Re-entering a password is the
+            usual guard, but accounts created through Google or GitHub have
+            none, so it would need a second flow for them. Typing your name
+            works the same either way.
+      additionalProperties: false
+
     ReportListingRequest:
       type: object
       required: [reason]
@@ -3668,5 +3681,66 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /me:
+    delete:
+      tags: [me]
+      summary: Delete your account
+      operationId: deleteAccount
+      description: |
+        Ends your account. **The row is not deleted** — it is anonymised, and
+        the difference is deliberate.
+
+        `orders` references `users` with `ON DELETE RESTRICT` on both the buyer
+        and the seller side, so anyone who has ever traded cannot be deleted at
+        all. And `messages` cascades from `conversations`, which cascades from
+        either participant — so a real delete would destroy the *other* party's
+        copy of a shared thread, including messages they wrote.
+
+        **Erased:** email, username, password, profile (name, bio, phone, date
+        of birth), the avatar file on disk, addresses, follows, blocks, saved
+        listings and any linked Google or GitHub identity. Sessions and API
+        keys are revoked.
+
+        **Kept:** orders on both sides, order events, and conversations — those
+        belong to the counterparty as much as to you. You appear to them as
+        "Deleted user", and they can no longer message you. Reports you filed
+        and moderation actions you took survive with your id detached.
+
+        Your listings stop appearing anywhere and can no longer be bought.
+
+        Send your own username in the body to confirm. Requires a browser
+        session: an API key cannot delete the account it authenticates.
+
+        ⚠️ **This is not an instant logout.** Sessions and API keys are revoked
+        immediately, so nothing new can be issued, but an access token already
+        issued stays valid until it expires.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteAccountRequest"
+      responses:
+        "204":
+          description: Done. The refresh cookie is cleared.
+        "400":
+          description: Bad body, or the username did not match.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: An API key cannot delete an account; log in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/ServerError"
