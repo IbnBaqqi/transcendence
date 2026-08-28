@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "./client";
+import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
 import type { OwnProfile, ProfileUpdateInput, PublicProfile } from "./types";
 
@@ -18,7 +18,13 @@ export function usePublicProfile(id: string | undefined) {
   return useQuery({
     // A key must be a valid string even while the query is disabled.
     queryKey: keys.users.detail(id ?? ""),
-    queryFn: async () => (await api.get<PublicProfile>(`/users/${id}`)).data,
+    queryFn: async () => {
+      // `enabled` below means this only runs once there is an id; naming it
+      // here keeps apiPath's signature strict rather than widening it to
+      // accept undefined, which would request "/users/undefined".
+      const userId = id ?? "";
+      return (await api.get<PublicProfile>(apiPath`/users/${userId}`)).data;
+    },
 
     // Don't request "/users/undefined" before the param is read.
     enabled: Boolean(id),
