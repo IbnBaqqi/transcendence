@@ -295,6 +295,19 @@ func (s *ConversationService) SendMessage(
 		return database.Message{}, err
 	}
 
+	otherID := conv.SellerID
+	if userID == conv.SellerID {
+		otherID = conv.BuyerID
+	}
+
+	other, err := qtx.GetUser(ctx, otherID)
+	if err != nil {
+		return database.Message{}, err
+	}
+	if other.DeletedAt.Valid {
+		return database.Message{}, &ConflictError{Message: "This person has deleted their account"}
+	}
+
 	if err := checkNotBlocked(ctx, qtx, conv.BuyerID, conv.SellerID); err != nil {
 		return database.Message{}, err
 	}
