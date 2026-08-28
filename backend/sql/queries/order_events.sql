@@ -7,3 +7,5 @@ SELECT id, order_id, actor_id, from_status, to_status, note, created_at
 FROM order_events
 WHERE order_id = $1
 ORDER BY created_at, id;
+-- name: DetachEventActor :exec
+UPDATE order_events SET actor_id = NULL WHERE actor_id = sqlc.arg(user_id)::uuid;

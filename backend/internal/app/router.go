@@ -88,6 +88,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 		r.Group(func(r chi.Router) {
 			r.Use(mw.RequiredAuth)
+			r.Use(mw.RequireActiveUser(appService.DB.Queries))
 
 			r.Post("/listings", h.CreateListing)
 			r.Put("/listings/{id}", h.UpdateListing)
@@ -125,6 +126,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 				r.Post("/me/api-keys", h.CreateAPIKey)
 				r.Get("/me/api-keys", h.GetAPIKeys)
 				r.Delete("/me/api-keys/{id}", h.RevokeAPIKey)
+
+				r.Delete("/me", h.DeleteAccount)
 			})
 
 			r.Get("/me/settings", h.GetSettings)

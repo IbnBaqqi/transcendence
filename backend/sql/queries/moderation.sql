@@ -47,3 +47,5 @@ SELECT id, listing_id, moderator_id, action, note, created_at
 FROM moderation_actions
 WHERE listing_id = $1
 ORDER BY created_at DESC;
+-- name: DetachModerator :exec
+UPDATE moderation_actions SET moderator_id = NULL WHERE moderator_id = sqlc.arg(user_id)::uuid;

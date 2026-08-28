@@ -101,7 +101,7 @@ func (q *Queries) DeleteListing(ctx context.Context, id uuid.UUID) error {
 
 const getListing = `-- name: GetListing :one
 SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at FROM listings
-WHERE id = $1
+WHERE listings.id = $1
 `
 
 func (q *Queries) GetListing(ctx context.Context, id uuid.UUID) (Listing, error) {
@@ -182,7 +182,8 @@ func (q *Queries) IncrementListingQuantity(ctx context.Context, arg IncrementLis
 
 const listListings = `-- name: ListListings :many
 SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at FROM listings
-WHERE quantity > 0 AND removed_at IS NULL
+WHERE listings.quantity > 0 AND listings.removed_at IS NULL
+  AND EXISTS (SELECT 1 FROM users u WHERE u.id = listings.seller_id AND u.deleted_at IS NULL)
 ORDER BY created_at DESC
 `
 

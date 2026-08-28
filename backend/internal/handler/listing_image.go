@@ -51,7 +51,8 @@ func (h *Handler) GetListingImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if listing.RemovedAt.Valid && !h.maySeeRemovedListing(r, listing.SellerID) {
+	hidden := listing.RemovedAt.Valid || h.sellerIsGone(r, listing.SellerID)
+	if hidden && !h.maySeeRemovedListing(r, listing.SellerID) {
 		respondWithError(w, http.StatusNotFound, "Listing not found")
 		return
 	}

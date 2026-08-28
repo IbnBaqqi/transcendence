@@ -12,6 +12,15 @@ import (
 	"github.com/google/uuid"
 )
 
+const deleteAddressesForUser = `-- name: DeleteAddressesForUser :exec
+DELETE FROM addresses WHERE user_id = $1
+`
+
+func (q *Queries) DeleteAddressesForUser(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteAddressesForUser, userID)
+	return err
+}
+
 const getAddress = `-- name: GetAddress :one
 SELECT id, user_id, location, created_at, updated_at FROM addresses
 WHERE user_id = $1

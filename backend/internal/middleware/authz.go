@@ -61,3 +61,42 @@ func writeAuthzError(w http.ResponseWriter, status int, msg string) {
 	}
 	_, _ = w.Write(body)
 }
+
+type activeUserStore interface {
+	UserIsActive(ctx context.Context, id uuid.UUID) (bool, error)
+}
+
+// RequireActiveUser rejects a token that outlived its account.
+//
+// Deleting an account revokes the refresh tokens and API keys, but a JWT
+// already issued keeps authenticating until it expires. Fifteen minutes is
+// long enough to mint a fresh API key - which has no expiry at all - or to
+// PATCH personal data straight back into the row the deletion just scrubbed.
+// So the subject is checked against the database, the same way RequireRole
+// checks the role rather than trusting the claim.
+func RequireActiveUser(store activeUserStore) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, ok := auth.UserFromContext(r.Context())
+			if !ok {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			active, err := store.UserIsActive(r.Context(), user.ID)
+			if err != nil {
+				slog.Error("could not check whether the account is active",
+					"user_id", user.ID, "error", err)
+				writeAuthzError(w, http.StatusInternalServerError, "Something went wrong")
+				return
+			}
+
+			if !active {
+				writeAuthzError(w, http.StatusUnauthorized, "Authentication required")
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}

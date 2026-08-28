@@ -47,6 +47,15 @@ func (q *Queries) CreateModerationAction(ctx context.Context, arg CreateModerati
 	return i, err
 }
 
+const detachModerator = `-- name: DetachModerator :exec
+UPDATE moderation_actions SET moderator_id = NULL WHERE moderator_id = $1::uuid
+`
+
+func (q *Queries) DetachModerator(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, detachModerator, userID)
+	return err
+}
+
 const listModerationActions = `-- name: ListModerationActions :many
 SELECT id, listing_id, moderator_id, action, note, created_at
 FROM moderation_actions

@@ -75,6 +75,18 @@ type UnreadCountResponse struct {
 	UnreadCount int64 `json:"unread_count"`
 }
 
+const deletedUserName = "Deleted user"
+
+// A deleted account keeps its row so the other party's thread still resolves,
+// but its username is a machine placeholder chosen to satisfy a unique index,
+// not something to show a person.
+func displayName(username string, deletedAt sql.NullTime) string {
+	if deletedAt.Valid {
+		return deletedUserName
+	}
+	return username
+}
+
 func toPresence(lastSeen sql.NullTime, showOnlineStatus bool) PresenceResponse {
 	if !showOnlineStatus || !lastSeen.Valid {
 		return PresenceResponse{}
@@ -146,7 +158,7 @@ func ToConversationResponse(
 		Role:         roleFor(c.BuyerID, viewerID),
 		OtherUser: ChatUserResponse{
 			ID:       other.ID,
-			Username: other.Username,
+			Username: displayName(other.Username, other.DeletedAt),
 			Presence: toPresence(other.LastSeenAt, other.ShowOnlineStatus),
 		},
 		CreatedAt: c.CreatedAt.Time,
@@ -163,7 +175,7 @@ func ToConversationListItem(row database.ListConversationsForUserRow, viewerID u
 		Role:         roleFor(row.BuyerID, viewerID),
 		OtherUser: ChatUserResponse{
 			ID:       row.OtherUserID,
-			Username: row.OtherUsername,
+			Username: displayName(row.OtherUsername, row.OtherDeletedAt),
 			Presence: toPresence(row.OtherLastSeenAt, row.OtherShowOnlineStatus),
 		},
 		UnreadCount: row.UnreadCount,

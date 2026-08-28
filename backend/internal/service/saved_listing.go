@@ -31,6 +31,14 @@ func (s *SavedListingService) SaveListing(ctx context.Context, userID uuid.UUID,
 		return &NotFoundError{Message: "Listing not found"}
 	}
 
+	seller, err := s.db.GetUser(ctx, listing.SellerID)
+	if err != nil {
+		return err
+	}
+	if seller.DeletedAt.Valid {
+		return &NotFoundError{Message: "Listing not found"}
+	}
+
 	return s.db.SaveListing(ctx, database.SaveListingParams{
 		UserID:    userID,
 		ListingID: listingID,

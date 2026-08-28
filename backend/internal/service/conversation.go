@@ -153,6 +153,14 @@ func (s *ConversationService) StartConversation(
 		return database.Conversation{}, database.Message{}, &NotFoundError{Message: "Listing not found"}
 	}
 
+	seller, err := qtx.GetUser(ctx, listing.SellerID)
+	if err != nil {
+		return database.Conversation{}, database.Message{}, err
+	}
+	if seller.DeletedAt.Valid {
+		return database.Conversation{}, database.Message{}, &NotFoundError{Message: "Listing not found"}
+	}
+
 	if listing.SellerID == buyerID {
 		return database.Conversation{}, database.Message{}, &ValidationError{
 			Message: "You cannot start a chat about your own listing",
@@ -293,6 +301,19 @@ func (s *ConversationService) SendMessage(
 
 	if err := checkCanSend(conv, userID); err != nil {
 		return database.Message{}, err
+	}
+
+	otherID := conv.SellerID
+	if userID == conv.SellerID {
+		otherID = conv.BuyerID
+	}
+
+	other, err := qtx.GetUser(ctx, otherID)
+	if err != nil {
+		return database.Message{}, err
+	}
+	if other.DeletedAt.Valid {
+		return database.Message{}, &ConflictError{Message: "This person has deleted their account"}
 	}
 
 	if err := checkNotBlocked(ctx, qtx, conv.BuyerID, conv.SellerID); err != nil {
