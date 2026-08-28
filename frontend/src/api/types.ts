@@ -181,7 +181,10 @@ export interface PublicProfile {
   lastname: string | null;
   bio: string | null;
   location: string | null;
-  presence: Presence; // online status, declared above for chat
+  // Absent for an anonymous caller: the API refuses to claim someone is
+  // offline just because you are not signed in. Absent means "not shown",
+  // which is a different fact from is_online: false.
+  presence?: Presence;
 }
 
 // TODO: add an ApiError interface? e.g.

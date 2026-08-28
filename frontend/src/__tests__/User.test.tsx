@@ -90,6 +90,20 @@ describe("User", () => {
     expect(screen.queryByText("Telephone")).not.toBeInTheDocument();
   });
 
+  // The API omits presence for an anonymous caller, so this is what every
+  // logged-out visitor receives. Dereferencing it unguarded throws, and the
+  // boundary above the router would replace the whole app.
+  test("renders an anonymous response, which carries no presence", () => {
+    const anonymous = makePublicProfile();
+    delete anonymous.presence;
+
+    renderPage({ profile: { data: anonymous } });
+
+    expect(screen.getByText(anonymous.username)).toBeInTheDocument();
+    expect(screen.queryByText("Online")).not.toBeInTheDocument();
+    expect(screen.queryByText("Offline")).not.toBeInTheDocument();
+  });
+
   test("renders the 404 page when the user doesn't exist", () => {
     renderPage({
       profile: { data: undefined, error: NOT_FOUND as unknown as Error },

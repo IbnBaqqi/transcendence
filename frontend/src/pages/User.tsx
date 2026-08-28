@@ -60,16 +60,20 @@ export default function User() {
         </div>
         <div className="text-accent my-auto flex flex-col text-base">
           <div className="font-bold">{profile.username}</div>
-          <div className="text-muted flex items-center gap-2 text-sm">
-            {/* A dot plus the word, so it doesn't rely on colour alone. */}
-            <span
-              aria-hidden="true"
-              className={`h-2 w-2 rounded-full ${
-                profile.presence.is_online ? "bg-accent" : "bg-surface-soft"
-              }`}
-            />
-            {profile.presence.is_online ? "Online" : "Offline"}
-          </div>
+          {/* No presence field means we are not signed in, not that they are
+              offline - so show nothing rather than assert a falsehood. */}
+          {profile.presence && (
+            <div className="text-muted flex items-center gap-2 text-sm">
+              {/* A dot plus the word, so it doesn't rely on colour alone. */}
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 rounded-full ${
+                  profile.presence.is_online ? "bg-accent" : "bg-surface-soft"
+                }`}
+              />
+              {profile.presence.is_online ? "Online" : "Offline"}
+            </div>
+          )}
         </div>
       </div>
 
