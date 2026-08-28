@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "./client";
+import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
 import type { Order } from "./types";
 
@@ -33,7 +33,7 @@ export function useOrders() {
 export function useOrder(id: string) {
   return useQuery({
     queryKey: keys.orders.detail(id),
-    queryFn: async () => toOrder((await api.get<OrderWire>(`/orders/${id}`)).data),
+    queryFn: async () => toOrder((await api.get<OrderWire>(apiPath`/orders/${id}`)).data),
     enabled: id !== "",
   });
 }
@@ -64,7 +64,7 @@ function useOrderTransition(action: Transition) {
 
   return useMutation({
     mutationFn: async (id: string) =>
-      toOrder((await api.post<OrderWire>(`/orders/${id}/${action}`)).data),
+      toOrder((await api.post<OrderWire>(apiPath`/orders/${id}/${action}`)).data),
 
     onSuccess: (order) => {
       // The response IS the new state, so write it in rather than refetching.

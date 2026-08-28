@@ -29,6 +29,7 @@ export function makePublicProfile(overrides: Partial<PublicProfile> = {}): Publi
     lastname: "Rogers",
     bio: "Forages the Nuuksio area.",
     location: "Helsinki",
+    avatar_url: null,
     presence: { is_online: true },
     ...overrides,
   };

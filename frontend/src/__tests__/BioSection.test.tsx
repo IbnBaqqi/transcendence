@@ -25,6 +25,7 @@ function makeProfile(bio: string | null): OwnProfile {
     phone_number: null,
     date_of_birth: null,
     location: null,
+    avatar_url: null,
   };
 }
 

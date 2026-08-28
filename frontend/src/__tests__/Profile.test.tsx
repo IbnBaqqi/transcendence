@@ -25,6 +25,7 @@ const PROFILE: OwnProfile = {
   phone_number: null,
   date_of_birth: null,
   location: "Espoo",
+  avatar_url: null,
 };
 
 // Profile itself only needs the modal system (delete-account, login prompt)

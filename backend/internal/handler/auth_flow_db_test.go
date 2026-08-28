@@ -22,8 +22,12 @@ func authRouter(t *testing.T) http.Handler {
 
 	db := testdb.New(t)
 	jwt := auth.NewJwtService("test-secret", time.Hour)
-	h := New(db, auth.NewService(db, jwt, notify.Disabled{}, "http://frontend.test"), nil, nil, nil, nil,
-		service.NewUserService(db, nil), nil, nil, nil, nil, nil, nil, nil, 0, true, nil, "")
+	h := New(Deps{
+		DB:           db,
+		Auth:         auth.NewService(db, jwt, notify.Disabled{}, "http://frontend.test"),
+		User:         service.NewUserService(db, nil),
+		CookieSecure: true,
+	})
 
 	r := chi.NewRouter()
 	r.Use(mw.Authenticate(jwt, nil))
