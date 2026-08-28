@@ -2,6 +2,10 @@ import { Component, type ReactNode } from "react";
 
 interface Props {
   children: ReactNode; // whatever the boundary wraps
+  // What to tell the user. The default suits the boundary above the router in
+  // main.tsx: when that one fires the header is gone, so refreshing really is
+  // the only way out. A boundary inside the shell passes something better.
+  message?: string;
 }
 interface State {
   hasError: boolean;
@@ -25,7 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="mx-auto max-w-2xl p-9 text-center">
           <h1 className="text-foreground text-2xl font-bold">Something went wrong</h1>
-          <p className="text-muted mt-2"> Please refresh the page.</p>
+          <p className="text-muted mt-2">{this.props.message ?? "Please refresh the page."}</p>
         </div>
       );
     }
