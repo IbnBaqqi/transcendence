@@ -82,7 +82,6 @@ func TestARemovedListingIsHiddenFromEveryoneButItsSellerAndAdmins(t *testing.T) 
 		DB:           db,
 		Listing:      service.NewListingService(db, files),
 		ListingImage: service.NewListingImageService(db, files, 5),
-		CookieSecure: true,
 	})
 
 	t.Run("anonymous gets 404", func(t *testing.T) {

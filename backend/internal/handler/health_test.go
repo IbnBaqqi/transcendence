@@ -7,7 +7,7 @@ import (
 )
 
 func TestHealthCheck(t *testing.T) {
-	handler := New(Deps{CookieSecure: true})
+	handler := New(Deps{})
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()

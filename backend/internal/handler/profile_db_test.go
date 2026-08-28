@@ -57,7 +57,7 @@ func profileRouter(t *testing.T) (http.Handler, uuid.UUID) {
 		t.Fatalf("filling the profile: %v", err)
 	}
 
-	h := New(Deps{DB: db, Profile: profiles, CookieSecure: true})
+	h := New(Deps{DB: db, Profile: profiles})
 
 	r := chi.NewRouter()
 	r.Get("/users/{id}", h.GetPublicProfile)

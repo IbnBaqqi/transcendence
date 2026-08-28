@@ -61,10 +61,9 @@ func TestThePublicProfileHidesPresenceFromBlockedViewersAndStrangers(t *testing.
 	}
 
 	h := New(Deps{
-		DB:           db,
-		Profile:      service.NewProfileService(db, files),
-		Block:        blocks,
-		CookieSecure: true,
+		DB:      db,
+		Profile: service.NewProfileService(db, files),
+		Block:   blocks,
 	})
 
 	profileOf := func(t *testing.T, subject uuid.UUID, viewer *uuid.UUID) string {

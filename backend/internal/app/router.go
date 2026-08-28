@@ -15,10 +15,11 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func NewRouter(log *slog.Logger, appService *api) http.Handler {
-	r := chi.NewRouter()
-
-	h := handler.New(handler.Deps{
+// newHandler is separate from NewRouter so a test can build it and check that
+// every dependency actually arrived - see TestEveryHandlerDependencyIsWired.
+// The Deps struct made a forgotten field compile, so the check moved here.
+func newHandler(appService *api) *handler.Handler {
+	return handler.New(handler.Deps{
 		DB:           appService.DB,
 		Auth:         appService.Auth,
 		Listing:      appService.Listing,
@@ -39,6 +40,12 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		OAuth:          oauth.NewRegistry(appService.AuthConfig),
 		FrontendURL:    appService.AuthConfig.FrontendURL,
 	})
+}
+
+func NewRouter(log *slog.Logger, appService *api) http.Handler {
+	r := chi.NewRouter()
+
+	h := newHandler(appService)
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.ClientIPFromRemoteAddr)
