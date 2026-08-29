@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"math"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -12,6 +14,7 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
 const maxActionNote = 500
@@ -209,6 +212,71 @@ func (s *AdminUserService) record(ctx context.Context, qtx *database.Queries, ad
 		Note:        sql.NullString{String: note, Valid: note != ""},
 	})
 	return err
+}
+
+var adminUserStatuses = map[string]bool{"active": true, "suspended": true, "deleted": true}
+
+func (s *AdminUserService) List(ctx context.Context, q dtos.AdminUserQuery) (dtos.PaginatedAdminUsers, error) {
+	if q.Role != "" && q.Role != auth.RoleUser && q.Role != auth.RoleAdmin {
+		return dtos.PaginatedAdminUsers{}, &ValidationError{Message: "Role must be USER or ADMIN"}
+	}
+	if q.Status != "" && !adminUserStatuses[q.Status] {
+		return dtos.PaginatedAdminUsers{}, &ValidationError{
+			Message: "Status must be active, suspended or deleted",
+		}
+	}
+
+	page := defaultPage
+	if q.Page != "" {
+		p, err := strconv.Atoi(q.Page)
+		if err != nil || p < 1 || p > math.MaxInt32 {
+			return dtos.PaginatedAdminUsers{}, &ValidationError{Message: "Page must be a positive integer"}
+		}
+		page = p
+	}
+
+	limit := defaultLimit
+	if q.Limit != "" {
+		l, err := strconv.Atoi(q.Limit)
+		if err != nil || l < 1 {
+			return dtos.PaginatedAdminUsers{}, &ValidationError{Message: "Limit must be a positive integer"}
+		}
+		limit = l
+	}
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+
+	offset := (page - 1) * limit
+	if offset < 0 || offset > math.MaxInt32 {
+		return dtos.PaginatedAdminUsers{}, &ValidationError{Message: "Page is too large"}
+	}
+
+	role := sql.NullString{String: q.Role, Valid: q.Role != ""}
+	status := sql.NullString{String: q.Status, Valid: q.Status != ""}
+
+	total, err := s.db.CountUsersForAdmin(ctx, database.CountUsersForAdminParams{Role: role, Status: status})
+	if err != nil {
+		return dtos.PaginatedAdminUsers{}, err
+	}
+
+	rows, err := s.db.ListUsersForAdmin(ctx, database.ListUsersForAdminParams{
+		Role:       role,
+		Status:     status,
+		PageLimit:  int32(limit),
+		PageOffset: int32(offset),
+	})
+	if err != nil {
+		return dtos.PaginatedAdminUsers{}, err
+	}
+
+	return dtos.PaginatedAdminUsers{
+		Items:      dtos.ToAdminUserResponses(rows),
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: int((total + int64(limit) - 1) / int64(limit)),
+	}, nil
 }
 
 func (s *AdminUserService) History(ctx context.Context, subjectID uuid.UUID) ([]database.UserAction, error) {
