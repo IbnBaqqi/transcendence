@@ -232,3 +232,67 @@ func TestAdminDeletionNeedsTheUsernameTyped(t *testing.T) {
 		t.Error("a refused deletion still deleted the account")
 	}
 }
+
+func TestASuspendedSellerLeavesTheReadPaths(t *testing.T) {
+	f := newAdminFixture(t)
+	ctx := context.Background()
+
+	listing, err := f.db.CreateListing(ctx, database.CreateListingParams{
+		ID:       database.NewID(),
+		SellerID: f.member, Title: "Chanterelles", Category: "mushrooms",
+		Price: "18.10", Quantity: 10, Unit: "kg",
+	})
+	if err != nil {
+		t.Fatalf("creating a listing: %v", err)
+	}
+
+	listings := NewListingService(f.db, nil)
+	profiles := NewProfileService(f.db, nil)
+
+	before, err := listings.ListListings(ctx)
+	if err != nil {
+		t.Fatalf("browsing: %v", err)
+	}
+	if len(before) == 0 {
+		t.Fatal("the listing is not in browse to begin with, so this proves nothing")
+	}
+
+	if _, err := f.admins.Suspend(ctx, f.admin, f.member, "spamming"); err != nil {
+		t.Fatalf("suspending: %v", err)
+	}
+
+	after, err := listings.ListListings(ctx)
+	if err != nil {
+		t.Fatalf("browsing: %v", err)
+	}
+	for _, l := range after {
+		if l.ID == listing.ID {
+			t.Error("a suspended seller's listing is still in the browse list")
+		}
+	}
+
+	if _, err := profiles.Get(ctx, f.member); !isNotFound(err) {
+		t.Errorf("a suspended user's profile: err = %#v, want *NotFoundError", err)
+	}
+
+	if _, err := f.admins.Reinstate(ctx, f.admin, f.member, ""); err != nil {
+		t.Fatalf("reinstating: %v", err)
+	}
+
+	back, err := listings.ListListings(ctx)
+	if err != nil {
+		t.Fatalf("browsing: %v", err)
+	}
+	var found bool
+	for _, l := range back {
+		if l.ID == listing.ID {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("reinstating did not bring the listing back")
+	}
+	if _, err := profiles.Get(ctx, f.member); err != nil {
+		t.Errorf("reinstating did not bring the profile back: %v", err)
+	}
+}

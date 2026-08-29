@@ -11,7 +11,7 @@ WHERE user_id = $1 AND listing_id = $2;
 SELECT l.* FROM saved_listings s
 JOIN listings l ON l.id = s.listing_id
 WHERE s.user_id = $1 AND l.removed_at IS NULL
-  AND EXISTS (SELECT 1 FROM users u WHERE u.id = l.seller_id AND u.deleted_at IS NULL)
+  AND user_is_visible(l.seller_id)
 ORDER BY s.created_at DESC;
 -- name: DeleteSavedForUser :exec
 DELETE FROM saved_listings WHERE user_id = $1;

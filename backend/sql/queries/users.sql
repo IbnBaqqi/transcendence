@@ -137,3 +137,6 @@ WHERE (sqlc.narg(role)::text IS NULL OR role = sqlc.narg(role)::text)
       OR (sqlc.narg(status)::text = 'suspended' AND suspended_at IS NOT NULL AND deleted_at IS NULL)
       OR (sqlc.narg(status)::text = 'deleted'   AND deleted_at IS NOT NULL)
   );
+
+-- name: UserIsVisible :one
+SELECT COALESCE(user_is_visible(sqlc.arg(user_id)), false)::boolean;

@@ -59,8 +59,6 @@ SELECT COUNT(*) FROM users
 WHERE role = 'ADMIN' AND deleted_at IS NULL AND suspended_at IS NULL
 `
 
-// Suspended admins do not count: they cannot log in, so they cannot reinstate
-// anyone, and counting them would allow suspending down to zero usable admins.
 func (q *Queries) CountAdmins(ctx context.Context) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countAdmins)
 	var count int64
@@ -214,10 +212,6 @@ WHERE lower(email) = lower($1)
 LIMIT 1
 `
 
-// deleted_at excluded: this is the login and password-reset lookup, and a
-// deleted account must not be findable by the address it used to have. The
-// address is scrubbed anyway, so this is belt and braces - but it is the
-// braces that matter if the scrub ever changes.
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
 	var i User
@@ -351,9 +345,6 @@ type ListUsersForAdminRow struct {
 	DeletedAt        sql.NullTime
 }
 
-// sqlc.narg means "no filter" when null, which keeps this one query rather
-// than four. The id tiebreaker matters under LIMIT/OFFSET: an unstable sort
-// can show one row on two pages and skip another entirely.
 func (q *Queries) ListUsersForAdmin(ctx context.Context, arg ListUsersForAdminParams) ([]ListUsersForAdminRow, error) {
 	rows, err := q.db.QueryContext(ctx, listUsersForAdmin,
 		arg.Role,
@@ -401,8 +392,6 @@ WHERE id = $1 AND suspended_at IS NOT NULL AND deleted_at IS NULL
 RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason
 `
 
-// Lossless, unlike deletion: nothing was scrubbed, so clearing the two columns
-// restores the account whole.
 func (q *Queries) ReinstateUser(ctx context.Context, id uuid.UUID) (User, error) {
 	row := q.db.QueryRowContext(ctx, reinstateUser, id)
 	var i User
@@ -437,9 +426,6 @@ type SuspendUserParams struct {
 	Reason sql.NullString
 }
 
-// The precondition lives in the WHERE: suspending an already-suspended account
-// returns no rows rather than refreshing the reason and logging a state change
-// that did not happen.
 func (q *Queries) SuspendUser(ctx context.Context, arg SuspendUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, suspendUser, arg.ID, arg.Reason)
 	var i User
@@ -466,11 +452,6 @@ SET last_seen_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
 `
 
-// Guarded here rather than at a route: this middleware runs at the /api/v1
-// level, outside the group RequireActiveUser protects, so a token that
-// outlived its account would otherwise write last_seen_at back into the row
-// the deletion scrubbed - and the counterparty would see "Deleted user"
-// showing as online.
 func (q *Queries) TouchLastSeen(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, touchLastSeen, id)
 	return err
@@ -523,9 +504,6 @@ type UpdateUserParams struct {
 	Email    string
 }
 
-// No callers today. Whoever wires "edit profile" must normalise first the way
-// normalizeSignupInput does, or padded and case-variant names get back in
-// through this door.
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 	_, err := q.db.ExecContext(ctx, updateUser, arg.ID, arg.Username, arg.Email)
 	return err
@@ -555,12 +533,22 @@ SELECT EXISTS (
 )
 `
 
-// One predicate for both inactive states. Suspension inherits every read-path
-// filter and the RequireActiveUser middleware #136 already built; a second
-// boolean checked separately would drift the first time someone adds a third.
 func (q *Queries) UserIsActive(ctx context.Context, id uuid.UUID) (bool, error) {
 	row := q.db.QueryRowContext(ctx, userIsActive, id)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const userIsVisible = `-- name: UserIsVisible :one
+SELECT COALESCE(user_is_visible($1), false)::boolean
+`
+
+// The same function the listing predicates use, for the one visibility check
+// that lives in Go rather than in a WHERE clause.
+func (q *Queries) UserIsVisible(ctx context.Context, userID uuid.UUID) (bool, error) {
+	row := q.db.QueryRowContext(ctx, userIsVisible, userID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
 }

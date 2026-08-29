@@ -157,7 +157,7 @@ func (s *ConversationService) StartConversation(
 	if err != nil {
 		return database.Conversation{}, database.Message{}, err
 	}
-	if seller.DeletedAt.Valid {
+	if !isActive(seller) {
 		return database.Conversation{}, database.Message{}, &NotFoundError{Message: "Listing not found"}
 	}
 
@@ -312,7 +312,7 @@ func (s *ConversationService) SendMessage(
 	if err != nil {
 		return database.Message{}, err
 	}
-	if other.DeletedAt.Valid {
+	if !isActive(other) {
 		return database.Message{}, &ConflictError{Message: "This person has deleted their account"}
 	}
 

@@ -13,7 +13,7 @@ FROM api_keys
 JOIN users ON users.id = api_keys.user_id
 WHERE api_keys.key_hash = $1
     AND api_keys.revoked_at IS NULL
-    AND users.deleted_at IS NULL;
+    AND user_is_visible(users.id);
 
 -- name: ListKeysForUser :many
 SELECT id, user_id, name, key_prefix, last_used_at, revoked_at, created_at

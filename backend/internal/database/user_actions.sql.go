@@ -50,8 +50,6 @@ const detachUserActionModerator = `-- name: DetachUserActionModerator :exec
 UPDATE user_actions SET moderator_id = NULL WHERE moderator_id = $1::uuid
 `
 
-// ON DELETE SET NULL never fires because account deletion anonymises rather
-// than deleting, so detaching has to be explicit.
 func (q *Queries) DetachUserActionModerator(ctx context.Context, userID uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, detachUserActionModerator, userID)
 	return err
