@@ -3,7 +3,6 @@ package dtos
 import (
 	"database/sql"
 	"encoding/json"
-	"strings"
 	"testing"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
@@ -55,9 +54,5 @@ func TestEveryCategoryPublishesAChildrenArray(t *testing.T) {
 		`[{"slug":"chanterelles","name":"Chanterelles","children":[]}]}]`
 	if got != want {
 		t.Errorf("json = %s\nwant %s", got, want)
-	}
-
-	if strings.Contains(got, "null") {
-		t.Error("a nil slice marshalled to null; a client would have to guard before iterating")
 	}
 }

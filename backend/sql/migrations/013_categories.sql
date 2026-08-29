@@ -1,7 +1,7 @@
 -- +goose Up
 
 CREATE TABLE categories (
-    slug        text PRIMARY KEY CHECK (slug = lower(slug) AND slug <> ''),
+    slug        text PRIMARY KEY CHECK (slug = lower(slug) AND slug <> '' AND length(slug) <= 50),
     name        text NOT NULL,
     parent_slug text,
 

@@ -1684,8 +1684,9 @@ paths:
         Every category, parents with their children nested. Public, because a
         buyer needs the list before they have an account.
 
-        Ordered so a client can render it by walking the array once: each
-        parent is followed by its own children, alphabetically.
+        Top-level categories are ordered by slug, and each one's children are
+        nested inside it, also ordered by slug. Note that is the slug, not the
+        `name` a client displays.
 
         This is the only source of valid category slugs - creating a listing
         with anything not in this list is a 400.
@@ -1775,7 +1776,8 @@ paths:
 
         `keyword` and `location` match case-insensitively on a substring, with
         `%` or `_` in the input treated literally rather than as SQL
-        wildcards. `category` is an exact, case-SENSITIVE match.
+        wildcards. `category` takes a slug and is exact, except that a parent
+        slug also matches its children - see the parameter below.
       parameters:
         # in: query = ?keyword=... . Optional unless "required: true".
         - name: keyword

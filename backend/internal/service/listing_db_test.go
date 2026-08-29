@@ -77,4 +77,7 @@ func TestUpdatingToAnUnknownCategoryIsRejectedToo(t *testing.T) {
 	if !errors.As(err, &invalid) {
 		t.Fatalf("updating to an unknown category: err = %#v, want *ValidationError", err)
 	}
+	if invalid.Message != "Category is not recognised" {
+		t.Errorf("message = %q", invalid.Message)
+	}
 }
