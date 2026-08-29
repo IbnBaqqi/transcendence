@@ -113,6 +113,19 @@ SET suspended_at      = NULL,
 WHERE id = $1 AND suspended_at IS NOT NULL AND deleted_at IS NULL
 RETURNING *;
 
+-- name: LockAdminRoster :exec
+-- Serialises the last-admin guard. GetUserForUpdate locks the subject's row
+-- only, so two transactions aiming at two *different* admins never contend:
+-- both count the roster before either commits, and both are allowed through.
+-- Two admins suspending each other at once is enough to leave nobody able to
+-- moderate, and nobody able to reinstate. One advisory lock, held until commit,
+-- makes the count-then-act atomic across them.
+--
+-- Taken after the role check, so only admin-targeting actions serialise. The
+-- subject's row lock is always taken first and each transaction locks only its
+-- own subject, so there is no cycle to deadlock on.
+SELECT pg_advisory_xact_lock(4207371);
+
 -- name: CountAdmins :one
 SELECT COUNT(*) FROM users
 WHERE role = 'ADMIN' AND deleted_at IS NULL AND suspended_at IS NULL;

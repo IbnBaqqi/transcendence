@@ -57,6 +57,10 @@ func guardTarget(ctx context.Context, qtx *database.Queries, adminID uuid.UUID, 
 		return nil
 	}
 
+	if err := qtx.LockAdminRoster(ctx); err != nil {
+		return err
+	}
+
 	admins, err := qtx.CountAdmins(ctx)
 	if err != nil {
 		return err

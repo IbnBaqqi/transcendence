@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -364,5 +365,43 @@ func TestASuspendedUserLeavesTheFollowLists(t *testing.T) {
 		if u.ID == f.member {
 			t.Error("a suspended user is still in someone's follower list")
 		}
+	}
+}
+
+// The guard reads the roster and then acts on it. GetUserForUpdate locks the
+// subject's row only, so what stops two admins suspending each other into an
+// empty roster is the advisory lock - and the way to prove the guard takes it
+// is to hold it and watch the guard wait.
+func TestTheGuardWaitsForTheAdminRosterLock(t *testing.T) {
+	f := newAdminFixture(t)
+	ctx := context.Background()
+
+	holder, err := f.db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatalf("opening the holding transaction: %v", err)
+	}
+	defer func() { _ = holder.Rollback() }()
+
+	if err := f.db.Queries.WithTx(holder.Tx).LockAdminRoster(ctx); err != nil {
+		t.Fatalf("taking the roster lock: %v", err)
+	}
+
+	// Suspending an admin has to wait for the roster, so with the lock held
+	// this can only end in the deadline.
+	timed, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cancel()
+
+	// The driver reports a cancelled statement as its own error rather than
+	// context.DeadlineExceeded, so the deadline itself is what to assert on.
+	if _, err := f.admins.Suspend(timed, f.admin, f.other, "concurrent"); err == nil {
+		t.Error("suspending an admin did not wait for the roster lock")
+	} else if timed.Err() == nil {
+		t.Errorf("it failed for some reason other than the wait: %v", err)
+	}
+
+	// A plain user is not part of the roster, so that path must not serialise
+	// behind admin actions - the lock is taken after the role check.
+	if _, err := f.admins.Suspend(ctx, f.admin, f.member, "unrelated"); err != nil {
+		t.Errorf("suspending a plain user waited for the roster lock: %v", err)
 	}
 }
