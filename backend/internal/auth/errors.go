@@ -45,3 +45,11 @@ type RetryError struct {
 func (e *RetryError) Error() string {
 	return e.Message
 }
+
+type SuspendedError struct {
+	Message string
+}
+
+func (e *SuspendedError) Error() string {
+	return e.Message
+}
