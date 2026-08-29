@@ -200,3 +200,13 @@ func (h *Handler) SearchListings(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusOK, result)
 }
+
+func (h *Handler) GetCategories(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.Listing.ListCategories(r.Context())
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToCategoryResponses(rows))
+}

@@ -334,3 +334,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		TotalPages: totalPages,
 	}, nil
 }
+
+func (s *ListingService) ListCategories(ctx context.Context) ([]database.ListCategoriesRow, error) {
+	return s.db.ListCategories(ctx)
+}

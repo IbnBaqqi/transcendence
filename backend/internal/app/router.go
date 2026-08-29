@@ -84,6 +84,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		r.Get("/listings/{id}", h.GetListing)
 		r.Get("/listings/{id}/images", h.GetListingImages)
 
+		r.Get("/categories", h.GetCategories)
+
 		r.Get("/users/{id}", h.GetPublicProfile)
 
 		r.Group(func(r chi.Router) {
