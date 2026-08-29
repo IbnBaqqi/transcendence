@@ -102,7 +102,9 @@ func RequireActiveUser(store activeUserStore) func(http.Handler) http.Handler {
 					return
 				}
 
-				if suspension.SuspendedAt.Valid {
+				// Deletion first: a deleted account can still carry the
+				// suspension that preceded it, and it must not learn that.
+				if !suspension.DeletedAt.Valid && suspension.SuspendedAt.Valid {
 					writeAuthzError(w, http.StatusForbidden, suspendedMessage(suspension.SuspensionReason))
 					return
 				}

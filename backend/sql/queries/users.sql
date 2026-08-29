@@ -91,7 +91,10 @@ SELECT EXISTS (
 );
 
 -- name: GetSuspension :one
-SELECT suspended_at, suspension_reason FROM users
+-- deleted_at comes along because the two states can coexist: a deletion does
+-- not clear suspended_at, and a deleted account must not be told it is merely
+-- suspended. Deletion wins, the same precedence the admin DTO applies.
+SELECT suspended_at, suspension_reason, deleted_at FROM users
 WHERE id = $1;
 
 -- name: SuspendUser :one
@@ -139,4 +142,6 @@ WHERE (sqlc.narg(role)::text IS NULL OR role = sqlc.narg(role)::text)
   );
 
 -- name: UserIsVisible :one
+-- The same function the listing predicates use, for the one visibility check
+-- that lives in Go rather than in a WHERE clause.
 SELECT COALESCE(user_is_visible(sqlc.arg(user_id)), false)::boolean;

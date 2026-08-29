@@ -50,7 +50,10 @@ func guardTarget(ctx context.Context, qtx *database.Queries, adminID uuid.UUID, 
 		return &ForbiddenError{Message: "You cannot do this to your own account"}
 	}
 
-	if subject.Role != auth.RoleAdmin {
+	// An already-suspended admin is not one of the active admins CountAdmins
+	// counts, so guarding them would block the suspend-then-delete path over
+	// a shortage they are not part of.
+	if subject.Role != auth.RoleAdmin || subject.SuspendedAt.Valid {
 		return nil
 	}
 

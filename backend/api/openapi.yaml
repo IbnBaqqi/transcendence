@@ -792,8 +792,11 @@ components:
           type: string
           format: date-time
           description: |
-            Absent if they have never been seen, if they have switched online
-            status off, or once the account is deleted.
+            Absent if they have never been seen, and once the account is
+            deleted. Unlike every other view this ignores the user's
+            `show_online_status` setting - it is a moderation signal for
+            spotting dormant or newly active accounts, not a presence
+            indicator to show anyone.
 
     PaginatedAdminUsers:
       type: object
@@ -1440,6 +1443,19 @@ paths:
           description: |
             Wrong password, or no such account. Deliberately the same message
             either way, so this cannot be used to discover which emails exist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: |
+            The account is suspended, and the message names the reason so the
+            user knows what to appeal.
+
+            Checked *after* the password comparison, so a wrong password on a
+            suspended account is still the 401 above - the state of an account
+            is never revealed to someone who cannot get into it. A deleted
+            account is a 401 too, since it no longer exists to have a state.
           content:
             application/json:
               schema:

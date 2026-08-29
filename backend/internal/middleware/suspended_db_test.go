@@ -35,6 +35,7 @@ func TestSuspendedAndDeletedAnswerDifferently(t *testing.T) {
 		return user.ID
 	}
 	active, suspended, deleted := mk("active"), mk("suspended"), mk("deleted")
+	gone := mk("gone")
 
 	if _, err := db.SuspendUser(ctx, database.SuspendUserParams{
 		ID: suspended, Reason: sql.NullString{String: "spamming listings", Valid: true},
@@ -43,6 +44,17 @@ func TestSuspendedAndDeletedAnswerDifferently(t *testing.T) {
 	}
 	if _, err := db.AnonymiseUser(ctx, deleted); err != nil {
 		t.Fatalf("deleting: %v", err)
+	}
+
+	// Suspended first, then deleted. A deletion does not clear suspended_at,
+	// so this row is in both states at once and the precedence has to hold.
+	if _, err := db.SuspendUser(ctx, database.SuspendUserParams{
+		ID: gone, Reason: sql.NullString{String: "spamming listings", Valid: true},
+	}); err != nil {
+		t.Fatalf("suspending before deleting: %v", err)
+	}
+	if _, err := db.AnonymiseUser(ctx, gone); err != nil {
+		t.Fatalf("deleting a suspended account: %v", err)
 	}
 
 	guarded := mw.RequireActiveUser(db.Queries)(http.HandlerFunc(
@@ -80,6 +92,16 @@ func TestSuspendedAndDeletedAnswerDifferently(t *testing.T) {
 		}
 		if !strings.Contains(rec.Body.String(), "spamming listings") {
 			t.Errorf("the reason is missing, so there is nothing to appeal:\n%s", rec.Body.String())
+		}
+	})
+
+	t.Run("a deleted account that was suspended first is still silent", func(t *testing.T) {
+		rec := call(t, gone)
+		if rec.Code != http.StatusUnauthorized {
+			t.Errorf("status = %d, want 401 - deletion outranks the suspension it kept", rec.Code)
+		}
+		if strings.Contains(rec.Body.String(), "spamming listings") {
+			t.Errorf("a deleted account published the reason it was suspended for:\n%s", rec.Body.String())
 		}
 	})
 }

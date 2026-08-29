@@ -296,3 +296,73 @@ func TestASuspendedSellerLeavesTheReadPaths(t *testing.T) {
 		t.Errorf("reinstating did not bring the profile back: %v", err)
 	}
 }
+
+// The guard counts *active* admins, so it must not fire for a subject who is
+// already suspended - they are not one of the admins it is protecting, and
+// treating them as one blocks the whole point of suspending an admin first.
+func TestASuspendedAdminCanStillBeDeleted(t *testing.T) {
+	f := newAdminFixture(t)
+	ctx := context.Background()
+
+	if _, err := f.admins.Suspend(ctx, f.admin, f.other, "abusing the role"); err != nil {
+		t.Fatalf("suspending the second admin: %v", err)
+	}
+
+	// f.admin is now the only active admin, which is what used to make
+	// CountAdmins return 1 and refuse this.
+	if err := f.admins.Delete(ctx, f.admin, f.other, "other", "abusing the role"); err != nil {
+		t.Fatalf("deleting a suspended admin: %v", err)
+	}
+
+	user, err := f.db.GetUser(ctx, f.other)
+	if err != nil {
+		t.Fatalf("re-reading: %v", err)
+	}
+	if !user.DeletedAt.Valid {
+		t.Error("the account was not deleted")
+	}
+}
+
+func TestASuspendedUserLeavesTheFollowLists(t *testing.T) {
+	f := newAdminFixture(t)
+	ctx := context.Background()
+
+	if err := f.db.FollowUser(ctx, database.FollowUserParams{
+		FollowerID: f.admin, FolloweeID: f.member,
+	}); err != nil {
+		t.Fatalf("following: %v", err)
+	}
+	if err := f.db.FollowUser(ctx, database.FollowUserParams{
+		FollowerID: f.member, FolloweeID: f.admin,
+	}); err != nil {
+		t.Fatalf("following back: %v", err)
+	}
+
+	if _, err := f.admins.Suspend(ctx, f.admin, f.member, "spamming"); err != nil {
+		t.Fatalf("suspending: %v", err)
+	}
+
+	following, err := f.db.ListFollowing(ctx, database.ListFollowingParams{
+		SubjectID: f.admin, ViewerID: f.admin,
+	})
+	if err != nil {
+		t.Fatalf("listing who the admin follows: %v", err)
+	}
+	for _, u := range following {
+		if u.ID == f.member {
+			t.Error("a suspended user is still in someone's following list")
+		}
+	}
+
+	followers, err := f.db.ListFollowers(ctx, database.ListFollowersParams{
+		SubjectID: f.admin, ViewerID: f.admin,
+	})
+	if err != nil {
+		t.Fatalf("listing the admin's followers: %v", err)
+	}
+	for _, u := range followers {
+		if u.ID == f.member {
+			t.Error("a suspended user is still in someone's follower list")
+		}
+	}
+}
