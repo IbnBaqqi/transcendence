@@ -5,6 +5,7 @@ import { useFormConfig } from "./FormContext";
 
 type FormSelectProps = {
   label?: string;
+  ariaLabel?: string;
   name: string;
   isEditing?: boolean;
   width?: string;
@@ -12,6 +13,7 @@ type FormSelectProps = {
 
 export function FormSelect({
   label,
+  ariaLabel,
   name,
   isEditing: isEditingProp,
   width: widthProp,
@@ -35,6 +37,13 @@ export function FormSelect({
   const selected = options.find((option) => option.slug === value);
   const unavailable = isPending || isError || options.length === 0;
 
+  const statusId = `${name}-status`;
+  const errorId = `${name}-error`;
+  const describedBy =
+    [!isPending && unavailable ? statusId : null, error ? errorId : null]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
   if (!isEditing) {
     return (
       <div className="flex flex-col gap-1.5">
@@ -55,6 +64,9 @@ export function FormSelect({
       <select
         className={`focus:shadow-outline ${width} rounded border px-3 py-2 leading-tight shadow focus:outline-none`}
         id={name}
+        aria-label={label ? undefined : ariaLabel}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
         disabled={unavailable}
         {...register(name)}
       >
@@ -74,11 +86,15 @@ export function FormSelect({
       </select>
 
       {!isPending && unavailable && (
-        <span className="text-berry-500 text-xs">
+        <span id={statusId} role="alert" className="text-berry-500 text-xs">
           Could not load categories. Reload the page to try again
         </span>
       )}
-      {error && <span className="text-berry-500 text-xs">{error.message as string}</span>}
+      {error && (
+        <span id={errorId} role="alert" className="text-berry-500 text-xs">
+          {error.message as string}
+        </span>
+      )}
     </div>
   );
 }

@@ -25,7 +25,7 @@ function Harness({ onSubmit }: { onSubmit?: (values: { category: string }) => vo
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit((values) => onSubmit?.(values))}>
-        <FormSelect name="category" isEditing />
+        <FormSelect name="category" ariaLabel="Category" isEditing />
         <button type="submit">Save</button>
       </form>
     </FormProvider>
@@ -81,6 +81,20 @@ describe("FormSelect", () => {
 
     expect(screen.getByRole("combobox")).toBeDisabled();
     expect(screen.getByText(/Could not load categories/)).toBeInTheDocument();
+  });
+
+  test("the control has an accessible name", () => {
+    renderWith({ data: TREE, isPending: false, isError: false });
+
+    expect(screen.getByRole("combobox", { name: "Category" })).toBeInTheDocument();
+  });
+
+  test("the unavailable message is announced and tied to the control", () => {
+    renderWith({ data: [], isPending: false, isError: false });
+
+    const message = screen.getByRole("alert");
+    expect(message).toHaveTextContent(/Could not load categories/);
+    expect(screen.getByRole("combobox")).toHaveAttribute("aria-describedby", message.id);
   });
 
   test("a failed request disables the field and says so", () => {
