@@ -58,7 +58,8 @@ export const categorySchema = z
   .string()
   .trim()
   .min(1, "Category is required")
-  .max(50, "Category name is too long");
+  .max(50, "Category name is too long")
+  .regex(/^[a-z0-9-]+$/, "Choose a category from the list");
 export const priceSchema = z.number("Price is required").positive("Needs a valid price");
 export const quantitySchema = z.int32("Quantity is required").positive("Needs a valid quantity");
 export const unitSchema = z.string().trim().min(1, "Unit is required").max(20, "Unit too long");

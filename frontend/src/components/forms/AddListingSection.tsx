@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "./Form";
 import { FormField } from "./FormField";
+import { FormSelect } from "./FormSelect";
 import { FormTextArea } from "./FormTextArea";
 import { addListingSchema, type AddListingFormValues } from "../../schemas/addListing";
 import Button from "../objects/Button.tsx";
@@ -78,12 +79,7 @@ export function AddListingSection() {
           </div>
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">Category</h2>
-            <FormField
-              name="category"
-              width="max-w-md"
-              placeholder="e.g. 'Mushroom'"
-              validateOnChange
-            />
+            <FormSelect name="category" width="max-w-md" />
           </div>
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">Price & Quantity</h2>
