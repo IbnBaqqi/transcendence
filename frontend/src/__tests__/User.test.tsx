@@ -6,6 +6,7 @@ import { ModalProvider } from "../providers/ModalProvider";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { usePublicProfile } from "../api/profile";
 import { useListings } from "../api/listings";
+import { useCategoryNames } from "../api/categories";
 import type { ApiError } from "../api/client";
 import { makeListing, makePublicProfile } from "../test/factories";
 // Aliased: "User" is already the page component above.
@@ -13,6 +14,7 @@ import type { User as AuthUser } from "../api/types";
 
 vi.mock("../api/profile");
 vi.mock("../api/listings");
+vi.mock("../api/categories");
 
 type ProfileQuery = ReturnType<typeof usePublicProfile>;
 type ListingsQuery = ReturnType<typeof useListings>;
@@ -72,6 +74,10 @@ function renderPage(
     </MemoryRouter>,
   );
 }
+
+beforeEach(() => {
+  vi.mocked(useCategoryNames).mockReturnValue((slug: string) => slug);
+});
 
 describe("User", () => {
   test("shows the fetched profile", () => {

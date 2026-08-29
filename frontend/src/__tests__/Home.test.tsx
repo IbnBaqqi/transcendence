@@ -2,12 +2,14 @@ import { render, screen } from "@testing-library/react";
 
 import Home from "../pages/Home";
 import { useListings } from "../api/listings";
+import { useCategoryNames } from "../api/categories";
 import { makeListing } from "../test/factories";
 
 // Replace the whole module with auto-generated mock functions. Home imports
 // useListings from here, so it gets the fake instead of the real hook.
 // No network, no React Query, no QueryClientProvider needed.
 vi.mock("../api/listings");
+vi.mock("../api/categories");
 
 // The type useListings actually returns, so we don't have to hand-write it.
 type ListingsQuery = ReturnType<typeof useListings>;
@@ -30,6 +32,10 @@ const secondSample = makeListing({
   price: 7.5,
   quantity: 10,
   unit: "litre",
+});
+
+beforeEach(() => {
+  vi.mocked(useCategoryNames).mockReturnValue((slug: string) => slug);
 });
 
 describe("Home", () => {
