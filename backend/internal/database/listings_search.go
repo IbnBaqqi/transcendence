@@ -77,7 +77,8 @@ func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string,
 	}
 	if arg.Category != "" {
 		p := next(arg.Category)
-		b.WriteString(" AND listings.category = " + p)
+		b.WriteString(" AND listings.category IN (SELECT slug FROM categories" +
+			" WHERE slug = " + p + " OR parent_slug = " + p + ")")
 	}
 	if arg.MinPrice != "" {
 		p := next(arg.MinPrice)

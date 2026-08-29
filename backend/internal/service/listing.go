@@ -26,6 +26,8 @@ func NewListingService(db *database.DB, files fileStore) *ListingService {
 	return &ListingService{db: db, files: files}
 }
 
+const listingCategoryConstraint = "listings_category_fkey"
+
 func validateListingInput(title, category, unit string, price float64, quantity int32) error {
 	if title == "" || len(title) > 100 {
 		return &ValidationError{Message: "Title is required and must be under 100 characters"}
@@ -50,7 +52,7 @@ func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, 
 		return database.Listing{}, err
 	}
 
-	return s.db.CreateListing(ctx, database.CreateListingParams{
+	listing, err := s.db.CreateListing(ctx, database.CreateListingParams{
 		ID:          database.NewID(),
 		SellerID:    sellerID,
 		Title:       input.Title,
@@ -60,6 +62,10 @@ func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, 
 		Quantity:    input.Quantity,
 		Unit:        input.Unit,
 	})
+	if isForeignKeyViolation(err, listingCategoryConstraint) {
+		return database.Listing{}, &ValidationError{Message: "Category is not recognised"}
+	}
+	return listing, err
 }
 
 func (s *ListingService) GetListing(ctx context.Context, id uuid.UUID) (database.Listing, error) {
@@ -118,6 +124,9 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, li
 		Unit:        input.Unit,
 	})
 	if err != nil {
+		if isForeignKeyViolation(err, listingCategoryConstraint) {
+			return database.Listing{}, &ValidationError{Message: "Category is not recognised"}
+		}
 		return database.Listing{}, err
 	}
 
