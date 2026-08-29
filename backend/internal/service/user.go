@@ -48,6 +48,42 @@ func (s *UserService) SetShowOnlineStatus(ctx context.Context, userID uuid.UUID,
 // orders references users with ON DELETE RESTRICT on both sides, and messages
 // cascade from conversations, so a real delete would either fail or destroy the
 // other party's copy of a thread.
+// scrubAccount is everything a deletion does once the caller's own guards have
+// passed. Shared so a self-deletion and an admin deletion cannot drift - the
+// account has to end up in the same state either way. Returns the previous
+// avatar filename, for the caller to unlink after the commit.
+func scrubAccount(ctx context.Context, qtx *database.Queries, userID uuid.UUID) (sql.NullString, error) {
+	avatar, err := qtx.ScrubProfile(ctx, userID)
+	if err != nil {
+		return sql.NullString{}, err
+	}
+
+	for _, step := range []func(context.Context, uuid.UUID) error{
+		qtx.DeleteAddressesForUser,
+		qtx.DeleteFollowsForUser,
+		qtx.DeleteBlocksForUser,
+		qtx.DeleteSavedForUser,
+		qtx.DeleteIdentitiesForUser,
+		qtx.InvalidateResetTokensForUser,
+		qtx.DetachReporter,
+		qtx.DetachModerator,
+		qtx.DetachEventActor,
+		qtx.DetachUserActionModerator,
+		qtx.RevokeSessionsForUser,
+		qtx.RevokeKeysForUser,
+	} {
+		if err := step(ctx, userID); err != nil {
+			return sql.NullString{}, err
+		}
+	}
+
+	if _, err := qtx.AnonymiseUser(ctx, userID); err != nil {
+		return sql.NullString{}, err
+	}
+
+	return avatar, nil
+}
+
 func (s *UserService) DeleteAccount(ctx context.Context, userID uuid.UUID, confirmation string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -76,31 +112,8 @@ func (s *UserService) DeleteAccount(ctx context.Context, userID uuid.UUID, confi
 		return &ValidationError{Message: "Type your username exactly to confirm"}
 	}
 
-	avatar, err := qtx.ScrubProfile(ctx, userID)
+	avatar, err := scrubAccount(ctx, qtx, userID)
 	if err != nil {
-		return err
-	}
-
-	for _, step := range []func(context.Context, uuid.UUID) error{
-		qtx.DeleteAddressesForUser,
-		qtx.DeleteFollowsForUser,
-		qtx.DeleteBlocksForUser,
-		qtx.DeleteSavedForUser,
-		qtx.DeleteIdentitiesForUser,
-		qtx.InvalidateResetTokensForUser,
-		qtx.DetachReporter,
-		qtx.DetachModerator,
-		qtx.DetachEventActor,
-		qtx.DetachUserActionModerator,
-		qtx.RevokeSessionsForUser,
-		qtx.RevokeKeysForUser,
-	} {
-		if err := step(ctx, userID); err != nil {
-			return err
-		}
-	}
-
-	if _, err := qtx.AnonymiseUser(ctx, userID); err != nil {
 		return err
 	}
 
