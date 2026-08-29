@@ -22,7 +22,7 @@ SET email              = 'deleted-' || id::text || '@deleted.invalid',
     deleted_at         = now(),
     updated_at         = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason
 `
 
 // The placeholders embed the id because both columns are NOT NULL under unique
@@ -48,8 +48,47 @@ func (q *Queries) AnonymiseUser(ctx context.Context, id uuid.UUID) (User, error)
 		&i.LastSeenAt,
 		&i.ShowOnlineStatus,
 		&i.DeletedAt,
+		&i.SuspendedAt,
+		&i.SuspensionReason,
 	)
 	return i, err
+}
+
+const countAdmins = `-- name: CountAdmins :one
+SELECT COUNT(*) FROM users
+WHERE role = 'ADMIN' AND deleted_at IS NULL AND suspended_at IS NULL
+`
+
+// Suspended admins do not count: they cannot log in, so they cannot reinstate
+// anyone, and counting them would allow suspending down to zero usable admins.
+func (q *Queries) CountAdmins(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countAdmins)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countUsersForAdmin = `-- name: CountUsersForAdmin :one
+SELECT COUNT(*) FROM users
+WHERE ($1::text IS NULL OR role = $1::text)
+  AND (
+      $2::text IS NULL
+      OR ($2::text = 'active'    AND deleted_at IS NULL AND suspended_at IS NULL)
+      OR ($2::text = 'suspended' AND suspended_at IS NOT NULL AND deleted_at IS NULL)
+      OR ($2::text = 'deleted'   AND deleted_at IS NOT NULL)
+  )
+`
+
+type CountUsersForAdminParams struct {
+	Role   sql.NullString
+	Status sql.NullString
+}
+
+func (q *Queries) CountUsersForAdmin(ctx context.Context, arg CountUsersForAdminParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUsersForAdmin, arg.Role, arg.Status)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const createUser = `-- name: CreateUser :one
@@ -57,7 +96,7 @@ INSERT INTO users (id, username, email, password)
 VALUES (
 	$1, $2, $3, $4
 )
-RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason
 `
 
 type CreateUserParams struct {
@@ -86,6 +125,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.LastSeenAt,
 		&i.ShowOnlineStatus,
 		&i.DeletedAt,
+		&i.SuspendedAt,
+		&i.SuspensionReason,
 	)
 	return i, err
 }
@@ -123,8 +164,25 @@ func (q *Queries) EmailOrUsernameTaken(ctx context.Context, arg EmailOrUsernameT
 	return i, err
 }
 
+const getSuspension = `-- name: GetSuspension :one
+SELECT suspended_at, suspension_reason FROM users
+WHERE id = $1
+`
+
+type GetSuspensionRow struct {
+	SuspendedAt      sql.NullTime
+	SuspensionReason sql.NullString
+}
+
+func (q *Queries) GetSuspension(ctx context.Context, id uuid.UUID) (GetSuspensionRow, error) {
+	row := q.db.QueryRowContext(ctx, getSuspension, id)
+	var i GetSuspensionRow
+	err := row.Scan(&i.SuspendedAt, &i.SuspensionReason)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason FROM users
 WHERE id = $1
 LIMIT 1
 `
@@ -143,12 +201,14 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.LastSeenAt,
 		&i.ShowOnlineStatus,
 		&i.DeletedAt,
+		&i.SuspendedAt,
+		&i.SuspensionReason,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason FROM users
 WHERE lower(email) = lower($1)
   AND deleted_at IS NULL
 LIMIT 1
@@ -172,12 +232,14 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.LastSeenAt,
 		&i.ShowOnlineStatus,
 		&i.DeletedAt,
+		&i.SuspendedAt,
+		&i.SuspensionReason,
 	)
 	return i, err
 }
 
 const getUserForUpdate = `-- name: GetUserForUpdate :one
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason FROM users
 WHERE id = $1
 FOR UPDATE
 `
@@ -196,6 +258,8 @@ func (q *Queries) GetUserForUpdate(ctx context.Context, id uuid.UUID) (User, err
 		&i.LastSeenAt,
 		&i.ShowOnlineStatus,
 		&i.DeletedAt,
+		&i.SuspendedAt,
+		&i.SuspensionReason,
 	)
 	return i, err
 }
@@ -213,7 +277,7 @@ func (q *Queries) GetUserRole(ctx context.Context, id uuid.UUID) (string, error)
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason FROM users
 ORDER BY created_at DESC
 `
 
@@ -237,6 +301,8 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.LastSeenAt,
 			&i.ShowOnlineStatus,
 			&i.DeletedAt,
+			&i.SuspendedAt,
+			&i.SuspensionReason,
 		); err != nil {
 			return nil, err
 		}
@@ -249,6 +315,149 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const listUsersForAdmin = `-- name: ListUsersForAdmin :many
+SELECT id, username, email, role, created_at, last_seen_at,
+       suspended_at, suspension_reason, deleted_at
+FROM users
+WHERE ($1::text IS NULL OR role = $1::text)
+  AND (
+      $2::text IS NULL
+      OR ($2::text = 'active'    AND deleted_at IS NULL AND suspended_at IS NULL)
+      OR ($2::text = 'suspended' AND suspended_at IS NOT NULL AND deleted_at IS NULL)
+      OR ($2::text = 'deleted'   AND deleted_at IS NOT NULL)
+  )
+ORDER BY created_at DESC, id DESC
+LIMIT $4 OFFSET $3
+`
+
+type ListUsersForAdminParams struct {
+	Role       sql.NullString
+	Status     sql.NullString
+	PageOffset int32
+	PageLimit  int32
+}
+
+type ListUsersForAdminRow struct {
+	ID               uuid.UUID
+	Username         string
+	Email            string
+	Role             string
+	CreatedAt        sql.NullTime
+	LastSeenAt       sql.NullTime
+	SuspendedAt      sql.NullTime
+	SuspensionReason sql.NullString
+	DeletedAt        sql.NullTime
+}
+
+// sqlc.narg means "no filter" when null, which keeps this one query rather
+// than four. The id tiebreaker matters under LIMIT/OFFSET: an unstable sort
+// can show one row on two pages and skip another entirely.
+func (q *Queries) ListUsersForAdmin(ctx context.Context, arg ListUsersForAdminParams) ([]ListUsersForAdminRow, error) {
+	rows, err := q.db.QueryContext(ctx, listUsersForAdmin,
+		arg.Role,
+		arg.Status,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUsersForAdminRow
+	for rows.Next() {
+		var i ListUsersForAdminRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.Role,
+			&i.CreatedAt,
+			&i.LastSeenAt,
+			&i.SuspendedAt,
+			&i.SuspensionReason,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const reinstateUser = `-- name: ReinstateUser :one
+UPDATE users
+SET suspended_at      = NULL,
+    suspension_reason = NULL,
+    updated_at        = now()
+WHERE id = $1 AND suspended_at IS NOT NULL AND deleted_at IS NULL
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason
+`
+
+// Lossless, unlike deletion: nothing was scrubbed, so clearing the two columns
+// restores the account whole.
+func (q *Queries) ReinstateUser(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRowContext(ctx, reinstateUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LastSeenAt,
+		&i.ShowOnlineStatus,
+		&i.DeletedAt,
+		&i.SuspendedAt,
+		&i.SuspensionReason,
+	)
+	return i, err
+}
+
+const suspendUser = `-- name: SuspendUser :one
+UPDATE users
+SET suspended_at      = now(),
+    suspension_reason = $2,
+    updated_at        = now()
+WHERE id = $1 AND suspended_at IS NULL AND deleted_at IS NULL
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason
+`
+
+type SuspendUserParams struct {
+	ID     uuid.UUID
+	Reason sql.NullString
+}
+
+// The precondition lives in the WHERE: suspending an already-suspended account
+// returns no rows rather than refreshing the reason and logging a state change
+// that did not happen.
+func (q *Queries) SuspendUser(ctx context.Context, arg SuspendUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, suspendUser, arg.ID, arg.Reason)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LastSeenAt,
+		&i.ShowOnlineStatus,
+		&i.DeletedAt,
+		&i.SuspendedAt,
+		&i.SuspensionReason,
+	)
+	return i, err
 }
 
 const touchLastSeen = `-- name: TouchLastSeen :exec
@@ -272,7 +481,7 @@ UPDATE users
 SET show_online_status = $2,
   updated_at = now()
 WHERE id = $1
-RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason
 `
 
 type UpdateShowOnlineStatusParams struct {
@@ -294,6 +503,8 @@ func (q *Queries) UpdateShowOnlineStatus(ctx context.Context, arg UpdateShowOnli
 		&i.LastSeenAt,
 		&i.ShowOnlineStatus,
 		&i.DeletedAt,
+		&i.SuspendedAt,
+		&i.SuspensionReason,
 	)
 	return i, err
 }
@@ -338,9 +549,15 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 }
 
 const userIsActive = `-- name: UserIsActive :one
-SELECT EXISTS (SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL)
+SELECT EXISTS (
+    SELECT 1 FROM users
+    WHERE id = $1 AND deleted_at IS NULL AND suspended_at IS NULL
+)
 `
 
+// One predicate for both inactive states. Suspension inherits every read-path
+// filter and the RequireActiveUser middleware #136 already built; a second
+// boolean checked separately would drift the first time someone adds a third.
 func (q *Queries) UserIsActive(ctx context.Context, id uuid.UUID) (bool, error) {
 	row := q.db.QueryRowContext(ctx, userIsActive, id)
 	var exists bool

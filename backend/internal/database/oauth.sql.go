@@ -21,7 +21,7 @@ func (q *Queries) DeleteIdentitiesForUser(ctx context.Context, userID uuid.UUID)
 }
 
 const findUserByProviderIdentity = `-- name: FindUserByProviderIdentity :one
-SELECT users.id, users.email, users.username, users.password, users.role, users.created_at, users.updated_at, users.last_seen_at, users.show_online_status, users.deleted_at
+SELECT users.id, users.email, users.username, users.password, users.role, users.created_at, users.updated_at, users.last_seen_at, users.show_online_status, users.deleted_at, users.suspended_at, users.suspension_reason
 FROM oauth_identities
 JOIN users ON users.id = oauth_identities.user_id
 WHERE oauth_identities.provider = $1
@@ -53,6 +53,8 @@ func (q *Queries) FindUserByProviderIdentity(ctx context.Context, arg FindUserBy
 		&i.User.LastSeenAt,
 		&i.User.ShowOnlineStatus,
 		&i.User.DeletedAt,
+		&i.User.SuspendedAt,
+		&i.User.SuspensionReason,
 	)
 	return i, err
 }
