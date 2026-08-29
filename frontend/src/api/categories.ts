@@ -25,11 +25,12 @@ export function flattenCategories(
   ]);
 }
 
+export function categoryNames(categories: Category[]): (slug: string) => string {
+  const names = new Map(flattenCategories(categories).map((c) => [c.slug, c.name]));
+  return (slug: string) => names.get(slug) ?? slug;
+}
+
 export function useCategoryNames(): (slug: string) => string {
   const { data } = useCategories();
-
-  return useMemo(() => {
-    const names = new Map(flattenCategories(data ?? []).map((c) => [c.slug, c.name]));
-    return (slug: string) => names.get(slug) ?? slug;
-  }, [data]);
+  return useMemo(() => categoryNames(data ?? []), [data]);
 }
