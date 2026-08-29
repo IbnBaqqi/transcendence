@@ -35,7 +35,9 @@ const secondSample = makeListing({
 });
 
 beforeEach(() => {
-  vi.mocked(useCategoryNames).mockReturnValue((slug: string) => slug);
+  vi.mocked(useCategoryNames).mockReturnValue(
+    (slug: string) => ({ mushrooms: "Mushrooms", berries: "Berries" })[slug] ?? slug,
+  );
 });
 
 describe("Home", () => {
@@ -64,6 +66,11 @@ describe("Home", () => {
     // both titles present -> we mapped the list, not just listings[0]
     expect(screen.getByText("Golden Chanterelles")).toBeInTheDocument();
     expect(screen.getByText("Wild Blueberries")).toBeInTheDocument();
+
+    expect(screen.getByText("Mushrooms")).toBeInTheDocument();
+    expect(screen.getByText("Berries")).toBeInTheDocument();
+    expect(screen.queryByText("mushrooms")).not.toBeInTheDocument();
+    expect(screen.queryByText("berries")).not.toBeInTheDocument();
 
     // the card formats price + unit together, so match loosely
     expect(screen.getByText(/€18\.00/)).toBeInTheDocument();

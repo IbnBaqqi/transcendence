@@ -76,7 +76,9 @@ function renderPage(
 }
 
 beforeEach(() => {
-  vi.mocked(useCategoryNames).mockReturnValue((slug: string) => slug);
+  vi.mocked(useCategoryNames).mockReturnValue(
+    (slug: string) => ({ mushrooms: "Mushrooms", berries: "Berries" })[slug] ?? slug,
+  );
 });
 
 describe("User", () => {

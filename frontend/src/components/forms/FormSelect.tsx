@@ -33,6 +33,7 @@ export function FormSelect({
 
   const options = flattenCategories(categories ?? []);
   const selected = options.find((option) => option.slug === value);
+  const unavailable = isPending || isError || options.length === 0;
 
   if (!isEditing) {
     return (
@@ -52,15 +53,15 @@ export function FormSelect({
       )}
 
       <select
-        className={`focus:shadow-outline ${width} appearance-none rounded border px-3 py-2 leading-tight shadow focus:outline-none`}
+        className={`focus:shadow-outline ${width} rounded border px-3 py-2 leading-tight shadow focus:outline-none`}
         id={name}
-        disabled={isPending || isError}
+        disabled={unavailable}
         {...register(name)}
       >
         <option value="">
           {isPending
             ? "Loading categories…"
-            : isError
+            : unavailable
               ? "Categories unavailable"
               : "Choose a category"}
         </option>
@@ -72,7 +73,7 @@ export function FormSelect({
         ))}
       </select>
 
-      {isError && (
+      {!isPending && unavailable && (
         <span className="text-berry-500 text-xs">
           Could not load categories. Reload the page to try again
         </span>

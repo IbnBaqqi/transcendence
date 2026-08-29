@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { FormProvider, useForm } from "react-hook-form";
 
 import { FormSelect } from "../components/forms/FormSelect";
@@ -19,18 +20,24 @@ const TREE: Category[] = [
   },
 ];
 
-function Harness() {
+function Harness({ onSubmit }: { onSubmit?: (values: { category: string }) => void }) {
   const form = useForm({ defaultValues: { category: "" } });
   return (
     <FormProvider {...form}>
-      <FormSelect name="category" isEditing />
+      <form onSubmit={form.handleSubmit((values) => onSubmit?.(values))}>
+        <FormSelect name="category" isEditing />
+        <button type="submit">Save</button>
+      </form>
     </FormProvider>
   );
 }
 
-function renderWith(state: Partial<ReturnType<typeof useCategories>>) {
+function renderWith(
+  state: Partial<ReturnType<typeof useCategories>>,
+  onSubmit?: (values: { category: string }) => void,
+) {
   vi.mocked(useCategories).mockReturnValue(state as ReturnType<typeof useCategories>);
-  return render(<Harness />);
+  return render(<Harness onSubmit={onSubmit} />);
 }
 
 describe("FormSelect", () => {
@@ -57,6 +64,23 @@ describe("FormSelect", () => {
     renderWith({ data: TREE, isPending: false, isError: false });
 
     expect(screen.getByRole("combobox")).toHaveValue("");
+  });
+
+  test("choosing an option puts its slug into the form", async () => {
+    const onSubmit = vi.fn();
+    renderWith({ data: TREE, isPending: false, isError: false }, onSubmit);
+
+    await userEvent.selectOptions(screen.getByRole("combobox"), "chanterelles");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onSubmit).toHaveBeenCalledWith({ category: "chanterelles" });
+  });
+
+  test("an empty but successful response disables the field rather than offering nothing", () => {
+    renderWith({ data: [], isPending: false, isError: false });
+
+    expect(screen.getByRole("combobox")).toBeDisabled();
+    expect(screen.getByText(/Could not load categories/)).toBeInTheDocument();
   });
 
   test("a failed request disables the field and says so", () => {
