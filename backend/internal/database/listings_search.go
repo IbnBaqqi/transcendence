@@ -12,6 +12,7 @@ import (
 type SearchListingsParams struct {
 	Keyword  string
 	Category string
+	Tag      string
 	MinPrice string
 	MaxPrice string
 	Location string
@@ -79,6 +80,12 @@ func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string,
 		p := next(arg.Category)
 		b.WriteString(" AND listings.category IN (SELECT slug FROM categories" +
 			" WHERE slug = " + p + " OR parent_slug = " + p + ")")
+	}
+	if arg.Tag != "" {
+		p := next(arg.Tag)
+		b.WriteString(" AND EXISTS (SELECT 1 FROM listing_tags lt" +
+			" JOIN tags t ON t.id = lt.tag_id" +
+			" WHERE lt.listing_id = listings.id AND t.name = " + p + ")")
 	}
 	if arg.MinPrice != "" {
 		p := next(arg.MinPrice)

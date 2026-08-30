@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -51,6 +52,64 @@ func validateListingInput(title, category, unit string, price float64, quantity 
 	return nil
 }
 
+func normaliseTags(raw []string) ([]string, error) {
+	seen := make(map[string]bool, len(raw))
+	out := make([]string, 0, len(raw))
+
+	for _, tag := range raw {
+		if !utf8.ValidString(tag) || strings.ContainsRune(tag, 0) {
+			return nil, &ValidationError{Message: "Tags must be valid UTF-8 without null bytes"}
+		}
+
+		tag = strings.ToLower(strings.TrimSpace(sanitizeFreeText(tag)))
+		if tag == "" {
+			continue
+		}
+		if utf8.RuneCountInString(tag) > maxTagLength {
+			return nil, &ValidationError{Message: "A tag is too long"}
+		}
+		if seen[tag] {
+			continue
+		}
+
+		seen[tag] = true
+		out = append(out, tag)
+	}
+
+	if len(out) > maxTagsPerListing {
+		return nil, &ValidationError{Message: "A listing can have at most 5 tags"}
+	}
+
+	// Do not remove: UpsertTag's ON CONFLICT DO UPDATE locks each existing tag
+	// row until commit, so two listings saved at once with overlapping tags in
+	// different orders ({a,b} against {b,a}) deadlock. Sorting gives every
+	// transaction the same lock order.
+	slices.Sort(out)
+
+	return out, nil
+}
+
+func applyTags(ctx context.Context, qtx *database.Queries, listingID uuid.UUID, tags []string) error {
+	if err := qtx.DetachAllTags(ctx, listingID); err != nil {
+		return err
+	}
+
+	for _, name := range tags {
+		tagID, err := qtx.UpsertTag(ctx, name)
+		if err != nil {
+			return err
+		}
+		if err := qtx.AttachTag(ctx, database.AttachTagParams{
+			ListingID: listingID,
+			TagID:     tagID,
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, input dtos.CreateListingInput) (database.Listing, error) {
 	category := normaliseCategory(input.Category)
 
@@ -58,7 +117,24 @@ func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, 
 		return database.Listing{}, err
 	}
 
-	listing, err := s.db.CreateListing(ctx, database.CreateListingParams{
+	tags, err := normaliseTags(input.Tags)
+	if err != nil {
+		return database.Listing{}, err
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return database.Listing{}, err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			slog.Error("listing create transaction rollback failed", "error", err)
+		}
+	}()
+
+	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	listing, err := qtx.CreateListing(ctx, database.CreateListingParams{
 		ID:          database.NewID(),
 		SellerID:    sellerID,
 		Title:       input.Title,
@@ -71,7 +147,19 @@ func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, 
 	if isForeignKeyViolation(err, listingCategoryConstraint) {
 		return database.Listing{}, &ValidationError{Message: "Category is not recognised"}
 	}
-	return listing, err
+	if err != nil {
+		return database.Listing{}, err
+	}
+
+	if err := applyTags(ctx, qtx, listing.ID, tags); err != nil {
+		return database.Listing{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return database.Listing{}, err
+	}
+
+	return listing, nil
 }
 
 func (s *ListingService) GetListing(ctx context.Context, id uuid.UUID) (database.Listing, error) {
@@ -91,6 +179,11 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, li
 	category := normaliseCategory(input.Category)
 
 	if err := validateListingInput(input.Title, category, input.Unit, input.Price, input.Quantity); err != nil {
+		return database.Listing{}, err
+	}
+
+	tags, err := normaliseTags(input.Tags)
+	if err != nil {
 		return database.Listing{}, err
 	}
 
@@ -135,6 +228,10 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, li
 		if isForeignKeyViolation(err, listingCategoryConstraint) {
 			return database.Listing{}, &ValidationError{Message: "Category is not recognised"}
 		}
+		return database.Listing{}, err
+	}
+
+	if err := applyTags(ctx, qtx, listingID, tags); err != nil {
 		return database.Listing{}, err
 	}
 
@@ -213,6 +310,9 @@ const (
 	maxLimit     = 50
 
 	maxSearchTextLength = 200
+
+	maxTagsPerListing = 5
+	maxTagLength      = 30
 )
 
 func resolveSort(sortKey string) (string, error) {
@@ -240,7 +340,7 @@ func validateSearchText(values ...string) error {
 }
 
 func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearchQuery) (dtos.PaginatedListings, error) {
-	if err := validateSearchText(q.Keyword, q.Category, q.Location); err != nil {
+	if err := validateSearchText(q.Keyword, q.Category, q.Tag, q.Location); err != nil {
 		return dtos.PaginatedListings{}, err
 	}
 
@@ -298,9 +398,24 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, &ValidationError{Message: "Page is too large"}
 	}
 
+	tag := ""
+	if q.Tag != "" {
+		tags, err := normaliseTags([]string{q.Tag})
+		if err != nil {
+			return dtos.PaginatedListings{}, err
+		}
+		if len(tags) == 0 {
+			return dtos.PaginatedListings{
+				Items: []dtos.ListingResponse{}, Page: page, Limit: limit,
+			}, nil
+		}
+		tag = tags[0]
+	}
+
 	params := database.SearchListingsParams{
 		Keyword:  q.Keyword,
 		Category: normaliseCategory(q.Category),
+		Tag:      tag,
 		Location: q.Location,
 		Sort:     sortKey,
 		Offset:   int32(offset),
@@ -332,15 +447,42 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, err
 	}
 
+	tagsByListing, err := s.TagsByListing(ctx, ids)
+	if err != nil {
+		return dtos.PaginatedListings{}, err
+	}
+
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
 	return dtos.PaginatedListings{
-		Items:      dtos.ToListingResponsesWithImages(items, byListing),
+		Items:      dtos.WithTagsEach(dtos.ToListingResponsesWithImages(items, byListing), tagsByListing),
 		Total:      total,
 		Page:       page,
 		Limit:      limit,
 		TotalPages: totalPages,
 	}, nil
+}
+
+func (s *ListingService) TagsForListing(ctx context.Context, id uuid.UUID) ([]string, error) {
+	return s.db.ListTagsForListing(ctx, id)
+}
+
+func (s *ListingService) TagsByListing(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID][]string, error) {
+	out := make(map[uuid.UUID][]string, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+
+	rows, err := s.db.ListTagsForListings(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		out[row.ListingID] = append(out[row.ListingID], row.Name)
+	}
+
+	return out, nil
 }
 
 func (s *ListingService) ListCategories(ctx context.Context) ([]database.ListCategoriesRow, error) {

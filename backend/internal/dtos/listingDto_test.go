@@ -39,7 +39,7 @@ func TestToListingResponseJSON(t *testing.T) {
 		`"title":"Golden Chanterelles","description":"","category":"mushrooms",` +
 		`"price":18,"quantity":4,"unit":"kg",` +
 		`"created_at":"1970-01-01T00:00:00Z","updated_at":"1970-01-01T00:00:00Z",` +
-		`"images":[]}`
+		`"images":[],"tags":[]}`
 
 	if got != want {
 		t.Errorf("JSON shape changed\n got: %s\nwant: %s", got, want)
