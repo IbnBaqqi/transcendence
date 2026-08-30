@@ -82,8 +82,13 @@ func (s *AdminOrderService) List(ctx context.Context, q dtos.AdminOrderQuery) (d
 		return dtos.PaginatedAdminOrders{}, err
 	}
 
+	items := make([]dtos.AdminOrderResponse, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, dtos.ToAdminOrderResponse(row, isStuck(row)))
+	}
+
 	return dtos.PaginatedAdminOrders{
-		Items:      dtos.ToAdminOrderResponses(rows),
+		Items:      items,
 		Total:      total,
 		Page:       page,
 		Limit:      limit,
