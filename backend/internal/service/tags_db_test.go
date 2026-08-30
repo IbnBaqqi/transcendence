@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -172,5 +173,46 @@ func TestSearchResultsCarryTheirTags(t *testing.T) {
 	got := page.Items[0].Tags
 	if len(got) != 2 || got[0] != "roadside" || got[1] != "sunny" {
 		t.Errorf("tags on the search result = %q, want [roadside sunny]", got)
+	}
+}
+
+func TestUpsertTagSurvivesAConcurrentInsertOfTheSameName(t *testing.T) {
+	_, db, _ := tagFixture(t)
+	ctx := context.Background()
+
+	// A competing transaction claims the name and holds it uncommitted.
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatalf("opening the competing transaction: %v", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := db.Queries.WithTx(tx.Tx).UpsertTag(ctx, "chanterelle"); err != nil {
+		t.Fatalf("the first upsert: %v", err)
+	}
+
+	type result struct {
+		id  int32
+		err error
+	}
+	done := make(chan result, 1)
+	go func() {
+		id, err := db.UpsertTag(ctx, "chanterelle")
+		done <- result{id: id, err: err}
+	}()
+
+	// Give the racing upsert time to reach the conflicting row before the
+	// winner commits; without the row lock it returns immediately instead.
+	time.Sleep(300 * time.Millisecond)
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("committing: %v", err)
+	}
+
+	got := <-done
+	if got.err != nil {
+		t.Fatalf("a concurrent upsert of the same tag failed: %v - a bare ErrNoRows here reaches the client as a 500", got.err)
+	}
+	if got.id == 0 {
+		t.Error("the racing upsert returned no id")
 	}
 }

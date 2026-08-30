@@ -1,13 +1,7 @@
 -- name: UpsertTag :one
-WITH inserted AS (
-    INSERT INTO tags (name) VALUES ($1)
-    ON CONFLICT (name) DO NOTHING
-    RETURNING id
-)
-SELECT id FROM inserted
-UNION ALL
-SELECT id FROM tags WHERE name = $1
-LIMIT 1;
+INSERT INTO tags (name) VALUES ($1)
+ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+RETURNING id;
 
 -- name: AttachTag :exec
 INSERT INTO listing_tags (listing_id, tag_id)

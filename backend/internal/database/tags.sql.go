@@ -104,15 +104,9 @@ func (q *Queries) ListTagsForListings(ctx context.Context, listingIds []uuid.UUI
 }
 
 const upsertTag = `-- name: UpsertTag :one
-WITH inserted AS (
-    INSERT INTO tags (name) VALUES ($1)
-    ON CONFLICT (name) DO NOTHING
-    RETURNING id
-)
-SELECT id FROM inserted
-UNION ALL
-SELECT id FROM tags WHERE name = $1
-LIMIT 1
+INSERT INTO tags (name) VALUES ($1)
+ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+RETURNING id
 `
 
 func (q *Queries) UpsertTag(ctx context.Context, name string) (int32, error) {

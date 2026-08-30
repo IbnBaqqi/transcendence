@@ -80,6 +80,10 @@ func normaliseTags(raw []string) ([]string, error) {
 		return nil, &ValidationError{Message: "A listing can have at most 5 tags"}
 	}
 
+	// Do not remove: UpsertTag's ON CONFLICT DO UPDATE locks each existing tag
+	// row until commit, so two listings saved at once with overlapping tags in
+	// different orders ({a,b} against {b,a}) deadlock. Sorting gives every
+	// transaction the same lock order.
 	slices.Sort(out)
 
 	return out, nil
