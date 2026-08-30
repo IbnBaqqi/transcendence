@@ -61,7 +61,7 @@ func TestTagsSurviveARoundTrip(t *testing.T) {
 	ctx := context.Background()
 
 	created := createTagged(t, listings, seller, "Chanterelles",
-		[]string{"Chanterelle", "chanterelle", "  roadside  ", "", "SUNNY"})
+		[]string{"SUNNY", "  roadside  ", "Chanterelle", "chanterelle", ""})
 
 	got, err := db.ListTagsForListing(ctx, created.ID)
 	if err != nil {
@@ -117,5 +117,60 @@ func TestATagOutlivesTheListingThatUsedIt(t *testing.T) {
 	}
 	if len(got) != 1 || got[0] != "roadside" {
 		t.Errorf("the survivor's tags = %q, want [roadside] - deleting one listing took the tag with it", got)
+	}
+}
+
+func TestSearchNormalisesTheTagFilter(t *testing.T) {
+	listings, _, seller := tagFixture(t)
+	ctx := context.Background()
+
+	createTagged(t, listings, seller, "Chanterelles", []string{"roadside"})
+	createTagged(t, listings, seller, "Bilberries", nil)
+
+	tests := []struct {
+		name  string
+		tag   string
+		want  int
+		total int64
+	}{
+		{"exactly as stored", "roadside", 1, 1},
+		{"upper case and padded", "  Roadside  ", 1, 1},
+		{"a tag nobody uses", "nonsense", 0, 0},
+		{"whitespace only must not drop the filter", "   ", 0, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			page, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{Tag: tt.tag})
+			if err != nil {
+				t.Fatalf("searching: %v", err)
+			}
+			if len(page.Items) != tt.want {
+				t.Errorf("items = %d, want %d", len(page.Items), tt.want)
+			}
+			if page.Total != tt.total {
+				t.Errorf("total = %d, want %d", page.Total, tt.total)
+			}
+		})
+	}
+}
+
+func TestSearchResultsCarryTheirTags(t *testing.T) {
+	listings, _, seller := tagFixture(t)
+	ctx := context.Background()
+
+	createTagged(t, listings, seller, "Chanterelles", []string{"roadside", "sunny"})
+
+	page, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{Tag: "roadside"})
+	if err != nil {
+		t.Fatalf("searching: %v", err)
+	}
+	if len(page.Items) != 1 {
+		t.Fatalf("items = %d, want 1", len(page.Items))
+	}
+
+	got := page.Items[0].Tags
+	if len(got) != 2 || got[0] != "roadside" || got[1] != "sunny" {
+		t.Errorf("tags on the search result = %q, want [roadside sunny]", got)
 	}
 }

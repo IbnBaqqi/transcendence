@@ -239,7 +239,7 @@ components:
             Always present, `[]` when the listing has none - never absent and
             never null, so a client can iterate without a guard.
 
-            Lower case and trimmed, in the order the seller supplied them.
+            Lower case and trimmed, ordered alphabetically.
           items:
             type: string
             maxLength: 30
@@ -478,6 +478,9 @@ components:
           exclusiveMinimum: 0
           examples: [4]
         unit:
+          type: string
+          maxLength: 20
+          examples: ["kg"]
         tags:
           type: array
           maxItems: 5
@@ -496,9 +499,6 @@ components:
             type: string
             maxLength: 30
           examples: [["chanterelle", "roadside"]]
-          type: string
-          maxLength: 20
-          examples: ["kg"]
 
     CreateOrderInput:
       type: object

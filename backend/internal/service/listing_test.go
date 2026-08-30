@@ -112,7 +112,7 @@ func TestNormaliseTags(t *testing.T) {
 		{"lower-cased and trimmed", []string{"  Chanterelle  "}, []string{"chanterelle"}},
 		{"duplicates collapse rather than erroring", []string{"Chanterelle", "chanterelle"}, []string{"chanterelle"}},
 		{"blank entries are dropped, not rejected", []string{"roadside", "", "   "}, []string{"roadside"}},
-		{"order is the order they were given", []string{"sunny", "roadside"}, []string{"sunny", "roadside"}},
+		{"sorted, so every transaction locks tags in the same order", []string{"sunny", "roadside"}, []string{"roadside", "sunny"}},
 		{"nothing in, nothing out", nil, []string{}},
 		{"five is allowed", []string{"a", "b", "c", "d", "e"}, []string{"a", "b", "c", "d", "e"}},
 		{

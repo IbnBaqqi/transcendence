@@ -42,7 +42,7 @@ const listTagsForListing = `-- name: ListTagsForListing :many
 SELECT t.name FROM listing_tags lt
 JOIN tags t ON t.id = lt.tag_id
 WHERE lt.listing_id = $1
-ORDER BY lt.created_at, t.name
+ORDER BY t.name
 `
 
 func (q *Queries) ListTagsForListing(ctx context.Context, listingID uuid.UUID) ([]string, error) {
@@ -72,7 +72,7 @@ const listTagsForListings = `-- name: ListTagsForListings :many
 SELECT lt.listing_id, t.name FROM listing_tags lt
 JOIN tags t ON t.id = lt.tag_id
 WHERE lt.listing_id = ANY($1::uuid[])
-ORDER BY lt.listing_id, lt.created_at, t.name
+ORDER BY lt.listing_id, t.name
 `
 
 type ListTagsForListingsRow struct {
@@ -104,15 +104,20 @@ func (q *Queries) ListTagsForListings(ctx context.Context, listingIds []uuid.UUI
 }
 
 const upsertTag = `-- name: UpsertTag :one
-INSERT INTO tags (name)
-VALUES ($1)
-ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-RETURNING id, name
+WITH inserted AS (
+    INSERT INTO tags (name) VALUES ($1)
+    ON CONFLICT (name) DO NOTHING
+    RETURNING id
+)
+SELECT id FROM inserted
+UNION ALL
+SELECT id FROM tags WHERE name = $1
+LIMIT 1
 `
 
-func (q *Queries) UpsertTag(ctx context.Context, name string) (Tag, error) {
+func (q *Queries) UpsertTag(ctx context.Context, name string) (int32, error) {
 	row := q.db.QueryRowContext(ctx, upsertTag, name)
-	var i Tag
-	err := row.Scan(&i.ID, &i.Name)
-	return i, err
+	var id int32
+	err := row.Scan(&id)
+	return id, err
 }

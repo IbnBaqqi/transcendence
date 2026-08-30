@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -73,6 +74,8 @@ func normaliseTags(raw []string) ([]string, error) {
 		return nil, &ValidationError{Message: "A listing can have at most 5 tags"}
 	}
 
+	slices.Sort(out)
+
 	return out, nil
 }
 
@@ -82,13 +85,13 @@ func applyTags(ctx context.Context, qtx *database.Queries, listingID uuid.UUID, 
 	}
 
 	for _, name := range tags {
-		tag, err := qtx.UpsertTag(ctx, name)
+		tagID, err := qtx.UpsertTag(ctx, name)
 		if err != nil {
 			return err
 		}
 		if err := qtx.AttachTag(ctx, database.AttachTagParams{
 			ListingID: listingID,
-			TagID:     tag.ID,
+			TagID:     tagID,
 		}); err != nil {
 			return err
 		}
@@ -381,9 +384,12 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		if err != nil {
 			return dtos.PaginatedListings{}, err
 		}
-		if len(tags) > 0 {
-			tag = tags[0]
+		if len(tags) == 0 {
+			return dtos.PaginatedListings{
+				Items: []dtos.ListingResponse{}, Page: page, Limit: limit,
+			}, nil
 		}
+		tag = tags[0]
 	}
 
 	params := database.SearchListingsParams{
