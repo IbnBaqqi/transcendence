@@ -3,7 +3,7 @@ import { useFormContext } from "react-hook-form";
 import { useCategories, flattenCategories } from "../../api/categories";
 import { useFormConfig } from "./FormContext";
 
-type FormSelectProps = {
+type CategorySelectProps = {
   label?: string;
   ariaLabel?: string;
   name: string;
@@ -11,13 +11,13 @@ type FormSelectProps = {
   width?: string;
 };
 
-export function FormSelect({
+export function CategorySelect({
   label,
   ariaLabel,
   name,
   isEditing: isEditingProp,
   width: widthProp,
-}: FormSelectProps) {
+}: CategorySelectProps) {
   const {
     register,
     watch,
@@ -25,7 +25,7 @@ export function FormSelect({
   } = useFormContext();
   const { isEditing: ctxEditing } = useFormConfig();
 
-  const { data: categories, isPending, isError } = useCategories();
+  const { data: categories, isPending, isError, refetch } = useCategories();
 
   const width = widthProp ?? "w-full";
   const isEditing = isEditingProp ?? ctxEditing ?? false;
@@ -35,7 +35,8 @@ export function FormSelect({
 
   const options = flattenCategories(categories ?? []);
   const selected = options.find((option) => option.slug === value);
-  const unavailable = isPending || isError || options.length === 0;
+  const empty = !isPending && !isError && options.length === 0;
+  const unavailable = isPending || isError || empty;
 
   const statusId = `${name}-status`;
   const errorId = `${name}-error`;
@@ -85,9 +86,17 @@ export function FormSelect({
         ))}
       </select>
 
-      {!isPending && unavailable && (
+      {empty && (
         <span id={statusId} role="alert" className="text-berry-500 text-xs">
-          Could not load categories. Reload the page to try again
+          No categories are available
+        </span>
+      )}
+      {isError && (
+        <span id={statusId} role="alert" className="text-berry-500 text-xs">
+          Could not load categories.{" "}
+          <button type="button" className="underline" onClick={() => void refetch()}>
+            Try again
+          </button>
         </span>
       )}
       {error && (

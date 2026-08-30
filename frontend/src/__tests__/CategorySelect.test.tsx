@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FormProvider, useForm } from "react-hook-form";
 
-import { FormSelect } from "../components/forms/FormSelect";
+import { CategorySelect } from "../components/forms/CategorySelect";
 import { useCategories } from "../api/categories";
 import type { Category } from "../api/types";
 
@@ -25,7 +25,7 @@ function Harness({ onSubmit }: { onSubmit?: (values: { category: string }) => vo
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit((values) => onSubmit?.(values))}>
-        <FormSelect name="category" ariaLabel="Category" isEditing />
+        <CategorySelect name="category" ariaLabel="Category" isEditing />
         <button type="submit">Save</button>
       </form>
     </FormProvider>
@@ -40,7 +40,7 @@ function renderWith(
   return render(<Harness onSubmit={onSubmit} />);
 }
 
-describe("FormSelect", () => {
+describe("CategorySelect", () => {
   test("lists every category, with children under their parent", () => {
     renderWith({ data: TREE, isPending: false, isError: false });
 
@@ -80,7 +80,23 @@ describe("FormSelect", () => {
     renderWith({ data: [], isPending: false, isError: false });
 
     expect(screen.getByRole("combobox")).toBeDisabled();
-    expect(screen.getByText(/Could not load categories/)).toBeInTheDocument();
+    expect(screen.getByText(/No categories are available/)).toBeInTheDocument();
+    expect(screen.queryByText(/Could not load/)).not.toBeInTheDocument();
+  });
+
+  test("a failed request offers a retry rather than telling the user to reload", async () => {
+    const refetch = vi.fn();
+    vi.mocked(useCategories).mockReturnValue({
+      data: undefined,
+      isPending: false,
+      isError: true,
+      refetch,
+    } as unknown as ReturnType<typeof useCategories>);
+    render(<Harness />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(refetch).toHaveBeenCalled();
   });
 
   test("the control has an accessible name", () => {
@@ -93,7 +109,7 @@ describe("FormSelect", () => {
     renderWith({ data: [], isPending: false, isError: false });
 
     const message = screen.getByRole("alert");
-    expect(message).toHaveTextContent(/Could not load categories/);
+    expect(message).toHaveTextContent(/No categories are available/);
     expect(screen.getByRole("combobox")).toHaveAttribute("aria-describedby", message.id);
   });
 
