@@ -2,6 +2,7 @@ package database_test
 
 import (
 	"context"
+	"sort"
 	"testing"
 
 	"github.com/google/uuid"
@@ -87,6 +88,78 @@ func TestLocationFilterMatchesOnlySellersWithAnAddress(t *testing.T) {
 			}
 			if int(count) != len(tt.want) {
 				t.Errorf("count = %d, want %d", count, len(tt.want))
+			}
+		})
+	}
+}
+
+func categorised(t *testing.T, db *database.DB, name, title, category string) {
+	t.Helper()
+
+	id := uuid.New()
+	if _, err := db.Exec(
+		`INSERT INTO users (id, email, username, password) VALUES ($1, $2, $3, 'x')`,
+		id, name+"@example.test", name,
+	); err != nil {
+		t.Fatalf("creating %s: %v", name, err)
+	}
+
+	if _, err := db.Exec(
+		`INSERT INTO listings (id, seller_id, title, description, category, price, quantity, unit)
+		 VALUES ($1, $2, $3, 'fresh', $4, 10.00, 5, 'kg')`,
+		database.NewID(), id, title, category,
+	); err != nil {
+		t.Fatalf("creating %s's listing: %v", name, err)
+	}
+}
+
+func TestFilteringByAParentIncludesItsChildren(t *testing.T) {
+	db := testdb.New(t)
+	ctx := context.Background()
+
+	if _, err := db.Exec(
+		`INSERT INTO categories (slug, name, parent_slug) VALUES ('chanterelles', 'Chanterelles', 'mushrooms')`,
+	); err != nil {
+		t.Fatalf("adding a child category: %v", err)
+	}
+
+	categorised(t, db, "aino", "Plain Mushrooms", "mushrooms")
+	categorised(t, db, "veikko", "Golden Chanterelles", "chanterelles")
+	categorised(t, db, "sisko", "Bilberries", "berries")
+
+	tests := []struct {
+		name     string
+		category string
+		want     []string
+	}{
+		{"a parent reaches its children", "mushrooms", []string{"Golden Chanterelles", "Plain Mushrooms"}},
+		{"a child does not climb back up", "chanterelles", []string{"Golden Chanterelles"}},
+		{"an unrelated category is unaffected", "berries", []string{"Bilberries"}},
+		{"an unknown slug is empty, not an error", "nonsense", nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows, err := db.Queries.SearchListingsDynamic(ctx, database.SearchListingsParams{
+				Category: tt.category, Limit: 50,
+			})
+			if err != nil {
+				t.Fatalf("searching: %v", err)
+			}
+
+			got := make([]string, 0, len(rows))
+			for _, row := range rows {
+				got = append(got, row.Title)
+			}
+			sort.Strings(got)
+
+			if len(got) != len(tt.want) {
+				t.Fatalf("titles = %v, want %v", got, tt.want)
+			}
+			for i, title := range tt.want {
+				if got[i] != title {
+					t.Fatalf("titles = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}

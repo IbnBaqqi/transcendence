@@ -174,6 +174,31 @@ components:
           description: Path served by the API, for use in an `img` tag.
           examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
 
+    Category:
+      type: object
+      required: [slug, name, children]
+      description: |
+        The tree is capped at two levels by the database, so a child never has
+        children of its own - `children` on a child is always `[]`.
+
+        It is always present rather than omitted when empty, so a client never
+        has to distinguish "no children" from "field absent".
+      properties:
+        slug:
+          type: string
+          description: |
+            The stable identifier. This is what `Listing.category` holds and
+            what `?category=` takes - never the name.
+          examples: ["mushrooms"]
+        name:
+          type: string
+          description: For display. Renaming it does not break a saved URL.
+          examples: ["Mushrooms"]
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+
     Listing:
       type: object
       # Every field without omitempty in ListingResponse is always present.
@@ -208,6 +233,9 @@ components:
           description: Empty string when the seller left it blank.
         category:
           type: string
+          description: |
+            A slug from `GET /categories`, not free text. Previously any string
+            was accepted; it is now a foreign key, so only known slugs exist.
           examples: ["mushrooms"]
         price:
           type: number
@@ -475,6 +503,12 @@ components:
         category:
           type: string
           maxLength: 50
+          description: |
+            Must be a slug from `GET /categories`. Trimmed and lower-cased on
+            the way in - the same normalisation migration 013 applied to the
+            rows it found - so `Mushrooms` is stored as `mushrooms` rather than
+            rejected. An unrecognised value is still a 400, where it used to be
+            accepted and stored as-is.
           examples: ["mushrooms"]
         price:
           type: number
@@ -1883,6 +1917,39 @@ paths:
           $ref: "#/components/responses/ServerError"
 
   # ---------------------------------------------------------------------------
+  # categories
+  # ---------------------------------------------------------------------------
+  /categories:
+    get:
+      tags: [listings]
+      summary: The category tree
+      operationId: listCategories
+      security: []
+      description: |
+        Every category, parents with their children nested. Public, because a
+        buyer needs the list before they have an account.
+
+        Top-level categories are ordered by slug, and each one's children are
+        nested inside it, also ordered by slug. Note that is the slug, not the
+        `name` a client displays.
+
+        This is the only source of valid category slugs - creating a listing
+        with anything not in this list is a 400.
+      responses:
+        "200":
+          description: The tree. Never empty in practice; the seeded five always exist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  # ---------------------------------------------------------------------------
   # listings (public reads)
   # ---------------------------------------------------------------------------
   /listings:
@@ -1954,7 +2021,9 @@ paths:
 
         `keyword` and `location` match case-insensitively on a substring, with
         `%` or `_` in the input treated literally rather than as SQL
-        wildcards. `category` is an exact, case-SENSITIVE match.
+        wildcards. `category` takes a slug and is exact once trimmed and
+        lower-cased, except that a parent slug also matches its children - see
+        the parameter below.
       parameters:
         # in: query = ?keyword=... . Optional unless "required: true".
         - name: keyword
@@ -1968,6 +2037,15 @@ paths:
               value: chanterelle
         - name: category
           in: query
+          description: |
+            A slug from `GET /categories`, trimmed and lower-cased like the
+            write path, so `?category=Mushrooms` finds them. Filtering by a
+            parent returns its children's listings too - `?category=mushrooms`
+            includes anything filed under `chanterelles`.
+
+            An unknown slug returns an empty page rather than a 400, unlike
+            `sort`: a category is data and can stop existing, and a bookmarked
+            URL is better served by no results than by an error.
           schema:
             type: string
             maxLength: 200

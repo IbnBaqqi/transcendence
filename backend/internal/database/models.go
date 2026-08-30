@@ -36,6 +36,14 @@ type Block struct {
 	CreatedAt sql.NullTime
 }
 
+type Category struct {
+	Slug        string
+	Name        string
+	ParentSlug  sql.NullString
+	IsTop       sql.NullBool
+	ParentIsTop sql.NullBool
+}
+
 type Conversation struct {
 	ID           uuid.UUID
 	ListingID    uuid.NullUUID
