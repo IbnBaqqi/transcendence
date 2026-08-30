@@ -97,6 +97,13 @@ func (s *Service) RedeemSession(ctx context.Context, raw string) (LoginResult, e
 		return LoginResult{}, err
 	}
 
+	if user.DeletedAt.Valid {
+		return LoginResult{}, &AuthError{Message: "Invalid refresh token"}
+	}
+	if user.SuspendedAt.Valid {
+		return LoginResult{}, &SuspendedError{Message: suspendedLoginMessage(user.SuspensionReason)}
+	}
+
 	var next string
 	if rotate {
 		next, err = s.IssueSession(ctx, qtx, user.ID)

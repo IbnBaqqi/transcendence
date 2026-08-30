@@ -183,7 +183,7 @@ func (q *Queries) IncrementListingQuantity(ctx context.Context, arg IncrementLis
 const listListings = `-- name: ListListings :many
 SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at FROM listings
 WHERE listings.quantity > 0 AND listings.removed_at IS NULL
-  AND user_is_visible(listings.seller_id)
+  AND EXISTS (SELECT 1 FROM users u WHERE u.id = listings.seller_id AND u.is_visible)
 ORDER BY created_at DESC
 `
 

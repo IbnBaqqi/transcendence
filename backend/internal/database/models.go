@@ -193,6 +193,7 @@ type User struct {
 	DeletedAt        sql.NullTime
 	SuspendedAt      sql.NullTime
 	SuspensionReason sql.NullString
+	IsVisible        bool
 }
 
 type UserAction struct {

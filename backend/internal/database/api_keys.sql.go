@@ -61,7 +61,7 @@ WHERE api_keys.key_hash = $1
     AND api_keys.revoked_at IS NULL
     -- A suspended user's key has to stop working too, or authenticating with a
     -- key is a side door around RequireActiveUser.
-    AND user_is_visible(users.id)
+    AND users.is_visible
 `
 
 type FindLiveKeyByHashRow struct {

@@ -10,7 +10,7 @@ WHERE listings.id = $1;
 -- name: ListListings :many
 SELECT * FROM listings
 WHERE listings.quantity > 0 AND listings.removed_at IS NULL
-  AND user_is_visible(listings.seller_id)
+  AND EXISTS (SELECT 1 FROM users u WHERE u.id = listings.seller_id AND u.is_visible)
 ORDER BY created_at DESC;
 
 -- name: UpdateListing :one

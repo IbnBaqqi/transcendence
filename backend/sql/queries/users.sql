@@ -34,7 +34,7 @@ WHERE id = $1;
 -- name: TouchLastSeen :exec
 UPDATE users
 SET last_seen_at = CURRENT_TIMESTAMP
-WHERE id = $1 AND deleted_at IS NULL;
+WHERE id = $1 AND is_visible;
 
 -- name: UpdateShowOnlineStatus :one
 UPDATE users
@@ -157,4 +157,4 @@ WHERE (sqlc.narg(role)::text IS NULL OR role = sqlc.narg(role)::text)
 -- name: UserIsVisible :one
 -- The same function the listing predicates use, for the one visibility check
 -- that lives in Go rather than in a WHERE clause.
-SELECT COALESCE(user_is_visible(sqlc.arg(user_id)), false)::boolean;
+SELECT COALESCE((SELECT is_visible FROM users WHERE id = sqlc.arg(user_id)), false)::boolean;

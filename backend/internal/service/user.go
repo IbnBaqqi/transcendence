@@ -44,14 +44,6 @@ func (s *UserService) SetShowOnlineStatus(ctx context.Context, userID uuid.UUID,
 	return user, nil
 }
 
-// DeleteAccount anonymises the caller's account rather than deleting the row:
-// orders references users with ON DELETE RESTRICT on both sides, and messages
-// cascade from conversations, so a real delete would either fail or destroy the
-// other party's copy of a thread.
-// scrubAccount is everything a deletion does once the caller's own guards have
-// passed. Shared so a self-deletion and an admin deletion cannot drift - the
-// account has to end up in the same state either way. Returns the previous
-// avatar filename, for the caller to unlink after the commit.
 func scrubAccount(ctx context.Context, qtx *database.Queries, userID uuid.UUID) (sql.NullString, error) {
 	avatar, err := qtx.ScrubProfile(ctx, userID)
 	if err != nil {

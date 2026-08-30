@@ -59,7 +59,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 	if err != nil {
 		return database.Order{}, err
 	}
-	if !isActive(seller) {
+	if !seller.IsVisible {
 		return database.Order{}, &NotFoundError{Message: "Listing not found"}
 	}
 

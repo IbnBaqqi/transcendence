@@ -21,7 +21,7 @@ SELECT
 FROM follows
 JOIN users ON users.id = follows.followee_id
 WHERE follows.follower_id = sqlc.arg(subject_id)
-  AND user_is_visible(users.id)
+  AND users.is_visible
 ORDER BY users.username;
 
 -- name: ListFollowers :many
@@ -38,7 +38,7 @@ SELECT
 FROM follows
 JOIN users ON users.id = follows.follower_id
 WHERE follows.followee_id = sqlc.arg(subject_id)
-  AND user_is_visible(users.id)
+  AND users.is_visible
 ORDER BY users.username;
 
 -- name: DeleteFollowsForUser :exec

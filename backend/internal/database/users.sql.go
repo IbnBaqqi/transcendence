@@ -22,7 +22,7 @@ SET email              = 'deleted-' || id::text || '@deleted.invalid',
     deleted_at         = now(),
     updated_at         = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason, is_visible
 `
 
 // The placeholders embed the id because both columns are NOT NULL under unique
@@ -50,6 +50,7 @@ func (q *Queries) AnonymiseUser(ctx context.Context, id uuid.UUID) (User, error)
 		&i.DeletedAt,
 		&i.SuspendedAt,
 		&i.SuspensionReason,
+		&i.IsVisible,
 	)
 	return i, err
 }
@@ -94,7 +95,7 @@ INSERT INTO users (id, username, email, password)
 VALUES (
 	$1, $2, $3, $4
 )
-RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason, is_visible
 `
 
 type CreateUserParams struct {
@@ -125,6 +126,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.DeletedAt,
 		&i.SuspendedAt,
 		&i.SuspensionReason,
+		&i.IsVisible,
 	)
 	return i, err
 }
@@ -184,7 +186,7 @@ func (q *Queries) GetSuspension(ctx context.Context, id uuid.UUID) (GetSuspensio
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason, is_visible FROM users
 WHERE id = $1
 LIMIT 1
 `
@@ -205,12 +207,13 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.DeletedAt,
 		&i.SuspendedAt,
 		&i.SuspensionReason,
+		&i.IsVisible,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason, is_visible FROM users
 WHERE lower(email) = lower($1)
   AND deleted_at IS NULL
 LIMIT 1
@@ -232,12 +235,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.DeletedAt,
 		&i.SuspendedAt,
 		&i.SuspensionReason,
+		&i.IsVisible,
 	)
 	return i, err
 }
 
 const getUserForUpdate = `-- name: GetUserForUpdate :one
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason, is_visible FROM users
 WHERE id = $1
 FOR UPDATE
 `
@@ -258,6 +262,7 @@ func (q *Queries) GetUserForUpdate(ctx context.Context, id uuid.UUID) (User, err
 		&i.DeletedAt,
 		&i.SuspendedAt,
 		&i.SuspensionReason,
+		&i.IsVisible,
 	)
 	return i, err
 }
@@ -275,7 +280,7 @@ func (q *Queries) GetUserRole(ctx context.Context, id uuid.UUID) (string, error)
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason FROM users
+SELECT id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason, is_visible FROM users
 ORDER BY created_at DESC
 `
 
@@ -301,6 +306,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.DeletedAt,
 			&i.SuspendedAt,
 			&i.SuspensionReason,
+			&i.IsVisible,
 		); err != nil {
 			return nil, err
 		}
@@ -412,7 +418,7 @@ SET suspended_at      = NULL,
     suspension_reason = NULL,
     updated_at        = now()
 WHERE id = $1 AND suspended_at IS NOT NULL AND deleted_at IS NULL
-RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason, is_visible
 `
 
 func (q *Queries) ReinstateUser(ctx context.Context, id uuid.UUID) (User, error) {
@@ -431,6 +437,7 @@ func (q *Queries) ReinstateUser(ctx context.Context, id uuid.UUID) (User, error)
 		&i.DeletedAt,
 		&i.SuspendedAt,
 		&i.SuspensionReason,
+		&i.IsVisible,
 	)
 	return i, err
 }
@@ -441,7 +448,7 @@ SET suspended_at      = now(),
     suspension_reason = $2,
     updated_at        = now()
 WHERE id = $1 AND suspended_at IS NULL AND deleted_at IS NULL
-RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason, is_visible
 `
 
 type SuspendUserParams struct {
@@ -465,6 +472,7 @@ func (q *Queries) SuspendUser(ctx context.Context, arg SuspendUserParams) (User,
 		&i.DeletedAt,
 		&i.SuspendedAt,
 		&i.SuspensionReason,
+		&i.IsVisible,
 	)
 	return i, err
 }
@@ -472,7 +480,7 @@ func (q *Queries) SuspendUser(ctx context.Context, arg SuspendUserParams) (User,
 const touchLastSeen = `-- name: TouchLastSeen :exec
 UPDATE users
 SET last_seen_at = CURRENT_TIMESTAMP
-WHERE id = $1 AND deleted_at IS NULL
+WHERE id = $1 AND is_visible
 `
 
 func (q *Queries) TouchLastSeen(ctx context.Context, id uuid.UUID) error {
@@ -485,7 +493,7 @@ UPDATE users
 SET show_online_status = $2,
   updated_at = now()
 WHERE id = $1
-RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason, is_visible
 `
 
 type UpdateShowOnlineStatusParams struct {
@@ -509,6 +517,7 @@ func (q *Queries) UpdateShowOnlineStatus(ctx context.Context, arg UpdateShowOnli
 		&i.DeletedAt,
 		&i.SuspendedAt,
 		&i.SuspensionReason,
+		&i.IsVisible,
 	)
 	return i, err
 }
@@ -564,7 +573,7 @@ func (q *Queries) UserIsActive(ctx context.Context, id uuid.UUID) (bool, error) 
 }
 
 const userIsVisible = `-- name: UserIsVisible :one
-SELECT COALESCE(user_is_visible($1), false)::boolean
+SELECT COALESCE((SELECT is_visible FROM users WHERE id = $1), false)::boolean
 `
 
 // The same function the listing predicates use, for the one visibility check

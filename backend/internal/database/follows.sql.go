@@ -51,7 +51,7 @@ SELECT
 FROM follows
 JOIN users ON users.id = follows.follower_id
 WHERE follows.followee_id = $2
-  AND user_is_visible(users.id)
+  AND users.is_visible
 ORDER BY users.username
 `
 
@@ -109,7 +109,7 @@ SELECT
 FROM follows
 JOIN users ON users.id = follows.followee_id
 WHERE follows.follower_id = $2
-  AND user_is_visible(users.id)
+  AND users.is_visible
 ORDER BY users.username
 `
 

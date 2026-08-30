@@ -125,6 +125,11 @@ func (s *AdminUserService) transition(
 	var updated database.User
 	if action == "suspended" {
 		updated, err = qtx.SuspendUser(ctx, database.SuspendUserParams{ID: subjectID, Reason: sql.NullString{String: note, Valid: true}})
+		if err == nil {
+			if revokeErr := qtx.RevokeSessionsForUser(ctx, subjectID); revokeErr != nil {
+				return database.User{}, revokeErr
+			}
+		}
 	} else {
 		updated, err = qtx.ReinstateUser(ctx, subjectID)
 	}
