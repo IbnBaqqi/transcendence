@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -97,6 +98,59 @@ func TestSearchListingsRejectsBadInput(t *testing.T) {
 			var validation *ValidationError
 			if !errors.As(err, &validation) {
 				t.Fatalf("err = %v, want *ValidationError", err)
+			}
+		})
+	}
+}
+
+func TestNormaliseTags(t *testing.T) {
+	tests := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{"lower-cased and trimmed", []string{"  Chanterelle  "}, []string{"chanterelle"}},
+		{"duplicates collapse rather than erroring", []string{"Chanterelle", "chanterelle"}, []string{"chanterelle"}},
+		{"blank entries are dropped, not rejected", []string{"roadside", "", "   "}, []string{"roadside"}},
+		{"order is the order they were given", []string{"sunny", "roadside"}, []string{"sunny", "roadside"}},
+		{"nothing in, nothing out", nil, []string{}},
+		{"five is allowed", []string{"a", "b", "c", "d", "e"}, []string{"a", "b", "c", "d", "e"}},
+		{
+			"six that collapse to four are allowed",
+			[]string{"a", "A", "b", "B", "c", "d"},
+			[]string{"a", "b", "c", "d"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := normaliseTags(tt.in)
+			if err != nil {
+				t.Fatalf("normaliseTags(%q): %v", tt.in, err)
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("got %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNormaliseTagsRejects(t *testing.T) {
+	tests := []struct {
+		name string
+		in   []string
+	}{
+		{"six distinct tags", []string{"a", "b", "c", "d", "e", "f"}},
+		{"a tag over 30 characters", []string{strings.Repeat("a", 31)}},
+		{"invalid utf-8", []string{"\xff"}},
+		{"a null byte", []string{"road\x00side"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var invalid *ValidationError
+			if _, err := normaliseTags(tt.in); !errors.As(err, &invalid) {
+				t.Errorf("err = %#v, want *ValidationError", err)
 			}
 		})
 	}
