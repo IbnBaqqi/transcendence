@@ -188,6 +188,7 @@ components:
           created_at,
           updated_at,
           images,
+          tags,
         ]
       properties:
         id:
@@ -232,6 +233,17 @@ components:
           items:
             # $ref = "reuse that definition here". This is why schemas exist.
             $ref: "#/components/schemas/ListingImage"
+        tags:
+          type: array
+          description: |
+            Always present, `[]` when the listing has none - never absent and
+            never null, so a client can iterate without a guard.
+
+            Lower case and trimmed, in the order the seller supplied them.
+          items:
+            type: string
+            maxLength: 30
+          examples: [["chanterelle", "roadside"]]
         removed_at:
           type: string
           format: date-time
@@ -466,6 +478,24 @@ components:
           exclusiveMinimum: 0
           examples: [4]
         unit:
+        tags:
+          type: array
+          maxItems: 5
+          description: |
+            Normalised on write: trimmed, lower-cased, and de-duplicated. So
+            `["Chanterelle", "chanterelle"]` is stored as one tag rather than
+            rejected as a conflict, and blank entries are dropped rather than
+            refused - a form with five slots and two filled is not an error.
+
+            The limit of 5 applies **after** de-duplication, so six entries that
+            collapse to four are accepted.
+
+            **`PUT /listings/{id}` replaces the whole set.** Omitting `tags`
+            removes every tag the listing had; it does not leave them alone.
+          items:
+            type: string
+            maxLength: 30
+          examples: [["chanterelle", "roadside"]]
           type: string
           maxLength: 20
           examples: ["kg"]
@@ -1712,7 +1742,8 @@ paths:
 
         `keyword` and `location` match case-insensitively on a substring, with
         `%` or `_` in the input treated literally rather than as SQL
-        wildcards. `category` is an exact, case-SENSITIVE match.
+        wildcards. `category` is an exact, case-SENSITIVE match. `tag` is exact
+        too, but normalised like the write path, so its case does not matter.
       parameters:
         # in: query = ?keyword=... . Optional unless "required: true".
         - name: keyword
@@ -1732,6 +1763,21 @@ paths:
           examples:
             mushrooms:
               value: mushrooms
+        - name: tag
+          in: query
+          description: |
+            An exact tag, normalised the same way as on write - `?tag=Chanterelle`
+            matches a listing tagged `chanterelle`. Not a substring match: `mush`
+            does not find `mushroom`.
+
+            One tag only. An unknown tag returns an empty page rather than a 400,
+            since tags are user-created and can stop existing.
+          schema:
+            type: string
+            maxLength: 30
+          examples:
+            chanterelle:
+              value: chanterelle
         - name: location
           in: query
           description: |
