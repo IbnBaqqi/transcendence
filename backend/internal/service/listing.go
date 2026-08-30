@@ -45,12 +45,81 @@ func validateListingInput(title, category, unit string, price float64, quantity 
 	return nil
 }
 
+func normaliseTags(raw []string) ([]string, error) {
+	seen := make(map[string]bool, len(raw))
+	out := make([]string, 0, len(raw))
+
+	for _, tag := range raw {
+		if !utf8.ValidString(tag) || strings.ContainsRune(tag, 0) {
+			return nil, &ValidationError{Message: "Tags must be valid UTF-8 without null bytes"}
+		}
+
+		tag = strings.ToLower(strings.TrimSpace(sanitizeReportDetail(tag)))
+		if tag == "" {
+			continue
+		}
+		if utf8.RuneCountInString(tag) > maxTagLength {
+			return nil, &ValidationError{Message: "A tag is too long"}
+		}
+		if seen[tag] {
+			continue
+		}
+
+		seen[tag] = true
+		out = append(out, tag)
+	}
+
+	if len(out) > maxTagsPerListing {
+		return nil, &ValidationError{Message: "A listing can have at most 5 tags"}
+	}
+
+	return out, nil
+}
+
+func applyTags(ctx context.Context, qtx *database.Queries, listingID uuid.UUID, tags []string) error {
+	if err := qtx.DetachAllTags(ctx, listingID); err != nil {
+		return err
+	}
+
+	for _, name := range tags {
+		tag, err := qtx.UpsertTag(ctx, name)
+		if err != nil {
+			return err
+		}
+		if err := qtx.AttachTag(ctx, database.AttachTagParams{
+			ListingID: listingID,
+			TagID:     tag.ID,
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, input dtos.CreateListingInput) (database.Listing, error) {
 	if err := validateListingInput(input.Title, input.Category, input.Unit, input.Price, input.Quantity); err != nil {
 		return database.Listing{}, err
 	}
 
-	return s.db.CreateListing(ctx, database.CreateListingParams{
+	tags, err := normaliseTags(input.Tags)
+	if err != nil {
+		return database.Listing{}, err
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return database.Listing{}, err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			slog.Error("listing create transaction rollback failed", "error", err)
+		}
+	}()
+
+	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	listing, err := qtx.CreateListing(ctx, database.CreateListingParams{
 		ID:          database.NewID(),
 		SellerID:    sellerID,
 		Title:       input.Title,
@@ -60,6 +129,19 @@ func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, 
 		Quantity:    input.Quantity,
 		Unit:        input.Unit,
 	})
+	if err != nil {
+		return database.Listing{}, err
+	}
+
+	if err := applyTags(ctx, qtx, listing.ID, tags); err != nil {
+		return database.Listing{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return database.Listing{}, err
+	}
+
+	return listing, nil
 }
 
 func (s *ListingService) GetListing(ctx context.Context, id uuid.UUID) (database.Listing, error) {
@@ -77,6 +159,11 @@ func (s *ListingService) ListListings(ctx context.Context) ([]database.Listing, 
 // UpdateListing edits a listing the caller owns.
 func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, listingID uuid.UUID, input dtos.UpdateListingInput) (database.Listing, error) {
 	if err := validateListingInput(input.Title, input.Category, input.Unit, input.Price, input.Quantity); err != nil {
+		return database.Listing{}, err
+	}
+
+	tags, err := normaliseTags(input.Tags)
+	if err != nil {
 		return database.Listing{}, err
 	}
 
@@ -118,6 +205,10 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, li
 		Unit:        input.Unit,
 	})
 	if err != nil {
+		return database.Listing{}, err
+	}
+
+	if err := applyTags(ctx, qtx, listingID, tags); err != nil {
 		return database.Listing{}, err
 	}
 
@@ -196,6 +287,9 @@ const (
 	maxLimit     = 50
 
 	maxSearchTextLength = 200
+
+	maxTagsPerListing = 5
+	maxTagLength      = 30
 )
 
 func resolveSort(sortKey string) (string, error) {
