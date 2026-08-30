@@ -7,9 +7,41 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
+
+const countOrdersForAdmin = `-- name: CountOrdersForAdmin :one
+SELECT COUNT(*) FROM orders
+WHERE ($1::text IS NULL OR status = $1::text)
+  AND ($2::timestamptz IS NULL OR created_at >= $2::timestamptz)
+  AND ($3::timestamptz IS NULL OR created_at < $3::timestamptz)
+  AND (
+      $4::boolean IS NULL
+      OR (status = 'confirmed'
+          AND (seller_handed_over_at IS NULL) <> (buyer_received_at IS NULL)) = $4::boolean
+  )
+`
+
+type CountOrdersForAdminParams struct {
+	Status      sql.NullString
+	CreatedFrom sql.NullTime
+	CreatedTo   sql.NullTime
+	Stuck       sql.NullBool
+}
+
+func (q *Queries) CountOrdersForAdmin(ctx context.Context, arg CountOrdersForAdminParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countOrdersForAdmin,
+		arg.Status,
+		arg.CreatedFrom,
+		arg.CreatedTo,
+		arg.Stuck,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const countOrdersForListing = `-- name: CountOrdersForListing :one
 SELECT COUNT(*) FROM orders
@@ -119,6 +151,73 @@ func (q *Queries) GetOrderForUpdate(ctx context.Context, id uuid.UUID) (Order, e
 		&i.ListingTitle,
 	)
 	return i, err
+}
+
+const listOrdersForAdmin = `-- name: ListOrdersForAdmin :many
+SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title FROM orders
+WHERE ($1::text IS NULL OR status = $1::text)
+  AND ($2::timestamptz IS NULL OR created_at >= $2::timestamptz)
+  AND ($3::timestamptz IS NULL OR created_at < $3::timestamptz)
+  AND (
+      $4::boolean IS NULL
+      OR (status = 'confirmed'
+          AND (seller_handed_over_at IS NULL) <> (buyer_received_at IS NULL)) = $4::boolean
+  )
+ORDER BY created_at DESC, id DESC
+LIMIT $6 OFFSET $5
+`
+
+type ListOrdersForAdminParams struct {
+	Status      sql.NullString
+	CreatedFrom sql.NullTime
+	CreatedTo   sql.NullTime
+	Stuck       sql.NullBool
+	PageOffset  int32
+	PageLimit   int32
+}
+
+func (q *Queries) ListOrdersForAdmin(ctx context.Context, arg ListOrdersForAdminParams) ([]Order, error) {
+	rows, err := q.db.QueryContext(ctx, listOrdersForAdmin,
+		arg.Status,
+		arg.CreatedFrom,
+		arg.CreatedTo,
+		arg.Stuck,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Order
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.ListingID,
+			&i.BuyerID,
+			&i.SellerID,
+			&i.Quantity,
+			&i.UnitPrice,
+			&i.TotalPrice,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.SellerHandedOverAt,
+			&i.BuyerReceivedAt,
+			&i.ListingTitle,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listOrdersForUser = `-- name: ListOrdersForUser :many
