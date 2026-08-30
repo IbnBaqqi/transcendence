@@ -483,6 +483,9 @@ SET last_seen_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND is_visible
 `
 
+// The visibility guard is not redundant next to RequireActiveUser: this runs at
+// the /api/v1 level, outside the group that middleware protects, so without it a
+// suspended user keeps refreshing last_seen_at and shows as online forever.
 func (q *Queries) TouchLastSeen(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, touchLastSeen, id)
 	return err

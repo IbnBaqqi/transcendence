@@ -44,6 +44,9 @@ func (s *UserService) SetShowOnlineStatus(ctx context.Context, userID uuid.UUID,
 	return user, nil
 }
 
+// scrubAccount is shared by self-deletion and admin deletion on purpose: an
+// account has to end up in the same state either way, and two copies would
+// drift into scrubbing different things.
 func scrubAccount(ctx context.Context, qtx *database.Queries, userID uuid.UUID) (sql.NullString, error) {
 	avatar, err := qtx.ScrubProfile(ctx, userID)
 	if err != nil {
@@ -77,6 +80,11 @@ func scrubAccount(ctx context.Context, qtx *database.Queries, userID uuid.UUID) 
 	return avatar, nil
 }
 
+// DeleteAccount anonymises the row instead of deleting it. Do not "simplify"
+// this to a DELETE: orders references users with ON DELETE RESTRICT on both
+// sides, so it would fail outright for anyone who has traded, and messages
+// cascade from conversations, so it would destroy the other party's copy of a
+// shared thread.
 func (s *UserService) DeleteAccount(ctx context.Context, userID uuid.UUID, confirmation string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

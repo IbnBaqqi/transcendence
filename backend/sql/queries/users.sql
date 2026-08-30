@@ -32,6 +32,9 @@ DELETE FROM users
 WHERE id = $1;
 
 -- name: TouchLastSeen :exec
+-- The visibility guard is not redundant next to RequireActiveUser: this runs at
+-- the /api/v1 level, outside the group that middleware protects, so without it a
+-- suspended user keeps refreshing last_seen_at and shows as online forever.
 UPDATE users
 SET last_seen_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND is_visible;
