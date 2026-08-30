@@ -59,7 +59,9 @@ FROM api_keys
 JOIN users ON users.id = api_keys.user_id
 WHERE api_keys.key_hash = $1
     AND api_keys.revoked_at IS NULL
-    AND users.deleted_at IS NULL
+    -- A suspended user's key has to stop working too, or authenticating with a
+    -- key is a side door around RequireActiveUser.
+    AND users.is_visible
 `
 
 type FindLiveKeyByHashRow struct {

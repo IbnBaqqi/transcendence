@@ -34,6 +34,8 @@ func newHandler(appService *api) *handler.Handler {
 		ListingImage: appService.ListingImage,
 		Report:       appService.Report,
 		Moderation:   appService.Moderation,
+		AdminUser:    appService.AdminUser,
+		Review:       appService.Review,
 
 		MaxUploadBytes: appService.Upload.MaxBytes,
 		CookieSecure:   appService.AuthConfig.CookieSecure,
@@ -87,6 +89,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		r.Get("/categories", h.GetCategories)
 
 		r.Get("/users/{id}", h.GetPublicProfile)
+		r.Get("/users/{id}/reviews", h.GetSellerReviews)
 
 		r.Group(func(r chi.Router) {
 			r.Use(mw.RequiredAuth)
@@ -109,6 +112,12 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 				r.Get("/admin/listings/{id}/reports", h.GetListingReports)
 				r.Get("/admin/listings/{id}/moderation", h.GetModerationHistory)
 				r.Post("/admin/listings/{id}/moderate", h.ModerateListing)
+
+				r.Get("/admin/users", h.ListUsers)
+				r.Get("/admin/users/{id}/history", h.GetUserHistory)
+				r.Post("/admin/users/{id}/suspend", h.SuspendUser)
+				r.Post("/admin/users/{id}/reinstate", h.ReinstateUser)
+				r.Delete("/admin/users/{id}", h.DeleteUserAsAdmin)
 			})
 
 			r.Post("/conversations", h.StartConversation)
@@ -158,6 +167,10 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/orders/{id}/handover", h.HandoverOrder)
 			r.Post("/orders/{id}/receive", h.ReceiveOrder)
 			r.Post("/orders/{id}/cancel", h.CancelOrder)
+
+			r.Get("/orders/{id}/review", h.GetOrderReview)
+			r.Post("/orders/{id}/review", h.CreateReview)
+			r.Patch("/reviews/{id}", h.UpdateReview)
 			// r.Get("/dashboard", dashboardHandler)
 		})
 	})

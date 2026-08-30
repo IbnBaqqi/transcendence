@@ -37,7 +37,7 @@ func filledProfile() (database.User, database.Profile, sql.NullString) {
 func TestPublicProfileHasNoPrivateFields(t *testing.T) {
 	user, profile, location := filledProfile()
 
-	body, err := json.Marshal(ToPublicProfileResponse(user, profile, location, true))
+	body, err := json.Marshal(ToPublicProfileResponse(user, profile, location, database.SellerRatingRow{Average: 4.25, Total: 4}, true))
 	if err != nil {
 		t.Fatalf("marshalling: %v", err)
 	}
@@ -61,7 +61,7 @@ func TestPublicProfileHasNoPrivateFields(t *testing.T) {
 func TestAnAnonymousViewerGetsNoPresenceField(t *testing.T) {
 	user, profile, location := filledProfile()
 
-	body, err := json.Marshal(ToPublicProfileResponse(user, profile, location, false))
+	body, err := json.Marshal(ToPublicProfileResponse(user, profile, location, database.SellerRatingRow{}, false))
 	if err != nil {
 		t.Fatalf("marshalling: %v", err)
 	}
@@ -125,5 +125,36 @@ func TestEmptyProfileSendsNulls(t *testing.T) {
 		if !strings.Contains(string(body), `"`+key+`":null`) {
 			t.Errorf("%q is not null:\n%s", key, body)
 		}
+	}
+}
+
+// The average is rounded once, at the boundary: 4.333333333333333 in JSON is
+// noise, and a star display wants one decimal.
+func TestTheRatingIsRoundedAndAlwaysPresent(t *testing.T) {
+	user, profile, location := filledProfile()
+
+	body, err := json.Marshal(ToPublicProfileResponse(
+		user, profile, location,
+		database.SellerRatingRow{Average: 4.333333333333333, Total: 3},
+		true,
+	))
+	if err != nil {
+		t.Fatalf("marshalling: %v", err)
+	}
+
+	if !strings.Contains(string(body), `"average":4.3`) {
+		t.Errorf("average was not rounded to one decimal:\n%s", body)
+	}
+
+	// A seller with nothing gets zeros, not an absent object - count is what
+	// separates "no reviews yet" from "rated zero".
+	empty, err := json.Marshal(ToPublicProfileResponse(
+		user, profile, location, database.SellerRatingRow{}, true,
+	))
+	if err != nil {
+		t.Fatalf("marshalling: %v", err)
+	}
+	if !strings.Contains(string(empty), `"rating":{"average":0,"count":0}`) {
+		t.Errorf("an unrated seller should still carry a rating object:\n%s", empty)
 	}
 }

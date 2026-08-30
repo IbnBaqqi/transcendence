@@ -171,6 +171,17 @@ type RefreshToken struct {
 	CreatedAt     time.Time
 }
 
+type Review struct {
+	ID         uuid.UUID
+	OrderID    uuid.UUID
+	SellerID   uuid.UUID
+	ReviewerID uuid.NullUUID
+	Rating     int32
+	Comment    sql.NullString
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
 type SavedListing struct {
 	UserID    uuid.UUID
 	ListingID uuid.UUID
@@ -188,4 +199,16 @@ type User struct {
 	LastSeenAt       sql.NullTime
 	ShowOnlineStatus bool
 	DeletedAt        sql.NullTime
+	SuspendedAt      sql.NullTime
+	SuspensionReason sql.NullString
+	IsVisible        bool
+}
+
+type UserAction struct {
+	ID          uuid.UUID
+	SubjectID   uuid.UUID
+	ModeratorID uuid.NullUUID
+	Action      string
+	Note        sql.NullString
+	CreatedAt   time.Time
 }
