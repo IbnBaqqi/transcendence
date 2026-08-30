@@ -184,6 +184,7 @@ func (h *Handler) SearchListings(w http.ResponseWriter, r *http.Request) {
 	query := dtos.ListingSearchQuery{
 		Keyword:  q.Get("keyword"),
 		Category: q.Get("category"),
+		Tag:      q.Get("tag"),
 		MinPrice: q.Get("min_price"),
 		MaxPrice: q.Get("max_price"),
 		Location: q.Get("location"),

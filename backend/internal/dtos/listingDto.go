@@ -37,6 +37,7 @@ type UpdateListingInput struct {
 type ListingSearchQuery struct {
 	Keyword  string
 	Category string
+	Tag      string
 	MinPrice string
 	MaxPrice string
 	Location string

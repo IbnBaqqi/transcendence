@@ -317,7 +317,7 @@ func validateSearchText(values ...string) error {
 }
 
 func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearchQuery) (dtos.PaginatedListings, error) {
-	if err := validateSearchText(q.Keyword, q.Category, q.Location); err != nil {
+	if err := validateSearchText(q.Keyword, q.Category, q.Tag, q.Location); err != nil {
 		return dtos.PaginatedListings{}, err
 	}
 
@@ -375,9 +375,21 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, &ValidationError{Message: "Page is too large"}
 	}
 
+	tag := ""
+	if q.Tag != "" {
+		tags, err := normaliseTags([]string{q.Tag})
+		if err != nil {
+			return dtos.PaginatedListings{}, err
+		}
+		if len(tags) > 0 {
+			tag = tags[0]
+		}
+	}
+
 	params := database.SearchListingsParams{
 		Keyword:  q.Keyword,
 		Category: q.Category,
+		Tag:      tag,
 		Location: q.Location,
 		Sort:     sortKey,
 		Offset:   int32(offset),
