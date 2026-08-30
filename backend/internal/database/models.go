@@ -163,6 +163,17 @@ type RefreshToken struct {
 	CreatedAt     time.Time
 }
 
+type Review struct {
+	ID         uuid.UUID
+	OrderID    uuid.UUID
+	SellerID   uuid.UUID
+	ReviewerID uuid.NullUUID
+	Rating     int32
+	Comment    sql.NullString
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
 type SavedListing struct {
 	UserID    uuid.UUID
 	ListingID uuid.UUID

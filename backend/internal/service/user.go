@@ -68,6 +68,7 @@ func scrubAccount(ctx context.Context, qtx *database.Queries, userID uuid.UUID) 
 		qtx.DetachReporter,
 		qtx.DetachModerator,
 		qtx.DetachEventActor,
+		qtx.DetachReviewer,
 		qtx.DetachUserActionModerator,
 		qtx.RevokeSessionsForUser,
 		qtx.RevokeKeysForUser,

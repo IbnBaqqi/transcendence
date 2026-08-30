@@ -23,6 +23,7 @@ type Handler struct {
 	Report         *service.ReportService
 	Moderation     *service.ModerationService
 	AdminUser      *service.AdminUserService
+	Review         *service.ReviewService
 	maxUploadBytes int64
 	cookieSecure   bool
 	oauth          *oauth.Registry
@@ -52,6 +53,7 @@ type Deps struct {
 	Report       *service.ReportService
 	Moderation   *service.ModerationService
 	AdminUser    *service.AdminUserService
+	Review       *service.ReviewService
 
 	MaxUploadBytes int64
 	CookieSecure   bool
@@ -76,6 +78,7 @@ func New(d Deps) *Handler {
 		Report:         d.Report,
 		Moderation:     d.Moderation,
 		AdminUser:      d.AdminUser,
+		Review:         d.Review,
 		maxUploadBytes: d.MaxUploadBytes,
 		cookieSecure:   d.CookieSecure,
 		oauth:          d.OAuth,

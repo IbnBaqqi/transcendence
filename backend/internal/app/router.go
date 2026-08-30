@@ -35,6 +35,7 @@ func newHandler(appService *api) *handler.Handler {
 		Report:       appService.Report,
 		Moderation:   appService.Moderation,
 		AdminUser:    appService.AdminUser,
+		Review:       appService.Review,
 
 		MaxUploadBytes: appService.Upload.MaxBytes,
 		CookieSecure:   appService.AuthConfig.CookieSecure,
@@ -86,6 +87,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		r.Get("/listings/{id}/images", h.GetListingImages)
 
 		r.Get("/users/{id}", h.GetPublicProfile)
+		r.Get("/users/{id}/reviews", h.GetSellerReviews)
 
 		r.Group(func(r chi.Router) {
 			r.Use(mw.RequiredAuth)
@@ -163,6 +165,9 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/orders/{id}/handover", h.HandoverOrder)
 			r.Post("/orders/{id}/receive", h.ReceiveOrder)
 			r.Post("/orders/{id}/cancel", h.CancelOrder)
+
+			r.Post("/orders/{id}/review", h.CreateReview)
+			r.Patch("/reviews/{id}", h.UpdateReview)
 			// r.Get("/dashboard", dashboardHandler)
 		})
 	})

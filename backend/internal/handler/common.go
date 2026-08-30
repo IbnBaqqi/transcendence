@@ -136,3 +136,13 @@ func (h *Handler) hidePresenceIfBlocked(r *http.Request, viewer uuid.UUID, other
 		other.ShowOnlineStatus = false
 	}
 }
+
+// viewerName is the authenticated caller's username, for a response that
+// echoes back something they authored. Empty when nobody is signed in.
+func viewerName(r *http.Request) string {
+	user, ok := auth.UserFromContext(r.Context())
+	if !ok {
+		return ""
+	}
+	return user.Name
+}

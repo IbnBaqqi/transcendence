@@ -607,6 +607,70 @@ components:
             works the same either way.
       additionalProperties: false
 
+    Rating:
+      type: object
+      required: [average, count]
+      description: |
+        Computed from the reviews on every read rather than stored on the
+        seller. A denormalised average has to be updated by every write path,
+        and the first one that forgets leaves a number that disagrees with the
+        reviews it claims to summarise.
+      properties:
+        average:
+          type: number
+          format: double
+          description: Rounded to one decimal. 0 when there are no reviews.
+          examples: [4.3]
+        count:
+          type: integer
+          format: int64
+
+    ReviewRequest:
+      type: object
+      required: [rating]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          maxLength: 1000
+          description: |
+            Optional free text. Shown to other buyers as plain text — control
+            characters are stripped at write time, never at render time.
+      additionalProperties: false
+
+    Review:
+      type: object
+      required: [id, order_id, rating, comment, reviewer, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          examples: [5]
+        comment:
+          type: string
+          description: Empty string when the reviewer left none.
+        reviewer:
+          type: string
+          description: |
+            "Deleted user" once that account is gone. The review itself
+            survives — what a buyer said about a seller is a fact about the
+            seller, so it does not leave with its author.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          description: Differs from `created_at` when the review was edited.
+
     ReportListingRequest:
       type: object
       required: [reason]
@@ -1241,7 +1305,7 @@ components:
         exposed by an oversight.
       # presence is NOT required: it is omitted entirely for an unauthenticated
       # caller. See the property's description.
-      required: [id, username, firstname, lastname, bio, location, avatar_url]
+      required: [id, username, firstname, lastname, bio, location, avatar_url, rating]
       properties:
         id:
           type: string
@@ -1262,6 +1326,14 @@ components:
             Path served by the API, or `null` when none is set. The default
             avatar is the client's decision, not a URL the API invents.
           examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
+        rating:
+          allOf:
+            - $ref: "#/components/schemas/Rating"
+          description: |
+            Always present. A seller with no reviews has
+            `{"average": 0, "count": 0}` — `count` is what separates "not rated
+            yet" from "rated zero", so a client never has to treat an absent
+            object as a third case.
         presence:
           allOf:
             - $ref: "#/components/schemas/Presence"
@@ -4169,5 +4241,152 @@ paths:
                 $ref: "#/components/schemas/Error"
         "404":
           $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /orders/{id}/review:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [orders]
+      summary: Review a completed order
+      operationId: createReview
+      description: |
+        Rate the seller after a trade. The review is anchored to the **order**,
+        not to the seller — one per completed trade, enforced by a unique index
+        rather than a check in code, because a check is a read that two
+        concurrent submissions both pass.
+
+        That anchoring is the point: a review cannot exist without a
+        transaction behind it, and cannot be repeated to inflate or sink
+        someone's average.
+
+        The order must be `completed`, which here means both parties acted —
+        the seller handed over and the buyer confirmed receipt.
+
+        Only the buyer on that order may review it. Anyone else gets 404 rather
+        than 403: someone with no part in an order should not learn it exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewRequest"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          description: Bad body, a rating outside 1–5, or a comment over 1000 characters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: |
+            The order is not completed yet, or you have already reviewed it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /reviews/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [orders]
+      summary: Edit your review
+      operationId: updateReview
+      description: |
+        Editable, not deletable. A mis-clicked one star deserves a fix; a review
+        that vanishes after a dispute does not. `updated_at` moves, so an edited
+        review is visible as edited.
+
+        An edit is validated exactly as the original was — rules checked only on
+        the way in are rules you can get around later.
+
+        Someone else's review answers 404, the same as one that does not exist.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewRequest"
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          description: Bad body, a rating outside 1–5, or a comment over 1000 characters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /users/{id}/reviews:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [users]
+      summary: Reviews written about a seller
+      operationId: getSellerReviews
+      security: []
+      description: |
+        Public, like the seller's profile: reputation is what a buyer reads
+        before deciding to sign up, so putting it behind a token would hide it
+        from the people it is for.
+
+        Newest first. A review whose author has since deleted their account is
+        still here, attributed to "Deleted user" — the summary on the profile
+        counts it too, because a seller's average should not move for reasons
+        that have nothing to do with the seller.
+      responses:
+        "200":
+          description: The reviews. Empty when the seller has none.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+        "400":
+          description: Invalid user id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           $ref: "#/components/responses/ServerError"
