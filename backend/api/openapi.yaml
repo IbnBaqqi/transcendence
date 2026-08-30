@@ -504,8 +504,11 @@ components:
           type: string
           maxLength: 50
           description: |
-            Must be a slug from `GET /categories`. An unrecognised value is a
-            400, where it used to be accepted and stored as-is.
+            Must be a slug from `GET /categories`. Trimmed and lower-cased on
+            the way in - the same normalisation migration 013 applied to the
+            rows it found - so `Mushrooms` is stored as `mushrooms` rather than
+            rejected. An unrecognised value is still a 400, where it used to be
+            accepted and stored as-is.
           examples: ["mushrooms"]
         price:
           type: number
@@ -2018,8 +2021,9 @@ paths:
 
         `keyword` and `location` match case-insensitively on a substring, with
         `%` or `_` in the input treated literally rather than as SQL
-        wildcards. `category` takes a slug and is exact, except that a parent
-        slug also matches its children - see the parameter below.
+        wildcards. `category` takes a slug and is exact once trimmed and
+        lower-cased, except that a parent slug also matches its children - see
+        the parameter below.
       parameters:
         # in: query = ?keyword=... . Optional unless "required: true".
         - name: keyword
@@ -2034,9 +2038,10 @@ paths:
         - name: category
           in: query
           description: |
-            A slug from `GET /categories`. Filtering by a parent returns its
-            children's listings too - `?category=mushrooms` includes anything
-            filed under `chanterelles`.
+            A slug from `GET /categories`, trimmed and lower-cased like the
+            write path, so `?category=Mushrooms` finds them. Filtering by a
+            parent returns its children's listings too - `?category=mushrooms`
+            includes anything filed under `chanterelles`.
 
             An unknown slug returns an empty page rather than a 400, unlike
             `sort`: a category is data and can stop existing, and a bookmarked
