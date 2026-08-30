@@ -23,7 +23,3 @@ SELECT lt.listing_id, t.name FROM listing_tags lt
 JOIN tags t ON t.id = lt.tag_id
 WHERE lt.listing_id = ANY(sqlc.arg(listing_ids)::uuid[])
 ORDER BY lt.listing_id, t.name;
-
--- name: DeleteOrphanTags :exec
-DELETE FROM tags
-WHERE NOT EXISTS (SELECT 1 FROM listing_tags lt WHERE lt.tag_id = tags.id);

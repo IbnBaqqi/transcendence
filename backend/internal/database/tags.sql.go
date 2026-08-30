@@ -28,16 +28,6 @@ func (q *Queries) AttachTag(ctx context.Context, arg AttachTagParams) error {
 	return err
 }
 
-const deleteOrphanTags = `-- name: DeleteOrphanTags :exec
-DELETE FROM tags
-WHERE NOT EXISTS (SELECT 1 FROM listing_tags lt WHERE lt.tag_id = tags.id)
-`
-
-func (q *Queries) DeleteOrphanTags(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, deleteOrphanTags)
-	return err
-}
-
 const detachAllTags = `-- name: DetachAllTags :exec
 DELETE FROM listing_tags
 WHERE listing_id = $1
