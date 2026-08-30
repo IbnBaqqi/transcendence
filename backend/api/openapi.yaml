@@ -91,6 +91,8 @@ tags:
     description: The authenticated user's own resources
   - name: moderation
     description: Admin-only review of reported listings
+  - name: admin
+    description: Admin-only management of orders and accounts
 
 # A list here means OR: send either a bearer token or an API key. Individual
 # public operations switch it off with an empty "security: []", and the
@@ -565,8 +567,74 @@ components:
         buyer calls `/receive`. Whichever comes first only stamps its own
         timestamp and leaves the status at `confirmed`.
 
+        **That creates a state neither party can leave.** Once either timestamp
+        is set, `/cancel` is refused, and the status only moves when the *other*
+        party acts. If they never do, the order is stuck in `confirmed` for
+        good. An admin can end it with `POST /admin/orders/{id}/resolve`, which
+        is the only way out.
+
+        `refunded` exists for that resolution: it means the trade got far enough
+        that calling it `cancelled` would be false. No money moves - none ever
+        did - but the status is the record, and the record should not lie.
+
         An earlier schema had a `paid` status; migration 007 removed it.
-      enum: [pending, confirmed, completed, cancelled]
+      enum: [pending, confirmed, completed, cancelled, refunded]
+
+    AdminOrder:
+      allOf:
+        - $ref: "#/components/schemas/Order"
+        - type: object
+          required: [stuck]
+          properties:
+            stuck:
+              type: boolean
+              description: |
+                True when this order is in the trap described on `OrderStatus`:
+                `confirmed`, with exactly one of the two handshake timestamps
+                set. These are the only orders `/resolve` accepts.
+
+                Derived from the timestamps, never stored - so it cannot drift
+                from the columns it summarises.
+
+    PaginatedAdminOrders:
+      type: object
+      required: [items, total, page, limit, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOrder"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        limit:
+          type: integer
+          description: Clamped to 50.
+        total_pages:
+          type: integer
+
+    ResolveOrderRequest:
+      type: object
+      required: [outcome, reason]
+      properties:
+        outcome:
+          type: string
+          enum: [completed, cancelled, refunded]
+          description: |
+            `completed` says the trade happened after all. `cancelled` says it
+            did not. `refunded` says it did and was undone - the honest answer
+            when one party has already handed over.
+
+            The two that end without a trade return the quantity to the
+            listing's stock; `completed` does not.
+        reason:
+          type: string
+          maxLength: 500
+          description: |
+            Required. It lands in the order's event history as the note, so it
+            is the only record of why an admin overrode a stuck order.
 
     # --- chat & settings ------------------------------------------------------
 
@@ -3519,6 +3587,137 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "429":
           $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  # ---------------------------------------------------------------------------
+  # admin orders
+  # ---------------------------------------------------------------------------
+  /admin/orders:
+    get:
+      tags: [admin]
+      summary: Browse every order
+      operationId: listOrdersForAdmin
+      description: |
+        Every order, newest first, with the filters an admin needs to find the
+        ones that need attention.
+
+        `?stuck=true` is the important one: it returns exactly the orders no
+        party can move, which is the working queue this endpoint exists for.
+      parameters:
+        - name: status
+          in: query
+          description: Anything outside the enum is a 400.
+          schema:
+            $ref: "#/components/schemas/OrderStatus"
+        - name: stuck
+          in: query
+          description: |
+            `true` returns only orders trapped mid-handover; `false` returns
+            only orders that are not. Omit it for both.
+          schema:
+            type: boolean
+        - name: created_from
+          in: query
+          description: |
+            Inclusive lower bound. Accepts RFC 3339, or `YYYY-MM-DD` - a bare
+            date is read as UTC midnight, so a range picked in a local timezone
+            is offset by that timezone's UTC difference.
+          schema:
+            type: string
+            examples: ["2026-08-01"]
+        - name: created_to
+          in: query
+          description: |
+            **Exclusive** upper bound, so `created_from=2026-08-01` with
+            `created_to=2026-09-01` is exactly August and consecutive ranges
+            tile without overlapping.
+          schema:
+            type: string
+            examples: ["2026-09-01"]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Values above 50 are clamped to 50 rather than rejected.
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+      responses:
+        "200":
+          description: One page of orders, plus the totals for a pager.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedAdminOrders"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /admin/orders/{id}/resolve:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [admin]
+      summary: End an order stuck mid-handover
+      operationId: resolveOrder
+      description: |
+        Forces a stuck order to a terminal status, records the reason in its
+        event history, and returns the quantity to stock unless the outcome is
+        `completed`. One transaction: all of it, or none.
+
+        **Only stuck orders.** An admin cannot rewrite an order that is
+        progressing normally or already finished - that is a 409, not a 403,
+        because it is about the order's state rather than the caller's rights.
+        The check runs inside the transaction after locking the row, so an
+        order that stops being stuck while the admin is looking at the list
+        cannot be overwritten.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveOrderRequest"
+      responses:
+        "200":
+          description: The order in its new state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+        "400":
+          description: Bad body, an unknown field, an unknown outcome, or a missing reason.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The order is not stuck, so there is nothing for an admin to resolve.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           $ref: "#/components/responses/ServerError"
 
