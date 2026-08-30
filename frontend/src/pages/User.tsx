@@ -12,6 +12,7 @@ import { useModal } from "../providers/modalContext";
 import { useAuth } from "../hooks/useAuth";
 import { usePublicProfile } from "../api/profile";
 import { useListings } from "../api/listings";
+import { useCategoryNames } from "../api/categories";
 import { isApiError } from "../api/client";
 import { deriveInitials } from "../lib/initials";
 import NotFound from "./NotFound";
@@ -27,6 +28,7 @@ export default function User() {
   // TODO: there's no way to ask for one seller's listings, so we fetch them
   // all and filter here. Replace once the API supports it.
   const { data: allListings, isPending: listingsPending, isError: listingsError } = useListings();
+  const categoryName = useCategoryNames();
 
   // 400 = the id isn't a UUID, 404 = no such user. Both mean "nothing here".
   if (isApiError(error) && (error.status === 404 || error.status === 400)) {
@@ -123,7 +125,11 @@ export default function User() {
         {listings.length > 0 && (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {listings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                categoryName={categoryName(listing.category)}
+              />
             ))}
           </div>
         )}

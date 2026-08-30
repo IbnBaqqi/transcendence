@@ -36,21 +36,21 @@ func (h *Handler) maySeeRemovedListing(r *http.Request, sellerID uuid.UUID) bool
 	return role == auth.RoleAdmin
 }
 
-// sellerIsGone reports whether the listing's seller has deleted their account.
+// sellerIsHidden reports whether the listing's seller is deleted or suspended.
 // Kept out of the shared GetListing query on purpose: every service reads
 // through it, and filtering there would 404 a reported listing for the admin
 // judging the report.
 //
 // Fails closed, and says so in the log: without the line an outage would look
 // like listings quietly vanishing.
-func (h *Handler) sellerIsGone(r *http.Request, sellerID uuid.UUID) bool {
-	seller, err := h.db.GetUser(r.Context(), sellerID)
+func (h *Handler) sellerIsHidden(r *http.Request, sellerID uuid.UUID) bool {
+	visible, err := h.db.UserIsVisible(r.Context(), sellerID)
 	if err != nil {
-		slog.Error("could not check whether the seller is deleted, hiding the listing",
+		slog.Error("could not check whether the seller is visible, hiding the listing",
 			"seller_id", sellerID, "request_id", middleware.GetReqID(r.Context()), "error", err)
 		return true
 	}
-	return seller.DeletedAt.Valid
+	return !visible
 }
 
 func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +72,13 @@ func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, dtos.ToListingResponse(listing))
+	tags, err := h.Listing.TagsForListing(r.Context(), listing.ID)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusCreated, dtos.WithTags(dtos.ToListingResponse(listing), tags))
 }
 
 func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +99,14 @@ func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.ToListingResponsesWithImages(listings, byListing))
+	tagsByListing, err := h.Listing.TagsByListing(r.Context(), ids)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK,
+		dtos.WithTagsEach(dtos.ToListingResponsesWithImages(listings, byListing), tagsByListing))
 }
 
 func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +122,7 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hidden := listing.RemovedAt.Valid || h.sellerIsGone(r, listing.SellerID)
+	hidden := listing.RemovedAt.Valid || h.sellerIsHidden(r, listing.SellerID)
 	if hidden && !h.maySeeRemovedListing(r, listing.SellerID) {
 		respondWithError(w, http.StatusNotFound, "Listing not found")
 		return
@@ -121,7 +134,13 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.ToListingResponseWithImages(listing, imgs))
+	tags, err := h.Listing.TagsForListing(r.Context(), id)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.WithTags(dtos.ToListingResponseWithImages(listing, imgs), tags))
 }
 
 func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +174,13 @@ func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.ToListingResponseWithImages(updated, imgs))
+	tags, err := h.Listing.TagsForListing(r.Context(), id)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.WithTags(dtos.ToListingResponseWithImages(updated, imgs), tags))
 }
 
 func (h *Handler) DeleteListing(w http.ResponseWriter, r *http.Request) {
@@ -184,6 +209,7 @@ func (h *Handler) SearchListings(w http.ResponseWriter, r *http.Request) {
 	query := dtos.ListingSearchQuery{
 		Keyword:  q.Get("keyword"),
 		Category: q.Get("category"),
+		Tag:      q.Get("tag"),
 		MinPrice: q.Get("min_price"),
 		MaxPrice: q.Get("max_price"),
 		Location: q.Get("location"),
@@ -199,4 +225,14 @@ func (h *Handler) SearchListings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, result)
+}
+
+func (h *Handler) GetCategories(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.Listing.ListCategories(r.Context())
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToCategoryResponses(rows))
 }

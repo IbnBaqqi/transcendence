@@ -64,7 +64,7 @@ func (s *ModerationService) Moderate(
 	if !utf8.ValidString(note) || strings.ContainsRune(note, 0) {
 		return database.Listing{}, 0, &ValidationError{Message: "Note must be valid UTF-8 without null bytes"}
 	}
-	note = sanitizeReportDetail(note)
+	note = sanitizeFreeText(note)
 	if utf8.RuneCountInString(note) > maxModerationNote {
 		return database.Listing{}, 0, &ValidationError{Message: "Note is too long"}
 	}

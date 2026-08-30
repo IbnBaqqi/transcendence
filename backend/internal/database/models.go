@@ -36,6 +36,14 @@ type Block struct {
 	CreatedAt sql.NullTime
 }
 
+type Category struct {
+	Slug        string
+	Name        string
+	ParentSlug  sql.NullString
+	IsTop       sql.NullBool
+	ParentIsTop sql.NullBool
+}
+
 type Conversation struct {
 	ID           uuid.UUID
 	ListingID    uuid.NullUUID
@@ -83,6 +91,12 @@ type ListingReport struct {
 	Detail     sql.NullString
 	Status     string
 	CreatedAt  time.Time
+}
+
+type ListingTag struct {
+	ListingID uuid.UUID
+	TagID     int32
+	CreatedAt time.Time
 }
 
 type Message struct {
@@ -163,10 +177,26 @@ type RefreshToken struct {
 	CreatedAt     time.Time
 }
 
+type Review struct {
+	ID         uuid.UUID
+	OrderID    uuid.UUID
+	SellerID   uuid.UUID
+	ReviewerID uuid.NullUUID
+	Rating     int32
+	Comment    sql.NullString
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
 type SavedListing struct {
 	UserID    uuid.UUID
 	ListingID uuid.UUID
 	CreatedAt sql.NullTime
+}
+
+type Tag struct {
+	ID   int32
+	Name string
 }
 
 type User struct {
@@ -180,4 +210,16 @@ type User struct {
 	LastSeenAt       sql.NullTime
 	ShowOnlineStatus bool
 	DeletedAt        sql.NullTime
+	SuspendedAt      sql.NullTime
+	SuspensionReason sql.NullString
+	IsVisible        bool
+}
+
+type UserAction struct {
+	ID          uuid.UUID
+	SubjectID   uuid.UUID
+	ModeratorID uuid.NullUUID
+	Action      string
+	Note        sql.NullString
+	CreatedAt   time.Time
 }

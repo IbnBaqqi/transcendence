@@ -14,12 +14,12 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
-// sanitizeReportDetail drops control characters a moderator's terminal or admin
+// sanitizeFreeText drops control characters a moderator's terminal or admin
 // UI would act on rather than display - ANSI escapes can recolour and reposition
 // output, and bidi overrides can visually reverse the text that follows. This is
-// attacker-controlled text read by the person deciding the report, so it is
+// attacker-controlled text shown to other people, so it is
 // stripped at write time rather than trusted to whoever renders it.
-func sanitizeReportDetail(detail string) string {
+func sanitizeFreeText(detail string) string {
 	cleaned := strings.Map(func(r rune) rune {
 		if r == '\n' || r == '\t' {
 			return r
@@ -78,7 +78,7 @@ func (s *ReportService) Report(
 		return &ValidationError{Message: "Report detail must be valid UTF-8 without null bytes"}
 	}
 
-	detail = sanitizeReportDetail(detail)
+	detail = sanitizeFreeText(detail)
 
 	if utf8.RuneCountInString(detail) > maxReportDetail {
 		return &ValidationError{Message: "Report detail is too long"}

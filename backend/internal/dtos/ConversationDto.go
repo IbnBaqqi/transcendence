@@ -75,14 +75,14 @@ type UnreadCountResponse struct {
 	UnreadCount int64 `json:"unread_count"`
 }
 
-const deletedUserName = "Deleted user"
+const DeletedUserName = "Deleted user"
 
 // A deleted account keeps its row so the other party's thread still resolves,
 // but its username is a machine placeholder chosen to satisfy a unique index,
 // not something to show a person.
 func displayName(username string, deletedAt sql.NullTime) string {
 	if deletedAt.Valid {
-		return deletedUserName
+		return DeletedUserName
 	}
 	return username
 }

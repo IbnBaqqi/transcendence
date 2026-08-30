@@ -2,6 +2,7 @@ package dtos
 
 import (
 	"database/sql"
+	"math"
 
 	"github.com/google/uuid"
 
@@ -45,6 +46,14 @@ type PublicProfileResponse struct {
 	Location  *string           `json:"location"`
 	AvatarURL *string           `json:"avatar_url"`
 	Presence  *PresenceResponse `json:"presence,omitempty"`
+	Rating    RatingResponse    `json:"rating"`
+}
+
+// Always sent, never omitted: count is what separates "no reviews yet" from
+// "rated zero", so a client never has to branch on an absent object.
+type RatingResponse struct {
+	Average float64 `json:"average"`
+	Count   int64   `json:"count"`
 }
 
 func ToOwnProfileResponse(u database.User, p database.Profile, location sql.NullString) OwnProfileResponse {
@@ -70,7 +79,13 @@ func ToOwnProfileResponse(u database.User, p database.Profile, location sql.Null
 // For a signed-in viewer presence stays present-but-offline when a block
 // exists, and that ambiguity is deliberate - it is what stops the response
 // announcing the block.
-func ToPublicProfileResponse(u database.User, p database.Profile, location sql.NullString, includePresence bool) PublicProfileResponse {
+func ToPublicProfileResponse(
+	u database.User,
+	p database.Profile,
+	location sql.NullString,
+	rating database.SellerRatingRow,
+	includePresence bool,
+) PublicProfileResponse {
 	var presence *PresenceResponse
 	if includePresence {
 		p := toPresence(u.LastSeenAt, u.ShowOnlineStatus)
@@ -86,6 +101,12 @@ func ToPublicProfileResponse(u database.User, p database.Profile, location sql.N
 		Location:  nullStringPtr(location),
 		AvatarURL: avatarURL(p.AvatarFilename),
 		Presence:  presence,
+		Rating: RatingResponse{
+			// One decimal is what a star display uses; the aggregate stays
+			// exact for anything that wants it.
+			Average: math.Round(rating.Average*10) / 10,
+			Count:   rating.Total,
+		},
 	}
 }
 

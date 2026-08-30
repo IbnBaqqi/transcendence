@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -121,54 +120,12 @@ func parseDayBound(value, field string) (sql.NullTime, error) {
 	return sql.NullTime{Time: when, Valid: true}, nil
 }
 
-type paging struct {
-	page       int
-	limit      int
-	pageLimit  int32
-	pageOffset int32
-}
-
-func parsePaging(rawPage, rawLimit string) (paging, error) {
-	page := defaultPage
-	if rawPage != "" {
-		p, convErr := strconv.Atoi(rawPage)
-		if convErr != nil || p < 1 || p > math.MaxInt32 {
-			return paging{}, &ValidationError{Message: "Page must be a positive integer"}
-		}
-		page = p
-	}
-
-	limit := defaultLimit
-	if rawLimit != "" {
-		l, convErr := strconv.Atoi(rawLimit)
-		if convErr != nil || l < 1 {
-			return paging{}, &ValidationError{Message: "Limit must be a positive integer"}
-		}
-		limit = l
-	}
-	if limit > maxLimit {
-		limit = maxLimit
-	}
-
-	offset := (page - 1) * limit
-	if offset < 0 || offset > math.MaxInt32 {
-		return paging{}, &ValidationError{Message: "Page is too large"}
-	}
-
-	return paging{
-		page:       page,
-		limit:      limit,
-		pageLimit:  int32(limit),
-		pageOffset: int32(offset),
-	}, nil
-}
-
 func validateResolutionReason(reason string) (string, error) {
 	if !utf8.ValidString(reason) || strings.ContainsRune(reason, 0) {
 		return "", &ValidationError{Message: "Reason must be valid UTF-8 without null bytes"}
 	}
 
-	reason = strings.TrimSpace(sanitizeReportDetail(reason))
+	reason = strings.TrimSpace(sanitizeFreeText(reason))
 
 	if reason == "" {
 		return "", &ValidationError{Message: "A reason is required"}
