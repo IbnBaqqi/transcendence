@@ -34,6 +34,7 @@ func newHandler(appService *api) *handler.Handler {
 		ListingImage: appService.ListingImage,
 		Report:       appService.Report,
 		Moderation:   appService.Moderation,
+		AdminOrder:   appService.AdminOrder,
 
 		MaxUploadBytes: appService.Upload.MaxBytes,
 		CookieSecure:   appService.AuthConfig.CookieSecure,
@@ -107,6 +108,9 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 				r.Get("/admin/listings/{id}/reports", h.GetListingReports)
 				r.Get("/admin/listings/{id}/moderation", h.GetModerationHistory)
 				r.Post("/admin/listings/{id}/moderate", h.ModerateListing)
+
+				r.Get("/admin/orders", h.ListOrdersForAdmin)
+				r.Post("/admin/orders/{id}/resolve", h.ResolveOrder)
 			})
 
 			r.Post("/conversations", h.StartConversation)
