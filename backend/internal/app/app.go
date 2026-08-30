@@ -52,7 +52,7 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 	listingImageService := service.NewListingImageService(db, files, cfg.Upload.MaxPerListing)
 	reportService := service.NewReportService(db.Queries)
 	moderationService := service.NewModerationService(db, files) // needs *DB for transaction
-	adminOrderService := service.NewAdminOrderService(db)
+	adminOrderService := service.NewAdminOrderService(db, notifier)
 
 	return &api{
 		DB:           db,

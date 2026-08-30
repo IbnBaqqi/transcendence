@@ -570,8 +570,8 @@ components:
         **That creates a state neither party can leave.** Once either timestamp
         is set, `/cancel` is refused, and the status only moves when the *other*
         party acts. If they never do, the order is stuck in `confirmed` for
-        good. An admin can end it with `POST /admin/orders/{id}/resolve`, which
-        is the only way out.
+        good. After seven days an admin can end it with
+        `POST /admin/orders/{id}/resolve`, which is the only way out.
 
         `refunded` exists for that resolution: it means the trade got far enough
         that calling it `cancelled` would be false. No money moves - none ever
@@ -591,7 +591,8 @@ components:
               description: |
                 True when this order is in the trap described on `OrderStatus`:
                 `confirmed`, with exactly one of the two handshake timestamps
-                set. These are the only orders `/resolve` accepts.
+                set, and that timestamp more than seven days old. These are the
+                only orders `/resolve` accepts.
 
                 Derived from the timestamps, never stored - so it cannot drift
                 from the columns it summarises.
@@ -3602,8 +3603,11 @@ paths:
         Every order, newest first, with the filters an admin needs to find the
         ones that need attention.
 
-        `?stuck=true` is the important one: it returns exactly the orders no
-        party can move, which is the working queue this endpoint exists for.
+        `?stuck=true` is the important one: it returns the orders trapped
+        mid-handover for **more than seven days**, which is the working queue
+        this endpoint exists for. The age threshold matters - without it a
+        handover seconds old would appear here while the buyer is still on
+        their way to collect.
       parameters:
         - name: status
           in: query
@@ -3613,8 +3617,10 @@ paths:
         - name: stuck
           in: query
           description: |
-            `true` returns only orders trapped mid-handover; `false` returns
-            only orders that are not. Omit it for both.
+            `true` returns only orders trapped mid-handover for more than
+            seven days; `false` returns only orders that are not. Omit it for
+            both. A handshake younger than that counts as in progress, not
+            stuck.
           schema:
             type: boolean
         - name: created_from
@@ -3681,9 +3687,11 @@ paths:
         event history, and returns the quantity to stock unless the outcome is
         `completed`. One transaction: all of it, or none.
 
-        **Only stuck orders.** An admin cannot rewrite an order that is
-        progressing normally or already finished - that is a 409, not a 403,
-        because it is about the order's state rather than the caller's rights.
+        **Only stuck orders**, meaning mid-handover and untouched for more
+        than seven days. An admin cannot rewrite an order that is still moving
+        or already finished - that is a 409, not a 403, because it is about the
+        order's state rather than the caller's rights. The seven days exist so
+        an admin cannot close a trade the counterparty is still completing.
         The check runs inside the transaction after locking the row, so an
         order that stops being stuck while the admin is looking at the list
         cannot be overwritten.

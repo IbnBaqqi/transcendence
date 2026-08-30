@@ -4,12 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 )
 
 type adminOrderFixture struct {
@@ -34,7 +37,7 @@ func newAdminOrderFixture(t *testing.T) adminOrderFixture {
 
 	return adminOrderFixture{
 		orderFixture: f,
-		admins:       NewAdminOrderService(f.db),
+		admins:       NewAdminOrderService(f.db, notify.Disabled{}),
 		admin:        admin.ID,
 	}
 }
@@ -50,11 +53,17 @@ func (f adminOrderFixture) stick(t *testing.T) {
 		t.Fatalf("handing over: %v", err)
 	}
 
+	if _, err := f.db.ExecContext(ctx,
+		`UPDATE orders SET seller_handed_over_at = now() - interval '8 days' WHERE id = $1`,
+		f.order.ID); err != nil {
+		t.Fatalf("backdating the handover: %v", err)
+	}
+
 	order, err := f.db.GetOrder(ctx, f.order.ID)
 	if err != nil {
 		t.Fatalf("re-reading: %v", err)
 	}
-	if !isStuck(order) {
+	if !isStuck(order, stuckBefore(time.Now())) {
 		t.Fatalf("the fixture did not produce a stuck order: status=%s handover=%v received=%v",
 			order.Status, order.SellerHandedOverAt.Valid, order.BuyerReceivedAt.Valid)
 	}
@@ -286,5 +295,145 @@ func TestAdminOrderListRejectsBadInput(t *testing.T) {
 				t.Errorf("err = %#v, want *ValidationError", err)
 			}
 		})
+	}
+}
+
+func TestAFreshHandoverIsNotYetStuck(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+
+	if _, err := f.svc.ConfirmOrder(ctx, f.seller, f.order.ID); err != nil {
+		t.Fatalf("confirming: %v", err)
+	}
+	if _, err := f.svc.HandoverOrder(ctx, f.seller, f.order.ID); err != nil {
+		t.Fatalf("handing over: %v", err)
+	}
+
+	page, err := f.admins.List(ctx, dtos.AdminOrderQuery{Stuck: "true"})
+	if err != nil {
+		t.Fatalf("listing: %v", err)
+	}
+	if page.Total != 0 {
+		t.Errorf("a handover seconds old is already in the queue: total = %d, want 0", page.Total)
+	}
+
+	var conflict *ConflictError
+	if _, err := f.admins.Resolve(ctx, f.admin, f.order.ID, "cancelled", "too soon"); !errors.As(err, &conflict) {
+		t.Errorf("resolving a live handover: err = %#v, want *ConflictError - the buyer can still receive it", err)
+	}
+}
+
+func TestABuyerOnlyHandshakeAlsoGetsStuck(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+
+	if _, err := f.svc.ConfirmOrder(ctx, f.seller, f.order.ID); err != nil {
+		t.Fatalf("confirming: %v", err)
+	}
+	if _, err := f.svc.ReceiveOrder(ctx, f.buyer, f.order.ID); err != nil {
+		t.Fatalf("receiving: %v", err)
+	}
+	if _, err := f.db.ExecContext(ctx,
+		`UPDATE orders SET buyer_received_at = now() - interval '8 days' WHERE id = $1`,
+		f.order.ID); err != nil {
+		t.Fatalf("backdating: %v", err)
+	}
+
+	page, err := f.admins.List(ctx, dtos.AdminOrderQuery{Stuck: "true"})
+	if err != nil {
+		t.Fatalf("listing: %v", err)
+	}
+	if page.Total != 1 || !page.Items[0].Stuck {
+		t.Errorf("the buyer-only arm of the XOR is not treated as stuck: total = %d", page.Total)
+	}
+}
+
+func TestTheDateFiltersAreHalfOpenAtTheBoundary(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+
+	order, err := f.db.GetOrder(ctx, f.order.ID)
+	if err != nil {
+		t.Fatalf("reading the order: %v", err)
+	}
+	at := order.CreatedAt.Time.UTC().Format(time.RFC3339Nano)
+
+	from, err := f.admins.List(ctx, dtos.AdminOrderQuery{CreatedFrom: at})
+	if err != nil {
+		t.Fatalf("listing: %v", err)
+	}
+	if from.Total != 1 {
+		t.Errorf("created_from at the exact timestamp excluded it: total = %d, want 1 (inclusive)", from.Total)
+	}
+
+	to, err := f.admins.List(ctx, dtos.AdminOrderQuery{CreatedTo: at})
+	if err != nil {
+		t.Fatalf("listing: %v", err)
+	}
+	if to.Total != 0 {
+		t.Errorf("created_to at the exact timestamp included it: total = %d, want 0 (exclusive)", to.Total)
+	}
+}
+
+func TestTheListEchoesItsPagingAndCountsPages(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+
+	page, err := f.admins.List(ctx, dtos.AdminOrderQuery{Page: "2", Limit: "1"})
+	if err != nil {
+		t.Fatalf("listing: %v", err)
+	}
+	if page.Page != 2 || page.Limit != 1 {
+		t.Errorf("paging echo = page %d limit %d, want 2 and 1", page.Page, page.Limit)
+	}
+	if page.TotalPages != 1 {
+		t.Errorf("total_pages = %d, want 1 for one order at a limit of 1", page.TotalPages)
+	}
+	if page.Items == nil {
+		t.Error("an empty page returned a nil slice, which marshals to null")
+	}
+}
+
+func TestTheLimitIsClampedRatherThanRejected(t *testing.T) {
+	f := newAdminOrderFixture(t)
+
+	page, err := f.admins.List(context.Background(), dtos.AdminOrderQuery{Limit: "5000"})
+	if err != nil {
+		t.Fatalf("listing: %v", err)
+	}
+	if page.Limit != maxLimit {
+		t.Errorf("limit = %d, want it clamped to %d", page.Limit, maxLimit)
+	}
+}
+
+func TestAnOverlongReasonIsRejected(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	f.stick(t)
+
+	long := strings.Repeat("a", maxResolutionReason+1)
+
+	var invalid *ValidationError
+	if _, err := f.admins.Resolve(context.Background(), f.admin, f.order.ID, "refunded", long); !errors.As(err, &invalid) {
+		t.Errorf("err = %#v, want *ValidationError", err)
+	}
+}
+
+func TestAReasonIsStrippedOfControlCharacters(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+	f.stick(t)
+
+	if _, err := f.admins.Resolve(ctx, f.admin, f.order.ID, "refunded", "buyer\u202evanished"); err != nil {
+		t.Fatalf("resolving: %v", err)
+	}
+
+	events, err := f.db.ListOrderEvents(ctx, f.order.ID)
+	if err != nil {
+		t.Fatalf("reading the events: %v", err)
+	}
+
+	note := events[len(events)-1].Note.String
+	if strings.ContainsRune(note, '\u202e') {
+		t.Errorf("a bidi override survived into an admin-visible note: %q", note)
 	}
 }

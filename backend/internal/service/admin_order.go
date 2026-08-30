@@ -15,16 +15,22 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 )
 
-const maxResolutionReason = 500
+const (
+	maxResolutionReason = 500
+
+	stuckAfter = 7 * 24 * time.Hour
+)
 
 type AdminOrderService struct {
-	db *database.DB
+	db     *database.DB
+	notify notify.Notifier
 }
 
-func NewAdminOrderService(db *database.DB) *AdminOrderService {
-	return &AdminOrderService{db: db}
+func NewAdminOrderService(db *database.DB, notifier notify.Notifier) *AdminOrderService {
+	return &AdminOrderService{db: db, notify: notifier}
 }
 
 var adminOrderStatuses = map[string]bool{
@@ -60,23 +66,24 @@ func (s *AdminOrderService) List(ctx context.Context, q dtos.AdminOrderQuery) (d
 		stuck = sql.NullBool{Bool: value, Valid: true}
 	}
 
-	page, limit, offset, err := parsePaging(q.Page, q.Limit)
+	paging, err := parsePaging(q.Page, q.Limit)
 	if err != nil {
 		return dtos.PaginatedAdminOrders{}, err
 	}
 
 	status := sql.NullString{String: q.Status, Valid: q.Status != ""}
+	before := stuckBefore(time.Now())
 
 	total, err := s.db.CountOrdersForAdmin(ctx, database.CountOrdersForAdminParams{
-		Status: status, CreatedFrom: from, CreatedTo: to, Stuck: stuck,
+		Status: status, CreatedFrom: from, CreatedTo: to, Stuck: stuck, StuckBefore: before,
 	})
 	if err != nil {
 		return dtos.PaginatedAdminOrders{}, err
 	}
 
 	rows, err := s.db.ListOrdersForAdmin(ctx, database.ListOrdersForAdminParams{
-		Status: status, CreatedFrom: from, CreatedTo: to, Stuck: stuck,
-		PageLimit: int32(limit), PageOffset: int32(offset),
+		Status: status, CreatedFrom: from, CreatedTo: to, Stuck: stuck, StuckBefore: before,
+		PageLimit: paging.pageLimit, PageOffset: paging.pageOffset,
 	})
 	if err != nil {
 		return dtos.PaginatedAdminOrders{}, err
@@ -84,15 +91,15 @@ func (s *AdminOrderService) List(ctx context.Context, q dtos.AdminOrderQuery) (d
 
 	items := make([]dtos.AdminOrderResponse, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, dtos.ToAdminOrderResponse(row, isStuck(row)))
+		items = append(items, dtos.ToAdminOrderResponse(row, isStuck(row, before)))
 	}
 
 	return dtos.PaginatedAdminOrders{
 		Items:      items,
 		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: int((total + int64(limit) - 1) / int64(limit)),
+		Page:       paging.page,
+		Limit:      paging.limit,
+		TotalPages: int((total + int64(paging.limit) - 1) / int64(paging.limit)),
 	}, nil
 }
 
@@ -114,21 +121,28 @@ func parseDayBound(value, field string) (sql.NullTime, error) {
 	return sql.NullTime{Time: when, Valid: true}, nil
 }
 
-func parsePaging(rawPage, rawLimit string) (page, limit, offset int, err error) {
-	page = defaultPage
+type paging struct {
+	page       int
+	limit      int
+	pageLimit  int32
+	pageOffset int32
+}
+
+func parsePaging(rawPage, rawLimit string) (paging, error) {
+	page := defaultPage
 	if rawPage != "" {
 		p, convErr := strconv.Atoi(rawPage)
 		if convErr != nil || p < 1 || p > math.MaxInt32 {
-			return 0, 0, 0, &ValidationError{Message: "Page must be a positive integer"}
+			return paging{}, &ValidationError{Message: "Page must be a positive integer"}
 		}
 		page = p
 	}
 
-	limit = defaultLimit
+	limit := defaultLimit
 	if rawLimit != "" {
 		l, convErr := strconv.Atoi(rawLimit)
 		if convErr != nil || l < 1 {
-			return 0, 0, 0, &ValidationError{Message: "Limit must be a positive integer"}
+			return paging{}, &ValidationError{Message: "Limit must be a positive integer"}
 		}
 		limit = l
 	}
@@ -136,12 +150,17 @@ func parsePaging(rawPage, rawLimit string) (page, limit, offset int, err error) 
 		limit = maxLimit
 	}
 
-	offset = (page - 1) * limit
+	offset := (page - 1) * limit
 	if offset < 0 || offset > math.MaxInt32 {
-		return 0, 0, 0, &ValidationError{Message: "Page is too large"}
+		return paging{}, &ValidationError{Message: "Page is too large"}
 	}
 
-	return page, limit, offset, nil
+	return paging{
+		page:       page,
+		limit:      limit,
+		pageLimit:  int32(limit),
+		pageOffset: int32(offset),
+	}, nil
 }
 
 func validateResolutionReason(reason string) (string, error) {
@@ -172,9 +191,21 @@ var adminOutcomes = map[string]orderOutcome{
 	"refunded":  {status: "refunded", restoresStock: true},
 }
 
-func isStuck(o database.Order) bool {
-	return o.Status == "confirmed" &&
-		o.SellerHandedOverAt.Valid != o.BuyerReceivedAt.Valid
+func stuckBefore(now time.Time) time.Time {
+	return now.Add(-stuckAfter)
+}
+
+func isStuck(o database.Order, before time.Time) bool {
+	if o.Status != "confirmed" || o.SellerHandedOverAt.Valid == o.BuyerReceivedAt.Valid {
+		return false
+	}
+
+	marked := o.SellerHandedOverAt.Time
+	if o.BuyerReceivedAt.Valid {
+		marked = o.BuyerReceivedAt.Time
+	}
+
+	return marked.Before(before)
 }
 
 func (s *AdminOrderService) Resolve(
@@ -214,9 +245,9 @@ func (s *AdminOrderService) Resolve(
 		return database.Order{}, err
 	}
 
-	if !isStuck(order) {
+	if !isStuck(order, stuckBefore(time.Now())) {
 		return database.Order{}, &ConflictError{
-			Message: "Only an order stuck mid-handover can be resolved by an admin",
+			Message: "Only an order left stuck mid-handover for 7 days can be resolved by an admin",
 		}
 	}
 
@@ -244,6 +275,13 @@ func (s *AdminOrderService) Resolve(
 
 	if err := tx.Commit(); err != nil {
 		return database.Order{}, err
+	}
+
+	for _, recipient := range []uuid.UUID{order.BuyerID, order.SellerID} {
+		notifyUser(ctx, s.db.Queries, s.notify, recipient,
+			func(email, _ string) notify.Message {
+				return notify.OrderResolved(email, order.ListingTitle, action.status)
+			})
 	}
 
 	return updated, nil

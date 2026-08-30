@@ -8,6 +8,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -20,7 +21,9 @@ WHERE ($1::text IS NULL OR status = $1::text)
   AND (
       $4::boolean IS NULL
       OR (status = 'confirmed'
-          AND (seller_handed_over_at IS NULL) <> (buyer_received_at IS NULL)) = $4::boolean
+          AND (seller_handed_over_at IS NULL) <> (buyer_received_at IS NULL)
+          AND COALESCE(seller_handed_over_at, buyer_received_at)
+              < $5::timestamptz) = $4::boolean
   )
 `
 
@@ -29,6 +32,7 @@ type CountOrdersForAdminParams struct {
 	CreatedFrom sql.NullTime
 	CreatedTo   sql.NullTime
 	Stuck       sql.NullBool
+	StuckBefore time.Time
 }
 
 func (q *Queries) CountOrdersForAdmin(ctx context.Context, arg CountOrdersForAdminParams) (int64, error) {
@@ -37,6 +41,7 @@ func (q *Queries) CountOrdersForAdmin(ctx context.Context, arg CountOrdersForAdm
 		arg.CreatedFrom,
 		arg.CreatedTo,
 		arg.Stuck,
+		arg.StuckBefore,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -161,10 +166,12 @@ WHERE ($1::text IS NULL OR status = $1::text)
   AND (
       $4::boolean IS NULL
       OR (status = 'confirmed'
-          AND (seller_handed_over_at IS NULL) <> (buyer_received_at IS NULL)) = $4::boolean
+          AND (seller_handed_over_at IS NULL) <> (buyer_received_at IS NULL)
+          AND COALESCE(seller_handed_over_at, buyer_received_at)
+              < $5::timestamptz) = $4::boolean
   )
 ORDER BY created_at DESC, id DESC
-LIMIT $6 OFFSET $5
+LIMIT $7 OFFSET $6
 `
 
 type ListOrdersForAdminParams struct {
@@ -172,6 +179,7 @@ type ListOrdersForAdminParams struct {
 	CreatedFrom sql.NullTime
 	CreatedTo   sql.NullTime
 	Stuck       sql.NullBool
+	StuckBefore time.Time
 	PageOffset  int32
 	PageLimit   int32
 }
@@ -182,6 +190,7 @@ func (q *Queries) ListOrdersForAdmin(ctx context.Context, arg ListOrdersForAdmin
 		arg.CreatedFrom,
 		arg.CreatedTo,
 		arg.Stuck,
+		arg.StuckBefore,
 		arg.PageOffset,
 		arg.PageLimit,
 	)

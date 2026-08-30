@@ -11,8 +11,7 @@ CREATE INDEX orders_stuck_idx ON orders (created_at DESC)
 
 -- +goose Down
 
-DELETE FROM order_events WHERE order_id IN (SELECT id FROM orders WHERE status = 'refunded');
-DELETE FROM orders WHERE status = 'refunded';
+UPDATE orders SET status = 'cancelled' WHERE status = 'refunded';
 
 DROP INDEX IF EXISTS orders_stuck_idx;
 

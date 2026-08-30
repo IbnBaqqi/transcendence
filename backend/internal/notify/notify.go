@@ -51,6 +51,7 @@ const (
 	KindOrderPlaced              Kind = "order_placed"
 	KindOrderHandedOver          Kind = "order_handed_over"
 	KindOrderCancelled           Kind = "order_cancelled"
+	KindOrderResolved            Kind = "order_resolved"
 	KindChatRequest              Kind = "chat_request"
 	KindPasswordReset            Kind = "password_reset"
 	KindPasswordResetUnavailable Kind = "password_reset_unavailable"
@@ -119,6 +120,17 @@ func OrderCancelled(to, listingTitle string) Message {
 		Body: fmt.Sprintf(
 			"The order for %s has been cancelled.\n",
 			listingTitle),
+	}
+}
+
+func OrderResolved(to, listingTitle, outcome string) Message {
+	return Message{
+		Kind:    KindOrderResolved,
+		To:      to,
+		Subject: "An order was closed by an administrator",
+		Body: fmt.Sprintf(
+			"The order for %s was stuck part-way through handover, so an administrator closed it as %s.\n",
+			listingTitle, outcome),
 	}
 }
 
