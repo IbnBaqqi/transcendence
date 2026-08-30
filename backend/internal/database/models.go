@@ -85,6 +85,12 @@ type ListingReport struct {
 	CreatedAt  time.Time
 }
 
+type ListingTag struct {
+	ListingID uuid.UUID
+	TagID     int32
+	CreatedAt time.Time
+}
+
 type Message struct {
 	ID             uuid.UUID
 	ConversationID uuid.UUID
@@ -167,6 +173,11 @@ type SavedListing struct {
 	UserID    uuid.UUID
 	ListingID uuid.UUID
 	CreatedAt sql.NullTime
+}
+
+type Tag struct {
+	ID   int32
+	Name string
 }
 
 type User struct {
