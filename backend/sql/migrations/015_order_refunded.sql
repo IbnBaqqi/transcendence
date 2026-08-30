@@ -11,6 +11,10 @@ CREATE INDEX orders_stuck_idx ON orders (created_at DESC)
 
 -- +goose Down
 
+-- Rolling back loses the refunded/cancelled distinction permanently: the CHECK
+-- restored below has no 'refunded', so these rows have to become something it
+-- accepts. 'cancelled' asserts the trade never happened, which for an order the
+-- seller had already handed over is false. Down is not fidelity-preserving.
 UPDATE orders SET status = 'cancelled' WHERE status = 'refunded';
 
 DROP INDEX IF EXISTS orders_stuck_idx;

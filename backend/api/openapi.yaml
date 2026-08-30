@@ -720,6 +720,11 @@ components:
             Required. It lands in the order's event history as the note, so it
             is the only record of why an admin overrode a stuck order.
 
+            **Write it for the buyer and the seller to read.** They both fetch
+            that history from `GET /orders/{id}/events`, which returns the note
+            and the `actor_id` alongside it - the same principle as a suspension
+            reason, which the suspended user is shown deliberately.
+
     # --- chat & settings ------------------------------------------------------
 
     StartConversationInput:
@@ -4001,6 +4006,10 @@ paths:
             **Exclusive** upper bound, so `created_from=2026-08-01` with
             `created_to=2026-09-01` is exactly August and consecutive ranges
             tile without overlapping.
+
+            A bare `YYYY-MM-DD` is UTC midnight here too, so from a timezone
+            ahead of UTC the range ends early - `created_to=2026-08-31` from
+            Helsinki drops the last three hours of the 30th.
           schema:
             type: string
             examples: ["2026-09-01"]
