@@ -35,7 +35,7 @@ func (s *SavedListingService) SaveListing(ctx context.Context, userID uuid.UUID,
 	if err != nil {
 		return err
 	}
-	if seller.DeletedAt.Valid {
+	if !seller.IsVisible {
 		return &NotFoundError{Message: "Listing not found"}
 	}
 
