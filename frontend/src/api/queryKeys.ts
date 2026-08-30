@@ -46,4 +46,9 @@ export const keys = {
     unread: () => [...keys.me.all, "unread"] as const,
     saved: () => [...keys.me.all, "saved"] as const,
   },
+
+  categories: {
+    all: ["categories"] as const,
+    list: () => [...keys.categories.all, "list"] as const,
+  },
 } as const;

@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "./Form";
 import { FormField } from "./FormField";
+import { CategorySelect } from "./CategorySelect";
 import { FormTextArea } from "./FormTextArea";
-import { addListingSchema, type AddListingFormValues } from "../../schemas/addListing";
+import { makeAddListingSchema, type AddListingFormValues } from "../../schemas/addListing";
+import { useCategories, flattenCategories } from "../../api/categories";
 import Button from "../objects/Button.tsx";
 import { ImageDropzone } from "../objects/ImageDropzone";
 import { useImageGallery } from "../../hooks/useImageGallery";
@@ -16,8 +18,14 @@ import { useImageGallery } from "../../hooks/useImageGallery";
 const MAX_LISTING_IMAGES = 5;
 
 export function AddListingSection() {
+  const { data: categories } = useCategories();
+  const schema = useMemo(
+    () => makeAddListingSchema(flattenCategories(categories ?? []).map((c) => c.slug)),
+    [categories],
+  );
+
   const form = useForm<AddListingFormValues>({
-    resolver: zodResolver(addListingSchema),
+    resolver: zodResolver(schema),
     mode: "onBlur",
     // TODO: blocked by #109 Add hooks to fetch data from backend (or maybe local frontend e.g. from Profile.tsx?)
     // defaultValues: {
@@ -78,12 +86,7 @@ export function AddListingSection() {
           </div>
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">Category</h2>
-            <FormField
-              name="category"
-              width="max-w-md"
-              placeholder="e.g. 'Mushroom'"
-              validateOnChange
-            />
+            <CategorySelect name="category" ariaLabel="Category" width="max-w-md" />
           </div>
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">Price & Quantity</h2>
