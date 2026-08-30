@@ -27,6 +27,12 @@ func NewListingService(db *database.DB, files fileStore) *ListingService {
 	return &ListingService{db: db, files: files}
 }
 
+const listingCategoryConstraint = "listings_category_fkey"
+
+func normaliseCategory(category string) string {
+	return strings.ToLower(strings.TrimSpace(category))
+}
+
 func validateListingInput(title, category, unit string, price float64, quantity int32) error {
 	if title == "" || len(title) > 100 {
 		return &ValidationError{Message: "Title is required and must be under 100 characters"}
@@ -55,7 +61,7 @@ func normaliseTags(raw []string) ([]string, error) {
 			return nil, &ValidationError{Message: "Tags must be valid UTF-8 without null bytes"}
 		}
 
-		tag = strings.ToLower(strings.TrimSpace(sanitizeReportDetail(tag)))
+		tag = strings.ToLower(strings.TrimSpace(sanitizeFreeText(tag)))
 		if tag == "" {
 			continue
 		}
@@ -101,7 +107,9 @@ func applyTags(ctx context.Context, qtx *database.Queries, listingID uuid.UUID, 
 }
 
 func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, input dtos.CreateListingInput) (database.Listing, error) {
-	if err := validateListingInput(input.Title, input.Category, input.Unit, input.Price, input.Quantity); err != nil {
+	category := normaliseCategory(input.Category)
+
+	if err := validateListingInput(input.Title, category, input.Unit, input.Price, input.Quantity); err != nil {
 		return database.Listing{}, err
 	}
 
@@ -127,11 +135,14 @@ func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, 
 		SellerID:    sellerID,
 		Title:       input.Title,
 		Description: sql.NullString{String: input.Description, Valid: input.Description != ""},
-		Category:    input.Category,
+		Category:    category,
 		Price:       strconv.FormatFloat(input.Price, 'f', 2, 64),
 		Quantity:    input.Quantity,
 		Unit:        input.Unit,
 	})
+	if isForeignKeyViolation(err, listingCategoryConstraint) {
+		return database.Listing{}, &ValidationError{Message: "Category is not recognised"}
+	}
 	if err != nil {
 		return database.Listing{}, err
 	}
@@ -161,7 +172,9 @@ func (s *ListingService) ListListings(ctx context.Context) ([]database.Listing, 
 
 // UpdateListing edits a listing the caller owns.
 func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, listingID uuid.UUID, input dtos.UpdateListingInput) (database.Listing, error) {
-	if err := validateListingInput(input.Title, input.Category, input.Unit, input.Price, input.Quantity); err != nil {
+	category := normaliseCategory(input.Category)
+
+	if err := validateListingInput(input.Title, category, input.Unit, input.Price, input.Quantity); err != nil {
 		return database.Listing{}, err
 	}
 
@@ -202,12 +215,15 @@ func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, li
 		ID:          listingID,
 		Title:       input.Title,
 		Description: sql.NullString{String: input.Description, Valid: input.Description != ""},
-		Category:    input.Category,
+		Category:    category,
 		Price:       strconv.FormatFloat(input.Price, 'f', 2, 64),
 		Quantity:    input.Quantity,
 		Unit:        input.Unit,
 	})
 	if err != nil {
+		if isForeignKeyViolation(err, listingCategoryConstraint) {
+			return database.Listing{}, &ValidationError{Message: "Category is not recognised"}
+		}
 		return database.Listing{}, err
 	}
 
@@ -394,7 +410,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 
 	params := database.SearchListingsParams{
 		Keyword:  q.Keyword,
-		Category: q.Category,
+		Category: normaliseCategory(q.Category),
 		Tag:      tag,
 		Location: q.Location,
 		Sort:     sortKey,
@@ -463,4 +479,8 @@ func (s *ListingService) TagsByListing(ctx context.Context, ids []uuid.UUID) (ma
 	}
 
 	return out, nil
+}
+
+func (s *ListingService) ListCategories(ctx context.Context) ([]database.ListCategoriesRow, error) {
+	return s.db.ListCategories(ctx)
 }

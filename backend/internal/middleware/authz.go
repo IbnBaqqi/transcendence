@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/IbnBaqqi/transcendence/internal/auth"
+	"github.com/IbnBaqqi/transcendence/internal/database"
 )
 
 type roleStore interface {
@@ -64,6 +65,7 @@ func writeAuthzError(w http.ResponseWriter, status int, msg string) {
 
 type activeUserStore interface {
 	UserIsActive(ctx context.Context, id uuid.UUID) (bool, error)
+	GetSuspension(ctx context.Context, id uuid.UUID) (database.GetSuspensionRow, error)
 }
 
 // RequireActiveUser rejects a token that outlived its account.
@@ -92,6 +94,21 @@ func RequireActiveUser(store activeUserStore) func(http.Handler) http.Handler {
 			}
 
 			if !active {
+				suspension, err := store.GetSuspension(r.Context(), user.ID)
+				if err != nil {
+					slog.Error("could not read the suspension",
+						"user_id", user.ID, "error", err)
+					writeAuthzError(w, http.StatusUnauthorized, "Authentication required")
+					return
+				}
+
+				// Deletion first: a deleted account can still carry the
+				// suspension that preceded it, and it must not learn that.
+				if !suspension.DeletedAt.Valid && suspension.SuspendedAt.Valid {
+					writeAuthzError(w, http.StatusForbidden, suspendedMessage(suspension.SuspensionReason))
+					return
+				}
+
 				writeAuthzError(w, http.StatusUnauthorized, "Authentication required")
 				return
 			}
@@ -99,4 +116,11 @@ func RequireActiveUser(store activeUserStore) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func suspendedMessage(reason sql.NullString) string {
+	if reason.Valid && reason.String != "" {
+		return "Your account is suspended: " + reason.String
+	}
+	return "Your account is suspended"
 }

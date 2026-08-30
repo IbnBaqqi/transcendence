@@ -91,6 +91,8 @@ tags:
     description: The authenticated user's own resources
   - name: moderation
     description: Admin-only review of reported listings
+  - name: admin
+    description: Admin-only management of user accounts
 
 # A list here means OR: send either a bearer token or an API key. Individual
 # public operations switch it off with an empty "security: []", and the
@@ -172,6 +174,31 @@ components:
           description: Path served by the API, for use in an `img` tag.
           examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
 
+    Category:
+      type: object
+      required: [slug, name, children]
+      description: |
+        The tree is capped at two levels by the database, so a child never has
+        children of its own - `children` on a child is always `[]`.
+
+        It is always present rather than omitted when empty, so a client never
+        has to distinguish "no children" from "field absent".
+      properties:
+        slug:
+          type: string
+          description: |
+            The stable identifier. This is what `Listing.category` holds and
+            what `?category=` takes - never the name.
+          examples: ["mushrooms"]
+        name:
+          type: string
+          description: For display. Renaming it does not break a saved URL.
+          examples: ["Mushrooms"]
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+
     Listing:
       type: object
       # Every field without omitempty in ListingResponse is always present.
@@ -207,6 +234,9 @@ components:
           description: Empty string when the seller left it blank.
         category:
           type: string
+          description: |
+            A slug from `GET /categories`, not free text. Previously any string
+            was accepted; it is now a foreign key, so only known slugs exist.
           examples: ["mushrooms"]
         price:
           type: number
@@ -251,6 +281,25 @@ components:
             When a moderator removed this listing. **Absent** unless it was
             removed *and* you are its seller or an admin — for everyone else a
             removed listing is 404, so the field can never appear.
+
+    PaginatedReviews:
+      type: object
+      required: [items, total, page, limit, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        limit:
+          type: integer
+          description: Clamped to 50.
+        total_pages:
+          type: integer
 
     PaginatedListings:
       type: object
@@ -466,6 +515,12 @@ components:
         category:
           type: string
           maxLength: 50
+          description: |
+            Must be a slug from `GET /categories`. Trimmed and lower-cased on
+            the way in - the same normalisation migration 013 applied to the
+            rows it found - so `Mushrooms` is stored as `mushrooms` rather than
+            rejected. An unrecognised value is still a 400, where it used to be
+            accepted and stored as-is.
           examples: ["mushrooms"]
         price:
           type: number
@@ -635,6 +690,70 @@ components:
             works the same either way.
       additionalProperties: false
 
+    Rating:
+      type: object
+      required: [average, count]
+      description: |
+        Computed from the reviews on every read rather than stored on the
+        seller. A denormalised average has to be updated by every write path,
+        and the first one that forgets leaves a number that disagrees with the
+        reviews it claims to summarise.
+      properties:
+        average:
+          type: number
+          format: double
+          description: Rounded to one decimal. 0 when there are no reviews.
+          examples: [4.3]
+        count:
+          type: integer
+          format: int64
+
+    ReviewRequest:
+      type: object
+      required: [rating]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          maxLength: 1000
+          description: |
+            Optional free text. Shown to other buyers as plain text — control
+            characters are stripped at write time, never at render time.
+      additionalProperties: false
+
+    Review:
+      type: object
+      required: [id, order_id, rating, comment, reviewer, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          examples: [5]
+        comment:
+          type: string
+          description: Empty string when the reviewer left none.
+        reviewer:
+          type: string
+          description: |
+            "Deleted user" once that account is gone. The review itself
+            survives — what a buyer said about a seller is a fact about the
+            seller, so it does not leave with its author.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          description: Differs from `created_at` when the review was edited.
+
     ReportListingRequest:
       type: object
       required: [reason]
@@ -775,6 +894,142 @@ components:
         created_at:
           type: string
           format: date-time
+
+    AdminUser:
+      type: object
+      required: [id, username, email, role, status, created_at]
+      description: |
+        An account as an admin sees it. This is the only representation in the
+        API that carries `email`, and the only one that shows deleted accounts
+        at all - the route sits behind RequireRole(ADMIN), which is what
+        justifies both.
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          description: |
+            `deleted-<id>` once the account is deleted. The row is anonymised
+            rather than removed, so nothing here identifies the person who
+            left; a client displays "Deleted user".
+        email:
+          type: string
+          description: Becomes `deleted-<id>@deleted.invalid` on deletion.
+        role:
+          type: string
+          enum: [USER, ADMIN]
+        status:
+          type: string
+          enum: [active, suspended, deleted]
+          description: |
+            Derived at the response boundary, not stored. `deleted` wins over
+            `suspended`, because a deleted account is gone whatever it was
+            before.
+        suspension_reason:
+          type: string
+          description: |
+            Present while the account is suspended. It also survives on an
+            account that was deleted while suspended - the reason it was
+            actioned is context an admin still wants.
+        created_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+          description: |
+            Absent if they have never been seen, and once the account is
+            deleted. Unlike every other view this ignores the user's
+            `show_online_status` setting - it is a moderation signal for
+            spotting dormant or newly active accounts, not a presence
+            indicator to show anyone.
+
+    PaginatedAdminUsers:
+      type: object
+      required: [items, total, page, limit, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUser"
+        total:
+          type: integer
+          format: int64
+          description: Matching accounts across all pages.
+        page:
+          type: integer
+          description: Echoes the requested page, even past the last one.
+        limit:
+          type: integer
+          description: Clamped to 50.
+        total_pages:
+          type: integer
+
+    UserAction:
+      type: object
+      required: [id, action, note, created_at]
+      description: One entry in an account's audit trail. Append-only.
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [suspended, reinstated, deleted]
+          description: Past tense, because the log records what was done.
+        note:
+          type: string
+          description: |
+            The reason given. Empty only for a reinstatement, which is the one
+            action that does not require one.
+        moderator_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            Null once that admin's own account is deleted. The record outlives
+            them deliberately.
+        created_at:
+          type: string
+          format: date-time
+
+    SuspendRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          description: |
+            Shown to the suspended user on their next request, so write it for
+            them to read. Required - a suspension with no stated cause is not
+            one anybody can appeal.
+          examples: ["Repeatedly listing items they do not have"]
+
+    ReinstateRequest:
+      type: object
+      description: |
+        The note is optional here, unlike everywhere else: "this was a
+        mistake" needs no justification the way a punishment does.
+      properties:
+        note:
+          type: string
+          maxLength: 500
+
+    AdminDeleteRequest:
+      type: object
+      required: [username, reason]
+      properties:
+        username:
+          type: string
+          description: |
+            The target's exact username, as confirmation. The same guard the
+            user's own DELETE /me uses - an admin deleting the wrong account
+            cannot undo it.
+        reason:
+          type: string
+          maxLength: 500
 
     Presence:
       type: object
@@ -1133,7 +1388,7 @@ components:
         exposed by an oversight.
       # presence is NOT required: it is omitted entirely for an unauthenticated
       # caller. See the property's description.
-      required: [id, username, firstname, lastname, bio, location, avatar_url]
+      required: [id, username, firstname, lastname, bio, location, avatar_url, rating]
       properties:
         id:
           type: string
@@ -1154,6 +1409,14 @@ components:
             Path served by the API, or `null` when none is set. The default
             avatar is the client's decision, not a URL the API invents.
           examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
+        rating:
+          allOf:
+            - $ref: "#/components/schemas/Rating"
+          description: |
+            Always present. A seller with no reviews has
+            `{"average": 0, "count": 0}` — `count` is what separates "not rated
+            yet" from "rated zero", so a client never has to treat an absent
+            object as a third case.
         presence:
           allOf:
             - $ref: "#/components/schemas/Presence"
@@ -1335,6 +1598,19 @@ paths:
           description: |
             Wrong password, or no such account. Deliberately the same message
             either way, so this cannot be used to discover which emails exist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: |
+            The account is suspended, and the message names the reason so the
+            user knows what to appeal.
+
+            Checked *after* the password comparison, so a wrong password on a
+            suspended account is still the 401 above - the state of an account
+            is never revealed to someone who cannot get into it. A deleted
+            account is a 401 too, since it no longer exists to have a state.
           content:
             application/json:
               schema:
@@ -1671,6 +1947,39 @@ paths:
           $ref: "#/components/responses/ServerError"
 
   # ---------------------------------------------------------------------------
+  # categories
+  # ---------------------------------------------------------------------------
+  /categories:
+    get:
+      tags: [listings]
+      summary: The category tree
+      operationId: listCategories
+      security: []
+      description: |
+        Every category, parents with their children nested. Public, because a
+        buyer needs the list before they have an account.
+
+        Top-level categories are ordered by slug, and each one's children are
+        nested inside it, also ordered by slug. Note that is the slug, not the
+        `name` a client displays.
+
+        This is the only source of valid category slugs - creating a listing
+        with anything not in this list is a 400.
+      responses:
+        "200":
+          description: The tree. Never empty in practice; the seeded five always exist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  # ---------------------------------------------------------------------------
   # listings (public reads)
   # ---------------------------------------------------------------------------
   /listings:
@@ -1742,8 +2051,9 @@ paths:
 
         `keyword` and `location` match case-insensitively on a substring, with
         `%` or `_` in the input treated literally rather than as SQL
-        wildcards. `category` is an exact, case-SENSITIVE match. `tag` is exact
-        too, but normalised like the write path, so its case does not matter.
+        wildcards. `category` takes a slug and is exact once trimmed and
+        lower-cased, except that a parent slug also matches its children - see
+        the parameter below. `tag` is exact too, and normalised the same way.
       parameters:
         # in: query = ?keyword=... . Optional unless "required: true".
         - name: keyword
@@ -1757,6 +2067,15 @@ paths:
               value: chanterelle
         - name: category
           in: query
+          description: |
+            A slug from `GET /categories`, trimmed and lower-cased like the
+            write path, so `?category=Mushrooms` finds them. Filtering by a
+            parent returns its children's listings too - `?category=mushrooms`
+            includes anything filed under `chanterelles`.
+
+            An unknown slug returns an empty page rather than a 400, unlike
+            `sort`: a category is data and can stop existing, and a bookmarked
+            URL is better served by no results than by an error.
           schema:
             type: string
             maxLength: 200
@@ -3730,6 +4049,274 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: Browse every account
+      operationId: listUsersForAdmin
+      description: |
+        One page of accounts, newest first, deleted ones included. Filters
+        combine with AND; both reject an unknown value rather than ignoring it,
+        so a typo in `status` is a 400 and not a silently unfiltered list.
+      parameters:
+        - name: role
+          in: query
+          description: Anything outside this list is a 400.
+          schema:
+            type: string
+            enum: [USER, ADMIN]
+        - name: status
+          in: query
+          description: Anything outside this list is a 400.
+          schema:
+            type: string
+            enum: [active, suspended, deleted]
+        - name: page
+          in: query
+          description: 1-based. A page past the end returns an empty `items`.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Values above 50 are clamped to 50 rather than rejected.
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+      responses:
+        "200":
+          description: One page of accounts, plus the totals for a pager.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedAdminUsers"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /admin/users/{id}/history:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [admin]
+      summary: What admins have done to this account
+      operationId: getUserHistory
+      description: |
+        The audit trail, newest first. Nothing here is edited or deleted, so an
+        account suspended and reinstated twice shows all four rows.
+
+        A deleted account keeps its history - that is the point of anonymising
+        the row instead of dropping it.
+      responses:
+        "200":
+          description: The actions. Empty if the account was never actioned.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserAction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /admin/users/{id}/suspend:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [admin]
+      summary: Suspend an account
+      operationId: suspendUser
+      description: |
+        Blocks the account from every authenticated route. They keep their
+        password and their data - a suspension is reversible, which is what
+        separates it from a deletion.
+
+        **They are told why.** Their next request is a 403 naming the reason,
+        and logging in returns the same rather than "wrong password" - but only
+        *after* the password check passes, so the endpoint never reveals an
+        account's state to someone who cannot get into it.
+
+        Their listings stop appearing anywhere, exactly as a deleted user's do.
+
+        One transaction: set the state and write the audit row, or neither.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuspendRequest"
+      responses:
+        "200":
+          description: The account in its new state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          description: Bad body, an unknown field, a missing reason, or one over 500 characters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: |
+            Not an admin, or an admin aiming at their own account. Suspending
+            yourself would lock you out of the endpoint that undoes it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: |
+            Already suspended - usually another admin got there first - or the
+            target is the last active admin, which would leave the instance
+            with nobody able to moderate it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /admin/users/{id}/reinstate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [admin]
+      summary: Lift a suspension
+      operationId: reinstateUser
+      description: |
+        Clears the suspension and its reason, and writes the audit row. The
+        account works again immediately - nothing was taken from it.
+
+        There is no last-admin guard here: reinstating an admin cannot leave
+        the instance short of one.
+
+        A deleted account cannot be reinstated. Deletion is the one state with
+        no way back.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReinstateRequest"
+      responses:
+        "200":
+          description: The account in its new state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The account is not suspended.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /admin/users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      tags: [admin]
+      summary: Delete an account
+      operationId: deleteUserAsAdmin
+      description: |
+        The same scrub as `DELETE /me` - the account is anonymised, not
+        removed, for the reasons set out there - plus an audit row saying who
+        did it and why.
+
+        Because it is the identical scrub, everything true of a self-deletion
+        is true here: orders survive on both sides, conversations survive for
+        the counterparty, and orders already in flight are neither blocked nor
+        unwound.
+
+        Requires the target's exact username in the body. Irreversible, and the
+        confirmation is what stops a mis-clicked row in an admin list from
+        ending the wrong account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDeleteRequest"
+      responses:
+        "204":
+          description: Deleted. No body.
+        "400":
+          description: Bad body, a missing or wrong `username`, or a missing reason.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: |
+            Not an admin, or an admin aiming at their own account - use
+            `DELETE /me`, which asks for your own confirmation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The target is the last active admin.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /me:
     delete:
       tags: [me]
@@ -3796,5 +4383,201 @@ paths:
                 $ref: "#/components/schemas/Error"
         "404":
           $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /orders/{id}/review:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [reviews]
+      summary: The review on one order
+      operationId: getOrderReview
+      description: |
+        Reads back the review attached to an order, which is how a buyer finds
+        their own without paging through the seller's whole list and matching on
+        `order_id`.
+
+        **Only the buyer and the seller** may ask, and a caller who is neither
+        gets the same 404 as a caller asking about an order that does not
+        exist - otherwise the endpoint would confirm which order ids are real.
+      responses:
+        "200":
+          description: The review.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: |
+            No such order, no review on it yet, or the caller is not a party to
+            it. Deliberately one answer for all three.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags: [orders]
+      summary: Review a completed order
+      operationId: createReview
+      description: |
+        Rate the seller after a trade. The review is anchored to the **order**,
+        not to the seller — one per completed trade, enforced by a unique index
+        rather than a check in code, because a check is a read that two
+        concurrent submissions both pass.
+
+        That anchoring is the point: a review cannot exist without a
+        transaction behind it, and cannot be repeated to inflate or sink
+        someone's average.
+
+        The order must be `completed`, which here means both parties acted —
+        the seller handed over and the buyer confirmed receipt.
+
+        Only the buyer on that order may review it. Anyone else gets 404 rather
+        than 403: someone with no part in an order should not learn it exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewRequest"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          description: Bad body, a rating outside 1–5, or a comment over 1000 characters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: |
+            The order is not completed yet, or you have already reviewed it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /reviews/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [orders]
+      summary: Edit your review
+      operationId: updateReview
+      description: |
+        Editable, not deletable. A mis-clicked one star deserves a fix; a review
+        that vanishes after a dispute does not. `updated_at` moves, so an edited
+        review is visible as edited.
+
+        An edit is validated exactly as the original was — rules checked only on
+        the way in are rules you can get around later.
+
+        Someone else's review answers 404, the same as one that does not exist.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewRequest"
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          description: Bad body, a rating outside 1–5, or a comment over 1000 characters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /users/{id}/reviews:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [users]
+      summary: Reviews written about a seller
+      operationId: getSellerReviews
+      security: []
+      description: |
+        Public, like the seller's profile: reputation is what a buyer reads
+        before deciding to sign up, so putting it behind a token would hide it
+        from the people it is for.
+
+        Newest first, **paginated** — the same envelope as `GET /listings/search`
+        rather than a bare array, so a seller with hundreds of reviews does not
+        return all of them at once.
+
+        A review whose author has since deleted their account is still here,
+        attributed to "Deleted user" — the summary on the profile counts it too,
+        because a seller's average should not move for reasons that have nothing
+        to do with the seller.
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Values above 50 are clamped to 50 rather than rejected.
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+      responses:
+        "200":
+          description: One page of reviews, plus the totals for a pager.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedReviews"
+        "400":
+          description: Invalid user id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           $ref: "#/components/responses/ServerError"
