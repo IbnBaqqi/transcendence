@@ -4,10 +4,6 @@ WHERE id = $1
 LIMIT 1;
 
 -- name: GetUserByEmail :one
--- deleted_at excluded: this is the login and password-reset lookup, and a
--- deleted account must not be findable by the address it used to have. The
--- address is scrubbed anyway, so this is belt and braces - but it is the
--- braces that matter if the scrub ever changes.
 SELECT * FROM users
 WHERE lower(email) = lower(sqlc.arg(email))
   AND deleted_at IS NULL
@@ -25,9 +21,6 @@ VALUES (
 RETURNING *;
 
 -- name: UpdateUser :exec
--- No callers today. Whoever wires "edit profile" must normalise first the way
--- normalizeSignupInput does, or padded and case-variant names get back in
--- through this door.
 UPDATE users
 SET username = $2,
 	email = $3,
@@ -39,14 +32,12 @@ DELETE FROM users
 WHERE id = $1;
 
 -- name: TouchLastSeen :exec
--- Guarded here rather than at a route: this middleware runs at the /api/v1
--- level, outside the group RequireActiveUser protects, so a token that
--- outlived its account would otherwise write last_seen_at back into the row
--- the deletion scrubbed - and the counterparty would see "Deleted user"
--- showing as online.
+-- The visibility guard is not redundant next to RequireActiveUser: this runs at
+-- the /api/v1 level, outside the group that middleware protects, so without it a
+-- suspended user keeps refreshing last_seen_at and shows as online forever.
 UPDATE users
 SET last_seen_at = CURRENT_TIMESTAMP
-WHERE id = $1 AND deleted_at IS NULL;
+WHERE id = $1 AND is_visible;
 
 -- name: UpdateShowOnlineStatus :one
 UPDATE users
@@ -97,4 +88,76 @@ WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
 
 -- name: UserIsActive :one
-SELECT EXISTS (SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL);
+SELECT EXISTS (
+    SELECT 1 FROM users
+    WHERE id = $1 AND deleted_at IS NULL AND suspended_at IS NULL
+);
+
+-- name: GetSuspension :one
+-- deleted_at comes along because the two states can coexist: a deletion does
+-- not clear suspended_at, and a deleted account must not be told it is merely
+-- suspended. Deletion wins, the same precedence the admin DTO applies.
+SELECT suspended_at, suspension_reason, deleted_at FROM users
+WHERE id = $1;
+
+-- name: SuspendUser :one
+UPDATE users
+SET suspended_at      = now(),
+    suspension_reason = sqlc.arg(reason),
+    updated_at        = now()
+WHERE id = $1 AND suspended_at IS NULL AND deleted_at IS NULL
+RETURNING *;
+
+-- name: ReinstateUser :one
+UPDATE users
+SET suspended_at      = NULL,
+    suspension_reason = NULL,
+    updated_at        = now()
+WHERE id = $1 AND suspended_at IS NOT NULL AND deleted_at IS NULL
+RETURNING *;
+
+-- name: LockAdminRoster :exec
+-- Serialises the last-admin guard. GetUserForUpdate locks the subject's row
+-- only, so two transactions aiming at two *different* admins never contend:
+-- both count the roster before either commits, and both are allowed through.
+-- Two admins suspending each other at once is enough to leave nobody able to
+-- moderate, and nobody able to reinstate. One advisory lock, held until commit,
+-- makes the count-then-act atomic across them.
+--
+-- Taken after the role check, so only admin-targeting actions serialise. The
+-- subject's row lock is always taken first and each transaction locks only its
+-- own subject, so there is no cycle to deadlock on.
+SELECT pg_advisory_xact_lock(4207371);
+
+-- name: CountAdmins :one
+SELECT COUNT(*) FROM users
+WHERE role = 'ADMIN' AND deleted_at IS NULL AND suspended_at IS NULL;
+
+-- name: ListUsersForAdmin :many
+SELECT id, username, email, role, created_at, last_seen_at,
+       suspended_at, suspension_reason, deleted_at
+FROM users
+WHERE (sqlc.narg(role)::text IS NULL OR role = sqlc.narg(role)::text)
+  AND (
+      sqlc.narg(status)::text IS NULL
+      OR (sqlc.narg(status)::text = 'active'    AND deleted_at IS NULL AND suspended_at IS NULL)
+      OR (sqlc.narg(status)::text = 'suspended' AND suspended_at IS NOT NULL AND deleted_at IS NULL)
+      OR (sqlc.narg(status)::text = 'deleted'   AND deleted_at IS NOT NULL)
+  )
+ORDER BY created_at DESC, id DESC
+LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
+
+-- name: CountUsersForAdmin :one
+SELECT COUNT(*) FROM users
+WHERE (sqlc.narg(role)::text IS NULL OR role = sqlc.narg(role)::text)
+  AND (
+      sqlc.narg(status)::text IS NULL
+      OR (sqlc.narg(status)::text = 'active'    AND deleted_at IS NULL AND suspended_at IS NULL)
+      OR (sqlc.narg(status)::text = 'suspended' AND suspended_at IS NOT NULL AND deleted_at IS NULL)
+      OR (sqlc.narg(status)::text = 'deleted'   AND deleted_at IS NOT NULL)
+  );
+
+-- name: UserIsVisible :one
+-- The same function the listing predicates use, for the one visibility check
+-- that lives in Go rather than in a WHERE clause.
+SELECT COALESCE((SELECT is_visible FROM users WHERE id = sqlc.arg(user_id)), false)::boolean;

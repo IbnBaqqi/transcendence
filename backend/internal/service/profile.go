@@ -49,7 +49,7 @@ func (s *ProfileService) Get(ctx context.Context, userID uuid.UUID) (ProfileDeta
 		return ProfileDetail{}, err
 	}
 
-	if user.DeletedAt.Valid {
+	if !user.IsVisible {
 		return ProfileDetail{}, &NotFoundError{Message: "User not found"}
 	}
 

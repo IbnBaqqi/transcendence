@@ -191,4 +191,16 @@ type User struct {
 	LastSeenAt       sql.NullTime
 	ShowOnlineStatus bool
 	DeletedAt        sql.NullTime
+	SuspendedAt      sql.NullTime
+	SuspensionReason sql.NullString
+	IsVisible        bool
+}
+
+type UserAction struct {
+	ID          uuid.UUID
+	SubjectID   uuid.UUID
+	ModeratorID uuid.NullUUID
+	Action      string
+	Note        sql.NullString
+	CreatedAt   time.Time
 }

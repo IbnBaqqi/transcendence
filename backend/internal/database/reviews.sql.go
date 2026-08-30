@@ -13,6 +13,17 @@ import (
 	"github.com/google/uuid"
 )
 
+const countReviewsForSeller = `-- name: CountReviewsForSeller :one
+SELECT COUNT(*) FROM reviews WHERE seller_id = $1
+`
+
+func (q *Queries) CountReviewsForSeller(ctx context.Context, sellerID uuid.UUID) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countReviewsForSeller, sellerID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createReview = `-- name: CreateReview :one
 INSERT INTO reviews (id, order_id, seller_id, reviewer_id, rating, comment)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -92,8 +103,15 @@ SELECT
 FROM reviews r
 LEFT JOIN users u ON u.id = r.reviewer_id
 WHERE r.seller_id = $1
-ORDER BY r.created_at DESC
+ORDER BY r.created_at DESC, r.id DESC
+LIMIT $3 OFFSET $2
 `
+
+type ListReviewsForSellerParams struct {
+	SellerID   uuid.UUID
+	PageOffset int32
+	PageLimit  int32
+}
 
 type ListReviewsForSellerRow struct {
 	ID                uuid.UUID
@@ -109,8 +127,8 @@ type ListReviewsForSellerRow struct {
 
 // LEFT JOIN, not JOIN: reviewer_id is NULL once that account is deleted, and
 // an inner join would drop exactly the reviews the SET NULL preserves.
-func (q *Queries) ListReviewsForSeller(ctx context.Context, sellerID uuid.UUID) ([]ListReviewsForSellerRow, error) {
-	rows, err := q.db.QueryContext(ctx, listReviewsForSeller, sellerID)
+func (q *Queries) ListReviewsForSeller(ctx context.Context, arg ListReviewsForSellerParams) ([]ListReviewsForSellerRow, error) {
+	rows, err := q.db.QueryContext(ctx, listReviewsForSeller, arg.SellerID, arg.PageOffset, arg.PageLimit)
 	if err != nil {
 		return nil, err
 	}

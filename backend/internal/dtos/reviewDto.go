@@ -42,7 +42,7 @@ func ToReviewResponse(r database.Review, reviewer string) ReviewResponse {
 func ToReviewResponses(rows []database.ListReviewsForSellerRow) []ReviewResponse {
 	out := make([]ReviewResponse, 0, len(rows))
 	for _, r := range rows {
-		name := deletedUserName
+		name := DeletedUserName
 		if r.ReviewerID.Valid && !r.ReviewerDeletedAt.Valid {
 			name = r.ReviewerUsername.String
 		}
@@ -58,4 +58,17 @@ func ToReviewResponses(rows []database.ListReviewsForSellerRow) []ReviewResponse
 		})
 	}
 	return out
+}
+
+type ReviewQuery struct {
+	Page  string
+	Limit string
+}
+
+type PaginatedReviews struct {
+	Items      []ReviewResponse `json:"items"`
+	Total      int64            `json:"total"`
+	Page       int              `json:"page"`
+	Limit      int              `json:"limit"`
+	TotalPages int              `json:"total_pages"`
 }

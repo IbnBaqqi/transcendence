@@ -155,6 +155,10 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 		return LoginResult{}, &AuthError{Message: "Invalid email or password"}
 	}
 
+	if user.SuspendedAt.Valid {
+		return LoginResult{}, &SuspendedError{Message: suspendedLoginMessage(user.SuspensionReason)}
+	}
+
 	accessToken, err := s.jwt.IssueAccessToken(user)
 	if err != nil {
 		return LoginResult{}, fmt.Errorf("login: issue token: %w", err)
@@ -278,4 +282,11 @@ func toUserInfo(user database.User) dtos.UserInfo {
 		Email:    user.Email,
 		Role:     user.Role,
 	}
+}
+
+func suspendedLoginMessage(reason sql.NullString) string {
+	if reason.Valid && reason.String != "" {
+		return "Your account is suspended: " + reason.String
+	}
+	return "Your account is suspended"
 }

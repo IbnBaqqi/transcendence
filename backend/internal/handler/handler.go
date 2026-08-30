@@ -22,6 +22,7 @@ type Handler struct {
 	ListingImage   *service.ListingImageService
 	Report         *service.ReportService
 	Moderation     *service.ModerationService
+	AdminUser      *service.AdminUserService
 	Review         *service.ReviewService
 	maxUploadBytes int64
 	cookieSecure   bool
@@ -51,6 +52,7 @@ type Deps struct {
 	ListingImage *service.ListingImageService
 	Report       *service.ReportService
 	Moderation   *service.ModerationService
+	AdminUser    *service.AdminUserService
 	Review       *service.ReviewService
 
 	MaxUploadBytes int64
@@ -75,6 +77,7 @@ func New(d Deps) *Handler {
 		ListingImage:   d.ListingImage,
 		Report:         d.Report,
 		Moderation:     d.Moderation,
+		AdminUser:      d.AdminUser,
 		Review:         d.Review,
 		maxUploadBytes: d.MaxUploadBytes,
 		cookieSecure:   d.CookieSecure,

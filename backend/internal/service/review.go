@@ -28,6 +28,9 @@ func NewReviewService(db *database.Queries) *ReviewService {
 }
 
 func validateRating(rating int32) error {
+	if rating == 0 {
+		return &ValidationError{Message: "Rating is required"}
+	}
 	if rating < 1 || rating > 5 {
 		return &ValidationError{Message: "Rating must be between 1 and 5"}
 	}
@@ -41,7 +44,7 @@ func validateComment(comment string) (string, error) {
 		return "", &ValidationError{Message: "Comment must be valid UTF-8 without null bytes"}
 	}
 
-	comment = sanitizeReportDetail(comment)
+	comment = sanitizeFreeText(comment)
 
 	if utf8.RuneCountInString(comment) > maxReviewComment {
 		return "", &ValidationError{Message: "Comment is too long"}
@@ -152,35 +155,81 @@ func (s *ReviewService) Update(
 	return review, nil
 }
 
-// ListForSeller answers 404 for a departed seller, matching GET /users/{id}:
-// reviews describe a person, and serving commentary about a profile nobody can
-// open would leave it visible with no way to see who it is about.
-// GetForOrder reads back the review on an order, which is also what a buyer
-// needs to see their own.
-func (s *ReviewService) GetForOrder(ctx context.Context, orderID uuid.UUID) (database.Review, error) {
+func (s *ReviewService) GetForOrder(
+	ctx context.Context,
+	userID, orderID uuid.UUID,
+) (database.Review, string, error) {
+	order, err := s.db.GetOrder(ctx, orderID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return database.Review{}, "", &NotFoundError{Message: "Review not found"}
+		}
+		return database.Review{}, "", err
+	}
+
+	if userID != order.BuyerID && userID != order.SellerID {
+		return database.Review{}, "", &NotFoundError{Message: "Review not found"}
+	}
+
 	review, err := s.db.GetReviewForOrder(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return database.Review{}, &NotFoundError{Message: "Review not found"}
+			return database.Review{}, "", &NotFoundError{Message: "Review not found"}
 		}
-		return database.Review{}, err
+		return database.Review{}, "", err
 	}
-	return review, nil
+
+	name := dtos.DeletedUserName
+	if review.ReviewerID.Valid {
+		reviewer, err := s.db.GetUser(ctx, review.ReviewerID.UUID)
+		if err == nil && !reviewer.DeletedAt.Valid {
+			name = reviewer.Username
+		}
+	}
+
+	return review, name, nil
 }
 
-func (s *ReviewService) ListForSeller(ctx context.Context, sellerID uuid.UUID) ([]database.ListReviewsForSellerRow, error) {
+func (s *ReviewService) ListForSeller(
+	ctx context.Context,
+	sellerID uuid.UUID,
+	q dtos.ReviewQuery,
+) (dtos.PaginatedReviews, error) {
 	seller, err := s.db.GetUser(ctx, sellerID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, &NotFoundError{Message: "User not found"}
+			return dtos.PaginatedReviews{}, &NotFoundError{Message: "User not found"}
 		}
-		return nil, err
+		return dtos.PaginatedReviews{}, err
 	}
 	if seller.DeletedAt.Valid {
-		return nil, &NotFoundError{Message: "User not found"}
+		return dtos.PaginatedReviews{}, &NotFoundError{Message: "User not found"}
 	}
 
-	return s.db.ListReviewsForSeller(ctx, sellerID)
+	paging, err := parsePaging(q.Page, q.Limit)
+	if err != nil {
+		return dtos.PaginatedReviews{}, err
+	}
+
+	total, err := s.db.CountReviewsForSeller(ctx, sellerID)
+	if err != nil {
+		return dtos.PaginatedReviews{}, err
+	}
+
+	rows, err := s.db.ListReviewsForSeller(ctx, database.ListReviewsForSellerParams{
+		SellerID: sellerID, PageLimit: paging.pageLimit, PageOffset: paging.pageOffset,
+	})
+	if err != nil {
+		return dtos.PaginatedReviews{}, err
+	}
+
+	return dtos.PaginatedReviews{
+		Items:      dtos.ToReviewResponses(rows),
+		Total:      total,
+		Page:       paging.page,
+		Limit:      paging.limit,
+		TotalPages: int((total + int64(paging.limit) - 1) / int64(paging.limit)),
+	}, nil
 }
 
 func (s *ReviewService) RatingFor(ctx context.Context, sellerID uuid.UUID) (database.SellerRatingRow, error) {

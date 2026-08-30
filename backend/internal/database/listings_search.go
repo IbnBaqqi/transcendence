@@ -69,7 +69,7 @@ func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string,
 	}
 
 	b.WriteString(" AND listings.quantity > 0 AND listings.removed_at IS NULL" +
-		" AND EXISTS (SELECT 1 FROM users u WHERE u.id = listings.seller_id AND u.deleted_at IS NULL)")
+		" AND EXISTS (SELECT 1 FROM users u WHERE u.id = listings.seller_id AND u.is_visible)")
 
 	if arg.Keyword != "" {
 		p := next("%" + escapeLike(arg.Keyword) + "%")
