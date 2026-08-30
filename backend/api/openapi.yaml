@@ -242,6 +242,25 @@ components:
             removed *and* you are its seller or an admin — for everyone else a
             removed listing is 404, so the field can never appear.
 
+    PaginatedReviews:
+      type: object
+      required: [items, total, page, limit, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        limit:
+          type: integer
+          description: Clamped to 50.
+        total_pages:
+          type: integer
+
     PaginatedListings:
       type: object
       required: [items, total, page, limit, total_pages]
@@ -4252,6 +4271,39 @@ paths:
         schema:
           type: string
           format: uuid
+    get:
+      tags: [reviews]
+      summary: The review on one order
+      operationId: getOrderReview
+      description: |
+        Reads back the review attached to an order, which is how a buyer finds
+        their own without paging through the seller's whole list and matching on
+        `order_id`.
+
+        **Only the buyer and the seller** may ask, and a caller who is neither
+        gets the same 404 as a caller asking about an order that does not
+        exist - otherwise the endpoint would confirm which order ids are real.
+      responses:
+        "200":
+          description: The review.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: |
+            No such order, no review on it yet, or the caller is not a party to
+            it. Deliberately one answer for all three.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
     post:
       tags: [orders]
       summary: Review a completed order
@@ -4369,19 +4421,35 @@ paths:
         before deciding to sign up, so putting it behind a token would hide it
         from the people it is for.
 
-        Newest first. A review whose author has since deleted their account is
-        still here, attributed to "Deleted user" — the summary on the profile
-        counts it too, because a seller's average should not move for reasons
-        that have nothing to do with the seller.
+        Newest first, **paginated** — the same envelope as `GET /listings/search`
+        rather than a bare array, so a seller with hundreds of reviews does not
+        return all of them at once.
+
+        A review whose author has since deleted their account is still here,
+        attributed to "Deleted user" — the summary on the profile counts it too,
+        because a seller's average should not move for reasons that have nothing
+        to do with the seller.
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Values above 50 are clamped to 50 rather than rejected.
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
       responses:
         "200":
-          description: The reviews. Empty when the seller has none.
+          description: One page of reviews, plus the totals for a pager.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Review"
+                $ref: "#/components/schemas/PaginatedReviews"
         "400":
           description: Invalid user id.
           content:

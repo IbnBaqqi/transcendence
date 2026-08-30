@@ -166,6 +166,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Post("/orders/{id}/receive", h.ReceiveOrder)
 			r.Post("/orders/{id}/cancel", h.CancelOrder)
 
+			r.Get("/orders/{id}/review", h.GetOrderReview)
 			r.Post("/orders/{id}/review", h.CreateReview)
 			r.Patch("/reviews/{id}", h.UpdateReview)
 			// r.Get("/dashboard", dashboardHandler)

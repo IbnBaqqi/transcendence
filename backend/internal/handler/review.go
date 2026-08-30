@@ -68,13 +68,40 @@ func (h *Handler) GetSellerReviews(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.Review.ListForSeller(r.Context(), sellerID)
+	q := r.URL.Query()
+
+	page, err := h.Review.ListForSeller(r.Context(), sellerID, dtos.ReviewQuery{
+		Page:  q.Get("page"),
+		Limit: q.Get("limit"),
+	})
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.ToReviewResponses(rows))
+	respondWithJSON(w, http.StatusOK, page)
+}
+
+func (h *Handler) GetOrderReview(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserID(r)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	orderID, err := parseIDParam(r)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid order id")
+		return
+	}
+
+	review, reviewer, err := h.Review.GetForOrder(r.Context(), userID, orderID)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToReviewResponse(review, reviewer))
 }
 
 // commentOf flattens the optional to a plain string for create, where absent

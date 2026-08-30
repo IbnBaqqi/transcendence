@@ -32,8 +32,12 @@ SELECT
     u.deleted_at AS reviewer_deleted_at
 FROM reviews r
 LEFT JOIN users u ON u.id = r.reviewer_id
-WHERE r.seller_id = $1
-ORDER BY r.created_at DESC;
+WHERE r.seller_id = sqlc.arg(seller_id)
+ORDER BY r.created_at DESC, r.id DESC
+LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
+
+-- name: CountReviewsForSeller :one
+SELECT COUNT(*) FROM reviews WHERE seller_id = $1;
 
 -- name: SellerRating :one
 -- AVG returns numeric, which sqlc types as a string; ::float8 makes it a

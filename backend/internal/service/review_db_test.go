@@ -355,7 +355,9 @@ func TestAReviewOutlivesItsAuthor(t *testing.T) {
 		t.Fatalf("deleting the buyer: %v", err)
 	}
 
-	rows, err := f.reviews.ListForSeller(ctx, f.seller)
+	rows, err := f.db.ListReviewsForSeller(ctx, database.ListReviewsForSellerParams{
+		SellerID: f.seller, PageLimit: 50,
+	})
 	if err != nil {
 		t.Fatalf("listing: %v", err)
 	}
@@ -453,12 +455,12 @@ func TestADepartedAuthorRendersAsDeletedUser(t *testing.T) {
 		t.Fatalf("deleting: %v", err)
 	}
 
-	rows, err := f.reviews.ListForSeller(ctx, f.seller)
+	page, err := f.reviews.ListForSeller(ctx, f.seller, dtos.ReviewQuery{})
 	if err != nil {
 		t.Fatalf("listing: %v", err)
 	}
 
-	out := dtos.ToReviewResponses(rows)
+	out := page.Items
 	if len(out) != 1 {
 		t.Fatalf("responses = %d, want 1", len(out))
 	}
@@ -484,7 +486,7 @@ func TestEditingTheRatingAloneKeepsTheComment(t *testing.T) {
 		t.Fatalf("creating: %v", err)
 	}
 
-	review, err := f.reviews.GetForOrder(ctx, order.ID)
+	review, _, err := f.reviews.GetForOrder(ctx, f.buyer, order.ID)
 	if err != nil {
 		t.Fatalf("reading back: %v", err)
 	}
@@ -527,7 +529,112 @@ func TestADepartedSellerHasNoPublicReviewPage(t *testing.T) {
 
 	// GET /users/{id} 404s for them, so their review page must too - otherwise
 	// public commentary outlives the profile it describes.
-	if _, err := f.reviews.ListForSeller(ctx, f.seller); !isNotFound(err) {
+	if _, err := f.reviews.ListForSeller(ctx, f.seller, dtos.ReviewQuery{}); !isNotFound(err) {
 		t.Errorf("a departed seller still has a review page: err = %#v, want *NotFoundError", err)
+	}
+}
+
+func TestAMissingRatingSaysSoRatherThanReportingARange(t *testing.T) {
+	f := newReviewFixture(t)
+	ctx := context.Background()
+
+	order := f.completedOrder(t)
+	review, err := f.reviews.Create(ctx, f.buyer, order.ID, 5, "good")
+	if err != nil {
+		t.Fatalf("creating: %v", err)
+	}
+
+	var invalid *ValidationError
+	_, err = f.reviews.Update(ctx, f.buyer, review.ID, 0, dtos.SetString("still good"))
+	if !errors.As(err, &invalid) {
+		t.Fatalf("err = %#v, want *ValidationError", err)
+	}
+	if invalid.Message != "Rating is required" {
+		t.Errorf("message = %q, want it to name the missing field rather than a range", invalid.Message)
+	}
+}
+
+func TestOnlyThePartiesCanReadAnOrdersReview(t *testing.T) {
+	f := newReviewFixture(t)
+	ctx := context.Background()
+
+	order := f.completedOrder(t)
+	if _, err := f.reviews.Create(ctx, f.buyer, order.ID, 5, "good"); err != nil {
+		t.Fatalf("creating: %v", err)
+	}
+
+	for _, party := range []struct {
+		name string
+		id   uuid.UUID
+	}{{"the buyer", f.buyer}, {"the seller", f.seller}} {
+		t.Run(party.name+" can read it", func(t *testing.T) {
+			review, reviewer, err := f.reviews.GetForOrder(ctx, party.id, order.ID)
+			if err != nil {
+				t.Fatalf("reading: %v", err)
+			}
+			if review.Rating != 5 {
+				t.Errorf("rating = %d, want 5", review.Rating)
+			}
+			if reviewer == "" {
+				t.Error("the reviewer name is empty")
+			}
+		})
+	}
+
+	t.Run("a stranger gets the same 404 as a missing order", func(t *testing.T) {
+		if _, _, err := f.reviews.GetForOrder(ctx, f.other, order.ID); !isNotFound(err) {
+			t.Errorf("err = %#v, want *NotFoundError - a 403 would confirm the order exists", err)
+		}
+	})
+
+	t.Run("an order that does not exist", func(t *testing.T) {
+		if _, _, err := f.reviews.GetForOrder(ctx, f.buyer, uuid.New()); !isNotFound(err) {
+			t.Errorf("err = %#v, want *NotFoundError", err)
+		}
+	})
+}
+
+func TestSellerReviewsPaginate(t *testing.T) {
+	f := newReviewFixture(t)
+	ctx := context.Background()
+
+	for i := 0; i < 3; i++ {
+		order := f.completedOrder(t)
+		if _, err := f.reviews.Create(ctx, f.buyer, order.ID, 4, "fine"); err != nil {
+			t.Fatalf("creating review %d: %v", i, err)
+		}
+	}
+
+	first, err := f.reviews.ListForSeller(ctx, f.seller, dtos.ReviewQuery{Limit: "2"})
+	if err != nil {
+		t.Fatalf("listing: %v", err)
+	}
+	if len(first.Items) != 2 {
+		t.Errorf("page one = %d items, want 2", len(first.Items))
+	}
+	if first.Total != 3 {
+		t.Errorf("total = %d, want 3 - the count must span every page", first.Total)
+	}
+	if first.TotalPages != 2 {
+		t.Errorf("total_pages = %d, want 2", first.TotalPages)
+	}
+
+	second, err := f.reviews.ListForSeller(ctx, f.seller, dtos.ReviewQuery{Page: "2", Limit: "2"})
+	if err != nil {
+		t.Fatalf("listing page two: %v", err)
+	}
+	if len(second.Items) != 1 {
+		t.Errorf("page two = %d items, want 1", len(second.Items))
+	}
+	if second.Items[0].ID == first.Items[0].ID {
+		t.Error("page two repeated a row from page one")
+	}
+
+	beyond, err := f.reviews.ListForSeller(ctx, f.seller, dtos.ReviewQuery{Page: "9"})
+	if err != nil {
+		t.Fatalf("listing past the end: %v", err)
+	}
+	if beyond.Items == nil {
+		t.Error("a page past the end returned nil, which marshals to null")
 	}
 }

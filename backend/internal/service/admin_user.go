@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
-	"math"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -33,7 +31,7 @@ func validateNote(note string, required bool) (string, error) {
 		return "", &ValidationError{Message: "Reason must be valid UTF-8 without null bytes"}
 	}
 
-	note = sanitizeReportDetail(note)
+	note = sanitizeFreeText(note)
 
 	if utf8.RuneCountInString(note) > maxActionNote {
 		return "", &ValidationError{Message: "Reason is too long"}
@@ -233,30 +231,9 @@ func (s *AdminUserService) List(ctx context.Context, q dtos.AdminUserQuery) (dto
 		}
 	}
 
-	page := defaultPage
-	if q.Page != "" {
-		p, err := strconv.Atoi(q.Page)
-		if err != nil || p < 1 || p > math.MaxInt32 {
-			return dtos.PaginatedAdminUsers{}, &ValidationError{Message: "Page must be a positive integer"}
-		}
-		page = p
-	}
-
-	limit := defaultLimit
-	if q.Limit != "" {
-		l, err := strconv.Atoi(q.Limit)
-		if err != nil || l < 1 {
-			return dtos.PaginatedAdminUsers{}, &ValidationError{Message: "Limit must be a positive integer"}
-		}
-		limit = l
-	}
-	if limit > maxLimit {
-		limit = maxLimit
-	}
-
-	offset := (page - 1) * limit
-	if offset < 0 || offset > math.MaxInt32 {
-		return dtos.PaginatedAdminUsers{}, &ValidationError{Message: "Page is too large"}
+	paging, err := parsePaging(q.Page, q.Limit)
+	if err != nil {
+		return dtos.PaginatedAdminUsers{}, err
 	}
 
 	role := sql.NullString{String: q.Role, Valid: q.Role != ""}
@@ -270,8 +247,8 @@ func (s *AdminUserService) List(ctx context.Context, q dtos.AdminUserQuery) (dto
 	rows, err := s.db.ListUsersForAdmin(ctx, database.ListUsersForAdminParams{
 		Role:       role,
 		Status:     status,
-		PageLimit:  int32(limit),
-		PageOffset: int32(offset),
+		PageLimit:  paging.pageLimit,
+		PageOffset: paging.pageOffset,
 	})
 	if err != nil {
 		return dtos.PaginatedAdminUsers{}, err
@@ -280,9 +257,9 @@ func (s *AdminUserService) List(ctx context.Context, q dtos.AdminUserQuery) (dto
 	return dtos.PaginatedAdminUsers{
 		Items:      dtos.ToAdminUserResponses(rows),
 		Total:      total,
-		Page:       page,
-		Limit:      limit,
-		TotalPages: int((total + int64(limit) - 1) / int64(limit)),
+		Page:       paging.page,
+		Limit:      paging.limit,
+		TotalPages: int((total + int64(paging.limit) - 1) / int64(paging.limit)),
 	}, nil
 }
 
