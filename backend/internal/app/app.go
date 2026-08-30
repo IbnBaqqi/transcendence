@@ -26,6 +26,7 @@ type api struct {
 	ListingImage *service.ListingImageService
 	Report       *service.ReportService
 	Moderation   *service.ModerationService
+	AdminOrder   *service.AdminOrderService
 	AdminUser    *service.AdminUserService
 	Review       *service.ReviewService
 	Files        *storage.Local
@@ -54,6 +55,7 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 	reportService := service.NewReportService(db.Queries)
 	adminUserService := service.NewAdminUserService(db, files)
 	moderationService := service.NewModerationService(db, files) // needs *DB for transaction
+	adminOrderService := service.NewAdminOrderService(db, notifier)
 	reviewService := service.NewReviewService(db.Queries)
 
 	return &api{
@@ -72,6 +74,7 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 		ListingImage: listingImageService,
 		Report:       reportService,
 		Moderation:   moderationService,
+		AdminOrder:   adminOrderService,
 		AdminUser:    adminUserService,
 		Review:       reviewService,
 		Files:        files,
