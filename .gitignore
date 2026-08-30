@@ -47,3 +47,6 @@ desktop.ini
 *.swp
 *.swo
 *~
+
+# air's build output
+backend/tmp/

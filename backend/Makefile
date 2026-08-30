@@ -15,7 +15,7 @@ unexport TEST_DB_URL
 run:
 	@go run ./cmd/server
 
-# Run with hot reload (requires air: go install github.com/cosmtrek/air@latest)
+# Run with hot reload (requires air: go install github.com/air-verse/air@latest)
 dev:
 	@air
 
