@@ -216,3 +216,65 @@ func TestUpsertTagSurvivesAConcurrentInsertOfTheSameName(t *testing.T) {
 		t.Error("the racing upsert returned no id")
 	}
 }
+
+func countTags(t *testing.T, db *database.DB) int {
+	t.Helper()
+
+	var n int
+	if err := db.QueryRowContext(context.Background(), `SELECT count(*) FROM tags`).Scan(&n); err != nil {
+		t.Fatalf("counting tags: %v", err)
+	}
+	return n
+}
+
+func TestATagWithNoListingsLeftIsSweptAway(t *testing.T) {
+	listings, db, seller := tagFixture(t)
+	ctx := context.Background()
+
+	created := createTagged(t, listings, seller, "Chanterelles", []string{"roadside", "sunny"})
+	if got := countTags(t, db); got != 2 {
+		t.Fatalf("tags = %d, want 2", got)
+	}
+
+	if _, err := listings.UpdateListing(ctx, seller, created.ID, dtos.UpdateListingInput{
+		Title: "Chanterelles", Category: "mushrooms", Price: 18.00, Quantity: 4, Unit: "kg",
+		Tags: []string{"roadside"},
+	}); err != nil {
+		t.Fatalf("updating: %v", err)
+	}
+
+	if got := countTags(t, db); got != 1 {
+		t.Errorf("tags = %d, want 1 - dropping a tag should not leave the row behind", got)
+	}
+}
+
+func TestASweepKeepsATagAnotherListingStillUses(t *testing.T) {
+	listings, db, seller := tagFixture(t)
+	ctx := context.Background()
+
+	first := createTagged(t, listings, seller, "Chanterelles", []string{"roadside"})
+	createTagged(t, listings, seller, "Morels", []string{"roadside"})
+
+	if err := listings.DeleteListing(ctx, seller, first.ID); err != nil {
+		t.Fatalf("deleting: %v", err)
+	}
+
+	if got := countTags(t, db); got != 1 {
+		t.Errorf("tags = %d, want 1 - the sweep took a tag another listing uses", got)
+	}
+}
+
+func TestDeletingTheLastListingUsingATagSweepsIt(t *testing.T) {
+	listings, db, seller := tagFixture(t)
+	ctx := context.Background()
+
+	only := createTagged(t, listings, seller, "Chanterelles", []string{"roadside"})
+
+	if err := listings.DeleteListing(ctx, seller, only.ID); err != nil {
+		t.Fatalf("deleting: %v", err)
+	}
+
+	if got := countTags(t, db); got != 0 {
+		t.Errorf("tags = %d, want 0 - the tag outlived its only listing", got)
+	}
+}

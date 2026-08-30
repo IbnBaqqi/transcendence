@@ -107,7 +107,7 @@ func applyTags(ctx context.Context, qtx *database.Queries, listingID uuid.UUID, 
 		}
 	}
 
-	return nil
+	return qtx.DeleteOrphanTags(ctx)
 }
 
 func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, input dtos.CreateListingInput) (database.Listing, error) {
@@ -288,6 +288,10 @@ func (s *ListingService) DeleteListing(ctx context.Context, userID uuid.UUID, li
 	}
 
 	if err := qtx.DeleteListing(ctx, listingID); err != nil {
+		return err
+	}
+
+	if err := qtx.DeleteOrphanTags(ctx); err != nil {
 		return err
 	}
 
