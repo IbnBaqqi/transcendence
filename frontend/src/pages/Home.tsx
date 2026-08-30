@@ -1,10 +1,12 @@
 import { useListings } from "../api/listings";
+import { useCategoryNames } from "../api/categories";
 import { ListingCard } from "../components/objects/ListingCard";
 import { Skeleton } from "../components/objects/Skeleton";
 
 export default function Home() {
   // useListings() gives us the query's state: the data plus loading/error flags.
   const { data: listings, isPending, isError, refetch } = useListings();
+  const categoryName = useCategoryNames();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -49,7 +51,11 @@ export default function Home() {
       {listings && listings.length > 0 && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+            <ListingCard
+              key={listing.id}
+              listing={listing}
+              categoryName={categoryName(listing.category)}
+            />
           ))}
         </div>
       )}

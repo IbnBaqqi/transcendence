@@ -38,6 +38,12 @@ export interface Listing {
   images: ListingImage[]; // always an array, never null
 }
 
+export interface Category {
+  slug: string;
+  name: string;
+  children: Category[];
+}
+
 export type OrderStatus = "pending" | "confirmed" | "completed" | "cancelled";
 
 export interface Order {
