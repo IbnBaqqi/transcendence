@@ -74,5 +74,12 @@ func (h *Handler) GetSavedListings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.ToListingResponsesWithImages(listings, byListing))
+	tagsByListing, err := h.Listing.TagsByListing(r.Context(), ids)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK,
+		dtos.WithTagsEach(dtos.ToListingResponsesWithImages(listings, byListing), tagsByListing))
 }

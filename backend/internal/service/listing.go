@@ -421,13 +421,40 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, err
 	}
 
+	tagsByListing, err := s.TagsByListing(ctx, ids)
+	if err != nil {
+		return dtos.PaginatedListings{}, err
+	}
+
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
 	return dtos.PaginatedListings{
-		Items:      dtos.ToListingResponsesWithImages(items, byListing),
+		Items:      dtos.WithTagsEach(dtos.ToListingResponsesWithImages(items, byListing), tagsByListing),
 		Total:      total,
 		Page:       page,
 		Limit:      limit,
 		TotalPages: totalPages,
 	}, nil
+}
+
+func (s *ListingService) TagsForListing(ctx context.Context, id uuid.UUID) ([]string, error) {
+	return s.db.ListTagsForListing(ctx, id)
+}
+
+func (s *ListingService) TagsByListing(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID][]string, error) {
+	out := make(map[uuid.UUID][]string, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+
+	rows, err := s.db.ListTagsForListings(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		out[row.ListingID] = append(out[row.ListingID], row.Name)
+	}
+
+	return out, nil
 }

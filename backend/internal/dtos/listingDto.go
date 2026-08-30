@@ -67,6 +67,7 @@ type ListingResponse struct {
 	CreatedAt   time.Time              `json:"created_at"`
 	UpdatedAt   time.Time              `json:"updated_at"`
 	Images      []ListingImageResponse `json:"images"`
+	Tags        []string               `json:"tags"`
 	RemovedAt   *time.Time             `json:"removed_at,omitempty"`
 }
 
@@ -86,6 +87,7 @@ func ToListingResponse(l database.Listing) ListingResponse {
 		CreatedAt:   l.CreatedAt.Time,
 		UpdatedAt:   l.UpdatedAt.Time,
 		Images:      []ListingImageResponse{},
+		Tags:        []string{},
 		RemovedAt:   nullTimePtr(l.RemovedAt),
 	}
 }
@@ -117,4 +119,18 @@ func ToListingResponsesWithImages(
 		out = append(out, ToListingResponseWithImages(r, byListing[r.ID]))
 	}
 	return out
+}
+
+func WithTags(item ListingResponse, tags []string) ListingResponse {
+	if tags != nil {
+		item.Tags = tags
+	}
+	return item
+}
+
+func WithTagsEach(items []ListingResponse, byListing map[uuid.UUID][]string) []ListingResponse {
+	for i, item := range items {
+		items[i] = WithTags(item, byListing[item.ID])
+	}
+	return items
 }
