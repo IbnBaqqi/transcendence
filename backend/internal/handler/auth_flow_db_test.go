@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -32,6 +33,7 @@ func authRouter(t *testing.T) http.Handler {
 	r := chi.NewRouter()
 	r.Use(mw.Authenticate(jwt, nil))
 	r.Post("/auth/signup", h.Signup)
+	r.Post("/auth/login", h.Login)
 	r.Post("/auth/refresh", h.Refresh)
 	r.Post("/auth/logout", h.Logout)
 	r.Group(func(r chi.Router) {
@@ -176,5 +178,41 @@ func TestMeWithoutATokenIs401(t *testing.T) {
 	res := send(t, r, http.MethodGet, "/auth/me", "", nil, "")
 	if res.code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want 401", res.code)
+	}
+}
+
+func TestLoginAndMeDescribeTheAccountTheSameWay(t *testing.T) {
+	r := authRouter(t)
+	signupVia(t, r)
+
+	login := send(t, r, http.MethodPost, "/auth/login",
+		`{"email":"aino@example.test","password":"password123"}`, nil, "")
+	if login.code != http.StatusOK {
+		t.Fatalf("login = %d: %s", login.code, login.body)
+	}
+
+	var body struct {
+		AccessToken string          `json:"access_token"`
+		User        json.RawMessage `json:"user"`
+	}
+	if err := json.Unmarshal([]byte(login.body), &body); err != nil {
+		t.Fatalf("decoding the login response: %v", err)
+	}
+
+	me := send(t, r, http.MethodGet, "/auth/me", "", nil, body.AccessToken)
+	if me.code != http.StatusOK {
+		t.Fatalf("me = %d: %s", me.code, me.body)
+	}
+
+	var fromLogin, fromMe map[string]any
+	if err := json.Unmarshal(body.User, &fromLogin); err != nil {
+		t.Fatalf("decoding the login user: %v", err)
+	}
+	if err := json.Unmarshal([]byte(me.body), &fromMe); err != nil {
+		t.Fatalf("decoding the me body: %v", err)
+	}
+
+	if !reflect.DeepEqual(fromLogin, fromMe) {
+		t.Errorf("the two calls describe one account differently:\nlogin: %v\nme:    %v", fromLogin, fromMe)
 	}
 }
