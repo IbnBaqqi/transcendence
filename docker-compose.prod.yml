@@ -1,0 +1,70 @@
+# Production-shaped stack: both services run from their built images, with no
+# source mounts and no toolchain in the runtime containers. Standalone rather
+# than an overlay on docker-compose.yml, because overriding that file's source
+# mounts and dev commands relies on merge rules that fail quietly when wrong.
+#
+#   docker compose -f docker-compose.prod.yml up --build
+#
+# Only the frontend publishes a port. The API is reached through nginx on the
+# same origin, which is what the browser already assumes.
+
+# Its own project name. Without this both files share the directory-derived
+# project, so the two stacks fight over the same container names and a `down`
+# on one takes services from the other with it.
+name: transcendence-prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: ./backend
+      target: migrator
+    environment:
+      GOOSE_DBSTRING: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+      # Explicit: the migrator stage comes after this one in the Dockerfile, and
+      # an untargeted build takes the LAST stage - which silently produced a
+      # backend container running goose.
+      target: runtime
+    env_file: .env
+    environment:
+      DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads_prod:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data_prod:
+  uploads_prod:
