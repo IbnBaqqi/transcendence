@@ -223,6 +223,24 @@ That drops and recreates the database, applies the migrations and re-seeds.
 Note that `make docker-down` does **not** do this — it deliberately keeps the
 volume, so the old schema comes straight back.
 
+## Cleaning up unused tags
+
+A tag is created the first time a listing uses it and is not removed when the
+last listing drops it, so the table grows with every new name anyone types.
+Collecting the unused ones is a deliberate command rather than something the
+listing write path does:
+
+```bash
+cd backend && make tag-sweep
+```
+
+Nothing schedules it, so tags accumulate until someone runs it.
+
+It is safe against a live database. It takes the same advisory lock every tag
+write takes, so it cannot collect a tag a listing is being saved with — a sweep
+without that lock deletes the tag *and* the new listing's link to it, and
+neither side reports an error.
+
 ## Roles and the first admin
 
 Accounts are `USER` or `ADMIN` — those two values only, enforced by a `CHECK`
