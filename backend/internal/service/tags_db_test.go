@@ -299,6 +299,48 @@ func TestASweepCollectsATagOrphanedByADeletedListing(t *testing.T) {
 	}
 }
 
+func waitForATagLockWaiter(t *testing.T, db *database.DB) {
+	t.Helper()
+
+	waitFor(t, db, `
+		SELECT count(*) FROM pg_locks
+		WHERE locktype = 'advisory'
+		  AND objid = 5170163
+		  AND NOT granted
+		  AND database = (SELECT oid FROM pg_database WHERE datname = current_database())`,
+		"nothing ever blocked on the tag lock - the writer did not take it")
+}
+
+func waitForABlockedRowLock(t *testing.T, db *database.DB) {
+	t.Helper()
+
+	waitFor(t, db, `
+		SELECT count(*) FROM pg_stat_activity
+		WHERE datname = current_database()
+		  AND wait_event_type = 'Lock'
+		  AND pid <> pg_backend_pid()`,
+		"the sweep never blocked on the wedge - it was not inside its delete")
+}
+
+func waitFor(t *testing.T, db *database.DB, query, complaint string) {
+	t.Helper()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		var waiters int
+		if err := db.QueryRow(query).Scan(&waiters); err != nil {
+			t.Fatalf("reading pg_locks: %v", err)
+		}
+		if waiters > 0 {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal(complaint)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
 func TestAConcurrentAdoptSurvivesTheSweep(t *testing.T) {
 	listings, db, seller := tagFixture(t)
 	ctx := context.Background()
@@ -334,7 +376,7 @@ func TestAConcurrentAdoptSurvivesTheSweep(t *testing.T) {
 		done <- adopt{listing: listing, err: err}
 	}()
 
-	time.Sleep(300 * time.Millisecond)
+	waitForATagLockWaiter(t, db)
 
 	select {
 	case got := <-done:
@@ -402,7 +444,7 @@ func TestASweepDoesNotOutliveItsLock(t *testing.T) {
 		swept <- deleted
 	}()
 
-	time.Sleep(300 * time.Millisecond)
+	waitForABlockedRowLock(t, db)
 
 	type adopt struct {
 		listing database.Listing
@@ -417,7 +459,7 @@ func TestASweepDoesNotOutliveItsLock(t *testing.T) {
 		adopted <- adopt{listing: listing, err: err}
 	}()
 
-	time.Sleep(300 * time.Millisecond)
+	waitForATagLockWaiter(t, db)
 
 	select {
 	case got := <-adopted:
