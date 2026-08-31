@@ -43,10 +43,15 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Check the compose file parses
-        # --env-file, not a bare config: with no env file every ${VAR} resolves
-        # to empty and the parse proves less than it appears to. This asserts
-        # the example file is enough to bring the stack up.
-        run: docker compose --env-file .env.example config -q
+        # The copy is required, not a convenience: both services declare
+        # env_file: .env, which is a path that must exist, and --env-file only
+        # redirects variable interpolation. Without a real .env the parse fails
+        # on the missing file instead of checking the compose file. Copying the
+        # example also asserts the thing actually wanted - that .env.example is
+        # enough to bring the stack up.
+        run: |
+          cp .env.example .env
+          docker compose config -q
 
       - name: Check every compose variable exists in .env.example
         run: |
