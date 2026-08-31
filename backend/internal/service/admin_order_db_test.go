@@ -13,6 +13,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/notify"
+	"github.com/IbnBaqqi/transcendence/internal/storage"
 )
 
 type adminOrderFixture struct {
@@ -435,5 +436,209 @@ func TestAReasonIsStrippedOfControlCharacters(t *testing.T) {
 	note := events[len(events)-1].Note.String
 	if strings.ContainsRune(note, '\u202e') {
 		t.Errorf("a bidi override survived into an admin-visible note: %q", note)
+	}
+}
+
+func (f adminOrderFixture) deleteAccount(t *testing.T, id uuid.UUID, username string) {
+	t.Helper()
+	ctx := context.Background()
+
+	if err := f.db.EnsureProfile(ctx, id); err != nil {
+		t.Fatalf("creating %s's profile: %v", username, err)
+	}
+
+	files, err := storage.NewLocal(t.TempDir())
+	if err != nil {
+		t.Fatalf("temporary upload dir: %v", err)
+	}
+	t.Cleanup(func() { _ = files.Close() })
+
+	if err := NewUserService(f.db, files).DeleteAccount(ctx, id, username); err != nil {
+		t.Fatalf("deleting %s: %v", username, err)
+	}
+}
+
+func TestAnOrderBothPartiesAbandonedIsStuckImmediately(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+
+	f.deleteAccount(t, f.buyer, "buyer")
+	f.deleteAccount(t, f.seller, "seller")
+
+	resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
+	if err != nil {
+		t.Fatalf("reading resolvability: %v", err)
+	}
+	if !resolvable.Stranded {
+		t.Error("an order with no living party is not flagged stranded")
+	}
+	if !resolvable.Stuck {
+		t.Error("stranded did not make the order stuck")
+	}
+
+	page, err := f.admins.List(ctx, dtos.AdminOrderQuery{Stuck: "true"})
+	if err != nil {
+		t.Fatalf("listing: %v", err)
+	}
+	if page.Total != 1 || len(page.Items) != 1 {
+		t.Fatalf("stuck=true returned %d items, total %d, want 1 and 1 - no seven-day wait applies here",
+			len(page.Items), page.Total)
+	}
+	if !page.Items[0].Stuck {
+		t.Error("the listed row is not flagged stuck on the response")
+	}
+}
+
+func TestAStrandedOrderResolvesToCancelledAndReturnsStock(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+
+	f.deleteAccount(t, f.buyer, "buyer")
+	f.deleteAccount(t, f.seller, "seller")
+
+	resolved, err := f.admins.Resolve(ctx, f.admin, f.order.ID, "cancelled", "both parties deleted their accounts")
+	if err != nil {
+		t.Fatalf("resolving: %v", err)
+	}
+	if resolved.Status != "cancelled" {
+		t.Errorf("status = %q, want cancelled", resolved.Status)
+	}
+
+	listing, err := f.db.GetListing(ctx, f.order.ListingID)
+	if err != nil {
+		t.Fatalf("reading the listing: %v", err)
+	}
+	if listing.Quantity != 10 {
+		t.Errorf("quantity = %d, want 10 - the stock was not returned", listing.Quantity)
+	}
+}
+
+func TestAStrandedOrderCannotBeResolvedAsCompleted(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+
+	f.deleteAccount(t, f.buyer, "buyer")
+	f.deleteAccount(t, f.seller, "seller")
+
+	for _, outcome := range []string{"completed", "refunded"} {
+		_, err := f.admins.Resolve(ctx, f.admin, f.order.ID, outcome, "a reason")
+
+		var conflict *ConflictError
+		if !errors.As(err, &conflict) {
+			t.Errorf("resolving as %s: err = %#v, want *ConflictError - neither party ever acted", outcome, err)
+		}
+	}
+
+	order, err := f.db.GetOrder(ctx, f.order.ID)
+	if err != nil {
+		t.Fatalf("re-reading: %v", err)
+	}
+	if order.Status != "pending" {
+		t.Errorf("status = %q, want pending - a refused resolution still moved the order", order.Status)
+	}
+}
+
+func TestOneDeletedPartyDoesNotStrandAnOrder(t *testing.T) {
+	for _, gone := range []string{"buyer", "seller"} {
+		t.Run("only the "+gone+" is deleted", func(t *testing.T) {
+			f := newAdminOrderFixture(t)
+			ctx := context.Background()
+
+			leaving := f.buyer
+			if gone == "seller" {
+				leaving = f.seller
+			}
+			f.deleteAccount(t, leaving, gone)
+
+			resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
+			if err != nil {
+				t.Fatalf("reading resolvability: %v", err)
+			}
+			if resolvable.Stranded || resolvable.Stuck {
+				t.Errorf("stranded=%v stuck=%v, want both false - the other party can still cancel",
+					resolvable.Stranded, resolvable.Stuck)
+			}
+
+			_, err = f.admins.Resolve(ctx, f.admin, f.order.ID, "cancelled", "a reason")
+
+			var conflict *ConflictError
+			if !errors.As(err, &conflict) {
+				t.Errorf("err = %#v, want *ConflictError - a living party can still act", err)
+			}
+		})
+	}
+}
+
+func TestAHandedOverOrderIsNotStrandedWhenBothPartiesLeave(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+
+	if _, err := f.svc.ConfirmOrder(ctx, f.seller, f.order.ID); err != nil {
+		t.Fatalf("confirming: %v", err)
+	}
+	if _, err := f.svc.HandoverOrder(ctx, f.seller, f.order.ID); err != nil {
+		t.Fatalf("handing over: %v", err)
+	}
+
+	f.deleteAccount(t, f.buyer, "buyer")
+	f.deleteAccount(t, f.seller, "seller")
+
+	resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
+	if err != nil {
+		t.Fatalf("reading resolvability: %v", err)
+	}
+	if resolvable.Stranded {
+		t.Error("a handed-over order is flagged stranded - it belongs to the handshake shape, which waits seven days and allows every outcome")
+	}
+	if resolvable.Stuck {
+		t.Error("stuck before the seven days are up")
+	}
+}
+
+func TestATerminalOrderIsNeverStuck(t *testing.T) {
+	// "cancelled" is the case that matters: cancelling is refused once a
+	// handshake mark exists, so a cancelled order has neither timestamp set and
+	// is told apart from a stranded one by its status alone.
+	for _, want := range []string{"completed", "cancelled"} {
+		t.Run("an order that is "+want, func(t *testing.T) {
+			f := newAdminOrderFixture(t)
+			ctx := context.Background()
+
+			if want == "completed" {
+				if _, err := f.svc.ConfirmOrder(ctx, f.seller, f.order.ID); err != nil {
+					t.Fatalf("confirming: %v", err)
+				}
+				if _, err := f.svc.HandoverOrder(ctx, f.seller, f.order.ID); err != nil {
+					t.Fatalf("handing over: %v", err)
+				}
+				if _, err := f.svc.ReceiveOrder(ctx, f.buyer, f.order.ID); err != nil {
+					t.Fatalf("confirming receipt: %v", err)
+				}
+			} else {
+				if _, err := f.svc.CancelOrder(ctx, f.buyer, f.order.ID); err != nil {
+					t.Fatalf("cancelling: %v", err)
+				}
+			}
+
+			f.deleteAccount(t, f.buyer, "buyer")
+			f.deleteAccount(t, f.seller, "seller")
+
+			order, err := f.db.GetOrder(ctx, f.order.ID)
+			if err != nil {
+				t.Fatalf("re-reading: %v", err)
+			}
+			if order.Status != want {
+				t.Fatalf("the fixture produced %q, not %q", order.Status, want)
+			}
+
+			resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
+			if err != nil {
+				t.Fatalf("reading resolvability: %v", err)
+			}
+			if resolvable.Stranded || resolvable.Stuck {
+				t.Errorf("stranded=%v stuck=%v, want both false - a finished order needs no rescue",
+					resolvable.Stranded, resolvable.Stuck)
+			}
+		})
 	}
 }
