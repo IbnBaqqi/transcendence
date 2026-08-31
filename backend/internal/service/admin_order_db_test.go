@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -672,5 +673,107 @@ func TestATerminalOrderIsNeverStuck(t *testing.T) {
 					resolvable.Stranded, resolvable.Stuck)
 			}
 		})
+	}
+}
+
+func TestTheSevenDayWaitIsSevenDays(t *testing.T) {
+	// An hour either side of the boundary rather than days: with only an
+	// 8-day case, any threshold between 0 and 8 days passes.
+	for _, c := range []struct {
+		age       string
+		wantStuck bool
+	}{
+		{"6 days 23 hours", false},
+		{"7 days 1 hour", true},
+	} {
+		t.Run("a handover "+c.age+" old", func(t *testing.T) {
+			f := newAdminOrderFixture(t)
+			ctx := context.Background()
+
+			if _, err := f.svc.ConfirmOrder(ctx, f.seller, f.order.ID); err != nil {
+				t.Fatalf("confirming: %v", err)
+			}
+			if _, err := f.svc.HandoverOrder(ctx, f.seller, f.order.ID); err != nil {
+				t.Fatalf("handing over: %v", err)
+			}
+			if _, err := f.db.ExecContext(ctx,
+				`UPDATE orders SET seller_handed_over_at = now() - $2::interval WHERE id = $1`,
+				f.order.ID, c.age); err != nil {
+				t.Fatalf("backdating: %v", err)
+			}
+
+			resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
+			if err != nil {
+				t.Fatalf("reading resolvability: %v", err)
+			}
+			if resolvable.Stuck != c.wantStuck {
+				t.Errorf("stuck = %v, want %v for a handover %s old", resolvable.Stuck, c.wantStuck, c.age)
+			}
+		})
+	}
+}
+
+func TestAListedAdminOrderCarriesTheWholeOrder(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+
+	page, err := f.admins.List(ctx, dtos.AdminOrderQuery{})
+	if err != nil {
+		t.Fatalf("listing: %v", err)
+	}
+	if len(page.Items) != 1 {
+		t.Fatalf("listed %d orders, want 1", len(page.Items))
+	}
+
+	got, want := page.Items[0], f.order
+	if got.ID != want.ID {
+		t.Errorf("id = %v, want %v", got.ID, want.ID)
+	}
+	if got.BuyerID != want.BuyerID.String() {
+		t.Errorf("buyer = %v, want %v", got.BuyerID, want.BuyerID)
+	}
+	if got.SellerID != want.SellerID.String() {
+		t.Errorf("seller = %v, want %v - buyer and seller are the pair most easily swapped", got.SellerID, want.SellerID)
+	}
+	if got.ListingID != want.ListingID {
+		t.Errorf("listing = %v, want %v", got.ListingID, want.ListingID)
+	}
+	if got.ListingTitle != want.ListingTitle {
+		t.Errorf("listing title = %q, want %q", got.ListingTitle, want.ListingTitle)
+	}
+	if got.Quantity != want.Quantity {
+		t.Errorf("quantity = %d, want %d", got.Quantity, want.Quantity)
+	}
+	if got.Status != want.Status {
+		t.Errorf("status = %q, want %q", got.Status, want.Status)
+	}
+	if got.UnitPrice != 18.10 || got.TotalPrice != 36.20 {
+		t.Errorf("prices = %v / %v, want 18.1 / 36.2", got.UnitPrice, got.TotalPrice)
+	}
+	if got.CreatedAt.IsZero() {
+		t.Error("created_at did not survive the view")
+	}
+}
+
+// Do not delete: the view expands "o.*" at creation time, so a column added to
+// orders later never reaches admin_orders, and sqlc freezes the same shape.
+// Nothing else fails - the field is simply published as a zero value. This is
+// what turns that silence into a red test.
+func TestTheAdminOrdersViewCarriesEveryOrderColumn(t *testing.T) {
+	order := reflect.TypeOf(database.Order{})
+	admin := reflect.TypeOf(database.AdminOrder{})
+
+	for i := range order.NumField() {
+		field := order.Field(i)
+
+		got, ok := admin.FieldByName(field.Name)
+		if !ok {
+			t.Errorf("database.Order.%s is missing from the admin_orders view - add it to migration 016 and recreate the view",
+				field.Name)
+			continue
+		}
+		if got.Type != field.Type {
+			t.Errorf("%s is %v on the view and %v on the table", field.Name, got.Type, field.Type)
+		}
 	}
 }
