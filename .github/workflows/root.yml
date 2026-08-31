@@ -1,0 +1,68 @@
+name: Root
+
+# Do not make this check required in branch protection while the paths filter
+# below exists. A required check whose workflow is filtered out never reports at
+# all, so GitHub waits on it forever and the PR can never merge. Same constraint
+# as backend.yml and frontend.yml.
+#
+# The paths list is repeated under push rather than shared with a YAML anchor:
+# GitHub's workflow parser rejects anchors outright.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docker-compose.yml"
+      - ".env.example"
+      # The whole directory rather than api-demo.sh alone: a second script
+      # added later is invisible to the narrow form.
+      - "scripts/**"
+      - "README.md"
+      - ".gitignore"
+      - "LICENSE"
+      - ".github/CODEOWNERS"
+      - ".github/workflows/root.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docker-compose.yml"
+      - ".env.example"
+      - "scripts/**"
+      - "README.md"
+      - ".gitignore"
+      - "LICENSE"
+      - ".github/CODEOWNERS"
+      - ".github/workflows/root.yml"
+
+jobs:
+  checks:
+    name: Root Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+
+      - name: Check the compose file parses
+        # --env-file, not a bare config: with no env file every ${VAR} resolves
+        # to empty and the parse proves less than it appears to. This asserts
+        # the example file is enough to bring the stack up.
+        run: docker compose --env-file .env.example config -q
+
+      - name: Check every compose variable exists in .env.example
+        run: |
+          missing=$(grep -ohE '\$\{[A-Z_][A-Z0-9_]*' docker-compose.yml \
+            | sed 's/^\${//' | sort -u \
+            | while read -r var; do
+                grep -qE "^${var}=" .env.example || echo "$var"
+              done)
+          if [ -n "$missing" ]; then
+            echo "compose interpolates variables .env.example does not define:"
+            echo "$missing"
+            exit 1
+          fi
+
+      - name: Check the demo script
+        # Pinned like staticcheck and gosec: the runner image ships shellcheck,
+        # but that version moves when the image updates and can fail a commit
+        # nobody touched.
+        run: docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:v0.10.0 scripts/api-demo.sh
