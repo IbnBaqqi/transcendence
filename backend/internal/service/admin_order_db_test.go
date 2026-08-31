@@ -59,13 +59,13 @@ func (f adminOrderFixture) stick(t *testing.T) {
 		t.Fatalf("backdating the handover: %v", err)
 	}
 
-	order, err := f.db.GetOrder(ctx, f.order.ID)
+	resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
 	if err != nil {
 		t.Fatalf("re-reading: %v", err)
 	}
-	if !isStuck(order, stuckBefore(time.Now())) {
-		t.Fatalf("the fixture did not produce a stuck order: status=%s handover=%v received=%v",
-			order.Status, order.SellerHandedOverAt.Valid, order.BuyerReceivedAt.Valid)
+	if !resolvable.Stuck || resolvable.Stranded {
+		t.Fatalf("the fixture did not produce a handshake-stuck order: stuck=%v stranded=%v",
+			resolvable.Stuck, resolvable.Stranded)
 	}
 }
 
@@ -227,7 +227,7 @@ func TestTheStuckFilterMatchesTheGoPredicate(t *testing.T) {
 		t.Fatalf("stuck=true returned %d items, total %d, want 1 and 1", len(page.Items), page.Total)
 	}
 	if !page.Items[0].Stuck {
-		t.Error("the row the SQL filter selected is not flagged stuck by the Go predicate")
+		t.Error("the row the stuck filter selected is not flagged stuck on the response")
 	}
 
 	notStuck, err := f.admins.List(ctx, dtos.AdminOrderQuery{Stuck: "false"})

@@ -17,11 +17,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/notify"
 )
 
-const (
-	maxResolutionReason = 500
-
-	stuckAfter = 7 * 24 * time.Hour
-)
+const maxResolutionReason = 500
 
 type AdminOrderService struct {
 	db     *database.DB
@@ -71,17 +67,16 @@ func (s *AdminOrderService) List(ctx context.Context, q dtos.AdminOrderQuery) (d
 	}
 
 	status := sql.NullString{String: q.Status, Valid: q.Status != ""}
-	before := stuckBefore(time.Now())
 
 	total, err := s.db.CountOrdersForAdmin(ctx, database.CountOrdersForAdminParams{
-		Status: status, CreatedFrom: from, CreatedTo: to, Stuck: stuck, StuckBefore: before,
+		Status: status, CreatedFrom: from, CreatedTo: to, Stuck: stuck,
 	})
 	if err != nil {
 		return dtos.PaginatedAdminOrders{}, err
 	}
 
 	rows, err := s.db.ListOrdersForAdmin(ctx, database.ListOrdersForAdminParams{
-		Status: status, CreatedFrom: from, CreatedTo: to, Stuck: stuck, StuckBefore: before,
+		Status: status, CreatedFrom: from, CreatedTo: to, Stuck: stuck,
 		PageLimit: paging.pageLimit, PageOffset: paging.pageOffset,
 	})
 	if err != nil {
@@ -90,7 +85,7 @@ func (s *AdminOrderService) List(ctx context.Context, q dtos.AdminOrderQuery) (d
 
 	items := make([]dtos.AdminOrderResponse, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, dtos.ToAdminOrderResponse(row, isStuck(row, before)))
+		items = append(items, dtos.ToAdminOrderResponse(orderFromAdminRow(row), row.Stuck))
 	}
 
 	return dtos.PaginatedAdminOrders{
@@ -120,6 +115,24 @@ func parseDayBound(value, field string) (sql.NullTime, error) {
 	return sql.NullTime{Time: when, Valid: true}, nil
 }
 
+func orderFromAdminRow(row database.AdminOrder) database.Order {
+	return database.Order{
+		ID:                 row.ID,
+		ListingID:          row.ListingID,
+		BuyerID:            row.BuyerID,
+		SellerID:           row.SellerID,
+		Quantity:           row.Quantity,
+		UnitPrice:          row.UnitPrice,
+		TotalPrice:         row.TotalPrice,
+		Status:             row.Status,
+		CreatedAt:          row.CreatedAt,
+		UpdatedAt:          row.UpdatedAt,
+		SellerHandedOverAt: row.SellerHandedOverAt,
+		BuyerReceivedAt:    row.BuyerReceivedAt,
+		ListingTitle:       row.ListingTitle,
+	}
+}
+
 func validateResolutionReason(reason string) (string, error) {
 	if !utf8.ValidString(reason) || strings.ContainsRune(reason, 0) {
 		return "", &ValidationError{Message: "Reason must be valid UTF-8 without null bytes"}
@@ -146,23 +159,6 @@ var adminOutcomes = map[string]orderOutcome{
 	"completed": {status: "completed"},
 	"cancelled": {status: "cancelled", restoresStock: true},
 	"refunded":  {status: "refunded", restoresStock: true},
-}
-
-func stuckBefore(now time.Time) time.Time {
-	return now.Add(-stuckAfter)
-}
-
-func isStuck(o database.Order, before time.Time) bool {
-	if o.Status != "confirmed" || o.SellerHandedOverAt.Valid == o.BuyerReceivedAt.Valid {
-		return false
-	}
-
-	marked := o.SellerHandedOverAt.Time
-	if o.BuyerReceivedAt.Valid {
-		marked = o.BuyerReceivedAt.Time
-	}
-
-	return marked.Before(before)
 }
 
 func (s *AdminOrderService) Resolve(
@@ -202,9 +198,18 @@ func (s *AdminOrderService) Resolve(
 		return database.Order{}, err
 	}
 
-	if !isStuck(order, stuckBefore(time.Now())) {
+	resolvable, err := qtx.GetOrderResolvability(ctx, orderID)
+	if err != nil {
+		return database.Order{}, err
+	}
+	if !resolvable.Stuck {
 		return database.Order{}, &ConflictError{
-			Message: "Only an order left stuck mid-handover for 7 days can be resolved by an admin",
+			Message: "Only an order left stuck mid-handover for 7 days, or one whose buyer and seller have both deleted their accounts, can be resolved by an admin",
+		}
+	}
+	if resolvable.Stranded && action.status != "cancelled" {
+		return database.Order{}, &ConflictError{
+			Message: "An order neither party ever acted on can only be resolved as cancelled",
 		}
 	}
 
