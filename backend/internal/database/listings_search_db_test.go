@@ -11,7 +11,7 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
 )
 
-func seller(t *testing.T, db *database.DB, name, title, location string) string {
+func makeSeller(t *testing.T, db *database.DB, name string) uuid.UUID {
 	t.Helper()
 
 	id := uuid.New()
@@ -21,14 +21,42 @@ func seller(t *testing.T, db *database.DB, name, title, location string) string 
 	); err != nil {
 		t.Fatalf("creating %s: %v", name, err)
 	}
+	return id
+}
+
+func addListing(t *testing.T, db *database.DB, sellerID uuid.UUID, title, category string) {
+	t.Helper()
 
 	if _, err := db.Exec(
 		`INSERT INTO listings (id, seller_id, title, description, category, price, quantity, unit)
-		 VALUES ($1, $2, $3, 'fresh', 'mushrooms', 10.00, 5, 'kg')`,
-		database.NewID(), id, title,
+		 VALUES ($1, $2, $3, 'fresh', $4, 10.00, 5, 'kg')`,
+		database.NewID(), sellerID, title, category,
 	); err != nil {
-		t.Fatalf("creating %s's listing: %v", name, err)
+		t.Fatalf("creating %s: %v", title, err)
 	}
+}
+
+func searchTitles(t *testing.T, db *database.DB, params database.SearchListingsParams) []string {
+	t.Helper()
+
+	rows, err := db.Queries.SearchListingsDynamic(context.Background(), params)
+	if err != nil {
+		t.Fatalf("searching: %v", err)
+	}
+
+	titles := make([]string, 0, len(rows))
+	for _, row := range rows {
+		titles = append(titles, row.Title)
+	}
+	sort.Strings(titles)
+	return titles
+}
+
+func seller(t *testing.T, db *database.DB, name, title, location string) string {
+	t.Helper()
+
+	id := makeSeller(t, db, name)
+	addListing(t, db, id, title, "mushrooms")
 
 	if location != "" {
 		if _, err := db.Exec(
@@ -96,21 +124,7 @@ func TestLocationFilterMatchesOnlySellersWithAnAddress(t *testing.T) {
 func categorised(t *testing.T, db *database.DB, name, title, category string) {
 	t.Helper()
 
-	id := uuid.New()
-	if _, err := db.Exec(
-		`INSERT INTO users (id, email, username, password) VALUES ($1, $2, $3, 'x')`,
-		id, name+"@example.test", name,
-	); err != nil {
-		t.Fatalf("creating %s: %v", name, err)
-	}
-
-	if _, err := db.Exec(
-		`INSERT INTO listings (id, seller_id, title, description, category, price, quantity, unit)
-		 VALUES ($1, $2, $3, 'fresh', $4, 10.00, 5, 'kg')`,
-		database.NewID(), id, title, category,
-	); err != nil {
-		t.Fatalf("creating %s's listing: %v", name, err)
-	}
+	addListing(t, db, makeSeller(t, db, name), title, category)
 }
 
 func TestFilteringByAParentIncludesItsChildren(t *testing.T) {
@@ -163,47 +177,6 @@ func TestFilteringByAParentIncludesItsChildren(t *testing.T) {
 			}
 		})
 	}
-}
-
-func makeSeller(t *testing.T, db *database.DB, name string) uuid.UUID {
-	t.Helper()
-
-	id := uuid.New()
-	if _, err := db.Exec(
-		`INSERT INTO users (id, email, username, password) VALUES ($1, $2, $3, 'x')`,
-		id, name+"@example.test", name,
-	); err != nil {
-		t.Fatalf("creating %s: %v", name, err)
-	}
-	return id
-}
-
-func addListing(t *testing.T, db *database.DB, sellerID uuid.UUID, title, category string) {
-	t.Helper()
-
-	if _, err := db.Exec(
-		`INSERT INTO listings (id, seller_id, title, description, category, price, quantity, unit)
-		 VALUES ($1, $2, $3, 'fresh', $4, 10.00, 5, 'kg')`,
-		database.NewID(), sellerID, title, category,
-	); err != nil {
-		t.Fatalf("creating %s: %v", title, err)
-	}
-}
-
-func searchTitles(t *testing.T, db *database.DB, params database.SearchListingsParams) []string {
-	t.Helper()
-
-	rows, err := db.Queries.SearchListingsDynamic(context.Background(), params)
-	if err != nil {
-		t.Fatalf("searching: %v", err)
-	}
-
-	titles := make([]string, 0, len(rows))
-	for _, row := range rows {
-		titles = append(titles, row.Title)
-	}
-	sort.Strings(titles)
-	return titles
 }
 
 func TestTheSellerFilterReturnsOnlyThatSellersListings(t *testing.T) {
