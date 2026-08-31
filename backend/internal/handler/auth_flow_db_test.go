@@ -160,7 +160,10 @@ func TestMeReturnsTheSessionsIdentity(t *testing.T) {
 		t.Fatalf("me = %d: %s", res.code, res.body)
 	}
 
-	for _, want := range []string{`"username":"aino"`, `"email":"aino@example.test"`, `"role":"USER"`, `"id":"`} {
+	for _, want := range []string{
+		`"username":"aino"`, `"email":"aino@example.test"`, `"role":"USER"`, `"id":"`,
+		`"has_password":true`, `"providers":[]`,
+	} {
 		if !strings.Contains(res.body, want) {
 			t.Errorf("body is missing %s:\n%s", want, res.body)
 		}
