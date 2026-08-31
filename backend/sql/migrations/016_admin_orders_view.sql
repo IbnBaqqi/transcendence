@@ -25,4 +25,4 @@ FROM (
 
 -- +goose Down
 
-DROP VIEW admin_orders;
+DROP VIEW IF EXISTS admin_orders;

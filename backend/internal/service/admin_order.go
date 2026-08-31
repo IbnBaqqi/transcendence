@@ -68,18 +68,37 @@ func (s *AdminOrderService) List(ctx context.Context, q dtos.AdminOrderQuery) (d
 
 	status := sql.NullString{String: q.Status, Valid: q.Status != ""}
 
-	total, err := s.db.CountOrdersForAdmin(ctx, database.CountOrdersForAdminParams{
+	// One transaction so both queries share it: the view's stuck test is
+	// relative to now(), which is the transaction timestamp, so running them
+	// apart lets an order on the seven-day boundary be counted but not listed.
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return dtos.PaginatedAdminOrders{}, err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			slog.Error("admin order listing rollback failed", "error", err)
+		}
+	}()
+
+	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	total, err := qtx.CountOrdersForAdmin(ctx, database.CountOrdersForAdminParams{
 		Status: status, CreatedFrom: from, CreatedTo: to, Stuck: stuck,
 	})
 	if err != nil {
 		return dtos.PaginatedAdminOrders{}, err
 	}
 
-	rows, err := s.db.ListOrdersForAdmin(ctx, database.ListOrdersForAdminParams{
+	rows, err := qtx.ListOrdersForAdmin(ctx, database.ListOrdersForAdminParams{
 		Status: status, CreatedFrom: from, CreatedTo: to, Stuck: stuck,
 		PageLimit: paging.pageLimit, PageOffset: paging.pageOffset,
 	})
 	if err != nil {
+		return dtos.PaginatedAdminOrders{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return dtos.PaginatedAdminOrders{}, err
 	}
 
