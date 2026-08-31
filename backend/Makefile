@@ -17,6 +17,7 @@ run:
 
 # Run with hot reload (requires air: go install github.com/air-verse/air@latest)
 dev:
+	$(require-air)
 	@air
 
 # Build the application
@@ -103,6 +104,8 @@ deps:
 # itself - otherwise goose gets an empty connection string and fails with a
 # confusing driver error instead of saying what's actually missing.
 require-db-url = @test -n "$(DB_URL)" || { echo "DB_URL not set - copy .env.example to .env"; exit 1; }
+
+require-air = @command -v air >/dev/null || { echo "air not installed - go install github.com/air-verse/air@latest"; exit 1; }
 
 # Same idea for the test database: without it `go test` silently SKIPS every
 # database test and still prints ok, which reads like success.

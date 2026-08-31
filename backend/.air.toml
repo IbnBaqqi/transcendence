@@ -4,8 +4,11 @@ tmp_dir = "tmp"
 [build]
   cmd = "go build -o ./tmp/server ./cmd/server"
   bin = "./tmp/server"
-  include_ext = ["go"]
-  exclude_dir = ["tmp", "uploads", "sql", "api"]
+  # yaml is here because api/openapi.yaml is //go:embed-ed into the binary.
+  # Drop it and editing the spec leaves /docs serving the old one until someone
+  # restarts by hand, with nothing to say why.
+  include_ext = ["go", "yaml", "mod", "sum"]
+  exclude_dir = ["tmp", "uploads", "sql"]
   exclude_regex = ["_test\\.go$"]
   stop_on_error = true
   delay = 200
