@@ -164,3 +164,90 @@ func TestFilteringByAParentIncludesItsChildren(t *testing.T) {
 		})
 	}
 }
+
+func makeSeller(t *testing.T, db *database.DB, name string) uuid.UUID {
+	t.Helper()
+
+	id := uuid.New()
+	if _, err := db.Exec(
+		`INSERT INTO users (id, email, username, password) VALUES ($1, $2, $3, 'x')`,
+		id, name+"@example.test", name,
+	); err != nil {
+		t.Fatalf("creating %s: %v", name, err)
+	}
+	return id
+}
+
+func addListing(t *testing.T, db *database.DB, sellerID uuid.UUID, title, category string) {
+	t.Helper()
+
+	if _, err := db.Exec(
+		`INSERT INTO listings (id, seller_id, title, description, category, price, quantity, unit)
+		 VALUES ($1, $2, $3, 'fresh', $4, 10.00, 5, 'kg')`,
+		database.NewID(), sellerID, title, category,
+	); err != nil {
+		t.Fatalf("creating %s: %v", title, err)
+	}
+}
+
+func searchTitles(t *testing.T, db *database.DB, params database.SearchListingsParams) []string {
+	t.Helper()
+
+	rows, err := db.Queries.SearchListingsDynamic(context.Background(), params)
+	if err != nil {
+		t.Fatalf("searching: %v", err)
+	}
+
+	titles := make([]string, 0, len(rows))
+	for _, row := range rows {
+		titles = append(titles, row.Title)
+	}
+	sort.Strings(titles)
+	return titles
+}
+
+func TestTheSellerFilterReturnsOnlyThatSellersListings(t *testing.T) {
+	db := testdb.New(t)
+
+	aino := makeSeller(t, db, "aino")
+	veikko := makeSeller(t, db, "veikko")
+	addListing(t, db, aino, "Chanterelles", "mushrooms")
+	addListing(t, db, veikko, "Bilberries", "berries")
+
+	got := searchTitles(t, db, database.SearchListingsParams{SellerID: aino.String(), Limit: 50})
+	if len(got) != 1 || got[0] != "Chanterelles" {
+		t.Errorf("titles = %v, want [Chanterelles]", got)
+	}
+
+	unknown := searchTitles(t, db, database.SearchListingsParams{SellerID: uuid.New().String(), Limit: 50})
+	if len(unknown) != 0 {
+		t.Errorf("titles = %v for a seller nobody is, want none", unknown)
+	}
+}
+
+func TestTheSellerFilterComposesWithCategory(t *testing.T) {
+	db := testdb.New(t)
+
+	aino := makeSeller(t, db, "aino")
+	veikko := makeSeller(t, db, "veikko")
+	addListing(t, db, aino, "Chanterelles", "mushrooms")
+	addListing(t, db, aino, "Aino's Bilberries", "berries")
+	addListing(t, db, veikko, "Veikko's Morels", "mushrooms")
+
+	// Each filter alone matches two listings, so only the conjunction can
+	// return one - which is what a clause landing in the wrong branch of the
+	// builder would get wrong.
+	if got := searchTitles(t, db, database.SearchListingsParams{SellerID: aino.String(), Limit: 50}); len(got) != 2 {
+		t.Fatalf("the seller filter alone = %v, want two listings", got)
+	}
+	if got := searchTitles(t, db, database.SearchListingsParams{Category: "mushrooms", Limit: 50}); len(got) != 2 {
+		t.Fatalf("the category filter alone = %v, want two listings", got)
+	}
+
+	got := searchTitles(t, db, database.SearchListingsParams{
+		SellerID: aino.String(), Category: "mushrooms", Limit: 50,
+	})
+	if len(got) != 1 || got[0] != "Chanterelles" {
+		t.Errorf("titles = %v, want [Chanterelles] - the two filters did not compose", got)
+	}
+}
