@@ -1,10 +1,20 @@
 name: Frontend
 
+# Do not make these checks required in branch protection while the paths
+# filters below exist. A required check whose workflow is filtered out never
+# reports at all, so GitHub waits on it forever and the PR can never merge:
+# requiring "Frontend Checks" hangs every backend-only PR. Protection needs a
+# companion job that always runs and reports success in place of the skipped
+# one. The same gap is why a root-only change (docker-compose.yml, README.md,
+# scripts/) runs no checks today.
 on:
   pull_request:
     branches: [main]
     paths:
       - "frontend/**"
+      # The whole directory rather than this file alone: a shared action or
+      # reusable workflow added later is invisible to the narrow form. The
+      # cost is that editing backend.yml runs the npm suite.
       - ".github/workflows/**"
   push:
     branches: [main]
