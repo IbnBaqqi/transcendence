@@ -1,11 +1,26 @@
-name: CI
+name: Backend
 
+# Do not make these checks required in branch protection while the paths
+# filters below exist. A required check whose workflow is filtered out never
+# reports at all, so GitHub waits on it forever and the PR can never merge:
+# requiring "Backend Tests" hangs every frontend-only PR. Protection needs a
+# companion job that always runs and reports success in place of the skipped
+# one. The same gap is why a root-only change (docker-compose.yml, README.md,
+# scripts/) runs no checks today.
 on:
   pull_request:
     branches: [main]
-    # paths:
-    #   - 'backend/**'
-    #   - '.github/workflows/ci.yml'
+    paths:
+      - "backend/**"
+      # The whole directory rather than this file alone: a shared action or
+      # reusable workflow added later is invisible to the narrow form. The
+      # cost is that editing frontend.yml runs the Go suite.
+      - ".github/workflows/**"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/**"
 
 jobs:
   tests:
@@ -46,7 +61,10 @@ jobs:
         env:
           # Without this the database tests skip; with it they run for real.
           TEST_DB_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
-        run: go test -race -cover ./...
+        # 20m, not Go's 10m default: internal/service alone runs 7-9 minutes and
+        # has hit the default three times without a real failure. Keep in step
+        # with the test targets in backend/Makefile.
+        run: go test -race -cover -timeout 20m ./...
 
       - name: Install gosec
         # Pinned for the same reason as staticcheck below: a new release can
@@ -94,36 +112,3 @@ jobs:
           # time, so it has to use ours.
           install-go: "false"
           working-directory: backend
-
-  frontend:
-    name: Frontend Checks
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v7
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Check formatting
-        run: npm run format:check
-
-      - name: Test
-        run: npm test
-
-      - name: Build
-        run: npm run build
