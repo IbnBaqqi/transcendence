@@ -8,7 +8,7 @@ export
 unexport TEST_DB_URL
 
 .PHONY: run build test test-db test-race test-coverage clean dev lint sqlc fmt deps \
-        migrate-up migrate-down migrate-status seed db-reset demo \
+        migrate-up migrate-down migrate-status seed tag-sweep db-reset demo \
         docker-build docker-up docker-down docker-logs
 
 # Run the application
@@ -138,6 +138,13 @@ db-reset:
 seed:
 	$(require-db-url)
 	@go run ./cmd/seed
+
+# Deletes tags no listing uses. Safe against a live database: it takes the
+# advisory lock every tag writer takes, so it cannot delete a tag a concurrent
+# listing write is attaching.
+tag-sweep:
+	$(require-db-url)
+	@go run ./cmd/tagsweep
 
 migrate-down:
 	$(require-db-url)
