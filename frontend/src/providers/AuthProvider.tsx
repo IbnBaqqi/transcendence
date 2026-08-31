@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getCurrentUser,
@@ -19,6 +19,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // on every page load.
   const [isLoading, setIsLoading] = useState(true);
 
+  const storeSession = useCallback(
+    (res: AuthResponse) => {
+      localStorage.setItem(ACCESS_TOKEN_KEY, res.access_token);
+      setUser(res.user);
+      // Anything cached so far (e.g. a 401 on /me/profile from before this
+      // login) was fetched signed-out or as somebody else - drop it so pages
+      // already on screen, like Profile after its "Log In" button, refetch
+      // under the new session instead of continuing to show that stale result.
+      queryClient.clear();
+    },
+    [queryClient],
+  );
+
+  // Revives the current session if one exists: either answer /auth/me with the
+  // live access token, or exchange the refresh cookie for a fresh one. Resolves
+  // true when a user is now signed in. Used on mount and after the OAuth
+  // callback redirects back with a refresh cookie.
+  const restoreSession = useCallback(async (): Promise<boolean> => {
+    try {
+      if (localStorage.getItem(ACCESS_TOKEN_KEY)) {
+        // Token still around: /auth/me answers identity without rotating a
+        // perfectly good session. If it already expired, the interceptor
+        // silently refreshes first and this call just succeeds.
+        setUser(await getCurrentUser());
+      } else {
+        // No token, but a valid refresh cookie may still be sitting there.
+        const res = await refreshApi();
+        storeSession(res);
+      }
+      return true;
+    } catch {
+      // No recoverable session; stay signed out.
+      return false;
+    }
+  }, [storeSession]);
+
   useEffect(() => {
     // Background refreshes (see the 401 interceptor) funnel through here so
     // React state and localStorage never disagree about who is signed in.
@@ -26,41 +62,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false;
 
-    async function restoreSession() {
-      try {
-        if (localStorage.getItem(ACCESS_TOKEN_KEY)) {
-          // Token still around: /auth/me answers identity without rotating a
-          // perfectly good session. If it already expired, the interceptor
-          // silently refreshes first and this call just succeeds.
-          const me = await getCurrentUser();
-          if (!cancelled) setUser(me);
-        } else {
-          // No token, but a valid refresh cookie may still be sitting there.
-          const res = await refreshApi();
-          if (!cancelled) setUser(res.user);
-        }
-      } catch {
-        // No recoverable session; stay signed out.
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
+    async function restoreOnMount() {
+      await restoreSession();
+      if (!cancelled) setIsLoading(false);
     }
 
-    void restoreSession();
+    void restoreOnMount();
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  function storeSession(res: AuthResponse) {
-    localStorage.setItem(ACCESS_TOKEN_KEY, res.access_token);
-    setUser(res.user);
-    // Anything cached so far (e.g. a 401 on /me/profile from before this
-    // login) was fetched signed-out or as somebody else - drop it so pages
-    // already on screen, like Profile after its "Log In" button, refetch
-    // under the new session instead of continuing to show that stale result.
-    queryClient.clear();
-  }
+  }, [restoreSession]);
 
   async function login(email: string, password: string) {
     storeSession(await loginApi({ email, password }));
@@ -86,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, signup, logout, restoreSession }}>
       {children}
     </AuthContext.Provider>
   );

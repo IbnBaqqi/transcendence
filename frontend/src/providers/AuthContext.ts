@@ -10,6 +10,9 @@ export interface AuthContextValue {
   // Signup signs the user in as well - the backend returns a token.
   signup: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  // Exchanges the refresh cookie (set by the OAuth callback redirect) for a
+  // session. Resolves true on success, false if no recoverable session.
+  restoreSession: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
