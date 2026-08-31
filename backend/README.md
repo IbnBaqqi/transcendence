@@ -7,6 +7,7 @@ transcendence is a Go backend service.
 - Go 1.26.3+
 - PostgreSQL
 - [goose](https://github.com/pressly/goose) for migrations
+- [air](https://github.com/air-verse/air) for `make dev` — `go install github.com/air-verse/air@latest`
 
 
 ## Setup
