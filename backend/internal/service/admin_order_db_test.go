@@ -459,33 +459,53 @@ func (f adminOrderFixture) deleteAccount(t *testing.T, id uuid.UUID, username st
 }
 
 func TestAnOrderBothPartiesAbandonedIsStuckImmediately(t *testing.T) {
-	f := newAdminOrderFixture(t)
-	ctx := context.Background()
+	// Both from-states of actionCancel, because the stranded arm names them
+	// explicitly: covering only "pending" lets the arm narrow to it unnoticed.
+	for _, status := range []string{"pending", "confirmed"} {
+		t.Run("an order left "+status, func(t *testing.T) {
+			f := newAdminOrderFixture(t)
+			ctx := context.Background()
 
-	f.deleteAccount(t, f.buyer, "buyer")
-	f.deleteAccount(t, f.seller, "seller")
+			if status == "confirmed" {
+				if _, err := f.svc.ConfirmOrder(ctx, f.seller, f.order.ID); err != nil {
+					t.Fatalf("confirming: %v", err)
+				}
+			}
 
-	resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
-	if err != nil {
-		t.Fatalf("reading resolvability: %v", err)
-	}
-	if !resolvable.Stranded {
-		t.Error("an order with no living party is not flagged stranded")
-	}
-	if !resolvable.Stuck {
-		t.Error("stranded did not make the order stuck")
-	}
+			f.deleteAccount(t, f.buyer, "buyer")
+			f.deleteAccount(t, f.seller, "seller")
 
-	page, err := f.admins.List(ctx, dtos.AdminOrderQuery{Stuck: "true"})
-	if err != nil {
-		t.Fatalf("listing: %v", err)
-	}
-	if page.Total != 1 || len(page.Items) != 1 {
-		t.Fatalf("stuck=true returned %d items, total %d, want 1 and 1 - no seven-day wait applies here",
-			len(page.Items), page.Total)
-	}
-	if !page.Items[0].Stuck {
-		t.Error("the listed row is not flagged stuck on the response")
+			order, err := f.db.GetOrder(ctx, f.order.ID)
+			if err != nil {
+				t.Fatalf("re-reading: %v", err)
+			}
+			if order.Status != status {
+				t.Fatalf("the fixture produced %q, not %q", order.Status, status)
+			}
+
+			resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
+			if err != nil {
+				t.Fatalf("reading resolvability: %v", err)
+			}
+			if !resolvable.Stranded {
+				t.Error("an order neither party can act on is not flagged stranded")
+			}
+			if !resolvable.Stuck {
+				t.Error("stranded did not make the order stuck")
+			}
+
+			page, err := f.admins.List(ctx, dtos.AdminOrderQuery{Stuck: "true"})
+			if err != nil {
+				t.Fatalf("listing: %v", err)
+			}
+			if page.Total != 1 || len(page.Items) != 1 {
+				t.Fatalf("stuck=true returned %d items, total %d, want 1 and 1 - no seven-day wait applies here",
+					len(page.Items), page.Total)
+			}
+			if !page.Items[0].Stuck {
+				t.Error("the listed row is not flagged stuck on the response")
+			}
+		})
 	}
 }
 
@@ -569,29 +589,41 @@ func TestOneDeletedPartyDoesNotStrandAnOrder(t *testing.T) {
 	}
 }
 
-func TestAHandedOverOrderIsNotStrandedWhenBothPartiesLeave(t *testing.T) {
-	f := newAdminOrderFixture(t)
-	ctx := context.Background()
+func TestAMarkedOrderIsNotStrandedWhenBothPartiesLeave(t *testing.T) {
+	// Both marks, not just the seller's: the stranded arm tests each timestamp
+	// separately, so one case is no evidence for the other.
+	for _, mark := range []string{"seller_handover", "buyer_receipt"} {
+		t.Run("after a "+mark, func(t *testing.T) {
+			f := newAdminOrderFixture(t)
+			ctx := context.Background()
 
-	if _, err := f.svc.ConfirmOrder(ctx, f.seller, f.order.ID); err != nil {
-		t.Fatalf("confirming: %v", err)
-	}
-	if _, err := f.svc.HandoverOrder(ctx, f.seller, f.order.ID); err != nil {
-		t.Fatalf("handing over: %v", err)
-	}
+			if _, err := f.svc.ConfirmOrder(ctx, f.seller, f.order.ID); err != nil {
+				t.Fatalf("confirming: %v", err)
+			}
+			if mark == "seller_handover" {
+				if _, err := f.svc.HandoverOrder(ctx, f.seller, f.order.ID); err != nil {
+					t.Fatalf("handing over: %v", err)
+				}
+			} else {
+				if _, err := f.svc.ReceiveOrder(ctx, f.buyer, f.order.ID); err != nil {
+					t.Fatalf("confirming receipt: %v", err)
+				}
+			}
 
-	f.deleteAccount(t, f.buyer, "buyer")
-	f.deleteAccount(t, f.seller, "seller")
+			f.deleteAccount(t, f.buyer, "buyer")
+			f.deleteAccount(t, f.seller, "seller")
 
-	resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
-	if err != nil {
-		t.Fatalf("reading resolvability: %v", err)
-	}
-	if resolvable.Stranded {
-		t.Error("a handed-over order is flagged stranded - it belongs to the handshake shape, which waits seven days and allows every outcome")
-	}
-	if resolvable.Stuck {
-		t.Error("stuck before the seven days are up")
+			resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
+			if err != nil {
+				t.Fatalf("reading resolvability: %v", err)
+			}
+			if resolvable.Stranded {
+				t.Error("a marked order is flagged stranded - it belongs to the handshake shape, which waits seven days and allows every outcome")
+			}
+			if resolvable.Stuck {
+				t.Error("stuck before the seven days are up")
+			}
+		})
 	}
 }
 
