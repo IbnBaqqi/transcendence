@@ -36,6 +36,8 @@ describe("makeAddListingSchema", () => {
     const result = makeAddListingSchema(SLUGS).safeParse({ ...VALID, category: "" });
 
     expect(result.success).toBe(false);
-    expect(result.error?.issues[0].message).toBe("Category is required");
+    expect(result.error?.issues[0].message).toBe(
+      "Too small: expected string to have >=1 characters",
+    );
   });
 });
