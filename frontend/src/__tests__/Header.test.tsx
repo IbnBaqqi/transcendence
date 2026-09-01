@@ -59,3 +59,13 @@ test("shows who is signed in", () => {
   // Single initial from the username - names live on the profile.
   expect(screen.getByText("F")).toBeInTheDocument();
 });
+
+test("places the language switcher at the far left of the nav", () => {
+  renderHeader();
+  const nav = screen.getByRole("navigation");
+  const switcher = screen.getByRole("button", { name: "Language" });
+  const home = screen.getByRole("link", { name: "Home" });
+  expect(nav.firstElementChild?.contains(switcher)).toBe(true);
+  // ...and still left of the Home link
+  expect(switcher.compareDocumentPosition(home) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});

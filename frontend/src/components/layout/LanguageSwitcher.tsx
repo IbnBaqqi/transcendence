@@ -14,6 +14,7 @@ const FLAGS: Record<Locale, string> = {
 export function LanguageSwitcher() {
   const { i18n, t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const current = (i18n.language?.split("-")[0] ?? "en") as Locale;
@@ -41,19 +42,19 @@ export function LanguageSwitcher() {
   return (
     <div ref={rootRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-label={t("language.label")}
-        aria-haspopup="menu"
         aria-expanded={open}
-        className="text-muted hover:text-foreground cursor-pointer text-base leading-none focus:outline-none"
+        className="text-muted hover:text-foreground cursor-pointer text-2xl leading-none focus:outline-none"
       >
         <span aria-hidden="true">{FLAGS[active]}</span>
       </button>
 
       {open && (
         <div
-          role="menu"
+          role="group"
           aria-label={t("language.label")}
           className="border-line bg-surface absolute top-full right-0 z-20 mt-2 rounded border shadow-lg"
         >
@@ -61,11 +62,11 @@ export function LanguageSwitcher() {
             <button
               key={lng}
               type="button"
-              role="menuitem"
               aria-current={lng === active ? "true" : undefined}
               onClick={() => {
                 if (lng !== active) void i18n.changeLanguage(lng);
                 setOpen(false);
+                triggerRef.current?.focus();
               }}
               className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
                 lng === active ? "text-accent font-medium" : "text-foreground hover:bg-surface-soft"

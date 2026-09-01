@@ -27,6 +27,7 @@ export default function Header() {
           {t("brand")}
         </Link>
         <nav className="flex items-center gap-6 text-sm">
+          <LanguageSwitcher />
           {/* {navLinkClass} passes the function itself and React Router calls it and supplies { isActive } */}
           <NavLink to="/" className={navLinkClass}>
             {t("nav.home")}
@@ -68,7 +69,6 @@ export default function Header() {
               <Avatar size="sm" initials="?" interactive />
             </button>
           )}
-          <LanguageSwitcher />
           {/* TODO: add Listing (#20) and auth links (#46) when those pages exist */}
         </nav>
       </div>
