@@ -26,7 +26,7 @@ export default function Header() {
         <Link to="/" className="text-accent text-lg font-bold">
           {t("brand")}
         </Link>
-        <nav className="flex items-center gap-6 text-sm">
+        <nav className="flex items-center gap-4 text-sm">
           <LanguageSwitcher />
           {/* {navLinkClass} passes the function itself and React Router calls it and supplies { isActive } */}
           <NavLink to="/" className={navLinkClass}>
