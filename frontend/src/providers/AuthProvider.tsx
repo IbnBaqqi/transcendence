@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getCurrentUser,
@@ -18,9 +18,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // consumers can wait out one round trip instead of flashing logged-out UI
   // on every page load.
   const [isLoading, setIsLoading] = useState(true);
+  // Flips on unmount so a restore that resolves after the provider is gone
+  // doesn't setState on an abandoned component. The mount guard used to live in
+  // the effect closure; it has to reach inside restoreSession now, so it moves
+  // to a ref.
+  const mountedRef = useRef(true);
 
   const storeSession = useCallback(
     (res: AuthResponse) => {
+      if (!mountedRef.current) return;
       localStorage.setItem(ACCESS_TOKEN_KEY, res.access_token);
       setUser(res.user);
       // Anything cached so far (e.g. a 401 on /me/profile from before this
@@ -34,42 +40,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Revives the current session if one exists: either answer /auth/me with the
   // live access token, or exchange the refresh cookie for a fresh one. Resolves
-  // true when a user is now signed in. Used on mount and after the OAuth
-  // callback redirects back with a refresh cookie.
-  const restoreSession = useCallback(async (): Promise<boolean> => {
-    try {
-      if (localStorage.getItem(ACCESS_TOKEN_KEY)) {
-        // Token still around: /auth/me answers identity without rotating a
-        // perfectly good session. If it already expired, the interceptor
-        // silently refreshes first and this call just succeeds.
-        setUser(await getCurrentUser());
-      } else {
-        // No token, but a valid refresh cookie may still be sitting there.
-        const res = await refreshApi();
-        storeSession(res);
+  // true when a user is now signed in.
+  //
+  // Mount: cheap /auth/me fast path when a token exists, refresh cookie
+  // otherwise.
+  // OAuth callback (force): the cookie is the authoritative new identity, so a
+  // stale token must not win. Clear it first, then always exchange the cookie -
+  // if that fails, the stale session is already gone and we stay signed out.
+  const restoreSession = useCallback(
+    async (opts?: { force?: boolean }): Promise<boolean> => {
+      try {
+        if (opts?.force) {
+          // Drop whoever was signed in before the callback; the refresh cookie
+          // is the new source of truth (a leftover token would /auth/me to the
+          // wrong user). On failure there is no session to fall back to.
+          localStorage.removeItem(ACCESS_TOKEN_KEY);
+          storeSession(await refreshApi());
+        } else if (localStorage.getItem(ACCESS_TOKEN_KEY)) {
+          // Token still around: /auth/me answers identity without rotating a
+          // perfectly good session. If it already expired, the interceptor
+          // silently refreshes first and this call just succeeds.
+          if (!mountedRef.current) return false;
+          setUser(await getCurrentUser());
+        } else {
+          // No token, but a valid refresh cookie may still be sitting there.
+          storeSession(await refreshApi());
+        }
+        return true;
+      } catch {
+        // No recoverable session; stay signed out.
+        return false;
       }
-      return true;
-    } catch {
-      // No recoverable session; stay signed out.
-      return false;
-    }
-  }, [storeSession]);
+    },
+    [storeSession],
+  );
 
   useEffect(() => {
     // Background refreshes (see the 401 interceptor) funnel through here so
     // React state and localStorage never disagree about who is signed in.
     setOnSessionChange((auth) => setUser(auth?.user ?? null));
 
-    let cancelled = false;
-
     async function restoreOnMount() {
       await restoreSession();
-      if (!cancelled) setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
 
     void restoreOnMount();
     return () => {
-      cancelled = true;
+      mountedRef.current = false;
+      setOnSessionChange(null);
     };
   }, [restoreSession]);
 

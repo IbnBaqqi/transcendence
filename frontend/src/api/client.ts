@@ -3,9 +3,11 @@ import axios, { type AxiosError } from "axios";
 import type { AuthResponse } from "./types";
 import { ACCESS_TOKEN_KEY } from "../providers/AuthContext";
 
-// prod can override via env. dev falls back to "/api/v1"
-const baseURL = import.meta.env.VITE_API_URL ?? "/api/v1";
-export const api = axios.create({ baseURL });
+// prod can override via env. dev falls back to "/api/v1". This is the base for
+// both the axios instance below and the top-level OAuth navigation links
+// (OAuthButtons), so they always agree no matter what VITE_API_URL is.
+export const API_BASE_URL = import.meta.env.VITE_API_URL ?? "/api/v1";
+export const api = axios.create({ baseURL: API_BASE_URL });
 
 // Every failed request rejects with this, so callers handle one shape instead
 // of digging through axios internals.

@@ -12,7 +12,13 @@ export interface AuthContextValue {
   logout: () => Promise<void>;
   // Exchanges the refresh cookie (set by the OAuth callback redirect) for a
   // session. Resolves true on success, false if no recoverable session.
-  restoreSession: () => Promise<boolean>;
+  //
+  // `force: true` is for the OAuth callback: it ignores any token already in
+  // localStorage (which belongs to whoever was signed in before) and always
+  // exchanges the cookie, so the session lands on the newly-authorised user
+  // rather than a stale one. The default path keeps the cheap /auth/me fast
+  // path on mount.
+  restoreSession: (opts?: { force?: boolean }) => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);

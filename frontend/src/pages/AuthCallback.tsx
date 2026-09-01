@@ -12,8 +12,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_state: "Something went wrong with the sign-in. Please try again.",
   invalid_request: "Something went wrong with the sign-in. Please try again.",
   no_email: "Your provider account doesn't have a verified email.",
-  email_in_use:
-    "An account with this email already exists. Sign in with your password, then link your provider account from your profile.",
+  email_in_use: "An account with this email already exists. Sign in with your password instead.",
   already_linked: "This account is already linked to another user.",
   retry: "Something went wrong. Please try again.",
   server_error: "Something went wrong on our end. Please try again.",
@@ -33,7 +32,9 @@ export default function AuthCallback() {
   useEffect(() => {
     if (errorSlug) return;
     let cancelled = false;
-    restoreSession().then((ok) => {
+    // force: the cookie is the brand-new identity, so any token left over from
+    // whoever was signed in before the OAuth redirect must not win.
+    restoreSession({ force: true }).then((ok) => {
       if (cancelled) return;
       if (ok) navigate("/", { replace: true });
       // No recoverable session even though the redirect claimed success - leave
