@@ -1,16 +1,18 @@
 import { useListings } from "../api/listings";
-import { useCategoryNames } from "../api/categories";
+import { useLocalizedCategoryNames } from "../api/categories";
 import { ListingCard } from "../components/objects/ListingCard";
 import { Skeleton } from "../components/objects/Skeleton";
+import { useTranslation } from "react-i18next";
 
 export default function Home() {
+  const { t } = useTranslation();
   // useListings() gives us the query's state: the data plus loading/error flags.
   const { data: listings, isPending, isError, refetch } = useListings();
-  const categoryName = useCategoryNames();
+  const categoryName = useLocalizedCategoryNames();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">Latest Finds</h1>
+      <h1 className="text-foreground text-2xl font-bold">{t("pages.home.latestFinds")}</h1>
       {/*
         Live region: always in the DOM so assistive tech has something to
         watch. When the text inside changes, screen readers announce it.
@@ -36,7 +38,7 @@ export default function Home() {
         <Skeleton
           variant="error"
           className="mt-6 h-56 w-full"
-          message="Couldn't load listings."
+          message={t("pages.home.listingsError")}
           onRetry={() => refetch()}
         />
       )}
@@ -44,7 +46,7 @@ export default function Home() {
         <Skeleton
           variant="error"
           className="mt-6 h-56 w-full"
-          message="No listings yet."
+          message={t("pages.home.noListings")}
           onRetry={() => refetch()}
         />
       )}

@@ -3,12 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { FormProvider, useForm } from "react-hook-form";
 
 import { CategorySelect } from "../components/forms/CategorySelect";
-import { useCategories } from "../api/categories";
+import { useCategories, categoryNames, useLocalizedCategoryNames } from "../api/categories";
 import type { Category } from "../api/types";
 
 vi.mock("../api/categories", async () => {
   const actual = await vi.importActual<typeof import("../api/categories")>("../api/categories");
-  return { ...actual, useCategories: vi.fn() };
+  return { ...actual, useCategories: vi.fn(), useLocalizedCategoryNames: vi.fn() };
 });
 
 const TREE: Category[] = [
@@ -37,6 +37,9 @@ function renderWith(
   onSubmit?: (values: { category: string }) => void,
 ) {
   vi.mocked(useCategories).mockReturnValue(state as ReturnType<typeof useCategories>);
+  // CategorySelect resolves display labels through the localized hook; derive
+  // them from whatever data this render is pretending to have.
+  vi.mocked(useLocalizedCategoryNames).mockReturnValue(categoryNames(state.data ?? []));
   return render(<Harness onSubmit={onSubmit} />);
 }
 
