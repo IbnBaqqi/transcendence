@@ -1,23 +1,84 @@
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { supportedLngs, type Locale } from "../../i18n";
 
+// flag emojis render regionally; on platforms without them they degrade to
+// letter codes, which is acceptable for the collapsed "just a flag" affordance
+const FLAGS: Record<Locale, string> = {
+  en: "🇬🇧",
+  fi: "🇫🇮",
+  sv: "🇸🇪",
+};
+
 export function LanguageSwitcher() {
   const { i18n, t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
   const current = (i18n.language?.split("-")[0] ?? "en") as Locale;
+  const active = supportedLngs.includes(current) ? current : "en";
+
+  // Close when the user clicks anywhere outside, or presses Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
 
   return (
-    <select
-      aria-label={t("language.label")}
-      value={supportedLngs.includes(current) ? current : "en"}
-      onChange={(e) => void i18n.changeLanguage(e.target.value)}
-      className="text-muted hover:text-foreground cursor-pointer border-0 bg-transparent text-sm focus:outline-none"
-    >
-      {supportedLngs.map((lng) => (
-        <option key={lng} value={lng}>
-          {t(`language.${lng}`)}
-        </option>
-      ))}
-    </select>
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-label={t("language.label")}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="text-muted hover:text-foreground cursor-pointer text-base leading-none focus:outline-none"
+      >
+        <span aria-hidden="true">{FLAGS[active]}</span>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          aria-label={t("language.label")}
+          className="border-line bg-surface absolute top-full right-0 z-20 mt-2 rounded border shadow-lg"
+        >
+          {supportedLngs.map((lng) => (
+            <button
+              key={lng}
+              type="button"
+              role="menuitem"
+              aria-current={lng === active ? "true" : undefined}
+              onClick={() => {
+                if (lng !== active) void i18n.changeLanguage(lng);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
+                lng === active ? "text-accent font-medium" : "text-foreground hover:bg-surface-soft"
+              }`}
+            >
+              <span aria-hidden="true" className="text-base leading-none">
+                {FLAGS[lng]}
+              </span>
+              {t(`language.${lng}`)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
