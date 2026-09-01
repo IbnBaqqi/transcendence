@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useModal } from "../../providers/modalContext";
 
 type AvatarProps = {
@@ -30,6 +31,7 @@ export default function Avatar({
   imageUrl,
   onImageSelected,
 }: AvatarProps) {
+  const { t } = useTranslation();
   const { circle, label } = sizeStyles[size];
   const isInteractive = editable || interactive;
   const { openModal } = useModal();
@@ -47,7 +49,7 @@ export default function Avatar({
         <div
           className={`absolute right-0 bottom-0 left-0 flex items-center justify-center ${label} bg-black/60 font-medium text-white`}
         >
-          Edit
+          {t("avatar.edit")}
         </div>
       )}
     </>
@@ -58,7 +60,7 @@ export default function Avatar({
       <button
         type="button"
         onClick={() => openModal("imageUpload", { onComplete: onImageSelected })}
-        aria-label="Edit profile picture"
+        aria-label={t("avatar.editAria")}
         className={`relative ${circle} overflow-hidden rounded-full ring-2 select-none ${interactiveClasses}`}
       >
         {content}

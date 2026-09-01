@@ -1,6 +1,7 @@
 import { useFormContext } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 
-import { useCategories, flattenCategories } from "../../api/categories";
+import { useCategories, flattenCategories, useLocalizedCategoryNames } from "../../api/categories";
 import { useFormConfig } from "./FormContext";
 
 type CategorySelectProps = {
@@ -18,6 +19,7 @@ export function CategorySelect({
   isEditing: isEditingProp,
   width: widthProp,
 }: CategorySelectProps) {
+  const { t } = useTranslation();
   const {
     register,
     watch,
@@ -26,6 +28,7 @@ export function CategorySelect({
   const { isEditing: ctxEditing } = useFormConfig();
 
   const { data: categories, isPending, isError, refetch } = useCategories();
+  const categoryName = useLocalizedCategoryNames();
 
   const width = widthProp ?? "w-full";
   const isEditing = isEditingProp ?? ctxEditing ?? false;
@@ -49,7 +52,7 @@ export function CategorySelect({
     return (
       <div className="flex flex-col gap-1.5">
         {label && <label className="text-muted">{label}</label>}
-        <span>{selected?.name ?? value}</span>
+        <span>{selected ? categoryName(selected.slug) : value}</span>
       </div>
     );
   }
@@ -73,29 +76,31 @@ export function CategorySelect({
       >
         <option value="">
           {isPending
-            ? "Loading categories…"
+            ? t("forms.category.loading")
             : unavailable
-              ? "Categories unavailable"
-              : "Choose a category"}
+              ? t("forms.category.unavailable")
+              : t("forms.category.choose")}
         </option>
 
         {options.map((option) => (
           <option key={option.slug} value={option.slug}>
-            {option.depth === 1 ? `\u00a0\u00a0\u00a0\u00a0${option.name}` : option.name}
+            {option.depth === 1
+              ? `\u00a0\u00a0\u00a0\u00a0${categoryName(option.slug)}`
+              : categoryName(option.slug)}
           </option>
         ))}
       </select>
 
       {empty && (
         <span id={statusId} role="alert" className="text-berry-500 text-xs">
-          No categories are available
+          {t("forms.category.noCategories")}
         </span>
       )}
       {isError && (
         <span id={statusId} role="alert" className="text-berry-500 text-xs">
-          Could not load categories.{" "}
+          {t("forms.category.loadError")}{" "}
           <button type="button" className="underline" onClick={() => void refetch()}>
-            Try again
+            {t("common.tryAgain")}
           </button>
         </span>
       )}
