@@ -1,11 +1,14 @@
-import { useListings } from "../api/listings";
+import { useSearchListings } from "../api/listings";
 import { useCategoryNames } from "../api/categories";
 import { ListingCard } from "../components/objects/ListingCard";
 import { Skeleton } from "../components/objects/Skeleton";
 
 export default function Home() {
-  // useListings() gives us the query's state: the data plus loading/error flags.
-  const { data: listings, isPending, isError, refetch } = useListings();
+  // /listings/search with no filters is the same set as the old unpaginated
+  // /listings, one page at a time. The query state is the data plus the
+  // loading/error flags.
+  const { data, isPending, isError, refetch } = useSearchListings({ page: 1, limit: 20 });
+  const listings = data?.items;
   const categoryName = useCategoryNames();
 
   return (

@@ -1,23 +1,30 @@
 import { render, screen } from "@testing-library/react";
 
 import Home from "../pages/Home";
-import { useListings } from "../api/listings";
+import { useSearchListings } from "../api/listings";
 import { useCategoryNames } from "../api/categories";
 import { makeListing } from "../test/factories";
+import type { Listing, Paginated } from "../api/types";
 
 // Replace the whole module with auto-generated mock functions. Home imports
-// useListings from here, so it gets the fake instead of the real hook.
+// useSearchListings from here, so it gets the fake instead of the real hook.
 // No network, no React Query, no QueryClientProvider needed.
 vi.mock("../api/listings");
 vi.mock("../api/categories");
 
-// The type useListings actually returns, so we don't have to hand-write it.
-type ListingsQuery = ReturnType<typeof useListings>;
+// The type useSearchListings actually returns, so we don't have to hand-write it.
+type ListingsQuery = ReturnType<typeof useSearchListings>;
+
+// Home reads data.items now, so the fixtures carry a page rather than a bare
+// array.
+function page(items: Listing[]): Paginated<Listing> {
+  return { items, total: items.length, page: 1, limit: 20, total_pages: 1 };
+}
 
 // Home only reads data/isPending/isError, so we pass a partial object and
 // tell TypeScript to treat it as the full query result.
 function mockListings(state: Partial<ListingsQuery>) {
-  vi.mocked(useListings).mockReturnValue(state as ListingsQuery);
+  vi.mocked(useSearchListings).mockReturnValue(state as ListingsQuery);
 }
 
 const sample = makeListing();
@@ -54,13 +61,13 @@ describe("Home", () => {
   });
 
   test("shows an empty message when there are no listings", () => {
-    mockListings({ data: [], isPending: false, isError: false });
+    mockListings({ data: page([]), isPending: false, isError: false });
     render(<Home />);
     expect(screen.getByText("No listings yet.")).toBeInTheDocument();
   });
 
   test("renders a card for each listing", () => {
-    mockListings({ data: [sample, secondSample], isPending: false, isError: false });
+    mockListings({ data: page([sample, secondSample]), isPending: false, isError: false });
     render(<Home />);
 
     // both titles present -> we mapped the list, not just listings[0]
