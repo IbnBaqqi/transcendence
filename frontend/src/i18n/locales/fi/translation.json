@@ -1,0 +1,196 @@
+{
+  "brand": "Metsätori",
+  "nav": {
+    "home": "Etusivu",
+    "openChat": "Avaa keskustelu",
+    "notifications": "Ilmoitukset",
+    "addListing": "Lisää ilmoitus"
+  },
+  "language": {
+    "en": "English",
+    "fi": "Suomi",
+    "sv": "Svenska",
+    "label": "Kieli"
+  },
+  "common": {
+    "save": "Tallenna",
+    "saving": "Tallennetaan…",
+    "cancel": "Peruuta",
+    "logIn": "Kirjaudu sisään",
+    "loggingIn": "Kirjaudutaan…",
+    "login": "Kirjaudu sisään",
+    "logOut": "Kirjaudu ulos",
+    "loggingOut": "Kirjaudutaan ulos…",
+    "register": "Rekisteröidy",
+    "registering": "Rekisteröidytään…",
+    "loading": "Ladataan…",
+    "loadingDots": "Ladataan...",
+    "tryAgain": "Yritä uudelleen",
+    "somethingWentWrong": "Jokin meni pieleen. Yritä uudelleen.",
+    "couldNotReachServer": "Palvelimeen ei saada yhteyttä",
+    "deleteAccount": "Poista tili"
+  },
+  "forms": {
+    "email": "Sähköposti",
+    "password": "Salasana",
+    "currentPassword": "Nykyinen salasana",
+    "newPassword": "Uusi salasana",
+    "confirmPassword": "Vahvista salasana",
+    "username": "Käyttäjänimi",
+    "firstName": "Etunimi",
+    "lastName": "Sukunimi",
+    "phone": "Puhelin",
+    "city": "Kaupunki",
+    "unit": "Yksikkö",
+    "price": "Hinta",
+    "quantity": "Määrä",
+    "pricePlaceholder": "*paikallisessa valuutassa",
+    "unitPlaceholder": "esim. 'kg' tai 'dl'",
+    "editDetails": "Muokkaa tietoja",
+    "editText": "Muokkaa tekstiä",
+    "editPassword": "Vaihda salasana",
+    "category": {
+      "loading": "Ladataan luokkia…",
+      "unavailable": "Luokat eivät ole saatavilla",
+      "choose": "Valitse luokka",
+      "noCategories": "Luokkia ei ole saatavilla",
+      "loadError": "Luokkia ei voitu ladata."
+    },
+    "addListing": {
+      "title": "Otsikko",
+      "photos": "Kuvat",
+      "description": "Kuvaus",
+      "category": "Luokka",
+      "priceQuantity": "Hinta ja määrä",
+      "save": "Tallenna"
+    }
+  },
+  "dropzone": {
+    "noPhotos": "Ei kuvia vielä.",
+    "noPhoto": "Ei kuvaa vielä.",
+    "dragDrop": "Vedä ja pudota tai klikkaa ladataksesi",
+    "dragDropAddListing": "Vedä ja pudota kuvat tähän tai klikkaa selataksesi",
+    "uploading": "Ladataan…",
+    "uploadFailed": "Lataus epäonnistui",
+    "retry": "Yritä uudelleen",
+    "removePhoto": "Poista kuva",
+    "addPhoto": "Lisää kuva",
+    "ariaUploadPhotos": "Lataa kuvia"
+  },
+  "categories": {
+    "mushrooms": "Sienet",
+    "berries": "Marjat",
+    "greens": "Vihreät",
+    "vegetables": "Vihannekset",
+    "other": "Muu"
+  },
+  "listings": {
+    "available": "{{qty}} {{unit}} saatavilla"
+  },
+  "pages": {
+    "home": {
+      "latestFinds": "Uusimmat löydöt",
+      "listingsError": "Ilmoituksia ei voitu ladata.",
+      "noListings": "Ei ilmoituksia vielä."
+    },
+    "search": {
+      "title": "Haku",
+      "stub": "Haku ja suodattimet - ei vielä rakennettu (#25)."
+    },
+    "dashboard": {
+      "title": "Myyjän hallintapaneeli",
+      "stub": "Myyjän hallintapaneeli - ei vielä rakennettu (#23)."
+    },
+    "addListing": {
+      "title": "Lisää ilmoitus"
+    },
+    "listingDetail": {
+      "title": "Ilmoitus {{id}}",
+      "stub": "Ilmoitussivu - ei vielä rakennettu (#21)."
+    },
+    "notifications": {
+      "title": "Ilmoitukset"
+    },
+    "profile": {
+      "title": "Profiili ja asetukset",
+      "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi ja muokataksesi profiiliasi.",
+      "contactDetails": "Yhteystiedot",
+      "password": "Salasana",
+      "bio": "Kuvaus",
+      "accountManagement": "Tilin hallinta"
+    },
+    "notFound": {
+      "title": "404 - Sivua ei löydy",
+      "subtitle": "Tätä sivua ei ole olemassa tai se on siirtynyt",
+      "backHome": "Takaisin etusivulle"
+    },
+    "user": {
+      "title": "Käyttäjäprofiili",
+      "online": "Paikalla",
+      "offline": "Poissa",
+      "messageUser": "Lähetä viesti",
+      "details": "Tiedot",
+      "firstName": "Etunimi",
+      "lastName": "Sukunimi",
+      "location": "Sijainti",
+      "bio": "Kuvaus",
+      "noBio": "Ei kuvausta vielä.",
+      "listings": "Ilmoitukset",
+      "loadingListings": "Ladataan...",
+      "listingsError": "Ilmoituksia ei voitu ladata. Yritä uudelleen.",
+      "noListings": "Ei ilmoituksia vielä!",
+      "profileError": "Profiilia ei voitu ladata."
+    }
+  },
+  "chat": {
+    "title": "Keskustelu",
+    "close": "Sulje"
+  },
+  "modal": {
+    "login": {
+      "title": "Kirjaudu sisään",
+      "notRegistered": "Etkö ole rekisteröitynyt? "
+    },
+    "register": {
+      "title": "Rekisteröidy",
+      "alreadyHaveAccount": "Onko sinulla jo tili? "
+    },
+    "deleteAccount": {
+      "title": "Poista tili"
+    },
+    "imageUpload": {
+      "title": "Lataa kuva"
+    }
+  },
+  "avatar": {
+    "edit": "Muokkaa",
+    "editAria": "Muokkaa profiilikuvaa"
+  },
+  "errorBoundary": {
+    "somethingWentWrong": "Jokin meni pieleen",
+    "refresh": "Päivitä sivu.",
+    "message": "Yritä toista sivua tai päivitä aloittaaksesi alusta."
+  },
+  "skeleton": {
+    "tryAgain": "Yritä uudelleen"
+  },
+  "footer": {
+    "privacyPolicy": "Tietosuojakäytäntö",
+    "termsOfService": "Käyttöehdot"
+  },
+  "legal": {
+    "lastUpdated": "Päivitetty viimeksi: {{date}}",
+    "questions": "Kysyttävää? Ota yhteyttä: "
+  },
+  "validation": {
+    "nameTooLong": "Nimen on oltava alle 150 merkkiä.",
+    "titleTooLongBytes": "Otsikon on oltava alle 100 tavua.",
+    "locationTooLong": "Sijainnin nimi on liian pitkä.",
+    "chooseCategory": "Valitse luokka luettelosta",
+    "passwordsMismatch": "Salasanat eivät täsmää",
+    "maxImages_one": "Voit lisätä enintään {{max}} kuvan.",
+    "maxImages_other": "Voit lisätä enintään {{max}} kuvaa.",
+    "unsupportedImageType": "\"{{name}}\" ei ole tuettu kuvatyyppi (käytä JPEG-, PNG- tai WebP-kuvia).",
+    "fileTooLarge": "\"{{name}}\" on suurempi kuin {{mb}} MB."
+  }
+}

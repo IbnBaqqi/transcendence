@@ -1,0 +1,196 @@
+{
+  "brand": "Metsätori",
+  "nav": {
+    "home": "Home",
+    "openChat": "Open chat",
+    "notifications": "Notifications",
+    "addListing": "Add listing"
+  },
+  "language": {
+    "en": "English",
+    "fi": "Suomi",
+    "sv": "Svenska",
+    "label": "Language"
+  },
+  "common": {
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "logIn": "Log In",
+    "loggingIn": "Logging in…",
+    "login": "Log in",
+    "logOut": "Log Out",
+    "loggingOut": "Logging out…",
+    "register": "Register",
+    "registering": "Registering…",
+    "loading": "Loading…",
+    "loadingDots": "Loading...",
+    "tryAgain": "Try again",
+    "somethingWentWrong": "Something went wrong. Please try again.",
+    "couldNotReachServer": "Could not reach the server",
+    "deleteAccount": "Delete Account"
+  },
+  "forms": {
+    "email": "Email",
+    "password": "Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "username": "Username",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Phone",
+    "city": "City",
+    "unit": "Unit",
+    "price": "Price",
+    "quantity": "Quantity",
+    "pricePlaceholder": "*in local currency",
+    "unitPlaceholder": "e.g. 'kg' or 'dl'",
+    "editDetails": "Edit Details",
+    "editText": "Edit Text",
+    "editPassword": "Edit Password",
+    "category": {
+      "loading": "Loading categories…",
+      "unavailable": "Categories unavailable",
+      "choose": "Choose a category",
+      "noCategories": "No categories are available",
+      "loadError": "Could not load categories."
+    },
+    "addListing": {
+      "title": "Title",
+      "photos": "Photos",
+      "description": "Description",
+      "category": "Category",
+      "priceQuantity": "Price & Quantity",
+      "save": "Save"
+    }
+  },
+  "dropzone": {
+    "noPhotos": "No photos yet.",
+    "noPhoto": "No photo yet.",
+    "dragDrop": "Drag & drop or click to upload",
+    "dragDropAddListing": "Drag & drop photos here, or click to browse",
+    "uploading": "Uploading…",
+    "uploadFailed": "Upload failed",
+    "retry": "Retry",
+    "removePhoto": "Remove photo",
+    "addPhoto": "Add photo",
+    "ariaUploadPhotos": "Upload photos"
+  },
+  "categories": {
+    "mushrooms": "Mushrooms",
+    "berries": "Berries",
+    "greens": "Greens",
+    "vegetables": "Vegetables",
+    "other": "Other"
+  },
+  "listings": {
+    "available": "{{qty}} {{unit}} available"
+  },
+  "pages": {
+    "home": {
+      "latestFinds": "Latest Finds",
+      "listingsError": "Couldn't load listings.",
+      "noListings": "No listings yet."
+    },
+    "search": {
+      "title": "Search",
+      "stub": "Search & filters - not built yet (#25)."
+    },
+    "dashboard": {
+      "title": "Seller Dashboard",
+      "stub": "Seller dashboard - not built yet (#23)."
+    },
+    "addListing": {
+      "title": "Add Listing"
+    },
+    "listingDetail": {
+      "title": "Listing {{id}}",
+      "stub": "Listing detail page - not built yet (#21)."
+    },
+    "notifications": {
+      "title": "Notifications"
+    },
+    "profile": {
+      "title": "Profile & Settings",
+      "signedOut": "You're signed out. Log in to see and edit your profile.",
+      "contactDetails": "Contact Details",
+      "password": "Password",
+      "bio": "Bio",
+      "accountManagement": "Account Management"
+    },
+    "notFound": {
+      "title": "404 - Page not found",
+      "subtitle": "That page doesn't exist or has moved",
+      "backHome": "Back to home"
+    },
+    "user": {
+      "title": "User Profile",
+      "online": "Online",
+      "offline": "Offline",
+      "messageUser": "Message User",
+      "details": "Details",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "location": "Location",
+      "bio": "Bio",
+      "noBio": "No bio yet.",
+      "listings": "Listings",
+      "loadingListings": "Loading...",
+      "listingsError": "Couldn't load listings. Try again.",
+      "noListings": "No listings yet!",
+      "profileError": "Couldn't load this profile."
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "close": "Close"
+  },
+  "modal": {
+    "login": {
+      "title": "Log in",
+      "notRegistered": "Not registered yet? "
+    },
+    "register": {
+      "title": "Register",
+      "alreadyHaveAccount": "Already have an account? "
+    },
+    "deleteAccount": {
+      "title": "Delete Account"
+    },
+    "imageUpload": {
+      "title": "Upload image"
+    }
+  },
+  "avatar": {
+    "edit": "Edit",
+    "editAria": "Edit profile picture"
+  },
+  "errorBoundary": {
+    "somethingWentWrong": "Something went wrong",
+    "refresh": "Please refresh the page.",
+    "message": "Try another page, or refresh to start over."
+  },
+  "skeleton": {
+    "tryAgain": "Try again"
+  },
+  "footer": {
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service"
+  },
+  "legal": {
+    "lastUpdated": "Last updated: {{date}}",
+    "questions": "Questions? Reach out at: "
+  },
+  "validation": {
+    "nameTooLong": "Name must be less than 150 characters.",
+    "titleTooLongBytes": "Title must be under 100 bytes.",
+    "locationTooLong": "Location name is too long.",
+    "chooseCategory": "Choose a category from the list",
+    "passwordsMismatch": "Passwords do not match",
+    "maxImages_one": "You can only add up to {{max}} image.",
+    "maxImages_other": "You can only add up to {{max}} images.",
+    "unsupportedImageType": "\"{{name}}\" isn't a supported image type (use JPEG, PNG or WebP).",
+    "fileTooLarge": "\"{{name}}\" is larger than {{mb}}MB."
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "brand": "Metsätori",
+  "nav": {
+    "home": "Hem",
+    "openChat": "Öppna chatt",
+    "notifications": "Meddelanden",
+    "addListing": "Lägg till annons"
+  },
+  "language": {
+    "en": "English",
+    "fi": "Suomi",
+    "sv": "Svenska",
+    "label": "Språk"
+  },
+  "common": {
+    "save": "Spara",
+    "saving": "Sparar…",
+    "cancel": "Avbryt",
+    "logIn": "Logga in",
+    "loggingIn": "Loggar in…",
+    "login": "Logga in",
+    "logOut": "Logga ut",
+    "loggingOut": "Loggar ut…",
+    "register": "Registrera",
+    "registering": "Registrerar…",
+    "loading": "Laddar…",
+    "loadingDots": "Laddar...",
+    "tryAgain": "Försök igen",
+    "somethingWentWrong": "Något gick fel. Försök igen.",
+    "couldNotReachServer": "Det gick inte att nå servern",
+    "deleteAccount": "Radera konto"
+  },
+  "forms": {
+    "email": "E-post",
+    "password": "Lösenord",
+    "currentPassword": "Nuvarande lösenord",
+    "newPassword": "Nytt lösenord",
+    "confirmPassword": "Bekräfta lösenord",
+    "username": "Användarnamn",
+    "firstName": "Förnamn",
+    "lastName": "Efternamn",
+    "phone": "Telefon",
+    "city": "Ort",
+    "unit": "Enhet",
+    "price": "Pris",
+    "quantity": "Antal",
+    "pricePlaceholder": "*i lokal valuta",
+    "unitPlaceholder": "t.ex. 'kg' eller 'dl'",
+    "editDetails": "Redigera uppgifter",
+    "editText": "Redigera text",
+    "editPassword": "Ändra lösenord",
+    "category": {
+      "loading": "Laddar kategorier…",
+      "unavailable": "Kategorier är inte tillgängliga",
+      "choose": "Välj en kategori",
+      "noCategories": "Inga kategorier är tillgängliga",
+      "loadError": "Kunde inte ladda kategorier."
+    },
+    "addListing": {
+      "title": "Rubrik",
+      "photos": "Foton",
+      "description": "Beskrivning",
+      "category": "Kategori",
+      "priceQuantity": "Pris och antal",
+      "save": "Spara"
+    }
+  },
+  "dropzone": {
+    "noPhotos": "Inga foton ännu.",
+    "noPhoto": "Inget foto ännu.",
+    "dragDrop": "Dra och släpp eller klicka för att ladda upp",
+    "dragDropAddListing": "Dra och släpp foton här, eller klicka för att bläddra",
+    "uploading": "Laddar upp…",
+    "uploadFailed": "Uppladdning misslyckades",
+    "retry": "Försök igen",
+    "removePhoto": "Ta bort foto",
+    "addPhoto": "Lägg till foto",
+    "ariaUploadPhotos": "Ladda upp foton"
+  },
+  "categories": {
+    "mushrooms": "Svampar",
+    "berries": "Bär",
+    "greens": "Grönt",
+    "vegetables": "Grönsaker",
+    "other": "Annat"
+  },
+  "listings": {
+    "available": "{{qty}} {{unit}} tillgängliga"
+  },
+  "pages": {
+    "home": {
+      "latestFinds": "Senaste fynden",
+      "listingsError": "Kunde inte ladda annonserna.",
+      "noListings": "Inga annonser ännu."
+    },
+    "search": {
+      "title": "Sök",
+      "stub": "Sök och filter - inte byggt ännu (#25)."
+    },
+    "dashboard": {
+      "title": "Säljarpanel",
+      "stub": "Säljarpanel - inte byggt ännu (#23)."
+    },
+    "addListing": {
+      "title": "Lägg till annons"
+    },
+    "listingDetail": {
+      "title": "Annons {{id}}",
+      "stub": "Annonssida - inte byggt ännu (#21)."
+    },
+    "notifications": {
+      "title": "Meddelanden"
+    },
+    "profile": {
+      "title": "Profil och inställningar",
+      "signedOut": "Du är utloggad. Logga in för att se och redigera din profil.",
+      "contactDetails": "Kontaktuppgifter",
+      "password": "Lösenord",
+      "bio": "Bio",
+      "accountManagement": "Kontohantering"
+    },
+    "notFound": {
+      "title": "404 - Sidan hittades inte",
+      "subtitle": "Den sidan finns inte eller har flyttats",
+      "backHome": "Tillbaka till startsidan"
+    },
+    "user": {
+      "title": "Användarprofil",
+      "online": "Online",
+      "offline": "Offline",
+      "messageUser": "Skicka meddelande",
+      "details": "Detaljer",
+      "firstName": "Förnamn",
+      "lastName": "Efternamn",
+      "location": "Plats",
+      "bio": "Bio",
+      "noBio": "Ingen bio ännu.",
+      "listings": "Annonser",
+      "loadingListings": "Laddar...",
+      "listingsError": "Kunde inte ladda annonserna. Försök igen.",
+      "noListings": "Inga annonser ännu!",
+      "profileError": "Kunde inte ladda denna profil."
+    }
+  },
+  "chat": {
+    "title": "Chatt",
+    "close": "Stäng"
+  },
+  "modal": {
+    "login": {
+      "title": "Logga in",
+      "notRegistered": "Inte registrerad ännu? "
+    },
+    "register": {
+      "title": "Registrera",
+      "alreadyHaveAccount": "Har du redan ett konto? "
+    },
+    "deleteAccount": {
+      "title": "Radera konto"
+    },
+    "imageUpload": {
+      "title": "Ladda upp bild"
+    }
+  },
+  "avatar": {
+    "edit": "Redigera",
+    "editAria": "Redigera profilbild"
+  },
+  "errorBoundary": {
+    "somethingWentWrong": "Något gick fel",
+    "refresh": "Uppdatera sidan.",
+    "message": "Försök en annan sida, eller uppdatera för att börja om."
+  },
+  "skeleton": {
+    "tryAgain": "Försök igen"
+  },
+  "footer": {
+    "privacyPolicy": "Integritetspolicy",
+    "termsOfService": "Användarvillkor"
+  },
+  "legal": {
+    "lastUpdated": "Senast uppdaterad: {{date}}",
+    "questions": "Frågor? Kontakta oss: "
+  },
+  "validation": {
+    "nameTooLong": "Namnet måste vara kortare än 150 tecken.",
+    "titleTooLongBytes": "Rubriken måste vara under 100 byte.",
+    "locationTooLong": "Platsens namn är för långt.",
+    "chooseCategory": "Välj en kategori från listan",
+    "passwordsMismatch": "Lösenorden matchar inte",
+    "maxImages_one": "Du kan bara lägga till högst {{max}} bild.",
+    "maxImages_other": "Du kan bara lägga till högst {{max}} bilder.",
+    "unsupportedImageType": "\"{{name}}\" är inte en stödd bildtyp (använd JPEG, PNG eller WebP).",
+    "fileTooLarge": "\"{{name}}\" är större än {{mb}} MB."
+  }
+}
