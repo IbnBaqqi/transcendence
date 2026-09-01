@@ -4,7 +4,9 @@ import { useModal } from "../../providers/modalContext";
 import { useAuth } from "../../hooks/useAuth";
 import { deriveInitials } from "../../lib/initials";
 import { Link, NavLink } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Avatar from "../objects/Avatar.tsx";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "text-foreground" : "text-muted hover:text-foreground";
@@ -12,6 +14,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 export default function Header() {
   const { user } = useAuth();
   const { openModal, openChat } = useModal();
+  const { t } = useTranslation();
 
   // Names live on the profile, not the auth session - header works from the
   // username alone and "?" covers signed-out visitors.
@@ -21,17 +24,17 @@ export default function Header() {
     <header className="border-line bg-surface sticky top-0 z-10 border-b">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link to="/" className="text-accent text-lg font-bold">
-          Metsätori
+          {t("brand")}
         </Link>
         <nav className="flex items-center gap-6 text-sm">
           {/* {navLinkClass} passes the function itself and React Router calls it and supplies { isActive } */}
           <NavLink to="/" className={navLinkClass}>
-            Home
+            {t("nav.home")}
           </NavLink>
           <button
             type="button"
             onClick={openChat}
-            aria-label="Open chat"
+            aria-label={t("nav.openChat")}
             className="text-muted hover:text-foreground"
           >
             <svg className="h-6 w-5" aria-hidden="true">
@@ -40,7 +43,7 @@ export default function Header() {
           </button>
           <Link
             to="/notifications"
-            aria-label="Notifications"
+            aria-label={t("nav.notifications")}
             className="text-muted hover:text-foreground"
           >
             <svg className="h-6 w-5" aria-hidden="true">
@@ -49,7 +52,7 @@ export default function Header() {
           </Link>
           <Link
             to="/addlisting"
-            aria-label="Add listing"
+            aria-label={t("nav.addListing")}
             className="text-muted hover:text-foreground"
           >
             <svg className="h-6 w-5" aria-hidden="true">
@@ -65,6 +68,7 @@ export default function Header() {
               <Avatar size="sm" initials="?" interactive />
             </button>
           )}
+          <LanguageSwitcher />
           {/* TODO: add Listing (#20) and auth links (#46) when those pages exist */}
         </nav>
       </div>
