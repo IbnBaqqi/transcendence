@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { LanguageSwitcher } from "../components/layout/LanguageSwitcher";
+import { LanguageSwitcher } from "../components/objects/LanguageSwitcher";
 import i18next from "../i18n";
 
 beforeEach(async () => {
