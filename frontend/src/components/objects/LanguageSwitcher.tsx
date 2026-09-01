@@ -47,7 +47,7 @@ export function LanguageSwitcher() {
         onClick={() => setOpen((value) => !value)}
         aria-label={t("language.label")}
         aria-expanded={open}
-        className="text-muted hover:text-foreground cursor-pointer text-2xl leading-none focus:outline-none"
+        className="text-muted hover:text-foreground translate-y-px cursor-pointer text-2xl leading-none focus:outline-none"
       >
         <span aria-hidden="true">{FLAGS[active]}</span>
       </button>

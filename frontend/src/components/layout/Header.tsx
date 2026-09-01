@@ -6,7 +6,7 @@ import { deriveInitials } from "../../lib/initials";
 import { Link, NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Avatar from "../objects/Avatar.tsx";
-import { LanguageSwitcher } from "./LanguageSwitcher";
+import { LanguageSwitcher } from "../objects/LanguageSwitcher";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "text-foreground" : "text-muted hover:text-foreground";
