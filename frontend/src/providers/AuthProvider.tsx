@@ -76,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    mountedRef.current = true;
     // Background refreshes (see the 401 interceptor) funnel through here so
     // React state and localStorage never disagree about who is signed in.
     setOnSessionChange((auth) => setUser(auth?.user ?? null));
