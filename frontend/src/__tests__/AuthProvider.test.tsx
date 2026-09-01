@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { StrictMode } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthProvider } from "../providers/AuthProvider";
@@ -57,6 +58,25 @@ function renderApp() {
   return { queryClient };
 }
 
+// Dev renders the app under StrictMode, which mounts -> unmounts -> remounts the
+// provider on first render. A bug where the mountedRef guard is never re-armed
+// on remount makes every later storeSession a silent no-op (login/signup do
+// nothing); this harness exists so that regression is visible.
+function renderAppStrictMode() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+  render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Consumer />
+        </AuthProvider>
+      </QueryClientProvider>
+    </StrictMode>,
+  );
+  return { queryClient };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
@@ -78,6 +98,22 @@ test("a successful login drops every cached query so mounted pages refetch", asy
   await screen.findByText("forager");
   // The clear forces the still-mounted probe to refetch under the new session.
   await waitFor(() => expect(probeFetcher).toHaveBeenCalledTimes(2));
+  expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("tok");
+});
+
+test("login still stores the session under StrictMode's mount-unmount-remount", async () => {
+  mockedAuthApi.login.mockResolvedValue(session);
+  const user = userEvent.setup();
+  renderAppStrictMode();
+
+  // StrictMode re-invokes the effect; wait for the (re)mount to settle.
+  await screen.findByText("probe:success");
+
+  await user.click(screen.getByRole("button", { name: "Log In" }));
+
+  // If mountedRef isn't re-armed on remount, storeSession bails silently and
+  // neither the user nor the token appear.
+  await screen.findByText("forager");
   expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe("tok");
 });
 
