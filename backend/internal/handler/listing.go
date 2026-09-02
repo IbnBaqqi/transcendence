@@ -213,6 +213,7 @@ func (h *Handler) SearchListings(w http.ResponseWriter, r *http.Request) {
 		MinPrice: q.Get("min_price"),
 		MaxPrice: q.Get("max_price"),
 		Location: q.Get("location"),
+		SellerID: q.Get("seller_id"),
 		Sort:     q.Get("sort"),
 		Page:     q.Get("page"),
 		Limit:    q.Get("limit"),
