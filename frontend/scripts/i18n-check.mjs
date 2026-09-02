@@ -10,14 +10,11 @@
 // Run with: npm run i18n:check
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import * as ts from "typescript";
-import { createRequire } from "node:module";
 
-const require = createRequire(import.meta.url);
-const resolve = require.resolve("typescript");
-
-const SRC = join(import.meta.dirname, "..", "src");
+const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
 const SCAN_DIRS = ["pages", "components"];
 const UI_ATTRS = new Set([
   "label",
