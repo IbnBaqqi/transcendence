@@ -79,6 +79,9 @@ export interface Presence {
 export interface ChatUser {
   id: string;
   username: string;
+  // Always sent, null when none is set - and null for a deleted account, whose
+  // username is anonymised too.
+  avatar_url: string | null;
   presence: Presence;
 }
 
