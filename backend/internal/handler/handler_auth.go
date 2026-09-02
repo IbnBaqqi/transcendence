@@ -113,12 +113,13 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.UserInfo{
-		ID:       user.ID.String(),
-		Username: user.Username,
-		Email:    user.Email,
-		Role:     user.Role,
-	})
+	info, err := h.Auth.UserInfo(r.Context(), user)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, info)
 }
 
 func (h *Handler) setRefreshTokenCookie(w http.ResponseWriter, value string, ttl time.Duration) {
