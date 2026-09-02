@@ -44,7 +44,7 @@ export default function User() {
   // the follow button invalidates the key built from profile.id. A URL with
   // different casing would leave this count one behind, with nothing to show
   // that the invalidation missed.
-  const { data: followers } = useFollowers(profile?.id);
+  const { data: followers } = useFollowers(profile?.id, user?.id);
 
   // 400 = the id isn't a UUID, 404 = no such user. Both mean "nothing here".
   if (isApiError(error) && (error.status === 404 || error.status === 400)) {

@@ -51,7 +51,7 @@ export default function Following() {
         </div>
       )}
 
-      {isError && (
+      {isError && !following && (
         <Skeleton
           variant="error"
           className="mt-6 h-24 w-full"

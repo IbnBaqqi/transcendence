@@ -72,9 +72,10 @@ describe("Following", () => {
     renderPage({ data: undefined }, null);
 
     expect(screen.getByRole("button", { name: "Log In" })).toBeInTheDocument();
-    // Signed out must not fire GET /me/following - it would 401 and burn a
-    // refresh attempt on the interceptor.
-    expect(useFollowing).toHaveBeenCalledWith({ enabled: false });
+    // Last call, not any call: mock history is not cleared between tests here,
+    // so toHaveBeenCalledWith would start matching another test's render the
+    // moment one is added above this one.
+    expect(useFollowing).toHaveBeenLastCalledWith({ enabled: false });
   });
 
   // The screen has to demo both halves of the subject's bullet at once: who you

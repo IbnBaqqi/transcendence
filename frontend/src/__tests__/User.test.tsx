@@ -197,8 +197,21 @@ describe("User", () => {
     // Last call, not any call: mock history is not cleared between tests here,
     // so toHaveBeenCalledWith would match an earlier test's render and pass
     // against a page that reads the URL id.
-    renderPage({ urlId: PROFILE.id.toUpperCase() });
-    expect(useFollowers).toHaveBeenLastCalledWith(PROFILE.id);
+    const viewer: AuthUser = {
+      id: "99999999-9999-9999-9999-999999999999",
+      username: "visitor",
+      email: "v@example.com",
+      role: "user",
+    };
+    renderPage({ urlId: PROFILE.id.toUpperCase(), currentUser: viewer });
+    expect(useFollowers).toHaveBeenLastCalledWith(PROFILE.id, viewer.id);
+  });
+
+  // GET /users/{id}/followers sits behind RequiredAuth, so asking without a
+  // session is a guaranteed 401 that also burns a refresh on the interceptor.
+  test("does not ask for followers when nobody is signed in", () => {
+    renderPage({ currentUser: null });
+    expect(useFollowers).toHaveBeenLastCalledWith(PROFILE.id, undefined);
   });
 
   test("counts the followers the API returned", () => {

@@ -41,10 +41,10 @@ beforeEach(() => {
   vi.mocked(useModal).mockReturnValue({ openModal } as unknown as ReturnType<typeof useModal>);
 });
 
-function authStub(user: User | null): AuthContextValue {
+function authStub(user: User | null, isLoading = false): AuthContextValue {
   return {
     user,
-    isLoading: false,
+    isLoading,
     login: vi.fn(),
     signup: vi.fn(),
     logout: vi.fn(),
@@ -55,6 +55,7 @@ function authStub(user: User | null): AuthContextValue {
 function renderButton(
   user: User | null,
   following: { data?: ChatUser[]; isPending?: boolean } = { data: [] },
+  authLoading = false,
 ) {
   vi.mocked(useFollowing).mockReturnValue({
     isPending: false,
@@ -63,7 +64,7 @@ function renderButton(
 
   return render(
     <QueryClientProvider client={new QueryClient()}>
-      <AuthContext.Provider value={authStub(user)}>
+      <AuthContext.Provider value={authStub(user, authLoading)}>
         <FollowButton userId={SELLER_ID} />
       </AuthContext.Provider>
     </QueryClientProvider>,
@@ -86,6 +87,20 @@ describe("FollowButton", () => {
 
     expect(openModal).toHaveBeenCalledWith("login");
     expect(followCall).not.toHaveBeenCalled();
+  });
+
+  // AuthProvider reports user as null for the first render while it restores
+  // the session, so a signed-in visitor would be offered the login modal on
+  // every page load - and get it if they clicked before the restore landed.
+  test("waits out the session restore instead of offering the login modal", async () => {
+    const user = userEvent.setup();
+    renderButton(null, { data: [] }, true);
+
+    const button = screen.getByRole("button", { name: "Follow" });
+    expect(button).toBeDisabled();
+
+    await user.click(button);
+    expect(openModal).not.toHaveBeenCalled();
   });
 
   test("reads Follow when the list does not contain them, and follows", async () => {

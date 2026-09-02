@@ -9,21 +9,20 @@ export function useFollowing(options: { enabled?: boolean } = {}) {
     queryKey: keys.follows.following(),
     queryFn: async () => (await api.get<ChatUser[]>("/me/following")).data ?? [],
     enabled: options.enabled ?? true,
-    // Online is "seen within the last 2 minutes", so these rows go stale on the
-    // clock with no server event to invalidate on. Drop this and the dots keep
-    // showing whatever was true when the page was opened.
+    // Drop this and the dots keep showing whatever was true when the page was
+    // opened: presence expires on the clock, with no server event to refetch on.
     refetchInterval: 60_000,
   });
 }
 
-export function useFollowers(id: string | undefined) {
+export function useFollowers(id: string | undefined, viewerId?: string) {
   return useQuery({
     queryKey: keys.follows.followers(id ?? ""),
     queryFn: async () => {
       const userId = id ?? "";
       return (await api.get<ChatUser[]>(apiPath`/users/${userId}/followers`)).data ?? [];
     },
-    enabled: Boolean(id),
+    enabled: Boolean(id) && Boolean(viewerId),
     retry: false,
   });
 }
@@ -37,9 +36,11 @@ function useFollowMutation(method: "post" | "delete") {
       return userId;
     },
 
-    onSuccess: (userId) => {
-      void qc.invalidateQueries({ queryKey: keys.follows.following() });
-      void qc.invalidateQueries({ queryKey: keys.follows.followers(userId) });
+    onSuccess: async (userId) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: keys.follows.following() }),
+        qc.invalidateQueries({ queryKey: keys.follows.followers(userId) }),
+      ]);
     },
   });
 }
