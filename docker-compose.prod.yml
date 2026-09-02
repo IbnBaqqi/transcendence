@@ -16,6 +16,7 @@ name: transcendence-prod
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -28,6 +29,9 @@ services:
       timeout: 5s
       retries: 10
 
+  # No restart policy here on purpose: this is a one-shot that must run to
+  # completion. A restart would relaunch it after it exits 0, and backend's
+  # service_completed_successfully would never settle.
   migrate:
     build:
       context: ./backend
@@ -64,6 +68,15 @@ services:
       SMTP_HOST: ""
     volumes:
       - uploads_prod:/app/uploads
+    restart: unless-stopped
+    # /health reports 503 rather than 200 when the database check fails, so this
+    # tracks "can serve requests", not merely "process is alive". wget is
+    # BusyBox's, present in the alpine runtime image.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     depends_on:
       db:
         condition: service_healthy
@@ -75,8 +88,14 @@ services:
       context: ./frontend
     ports:
       - "8080:8080"
+    restart: unless-stopped
+    # Waits for a backend that answers, not just one that has been created, so
+    # startup is deterministic - the same shape db and migrate already use.
+    # This does not replace nginx.conf's resolver: that exists for the backend
+    # going away and coming back later, which no startup ordering can cover.
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres_data_prod:
