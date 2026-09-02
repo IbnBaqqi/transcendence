@@ -4,7 +4,9 @@
     "home": "Hem",
     "openChat": "Öppna chatt",
     "notifications": "Meddelanden",
-    "addListing": "Lägg till annons"
+    "addListing": "Lägg till annons",
+    "orders": "Beställningar",
+    "following": "Följer"
   },
   "language": {
     "en": "English",
@@ -86,7 +88,20 @@
   },
   "listings": {
     "available": "{{qty}} {{unit}} tillgängliga",
-    "showingOf": "Visar {{shown}} av {{total}}"
+    "showingOf": "Visar {{shown}} av {{total}}",
+    "seller": "Säljare"
+  },
+  "presence": {
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "follows": {
+    "follow": "Följ",
+    "unfollow": "Sluta följa",
+    "updating": "Uppdaterar…",
+    "error": "Kunde inte uppdatera. Försök igen.",
+    "followers_one": "{{count}} följare",
+    "followers_other": "{{count}} följare"
   },
   "orders": {
     "title": "Beställningar",
@@ -174,6 +189,13 @@
       "title": "Säljarpanel",
       "stub": "Säljarpanel - inte byggt ännu (#23)."
     },
+    "following": {
+      "title": "Följer",
+      "signedOut": "Du är utloggad. Logga in för att se vilka du följer.",
+      "empty": "Du följer ingen än.",
+      "emptyHint": "Följ en säljare från deras profil, så dyker de upp här.",
+      "error": "Kunde inte ladda vilka du följer."
+    },
     "addListing": {
       "title": "Lägg till annons"
     },
@@ -199,8 +221,6 @@
     },
     "user": {
       "title": "Användarprofil",
-      "online": "Online",
-      "offline": "Offline",
       "messageUser": "Skicka meddelande",
       "details": "Detaljer",
       "firstName": "Förnamn",

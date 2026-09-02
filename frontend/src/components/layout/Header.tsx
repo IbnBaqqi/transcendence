@@ -34,7 +34,12 @@ export default function Header() {
           </NavLink>
           {user && (
             <NavLink to="/orders" className={navLinkClass}>
-              Orders
+              {t("nav.orders")}
+            </NavLink>
+          )}
+          {user && (
+            <NavLink to="/following" className={navLinkClass}>
+              {t("nav.following")}
             </NavLink>
           )}
           {/* openChat is wrapped, not passed straight to onClick: it takes an
