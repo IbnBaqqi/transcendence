@@ -180,48 +180,6 @@ func (q *Queries) IncrementListingQuantity(ctx context.Context, arg IncrementLis
 	return i, err
 }
 
-const listListings = `-- name: ListListings :many
-SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at FROM listings
-WHERE listings.quantity > 0 AND listings.removed_at IS NULL
-  AND EXISTS (SELECT 1 FROM users u WHERE u.id = listings.seller_id AND u.is_visible)
-ORDER BY created_at DESC
-`
-
-func (q *Queries) ListListings(ctx context.Context) ([]Listing, error) {
-	rows, err := q.db.QueryContext(ctx, listListings)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Listing
-	for rows.Next() {
-		var i Listing
-		if err := rows.Scan(
-			&i.ID,
-			&i.SellerID,
-			&i.Title,
-			&i.Description,
-			&i.Category,
-			&i.Price,
-			&i.Quantity,
-			&i.Unit,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.RemovedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const updateListing = `-- name: UpdateListing :one
 UPDATE listings
 SET title = $2,

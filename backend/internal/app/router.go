@@ -82,7 +82,6 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		r.Get("/auth/oauth/{provider}", h.OAuthStart)
 		r.Get("/auth/oauth/{provider}/callback", h.OAuthCallback)
 
-		r.Get("/listings", h.GetListings)
 		r.Get("/listings/search", h.SearchListings)
 		r.Get("/listings/{id}", h.GetListing)
 		r.Get("/listings/{id}/images", h.GetListingImages)

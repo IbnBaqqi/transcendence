@@ -5,28 +5,26 @@ import User from "../pages/User";
 import { ModalProvider } from "../providers/ModalProvider";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { usePublicProfile } from "../api/profile";
-import { useListings } from "../api/listings";
+import { useSearchListings } from "../api/listings";
 import { useCategoryNames } from "../api/categories";
 import type { ApiError } from "../api/client";
 import { makeListing, makePublicProfile } from "../test/factories";
 // Aliased: "User" is already the page component above.
-import type { User as AuthUser } from "../api/types";
+import type { Listing, Paginated, User as AuthUser } from "../api/types";
 
 vi.mock("../api/profile");
 vi.mock("../api/listings");
 vi.mock("../api/categories");
 
 type ProfileQuery = ReturnType<typeof usePublicProfile>;
-type ListingsQuery = ReturnType<typeof useListings>;
+type ListingsQuery = ReturnType<typeof useSearchListings>;
 
 const PROFILE = makePublicProfile();
 
-// makeListing()'s default seller_id is PROFILE.id, so this is the odd one out.
-const OTHER_SELLERS_LISTING = makeListing({
-  id: "01a02305-b81d-764a-a738-d8c0642639de",
-  seller_id: "99999999-9999-9999-9999-999999999999",
-  title: "Wild Blueberries",
-});
+// The page reads data.items now that the API does the filtering.
+function page(items: Listing[]): Paginated<Listing> {
+  return { items, total: items.length, page: 1, limit: 20, total_pages: 1 };
+}
 
 // The axios interceptor rejects with an ApiError object, not an Error, so
 // React Query's error type has to be overridden here.
@@ -61,8 +59,8 @@ function renderPage(
     ...opts.profile,
   } as ProfileQuery);
 
-  vi.mocked(useListings).mockReturnValue({
-    data: [],
+  vi.mocked(useSearchListings).mockReturnValue({
+    data: page([]),
     isPending: false,
     isError: false,
     ...opts.listings,
@@ -135,21 +133,29 @@ describe("User", () => {
     expect(screen.getByText(/page not found/i)).toBeInTheDocument();
   });
 
-  test("shows only this user's listings", () => {
-    renderPage({ listings: { data: [makeListing(), OTHER_SELLERS_LISTING] } });
-    expect(screen.getByText("Golden Chanterelles")).toBeInTheDocument();
-    expect(screen.queryByText("Wild Blueberries")).not.toBeInTheDocument();
+  // The filtering itself is the backend's now, and is tested there. What this
+  // page still owns is asking the right question.
+  test("asks the API for this seller's listings", () => {
+    renderPage();
+    expect(useSearchListings).toHaveBeenCalledWith(
+      expect.objectContaining({ seller_id: PROFILE.id }),
+    );
   });
 
-  // Regression guard: the API accepts an upper-case UUID and answers with the
-  // canonical lower-case one, which is what listings carry. Filtering on the
-  // URL param instead of profile.id renders the profile with no listings.
-  test("matches listings against the canonical id, not the URL casing", () => {
-    renderPage({
-      urlId: PROFILE.id.toUpperCase(),
-      listings: { data: [makeListing()] },
-    });
+  test("renders what the API sends back", () => {
+    renderPage({ listings: { data: page([makeListing()]) } });
     expect(screen.getByText("Golden Chanterelles")).toBeInTheDocument();
+  });
+
+  // Was a guard against comparing an upper-case URL id to a canonical one in
+  // JavaScript. The comparison is Postgres's now, and uuid equality ignores
+  // casing - so what is left to pin is that the page passes the id through
+  // rather than trying to normalise it itself.
+  test("passes an upper-case URL id straight through", () => {
+    renderPage({ urlId: PROFILE.id.toUpperCase() });
+    expect(useSearchListings).toHaveBeenCalledWith(
+      expect.objectContaining({ seller_id: PROFILE.id.toUpperCase() }),
+    );
   });
 
   test("offers a message button on someone else's profile", () => {
