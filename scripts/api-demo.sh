@@ -145,8 +145,10 @@ step "6. Revoke, and the key stops working"
 req DELETE "/me/api-keys/$key_id" 204 -H "Authorization: Bearer $token" >/dev/null
 pass "revoked key $key_id"
 
-# Not /listings/search: that one is public, so a revoked key would still get a
-# 200 and this would prove nothing. /me/profile needs the key to be live.
+# Any route would answer 401 here - Authenticate runs above the public ones and
+# rejects a presented-but-invalid key before routing, which is why this check
+# used to sit on /listings. An authenticated route is simply a more honest
+# subject for "the key stops working".
 req GET /me/profile 401 "${auth[@]}" >/dev/null
 pass "the same key now answers 401"
 info "revocation applies on the next request - the key is looked up every time"

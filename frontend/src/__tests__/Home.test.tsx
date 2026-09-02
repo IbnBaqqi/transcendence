@@ -66,6 +66,23 @@ describe("Home", () => {
     expect(screen.getByText("No listings yet.")).toBeInTheDocument();
   });
 
+  test("says how many were hidden when the page is not the whole set", () => {
+    mockListings({
+      data: { items: [sample], total: 47, page: 1, limit: 20, total_pages: 3 },
+      isPending: false,
+      isError: false,
+    });
+    render(<Home />);
+    // Truncation was invisible before: one page is all there is until #25.
+    expect(screen.getByText(/showing 1 of 47/i)).toBeInTheDocument();
+  });
+
+  test("says nothing when the page is the whole set", () => {
+    mockListings({ data: page([sample]), isPending: false, isError: false });
+    render(<Home />);
+    expect(screen.queryByText(/showing/i)).not.toBeInTheDocument();
+  });
+
   test("renders a card for each listing", () => {
     mockListings({ data: page([sample, secondSample]), isPending: false, isError: false });
     render(<Home />);

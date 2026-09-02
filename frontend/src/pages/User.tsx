@@ -54,6 +54,7 @@ export default function User() {
   const isSelf = user?.id === profile.id;
 
   const listings = sellerListings?.items ?? [];
+  const hiddenListings = (sellerListings?.total ?? 0) - listings.length;
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
@@ -125,6 +126,11 @@ export default function User() {
           {listingsError && "Couldn't load listings. Try again."}
           {!listingsPending && !listingsError && listings.length === 0 && "No listings yet!"}
         </p>
+        {hiddenListings > 0 && (
+          <p className="text-muted mt-2 text-sm">
+            Showing {listings.length} of {sellerListings!.total}
+          </p>
+        )}
         {listings.length > 0 && (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {listings.map((listing) => (

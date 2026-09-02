@@ -51,6 +51,13 @@ export default function Home() {
           onRetry={() => refetch()}
         />
       )}
+      {/* One page is all there is until #25 builds the browse surface, so say
+          so rather than letting the 21st listing be invisible. */}
+      {data && data.total > listings!.length && (
+        <p className="text-muted mt-2 text-sm">
+          Showing {listings!.length} of {data.total}
+        </p>
+      )}
       {listings && listings.length > 0 && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((listing) => (
