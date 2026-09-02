@@ -93,6 +93,18 @@ jobs:
       - name: Check every compose variable exists in .env.example
         # Both files: the prod stack interpolates the same POSTGRES_* values and
         # would come up with empty ones just as quietly.
+        #
+        # A compose-side default does not exempt a variable. The name is
+        # extracted up to the `:`, so ${RATE_LIMIT_PER_MINUTE:-60} still has to
+        # appear in .env.example - the example is where someone finds out the
+        # knob exists, and a default buried in compose is not that.
+        #
+        # It has to be uncommented, which is the one place this disagrees with
+        # how .env.example documents optional knobs: those are commented out so
+        # the file does not become a second source of truth for their values.
+        # The two sets do not overlap today. If they ever do, the fix is to
+        # uncomment the entry here rather than to relax this check, because a
+        # variable compose actually interpolates is not optional.
         run: |
           missing=$(grep -ohE '\$\{[A-Z_][A-Z0-9_]*' docker-compose.yml docker-compose.prod.yml \
             | sed 's/^\${//' | sort -u \
