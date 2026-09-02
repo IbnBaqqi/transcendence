@@ -654,7 +654,24 @@ components:
         is set, `/cancel` is refused, and the status only moves when the *other*
         party acts. If they never do, the order is stuck in `confirmed` for
         good. After seven days an admin can end it with
-        `POST /admin/orders/{id}/resolve`, which is the only way out.
+        `POST /admin/orders/{id}/resolve`.
+
+        A second state is just as unreachable, for a different reason.
+        `/cancel` accepts *either* party, so losing one is survivable — but if
+        both the buyer and the seller delete their accounts while the order is
+        still `pending`, or `confirmed` with neither timestamp set, nobody is
+        left who may call it. There is no waiting period here: seven days exist
+        to give a real person time to act, and nothing happened for anyone to
+        finish. An admin can resolve it immediately, and only as `cancelled`.
+
+        Note the two shapes are told apart by the handshake timestamps, not by
+        who still has an account. An order that was handed over and *then*
+        abandoned by both parties is the first shape, not this one: it waits the
+        seven days and accepts any outcome.
+
+        Both shapes are what `stuck` means on `AdminOrder`, and both end the
+        same way — by an admin, never automatically. Deleting an account does
+        not unwind orders.
 
         `refunded` exists for that resolution: it means the trade got far enough
         that calling it `cancelled` would be false. No money moves - none ever
@@ -672,13 +689,14 @@ components:
             stuck:
               type: boolean
               description: |
-                True when this order is in the trap described on `OrderStatus`:
-                `confirmed`, with exactly one of the two handshake timestamps
-                set, and that timestamp more than seven days old. These are the
-                only orders `/resolve` accepts.
+                True when no party can move this order, which is exactly what
+                `/resolve` accepts. Two shapes qualify: `confirmed` with exactly
+                one handshake timestamp set and that timestamp more than seven
+                days old, or `pending`/`confirmed` with neither timestamp set
+                and both the buyer and the seller deleted.
 
-                Derived from the timestamps, never stored - so it cannot drift
-                from the columns it summarises.
+                Derived, never stored - so it cannot drift from the columns and
+                accounts it summarises.
 
     PaginatedAdminOrders:
       type: object
@@ -1374,13 +1392,20 @@ components:
         note:
           type: [string, "null"]
           description: |
-            Set on handshake marks, where `from_status` equals `to_status` and
-            the status alone cannot say who acted. Null on ordinary
-            transitions.
+            Why the event happened, when the statuses alone cannot say. Two
+            things write it:
 
-            A stable code, not display text - `seller_handover` or
-            `buyer_receipt` - so a client renders it in its own language.
-            Rows already written cannot be re-translated.
+            - **Handshake marks**, where `from_status` equals `to_status` and
+              only the note says who acted. These are stable codes, not display
+              text - `seller_handover` or `buyer_receipt` - so a client renders
+              them in its own language. Rows already written cannot be
+              re-translated.
+            - **An admin resolution**, which stores the reason the admin typed.
+              That is prose, in whatever language they wrote it, and it appears
+              on an ordinary transition where `from_status` differs from
+              `to_status`.
+
+            Null otherwise.
           examples: ["seller_handover"]
         created_at:
           type: string
@@ -4072,18 +4097,33 @@ paths:
           format: uuid
     post:
       tags: [admin]
-      summary: End an order stuck mid-handover
+      summary: End an order no party can move
       operationId: resolveOrder
       description: |
         Forces a stuck order to a terminal status, records the reason in its
         event history, and returns the quantity to stock unless the outcome is
         `completed`. One transaction: all of it, or none.
 
-        **Only stuck orders**, meaning mid-handover and untouched for more
-        than seven days. An admin cannot rewrite an order that is still moving
-        or already finished - that is a 409, not a 403, because it is about the
-        order's state rather than the caller's rights. The seven days exist so
-        an admin cannot close a trade the counterparty is still completing.
+        **Only stuck orders**, in either of the senses described on
+        `OrderStatus`: left mid-handover for more than seven days, or left with
+        no living party because both accounts were deleted. An admin cannot
+        rewrite an order that is still moving or already finished - that is a
+        409, not a 403, because it is about the order's state rather than the
+        caller's rights. The seven days exist so an admin cannot close a trade
+        the counterparty is still completing, and they apply whenever a
+        handshake timestamp is set — **including when both parties have since
+        deleted their accounts.** A mark records that something physically
+        happened, and the wait is what separates a slow trade from an abandoned
+        one; that a party has left does not make the goods un-handed-over.
+
+        **An order neither party ever acted on can only be resolved as
+        `cancelled`.** That is the second shape above, recognised by both
+        handshake timestamps being unset rather than by whether anyone is left
+        alive. `completed` would assert a handover that never happened, and
+        `refunded` implies the trade got far enough to need unwinding. Both are
+        refused. An abandoned order that *does* carry a handshake mark is the
+        first shape, and after seven days accepts all three outcomes.
+
         The check runs inside the transaction after locking the row, so an
         order that stops being stuck while the admin is looking at the list
         cannot be overwritten.
@@ -4113,7 +4153,9 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
-          description: The order is not stuck, so there is nothing for an admin to resolve.
+          description: |
+            The order is not stuck, so there is nothing to resolve - or it has
+            no living party and the outcome was not `cancelled`.
           content:
             application/json:
               schema:
@@ -4585,6 +4627,10 @@ paths:
         it is never destroyed, and refusing deletion until every order settles
         would let one counterparty hold an account open indefinitely. Cancel
         what is outstanding first if you would rather not leave it to them.
+
+        If the other party has already deleted their account, nobody is left who
+        can end the order at all. It is still not unwound here — it becomes
+        resolvable by an admin instead, described on `OrderStatus`.
 
         Send your own username in the body to confirm. Requires a browser
         session: an API key cannot delete the account it authenticates.

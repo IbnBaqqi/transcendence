@@ -19,6 +19,25 @@ type Address struct {
 	UpdatedAt sql.NullTime
 }
 
+type AdminOrder struct {
+	ID                 uuid.UUID
+	ListingID          uuid.UUID
+	BuyerID            uuid.UUID
+	SellerID           uuid.UUID
+	Quantity           int32
+	UnitPrice          string
+	TotalPrice         string
+	Status             string
+	CreatedAt          sql.NullTime
+	UpdatedAt          sql.NullTime
+	SellerHandedOverAt sql.NullTime
+	BuyerReceivedAt    sql.NullTime
+	ListingTitle       string
+	HandshakeStuck     bool
+	Stranded           bool
+	Stuck              bool
+}
+
 type ApiKey struct {
 	ID         uuid.UUID
 	UserID     uuid.UUID

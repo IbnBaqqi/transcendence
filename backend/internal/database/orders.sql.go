@@ -8,23 +8,16 @@ package database
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/google/uuid"
 )
 
 const countOrdersForAdmin = `-- name: CountOrdersForAdmin :one
-SELECT COUNT(*) FROM orders
+SELECT COUNT(*) FROM admin_orders
 WHERE ($1::text IS NULL OR status = $1::text)
   AND ($2::timestamptz IS NULL OR created_at >= $2::timestamptz)
   AND ($3::timestamptz IS NULL OR created_at < $3::timestamptz)
-  AND (
-      $4::boolean IS NULL
-      OR (status = 'confirmed'
-          AND (seller_handed_over_at IS NULL) <> (buyer_received_at IS NULL)
-          AND COALESCE(seller_handed_over_at, buyer_received_at)
-              < $5::timestamptz) = $4::boolean
-  )
+  AND ($4::boolean IS NULL OR stuck = $4::boolean)
 `
 
 type CountOrdersForAdminParams struct {
@@ -32,7 +25,6 @@ type CountOrdersForAdminParams struct {
 	CreatedFrom sql.NullTime
 	CreatedTo   sql.NullTime
 	Stuck       sql.NullBool
-	StuckBefore time.Time
 }
 
 func (q *Queries) CountOrdersForAdmin(ctx context.Context, arg CountOrdersForAdminParams) (int64, error) {
@@ -41,7 +33,6 @@ func (q *Queries) CountOrdersForAdmin(ctx context.Context, arg CountOrdersForAdm
 		arg.CreatedFrom,
 		arg.CreatedTo,
 		arg.Stuck,
-		arg.StuckBefore,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -158,20 +149,30 @@ func (q *Queries) GetOrderForUpdate(ctx context.Context, id uuid.UUID) (Order, e
 	return i, err
 }
 
+const getOrderResolvability = `-- name: GetOrderResolvability :one
+SELECT stuck, stranded FROM admin_orders WHERE id = $1
+`
+
+type GetOrderResolvabilityRow struct {
+	Stuck    bool
+	Stranded bool
+}
+
+func (q *Queries) GetOrderResolvability(ctx context.Context, id uuid.UUID) (GetOrderResolvabilityRow, error) {
+	row := q.db.QueryRowContext(ctx, getOrderResolvability, id)
+	var i GetOrderResolvabilityRow
+	err := row.Scan(&i.Stuck, &i.Stranded)
+	return i, err
+}
+
 const listOrdersForAdmin = `-- name: ListOrdersForAdmin :many
-SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title FROM orders
+SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title, handshake_stuck, stranded, stuck FROM admin_orders
 WHERE ($1::text IS NULL OR status = $1::text)
   AND ($2::timestamptz IS NULL OR created_at >= $2::timestamptz)
   AND ($3::timestamptz IS NULL OR created_at < $3::timestamptz)
-  AND (
-      $4::boolean IS NULL
-      OR (status = 'confirmed'
-          AND (seller_handed_over_at IS NULL) <> (buyer_received_at IS NULL)
-          AND COALESCE(seller_handed_over_at, buyer_received_at)
-              < $5::timestamptz) = $4::boolean
-  )
+  AND ($4::boolean IS NULL OR stuck = $4::boolean)
 ORDER BY created_at DESC, id DESC
-LIMIT $7 OFFSET $6
+LIMIT $6 OFFSET $5
 `
 
 type ListOrdersForAdminParams struct {
@@ -179,18 +180,16 @@ type ListOrdersForAdminParams struct {
 	CreatedFrom sql.NullTime
 	CreatedTo   sql.NullTime
 	Stuck       sql.NullBool
-	StuckBefore time.Time
 	PageOffset  int32
 	PageLimit   int32
 }
 
-func (q *Queries) ListOrdersForAdmin(ctx context.Context, arg ListOrdersForAdminParams) ([]Order, error) {
+func (q *Queries) ListOrdersForAdmin(ctx context.Context, arg ListOrdersForAdminParams) ([]AdminOrder, error) {
 	rows, err := q.db.QueryContext(ctx, listOrdersForAdmin,
 		arg.Status,
 		arg.CreatedFrom,
 		arg.CreatedTo,
 		arg.Stuck,
-		arg.StuckBefore,
 		arg.PageOffset,
 		arg.PageLimit,
 	)
@@ -198,9 +197,9 @@ func (q *Queries) ListOrdersForAdmin(ctx context.Context, arg ListOrdersForAdmin
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Order
+	var items []AdminOrder
 	for rows.Next() {
-		var i Order
+		var i AdminOrder
 		if err := rows.Scan(
 			&i.ID,
 			&i.ListingID,
@@ -215,6 +214,9 @@ func (q *Queries) ListOrdersForAdmin(ctx context.Context, arg ListOrdersForAdmin
 			&i.SellerHandedOverAt,
 			&i.BuyerReceivedAt,
 			&i.ListingTitle,
+			&i.HandshakeStuck,
+			&i.Stranded,
+			&i.Stuck,
 		); err != nil {
 			return nil, err
 		}
