@@ -1,30 +1,77 @@
 name: Backend
 
-# Do not make these checks required in branch protection while the paths
-# filters below exist. A required check whose workflow is filtered out never
-# reports at all, so GitHub waits on it forever and the PR can never merge:
-# requiring "Backend Tests" hangs every frontend-only PR. Protection needs a
-# companion job that always runs and reports success in place of the skipped
-# one. The same gap is why a root-only change (docker-compose.yml, README.md,
-# scripts/) runs no checks today.
+# The filtering lives in the `changes` job below, NOT in a `paths:` filter on
+# the trigger. That is what lets these checks be required in branch protection:
+# a workflow filtered out at the trigger never reports at all, so a required
+# check waits forever and the PR can never merge. A job skipped by `if:` does
+# report - as "skipped", which protection accepts.
+#
+# So do not move these paths back up into `on:` while the ruleset requires
+# "Backend Tests" or "Backend Style". It looks like the same thing and it
+# silently wedges every frontend-only PR.
 on:
   pull_request:
     branches: [main]
-    paths:
-      - "backend/**"
-      # The whole directory rather than this file alone: a shared action or
-      # reusable workflow added later is invisible to the narrow form. The
-      # cost is that editing frontend.yml runs the Go suite.
-      - ".github/workflows/**"
   push:
     branches: [main]
-    paths:
-      - "backend/**"
-      - ".github/workflows/**"
 
 jobs:
+  changes:
+    name: Detect changes (backend)
+    runs-on: ubuntu-latest
+    # Listing a pull request's files is the pull-requests scope, not contents.
+    # Without this the call 403s wherever the default token is restricted, and
+    # the fail-open below quietly runs everything on every PR.
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.run }}
+
+    steps:
+      # No checkout: the API knows what a pull request touches, and skipping the
+      # clone is what keeps this job seconds rather than tens of them.
+      - name: Decide whether the backend changed
+        id: filter
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # A push to main is not a pull request and has nothing to diff
+          # against here - main gets the full suite.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Fail open: if the listing fails, run everything rather than
+          # reporting a green PR nothing was checked on.
+          if ! files=$(gh api \
+            "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            --paginate --jq '.[].filename'); then
+            echo "could not list changed files - running everything"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # The whole workflows directory rather than this file alone: a shared
+          # action or reusable workflow added later is invisible to the narrow
+          # form. The cost is that editing frontend.yml runs the Go suite.
+          if printf '%s\n' "$files" | grep -qE '^(backend/|\.github/workflows/)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
   tests:
     name: Backend Tests
+    needs: changes
+    # Runs when the gate says so, and also when the gate did not succeed at
+    # all: a failed detection job would otherwise skip these, and a skipped
+    # required check is accepted - a green PR nothing was checked on. The
+    # script fails open on its own errors; this covers the job dying around
+    # it. !cancelled() rather than always(), so cancelling a run still stops
+    # the suite.
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.backend == 'true') }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -81,6 +128,14 @@ jobs:
 
   style:
     name: Backend Style
+    needs: changes
+    # Runs when the gate says so, and also when the gate did not succeed at
+    # all: a failed detection job would otherwise skip these, and a skipped
+    # required check is accepted - a green PR nothing was checked on. The
+    # script fails open on its own errors; this covers the job dying around
+    # it. !cancelled() rather than always(), so cancelling a run still stops
+    # the suite.
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.backend == 'true') }}
     runs-on: ubuntu-latest
     defaults:
       run:
