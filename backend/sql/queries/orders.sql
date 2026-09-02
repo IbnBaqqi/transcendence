@@ -43,29 +43,20 @@ WHERE id = $1
 RETURNING *;
 
 -- name: ListOrdersForAdmin :many
-SELECT * FROM orders
+SELECT * FROM admin_orders
 WHERE (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status)::text)
   AND (sqlc.narg(created_from)::timestamptz IS NULL OR created_at >= sqlc.narg(created_from)::timestamptz)
   AND (sqlc.narg(created_to)::timestamptz IS NULL OR created_at < sqlc.narg(created_to)::timestamptz)
-  AND (
-      sqlc.narg(stuck)::boolean IS NULL
-      OR (status = 'confirmed'
-          AND (seller_handed_over_at IS NULL) <> (buyer_received_at IS NULL)
-          AND COALESCE(seller_handed_over_at, buyer_received_at)
-              < sqlc.arg(stuck_before)::timestamptz) = sqlc.narg(stuck)::boolean
-  )
+  AND (sqlc.narg(stuck)::boolean IS NULL OR stuck = sqlc.narg(stuck)::boolean)
 ORDER BY created_at DESC, id DESC
 LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
 
 -- name: CountOrdersForAdmin :one
-SELECT COUNT(*) FROM orders
+SELECT COUNT(*) FROM admin_orders
 WHERE (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status)::text)
   AND (sqlc.narg(created_from)::timestamptz IS NULL OR created_at >= sqlc.narg(created_from)::timestamptz)
   AND (sqlc.narg(created_to)::timestamptz IS NULL OR created_at < sqlc.narg(created_to)::timestamptz)
-  AND (
-      sqlc.narg(stuck)::boolean IS NULL
-      OR (status = 'confirmed'
-          AND (seller_handed_over_at IS NULL) <> (buyer_received_at IS NULL)
-          AND COALESCE(seller_handed_over_at, buyer_received_at)
-              < sqlc.arg(stuck_before)::timestamptz) = sqlc.narg(stuck)::boolean
-  );
+  AND (sqlc.narg(stuck)::boolean IS NULL OR stuck = sqlc.narg(stuck)::boolean);
+
+-- name: GetOrderResolvability :one
+SELECT stuck, stranded FROM admin_orders WHERE id = $1;
