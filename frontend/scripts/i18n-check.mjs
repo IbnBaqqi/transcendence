@@ -2,10 +2,11 @@
 // Guard: catches hardcoded UI strings in pages/ and components/ that bypass
 // the i18n layer. It parses each .tsx file with the TypeScript compiler and
 // flags
-//   1. JSX text nodes that read as prose (letters + a space)
+//   1. JSX text nodes containing letters
 //   2. UI attribute string literals (label="", placeholder="", ...)
 //   3. default prop values in signatures (`retryLabel = "Try again",`)
-// so brand names and single-word tokens are intentionally ignored.
+// so punctuation-only separators are ignored, but a single word is not: rule 1
+// used to require whitespace, and "Orders" shipped untranslated through the gap.
 //
 // Run with: npm run i18n:check
 
@@ -47,7 +48,7 @@ function looksLikeCopy(value) {
 }
 
 function isProse(text) {
-  return /[A-Za-z]/.test(text) && /\s/.test(text) && !/^[?—–‑]+$/.test(text);
+  return /[A-Za-z]/.test(text) && !/^[?—–‑]+$/.test(text);
 }
 
 const issues = [];
