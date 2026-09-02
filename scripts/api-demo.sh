@@ -102,8 +102,8 @@ listing=$(req POST /listings 201 "${auth[@]}" \
 listing_id=$(printf '%s' "$listing" | json id)
 pass "POST   /listings          created listing $listing_id"
 
-req GET /listings 200 "${auth[@]}" >/dev/null
-pass "GET    /listings          listed"
+req GET "/listings/search" 200 "${auth[@]}" >/dev/null
+pass "GET    /listings/search   listed"
 
 req GET "/listings/$listing_id" 200 "${auth[@]}" >/dev/null
 pass "GET    /listings/{id}     read"
@@ -145,7 +145,9 @@ step "6. Revoke, and the key stops working"
 req DELETE "/me/api-keys/$key_id" 204 -H "Authorization: Bearer $token" >/dev/null
 pass "revoked key $key_id"
 
-req GET /listings 401 "${auth[@]}" >/dev/null
+# Not /listings/search: that one is public, so a revoked key would still get a
+# 200 and this would prove nothing. /me/profile needs the key to be live.
+req GET /me/profile 401 "${auth[@]}" >/dev/null
 pass "the same key now answers 401"
 info "revocation applies on the next request - the key is looked up every time"
 

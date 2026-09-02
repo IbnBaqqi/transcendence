@@ -227,11 +227,11 @@ func TestARemovedListingLeavesEveryReadPath(t *testing.T) {
 
 	f.remove(t)
 
-	browse, err := f.listings.ListListings(ctx)
+	browse, err := f.listings.SearchListings(ctx, dtos.ListingSearchQuery{})
 	if err != nil {
 		t.Fatalf("browsing: %v", err)
 	}
-	for _, l := range browse {
+	for _, l := range browse.Items {
 		if l.ID == f.listing {
 			t.Error("a removed listing is still in the browse list")
 		}
@@ -429,12 +429,12 @@ func TestRestoreBringsTheListingBack(t *testing.T) {
 		t.Fatal("the listing is still marked removed")
 	}
 
-	browse, err := f.listings.ListListings(ctx)
+	browse, err := f.listings.SearchListings(ctx, dtos.ListingSearchQuery{})
 	if err != nil {
 		t.Fatalf("browsing: %v", err)
 	}
 	var back bool
-	for _, l := range browse {
+	for _, l := range browse.Items {
 		if l.ID == f.listing {
 			back = true
 		}

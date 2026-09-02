@@ -260,11 +260,11 @@ func TestADeletedSellersListingsLeaveEveryReadPath(t *testing.T) {
 		t.Fatalf("deleting the seller: %v", err)
 	}
 
-	browse, err := f.listings.ListListings(ctx)
+	browse, err := f.listings.SearchListings(ctx, dtos.ListingSearchQuery{})
 	if err != nil {
 		t.Fatalf("browsing: %v", err)
 	}
-	for _, l := range browse {
+	for _, l := range browse.Items {
 		if l.ID == f.listing {
 			t.Error("a deleted seller's listing is still in the browse list")
 		}
