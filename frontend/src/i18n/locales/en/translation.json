@@ -4,7 +4,9 @@
     "home": "Home",
     "openChat": "Open chat",
     "notifications": "Notifications",
-    "addListing": "Add listing"
+    "addListing": "Add listing",
+    "orders": "Orders",
+    "following": "Following"
   },
   "language": {
     "en": "English",
@@ -86,7 +88,20 @@
   },
   "listings": {
     "available": "{{qty}} {{unit}} available",
-    "showingOf": "Showing {{shown}} of {{total}}"
+    "showingOf": "Showing {{shown}} of {{total}}",
+    "seller": "Seller"
+  },
+  "presence": {
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "follows": {
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "updating": "Updating…",
+    "error": "Couldn't update. Please try again.",
+    "followers_one": "{{count}} follower",
+    "followers_other": "{{count}} followers"
   },
   "orders": {
     "title": "Orders",
@@ -174,6 +189,13 @@
       "title": "Seller Dashboard",
       "stub": "Seller dashboard - not built yet (#23)."
     },
+    "following": {
+      "title": "Following",
+      "signedOut": "You're signed out. Log in to see who you follow.",
+      "empty": "You're not following anyone yet.",
+      "emptyHint": "Follow a seller from their profile and they'll show up here.",
+      "error": "Couldn't load who you follow."
+    },
     "addListing": {
       "title": "Add Listing"
     },
@@ -199,8 +221,6 @@
     },
     "user": {
       "title": "User Profile",
-      "online": "Online",
-      "offline": "Offline",
       "messageUser": "Message User",
       "details": "Details",
       "firstName": "First Name",

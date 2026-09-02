@@ -38,6 +38,16 @@ export const keys = {
     detail: (id: string) => [...keys.users.all, "detail", id] as const,
   },
 
+  follows: {
+    all: ["follows"] as const,
+    // following() carries no user id, so it is only safe because AuthProvider
+    // clears the whole cache on login and logout. Remove that clear, or write
+    // to this key optimistically, and one account's follow list becomes the
+    // next account's follow buttons.
+    following: () => [...keys.follows.all, "following"] as const,
+    followers: (id: string) => [...keys.follows.all, "followers", id] as const,
+  },
+
   me: {
     all: ["me"] as const,
     profile: () => [...keys.me.all, "profile"] as const,

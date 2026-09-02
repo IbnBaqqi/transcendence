@@ -20,6 +20,10 @@ export default defineConfig({
     },
   },
   test: {
+    // Mock call history is cleared between tests. Without this,
+    // toHaveBeenCalledWith is satisfied by a call an EARLIER test made, so an
+    // assertion passes against code that never made the call it names.
+    clearMocks: true,
     environment: "jsdom", // fake broweser DOM so components can render in Node
     globals: true, // use test/expect/describe without importing each file
     setupFiles: "./src/test/setup.ts", // runs before the test files (next step)
