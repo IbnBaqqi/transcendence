@@ -62,7 +62,11 @@ services:
     volumes:
       - ./backend:/app                                        # live source
       - uploads:/app/uploads                                  # images survive rebuilds
-      - go-mod-cache:/go/pkg/mod                              # cache deps between runs
+      - go-mod-cache:/go/pkg/mod                              # downloaded modules
+      # Compiled package objects. GOCACHE defaults into the container's
+      # writable layer, so without this every `down` throws away the build and
+      # the first edit afterwards recompiles every dependency.
+      - go-build-cache:/root/.cache/go-build
     depends_on:
       db:
         condition: service_healthy                            # wait for the healthcheck above
@@ -83,4 +87,5 @@ services:
 volumes:
   postgres_data:
   go-mod-cache:
+  go-build-cache:
   uploads:
