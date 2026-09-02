@@ -4,7 +4,9 @@
     "home": "Etusivu",
     "openChat": "Avaa keskustelu",
     "notifications": "Ilmoitukset",
-    "addListing": "Lisää ilmoitus"
+    "addListing": "Lisää ilmoitus",
+    "orders": "Tilaukset",
+    "following": "Seuratut"
   },
   "language": {
     "en": "English",
@@ -183,6 +185,13 @@
     "dashboard": {
       "title": "Myyjän hallintapaneeli",
       "stub": "Myyjän hallintapaneeli - ei vielä rakennettu (#23)."
+    },
+    "following": {
+      "title": "Seuratut",
+      "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi seuraamasi.",
+      "empty": "Et seuraa vielä ketään.",
+      "emptyHint": "Seuraa myyjää hänen profiilistaan, niin hän ilmestyy tähän.",
+      "error": "Seurattujen lataaminen ei onnistunut."
     },
     "addListing": {
       "title": "Lisää ilmoitus"

@@ -4,7 +4,9 @@
     "home": "Hem",
     "openChat": "Öppna chatt",
     "notifications": "Meddelanden",
-    "addListing": "Lägg till annons"
+    "addListing": "Lägg till annons",
+    "orders": "Beställningar",
+    "following": "Följer"
   },
   "language": {
     "en": "English",
@@ -183,6 +185,13 @@
     "dashboard": {
       "title": "Säljarpanel",
       "stub": "Säljarpanel - inte byggt ännu (#23)."
+    },
+    "following": {
+      "title": "Följer",
+      "signedOut": "Du är utloggad. Logga in för att se vilka du följer.",
+      "empty": "Du följer ingen än.",
+      "emptyHint": "Följ en säljare från deras profil, så dyker de upp här.",
+      "error": "Kunde inte ladda vilka du följer."
     },
     "addListing": {
       "title": "Lägg till annons"
