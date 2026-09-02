@@ -97,6 +97,12 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      # The guard is only a guard if something runs it. Before this, a
+      # hardcoded string could be added and CI stayed green - which is how
+      # #179's OAuth strings reached main untranslated.
+      - name: Check for hardcoded UI strings
+        run: npm run i18n:check
+
       - name: Test
         run: npm test
 
