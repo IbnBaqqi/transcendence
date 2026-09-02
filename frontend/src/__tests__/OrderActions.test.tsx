@@ -36,7 +36,14 @@ beforeEach(() => {
 });
 
 function authStub(id: string): AuthContextValue {
-  const user: User = { id, username: "tester", email: "t@example.com", role: "user" };
+  const user: User = {
+    id,
+    username: "tester",
+    email: "t@example.com",
+    role: "user",
+    has_password: true,
+    providers: [],
+  };
   return {
     user,
     isLoading: false,

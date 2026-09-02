@@ -55,7 +55,14 @@ test("offers login when signed out", () => {
 
 test("shows who is signed in", () => {
   renderHeader({
-    user: { id: "u1", username: "forager", email: "f@example.com", role: "USER" },
+    user: {
+      id: "u1",
+      username: "forager",
+      email: "f@example.com",
+      role: "USER",
+      has_password: true,
+      providers: [],
+    },
   });
   // Single initial from the username - names live on the profile.
   expect(screen.getByText("F")).toBeInTheDocument();

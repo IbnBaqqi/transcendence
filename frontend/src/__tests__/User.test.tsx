@@ -177,6 +177,8 @@ describe("User", () => {
         username: "visitor",
         email: "v@example.com",
         role: "user",
+        has_password: true,
+        providers: [],
       },
     });
     expect(screen.getByRole("button", { name: /message user/i })).toBeInTheDocument();
@@ -184,7 +186,14 @@ describe("User", () => {
 
   test("hides the message button on your own profile", () => {
     renderPage({
-      currentUser: { id: PROFILE.id, username: "oscarroff", email: "o@example.com", role: "user" },
+      currentUser: {
+        id: PROFILE.id,
+        username: "oscarroff",
+        email: "o@example.com",
+        role: "user",
+        has_password: true,
+        providers: [],
+      },
     });
     expect(screen.queryByRole("button", { name: /message user/i })).not.toBeInTheDocument();
   });
@@ -202,6 +211,8 @@ describe("User", () => {
       username: "visitor",
       email: "v@example.com",
       role: "user",
+      has_password: true,
+      providers: [],
     };
     renderPage({ urlId: PROFILE.id.toUpperCase(), currentUser: viewer });
     expect(useFollowers).toHaveBeenLastCalledWith(PROFILE.id, viewer.id);

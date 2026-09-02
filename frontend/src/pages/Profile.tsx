@@ -25,7 +25,7 @@ import { useTranslation } from "react-i18next";
 export default function Profile() {
   const { t } = useTranslation();
   const { openModal } = useModal();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const { data: profile, isLoading, error } = useOwnProfile();
 
@@ -98,10 +98,14 @@ export default function Profile() {
             </h2>
             <ContactDetailsSection />
           </div>
-          <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">{t("pages.profile.password")}</h2>
-            <ChangePasswordSection />
-          </div>
+          {/* Password section only makes sense for accounts that sign in with
+            a password - a provider-only (OAuth) account has nothing to change. */}
+          {user?.has_password && (
+            <div className="space-y-1">
+              <h2 className="text-foreground text-lg font-bold">{t("pages.profile.password")}</h2>
+              <ChangePasswordSection />
+            </div>
+          )}
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">{t("pages.profile.bio")}</h2>
             <BioSection />

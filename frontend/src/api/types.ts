@@ -121,12 +121,17 @@ export interface UnreadCount {
   unread_count: number;
 }
 
-// Auth Foundation additions
+// Auth Foundation additions. Mirrors backend UserInfo.
 export interface User {
   id: string;
   username: string;
   email: string;
   role: string;
+  // Whether the account can sign in with a password (false for a
+  // provider-only account). Branch on this rather than providers being empty.
+  has_password: boolean;
+  // The OAuth providers linked to this account - empty for a password account.
+  providers: string[];
 }
 
 export interface SignupInput {
