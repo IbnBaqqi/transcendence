@@ -56,7 +56,7 @@ jobs:
           # added later is invisible to the narrow form. This workflow watches
           # only its own file under .github/workflows, unlike backend.yml and
           # frontend.yml - nothing here builds on a shared action.
-          if printf '%s\n' "$files" | grep -qE '^(docker-compose\.yml|\.env\.example|scripts/|README\.md|\.gitignore|LICENSE|\.github/CODEOWNERS|\.github/workflows/root\.yml)'; then
+          if printf '%s\n' "$files" | grep -qE '^(docker-compose\.yml|docker-compose\.prod\.yml|\.env\.example|scripts/|README\.md|\.gitignore|LICENSE|\.github/CODEOWNERS|\.github/workflows/root\.yml)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
@@ -78,20 +78,23 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v7
 
-      - name: Check the compose file parses
-        # The copy is required, not a convenience: both services declare
-        # env_file: .env, which is a path that must exist, and --env-file only
-        # redirects variable interpolation. Without a real .env the parse fails
-        # on the missing file instead of checking the compose file. Copying the
-        # example also asserts the thing actually wanted - that .env.example is
-        # enough to bring the stack up.
+      - name: Check both compose files parse
+        # The copy is required, not a convenience: services in both files
+        # declare env_file: .env, which is a path that must exist, and
+        # --env-file only redirects variable interpolation. Without a real .env
+        # the parse fails on the missing file instead of checking the compose
+        # file. Copying the example also asserts the thing actually wanted -
+        # that .env.example is enough to bring either stack up.
         run: |
           cp .env.example .env
           docker compose config -q
+          docker compose -f docker-compose.prod.yml config -q
 
       - name: Check every compose variable exists in .env.example
+        # Both files: the prod stack interpolates the same POSTGRES_* values and
+        # would come up with empty ones just as quietly.
         run: |
-          missing=$(grep -ohE '\$\{[A-Z_][A-Z0-9_]*' docker-compose.yml \
+          missing=$(grep -ohE '\$\{[A-Z_][A-Z0-9_]*' docker-compose.yml docker-compose.prod.yml \
             | sed 's/^\${//' | sort -u \
             | while read -r var; do
                 grep -qE "^${var}=" .env.example || echo "$var"
