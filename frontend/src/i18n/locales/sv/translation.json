@@ -257,7 +257,10 @@
   },
   "avatar": {
     "edit": "Redigera",
-    "editAria": "Redigera profilbild"
+    "editAria": "Redigera profilbild",
+    "remove": "Ta bort bilden",
+    "removing": "Tar bort…",
+    "uploading": "Laddar upp…"
   },
   "errorBoundary": {
     "somethingWentWrong": "Något gick fel",

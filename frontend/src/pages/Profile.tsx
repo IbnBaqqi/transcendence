@@ -16,7 +16,7 @@ import { BioSection } from "../components/forms/BioSection.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { useModal } from "../providers/modalContext";
 import { useAuth } from "../hooks/useAuth";
-import { useOwnProfile } from "../api/profile";
+import { useDeleteAvatar, useOwnProfile, useUploadAvatar } from "../api/profile";
 import { isApiError } from "../api/client";
 import { deriveInitials } from "../lib/initials";
 import { useTranslation } from "react-i18next";
@@ -42,10 +42,13 @@ export default function Profile() {
     }
   };
 
-  // The image the user picked in the "imageUpload" modal. There's no avatar
-  // upload endpoint yet (#14), so this only lives in memory as a preview -
-  // once the backend supports it, swap this for the real upload + persisted
-  // URL.
+  const uploadAvatar = useUploadAvatar(profile?.id);
+  const deleteAvatar = useDeleteAvatar(profile?.id);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+
+  // Shown only while the upload is in flight. Cleared either way afterwards,
+  // so the stored URL wins: a preview left in place looks right on this screen
+  // and nowhere else, including after a reload.
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const avatarPreviewUrl = useMemo(
     () => (avatarFile ? URL.createObjectURL(avatarFile) : undefined),
@@ -56,6 +59,27 @@ export default function Profile() {
       if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
     };
   }, [avatarPreviewUrl]);
+
+  async function handleAvatarSelected(file: File) {
+    setAvatarError(null);
+    setAvatarFile(file);
+    try {
+      await uploadAvatar.mutateAsync(file);
+    } catch (err) {
+      setAvatarError(isApiError(err) ? err.message : t("common.somethingWentWrong"));
+    } finally {
+      setAvatarFile(null);
+    }
+  }
+
+  async function handleAvatarRemove() {
+    setAvatarError(null);
+    try {
+      await deleteAvatar.mutateAsync();
+    } catch (err) {
+      setAvatarError(isApiError(err) ? err.message : t("common.somethingWentWrong"));
+    }
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
@@ -82,15 +106,34 @@ export default function Profile() {
                 // Username initial only, same rule as the header mini avatar.
                 initials={deriveInitials(profile.username)}
                 editable
-                imageUrl={avatarPreviewUrl}
-                onImageSelected={setAvatarFile}
+                imageUrl={avatarPreviewUrl ?? profile.avatar_url ?? undefined}
+                onImageSelected={(file) => void handleAvatarSelected(file)}
               />
             </div>
-            <div className="text-accent my-auto flex flex-col text-base">
+            <div className="text-accent my-auto flex flex-col gap-1 text-base">
               <div className="font-bold">{profile.username}</div>
               <div className="font-normal">{profile.email}</div>
+              {uploadAvatar.isPending ? (
+                <p className="text-muted text-sm">{t("avatar.uploading")}</p>
+              ) : (
+                profile.avatar_url && (
+                  <button
+                    type="button"
+                    disabled={deleteAvatar.isPending}
+                    onClick={() => void handleAvatarRemove()}
+                    className="text-muted hover:text-foreground w-fit text-sm underline"
+                  >
+                    {deleteAvatar.isPending ? t("avatar.removing") : t("avatar.remove")}
+                  </button>
+                )
+              )}
             </div>
           </div>
+          {avatarError && (
+            <p role="alert" className="text-berry-500 text-sm">
+              {avatarError}
+            </p>
+          )}
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">
               {t("pages.profile.contactDetails")}
