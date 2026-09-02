@@ -88,6 +88,10 @@
     "available": "{{qty}} {{unit}} saatavilla",
     "showingOf": "Näytetään {{shown}} / {{total}}"
   },
+  "presence": {
+    "online": "Paikalla",
+    "offline": "Poissa"
+  },
   "orders": {
     "title": "Tilaukset",
     "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tilauksesi.",
@@ -199,8 +203,6 @@
     },
     "user": {
       "title": "Käyttäjäprofiili",
-      "online": "Paikalla",
-      "offline": "Poissa",
       "messageUser": "Lähetä viesti",
       "details": "Tiedot",
       "firstName": "Etunimi",

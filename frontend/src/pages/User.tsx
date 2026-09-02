@@ -8,6 +8,7 @@ import { useParams } from "react-router-dom";
 import Avatar from "../components/objects/Avatar.tsx";
 import Button from "../components/objects/Button.tsx";
 import { ListingCard } from "../components/objects/ListingCard";
+import { PresenceIndicator } from "../components/objects/PresenceIndicator";
 import { useModal } from "../providers/modalContext";
 import { useAuth } from "../hooks/useAuth";
 import { usePublicProfile } from "../api/profile";
@@ -76,18 +77,7 @@ export default function User() {
           <div className="font-bold">{profile.username}</div>
           {/* No presence field means we are not signed in, not that they are
               offline - so show nothing rather than assert a falsehood. */}
-          {profile.presence && (
-            <div className="text-muted flex items-center gap-2 text-sm">
-              {/* A dot plus the word, so it doesn't rely on colour alone. */}
-              <span
-                aria-hidden="true"
-                className={`h-2 w-2 rounded-full ${
-                  profile.presence.is_online ? "bg-accent" : "bg-surface-soft"
-                }`}
-              />
-              {profile.presence.is_online ? t("pages.user.online") : t("pages.user.offline")}
-            </div>
-          )}
+          {profile.presence && <PresenceIndicator presence={profile.presence} />}
         </div>
       </div>
 

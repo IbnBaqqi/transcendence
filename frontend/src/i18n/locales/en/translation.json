@@ -88,6 +88,10 @@
     "available": "{{qty}} {{unit}} available",
     "showingOf": "Showing {{shown}} of {{total}}"
   },
+  "presence": {
+    "online": "Online",
+    "offline": "Offline"
+  },
   "orders": {
     "title": "Orders",
     "signedOut": "You're signed out. Log in to see your orders.",
@@ -199,8 +203,6 @@
     },
     "user": {
       "title": "User Profile",
-      "online": "Online",
-      "offline": "Offline",
       "messageUser": "Message User",
       "details": "Details",
       "firstName": "First Name",

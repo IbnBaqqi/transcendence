@@ -88,6 +88,10 @@
     "available": "{{qty}} {{unit}} tillgängliga",
     "showingOf": "Visar {{shown}} av {{total}}"
   },
+  "presence": {
+    "online": "Online",
+    "offline": "Offline"
+  },
   "orders": {
     "title": "Beställningar",
     "signedOut": "Du är utloggad. Logga in för att se dina beställningar.",
@@ -199,8 +203,6 @@
     },
     "user": {
       "title": "Användarprofil",
-      "online": "Online",
-      "offline": "Offline",
       "messageUser": "Skicka meddelande",
       "details": "Detaljer",
       "firstName": "Förnamn",
