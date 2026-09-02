@@ -98,7 +98,9 @@
     "follow": "Följ",
     "unfollow": "Sluta följa",
     "updating": "Uppdaterar…",
-    "error": "Kunde inte uppdatera. Försök igen."
+    "error": "Kunde inte uppdatera. Försök igen.",
+    "followers_one": "{{count}} följare",
+    "followers_other": "{{count}} följare"
   },
   "orders": {
     "title": "Beställningar",

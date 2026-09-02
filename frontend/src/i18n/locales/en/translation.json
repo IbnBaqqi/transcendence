@@ -98,7 +98,9 @@
     "follow": "Follow",
     "unfollow": "Unfollow",
     "updating": "Updating…",
-    "error": "Couldn't update. Please try again."
+    "error": "Couldn't update. Please try again.",
+    "followers_one": "{{count}} follower",
+    "followers_other": "{{count}} followers"
   },
   "orders": {
     "title": "Orders",

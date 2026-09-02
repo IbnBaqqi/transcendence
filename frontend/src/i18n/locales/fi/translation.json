@@ -98,7 +98,9 @@
     "follow": "Seuraa",
     "unfollow": "Lopeta seuraaminen",
     "updating": "Päivitetään…",
-    "error": "Päivitys ei onnistunut. Yritä uudelleen."
+    "error": "Päivitys ei onnistunut. Yritä uudelleen.",
+    "followers_one": "{{count}} seuraaja",
+    "followers_other": "{{count}} seuraajaa"
   },
   "orders": {
     "title": "Tilaukset",

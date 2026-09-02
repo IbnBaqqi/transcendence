@@ -7,6 +7,7 @@ import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { usePublicProfile } from "../api/profile";
 import { useSearchListings } from "../api/listings";
 import { useLocalizedCategoryNames } from "../api/categories";
+import { useFollow, useFollowers, useFollowing, useUnfollow } from "../api/follows";
 import type { ApiError } from "../api/client";
 import { makeListing, makePublicProfile } from "../test/factories";
 // Aliased: "User" is already the page component above.
@@ -15,8 +16,10 @@ import type { Listing, Paginated, User as AuthUser } from "../api/types";
 vi.mock("../api/profile");
 vi.mock("../api/listings");
 vi.mock("../api/categories");
+vi.mock("../api/follows");
 
 type ProfileQuery = ReturnType<typeof usePublicProfile>;
+type FollowersQuery = ReturnType<typeof useFollowers>;
 type ListingsQuery = ReturnType<typeof useSearchListings>;
 
 const PROFILE = makePublicProfile();
@@ -84,6 +87,15 @@ beforeEach(() => {
   vi.mocked(useLocalizedCategoryNames).mockReturnValue(
     (slug: string) => ({ mushrooms: "Mushrooms", berries: "Berries" })[slug] ?? slug,
   );
+
+  vi.mocked(useFollowers).mockReturnValue({ data: [] } as unknown as FollowersQuery);
+  vi.mocked(useFollowing).mockReturnValue({
+    data: [],
+    isPending: false,
+  } as unknown as ReturnType<typeof useFollowing>);
+  const idle = { mutateAsync: vi.fn(), isPending: false };
+  vi.mocked(useFollow).mockReturnValue(idle as unknown as ReturnType<typeof useFollow>);
+  vi.mocked(useUnfollow).mockReturnValue(idle as unknown as ReturnType<typeof useUnfollow>);
 });
 
 describe("User", () => {
@@ -175,5 +187,49 @@ describe("User", () => {
       currentUser: { id: PROFILE.id, username: "oscarroff", email: "o@example.com", role: "user" },
     });
     expect(screen.queryByRole("button", { name: /message user/i })).not.toBeInTheDocument();
+  });
+
+  // The follow button invalidates the key built from profile.id, so the count
+  // has to be queried under that same string. Reading the URL's spelling here
+  // would leave the number one behind after a follow, silently - query keys are
+  // compared as strings, and nothing reports a miss.
+  test("counts followers under the profile's id, not the URL's spelling", () => {
+    // Last call, not any call: mock history is not cleared between tests here,
+    // so toHaveBeenCalledWith would match an earlier test's render and pass
+    // against a page that reads the URL id.
+    renderPage({ urlId: PROFILE.id.toUpperCase() });
+    expect(useFollowers).toHaveBeenLastCalledWith(PROFILE.id);
+  });
+
+  test("counts the followers the API returned", () => {
+    vi.mocked(useFollowers).mockReturnValue({
+      data: [
+        { id: "a", username: "one", presence: { is_online: true } },
+        { id: "b", username: "two", presence: { is_online: false } },
+      ],
+    } as unknown as FollowersQuery);
+
+    renderPage();
+    expect(screen.getByText("2 followers")).toBeInTheDocument();
+  });
+
+  // n=1 is the only value that tells the plural forms apart, so a template
+  // hardcoded to "followers" passes every other count.
+  test("says follower, not followers, for exactly one", () => {
+    vi.mocked(useFollowers).mockReturnValue({
+      data: [{ id: "a", username: "one", presence: { is_online: true } }],
+    } as unknown as FollowersQuery);
+
+    renderPage();
+    expect(screen.getByText("1 follower")).toBeInTheDocument();
+  });
+
+  // Undefined is "not answered yet", which is not the same as zero - claiming
+  // zero followers before the request lands is a number we have not been told.
+  test("shows no count until the followers request answers", () => {
+    vi.mocked(useFollowers).mockReturnValue({ data: undefined } as unknown as FollowersQuery);
+
+    renderPage();
+    expect(screen.queryByText(/follower/)).not.toBeInTheDocument();
   });
 });
