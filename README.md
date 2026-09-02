@@ -7,6 +7,34 @@ real money. Built for the 42 `ft_transcendence` project.
 React + TypeScript frontend, Go backend, PostgreSQL, all runnable with
 `docker compose up`.
 
+## Running it
+
+```bash
+make setup          # .env from the example, and one directory - see below
+docker compose up
+```
+
+Then <http://localhost:5173> for the app and <http://localhost:8080/api/docs>
+for the API. Migrations are a separate step the first time:
+`cd backend && make migrate-up`.
+
+**`make setup` before the first `up`, and the order matters.** It creates
+`frontend/node_modules` so that Docker does not. A container cannot mount onto a
+path that does not exist, so the daemon creates any missing subdirectory of a
+bind mount — as **root**, inside your working tree. Start with `docker compose
+up` on a fresh checkout and you get an empty root-owned `frontend/node_modules`,
+after which every host-side `npm ci` fails with `EACCES` and an error that
+blames permissions without mentioning Docker.
+
+Already hit it? The directory has to go before npm can recreate it:
+
+```bash
+sudo rm -rf frontend/node_modules && (cd frontend && npm ci)
+```
+
+Running the container as your own user does not help — the daemon prepares the
+mount point before the container starts, so its user is irrelevant.
+
 ## Modules
 
 The subject requires a written justification for the modules we claim —
