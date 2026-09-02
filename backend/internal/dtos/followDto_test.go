@@ -78,3 +78,31 @@ func TestBothFollowMappersAgree(t *testing.T) {
 		t.Errorf("the two mappers disagree:\n following = %+v\n followers = %+v", following, followers)
 	}
 }
+
+func TestFollowListsCarryAvatars(t *testing.T) {
+	rows := []database.ListFollowingRow{
+		{ID: uuid.New(), Username: "with", AvatarFilename: sql.NullString{String: "a.png", Valid: true}},
+		{ID: uuid.New(), Username: "without"},
+	}
+
+	got := ToFollowingResponses(rows)
+	if got[0].AvatarURL == nil || *got[0].AvatarURL != UploadURLPrefix+"a.png" {
+		t.Errorf("avatar_url = %v, want %q", got[0].AvatarURL, UploadURLPrefix+"a.png")
+	}
+	if got[1].AvatarURL != nil {
+		t.Errorf("avatar_url with none set = %q, want nil", *got[1].AvatarURL)
+	}
+}
+
+// Followers and following are built by the same helper, so a change that fixes
+// one and forgets the other is the failure worth catching here.
+func TestFollowerListCarriesAvatarsToo(t *testing.T) {
+	rows := []database.ListFollowersRow{
+		{ID: uuid.New(), Username: "with", AvatarFilename: sql.NullString{String: "b.png", Valid: true}},
+	}
+
+	got := ToFollowerResponses(rows)
+	if got[0].AvatarURL == nil || *got[0].AvatarURL != UploadURLPrefix+"b.png" {
+		t.Errorf("avatar_url = %v, want %q", got[0].AvatarURL, UploadURLPrefix+"b.png")
+	}
+}
