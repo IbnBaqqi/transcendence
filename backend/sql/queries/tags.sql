@@ -23,3 +23,13 @@ SELECT lt.listing_id, t.name FROM listing_tags lt
 JOIN tags t ON t.id = lt.tag_id
 WHERE lt.listing_id = ANY(sqlc.arg(listing_ids)::uuid[])
 ORDER BY lt.listing_id, t.name;
+
+-- name: LockTagsShared :exec
+SELECT pg_advisory_xact_lock_shared(5170163);
+
+-- name: LockTagsForSweep :exec
+SELECT pg_advisory_xact_lock(5170163);
+
+-- name: DeleteUnusedTags :execrows
+DELETE FROM tags t
+WHERE NOT EXISTS (SELECT 1 FROM listing_tags lt WHERE lt.tag_id = t.id);
