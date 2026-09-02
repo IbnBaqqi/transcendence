@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   useAcceptConversation,
@@ -22,6 +23,7 @@ export function MessageThread({
   conversationId: string;
   onBack: () => void;
 }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { data: conversation, isPending, isError, refetch } = useConversation(conversationId);
   const { data: messages } = useMessages(conversationId);
@@ -52,7 +54,7 @@ export function MessageThread({
       <Skeleton
         variant="error"
         className="m-4 h-40"
-        message="Couldn't load this conversation."
+        message={t("chat.threadError")}
         onRetry={() => refetch()}
       />
     );
@@ -73,7 +75,7 @@ export function MessageThread({
     } catch (err) {
       // 409 = the thread isn't accepted (or was declined while this sat open);
       // 403 = blocked, which the conversation itself never tells us about.
-      setError(isApiError(err) ? err.message : "Couldn't send that message.");
+      setError(isApiError(err) ? err.message : t("chat.sendFailed"));
     }
   }
 
@@ -82,7 +84,7 @@ export function MessageThread({
     try {
       await (decision === "accept" ? accept : decline).mutateAsync(conversationId);
     } catch (err) {
-      setError(isApiError(err) ? err.message : "Couldn't answer this request.");
+      setError(isApiError(err) ? err.message : t("chat.decideFailed"));
     }
   }
 
@@ -90,19 +92,21 @@ export function MessageThread({
     <div className="flex h-full flex-col">
       <div className="border-line flex items-center gap-3 border-b px-4 py-3">
         <Button variant="tertiary" onClick={onBack}>
-          ← Back
+          {t("chat.back")}
         </Button>
         <div className="min-w-0">
           <p className="text-foreground truncate font-medium">
             {other.username}
-            {other.presence.is_online && <span className="text-muted text-sm"> · Online</span>}
+            {other.presence.is_online && (
+              <span className="text-muted text-sm"> · {t("chat.online")}</span>
+            )}
           </p>
           <p className="text-muted truncate text-sm">{conversation.listing_title}</p>
         </div>
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto p-4">
-        {messages?.length === 0 && <p className="text-muted text-sm">No messages yet.</p>}
+        {messages?.length === 0 && <p className="text-muted text-sm">{t("chat.noMessages")}</p>}
         {messages?.map((message) => (
           <MessageBubble key={message.id} message={message} own={message.sender_id === user?.id} />
         ))}
@@ -111,7 +115,10 @@ export function MessageThread({
       {view.canDecide && (
         <div className="border-line space-y-2 border-t p-4">
           <p className="text-muted text-sm">
-            {other.username} wants to chat about {conversation.listing_title}.
+            {t("chat.wantsToChat", {
+              username: other.username,
+              listing: conversation.listing_title,
+            })}
           </p>
           <div className="flex gap-2">
             <Button
@@ -119,33 +126,33 @@ export function MessageThread({
               disabled={accept.isPending || decline.isPending}
               onClick={() => void decide("accept")}
             >
-              Accept
+              {t("chat.accept")}
             </Button>
             <Button
               variant="secondary"
               disabled={accept.isPending || decline.isPending}
               onClick={() => void decide("decline")}
             >
-              Decline
+              {t("chat.decline")}
             </Button>
           </div>
         </div>
       )}
 
       <form onSubmit={(e) => void handleSend(e)} className="border-line border-t p-4">
-        {view.sendDisabledReason ? (
-          <p className="text-muted text-sm">{view.sendDisabledReason}</p>
+        {view.sendDisabledKey ? (
+          <p className="text-muted text-sm">{t(view.sendDisabledKey)}</p>
         ) : (
           <div className="flex gap-2">
             <input
-              aria-label="Message"
+              aria-label={t("chat.messageLabel")}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Write a message…"
+              placeholder={t("chat.placeholder")}
               className="border-line bg-surface text-foreground flex-1 rounded-md border px-3 py-2"
             />
             <Button type="submit" variant="primary" disabled={!draft.trim() || send.isPending}>
-              {send.isPending ? "Sending…" : "Send"}
+              {send.isPending ? t("common.saving") : t("chat.send")}
             </Button>
           </div>
         )}

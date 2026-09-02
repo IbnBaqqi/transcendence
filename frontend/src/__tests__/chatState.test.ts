@@ -15,30 +15,30 @@ describe("deriveThreadView - sending", () => {
     });
   });
 
-  // canSend and sendDisabledReason answer the same question from two sides;
+  // canSend and sendDisabledKey answer the same question from two sides;
   // if they ever disagree the UI shows a live box with a reason under it.
   test("a reason is given exactly when sending is closed", () => {
     STATUSES.forEach((status) => {
       ROLES.forEach((role) => {
         const view = deriveThreadView(makeConversation({ status, role }));
-        expect(view.canSend).toBe(view.sendDisabledReason === null);
+        expect(view.canSend).toBe(view.sendDisabledKey === null);
       });
     });
   });
 
-  test("each side is told why in its own words", () => {
+  test("each side gets its own key", () => {
     expect(
-      deriveThreadView(makeConversation({ status: "pending", role: "buyer" })).sendDisabledReason,
-    ).toBe("Waiting for the seller to accept your request.");
+      deriveThreadView(makeConversation({ status: "pending", role: "buyer" })).sendDisabledKey,
+    ).toBe("chat.disabled.waitingSeller");
     expect(
-      deriveThreadView(makeConversation({ status: "pending", role: "seller" })).sendDisabledReason,
-    ).toBe("Accept this request to reply.");
+      deriveThreadView(makeConversation({ status: "pending", role: "seller" })).sendDisabledKey,
+    ).toBe("chat.disabled.sellerAccept");
     expect(
-      deriveThreadView(makeConversation({ status: "declined", role: "buyer" })).sendDisabledReason,
-    ).toBe("The seller declined this request.");
+      deriveThreadView(makeConversation({ status: "declined", role: "buyer" })).sendDisabledKey,
+    ).toBe("chat.disabled.sellerDeclined");
     expect(
-      deriveThreadView(makeConversation({ status: "declined", role: "seller" })).sendDisabledReason,
-    ).toBe("You declined this request.");
+      deriveThreadView(makeConversation({ status: "declined", role: "seller" })).sendDisabledKey,
+    ).toBe("chat.disabled.youDeclined");
   });
 });
 
@@ -65,7 +65,7 @@ describe("deriveThreadView - deciding", () => {
 describe("deriveThreadView - status label", () => {
   test("every status has one", () => {
     STATUSES.forEach((status) => {
-      expect(deriveThreadView(makeConversation({ status })).statusLabel).toBeTruthy();
+      expect(deriveThreadView(makeConversation({ status })).statusKey).toBeTruthy();
     });
   });
 });

@@ -217,7 +217,44 @@
   },
   "chat": {
     "title": "Chat",
-    "close": "Close"
+    "close": "Close",
+    "signedOut": "You're signed out. Log in to see your messages.",
+    "empty": "No conversations yet. Message a seller from their listing to start one.",
+    "listError": "Couldn't load your conversations.",
+    "threadError": "Couldn't load this conversation.",
+    "noMessagePreview": "No messages yet",
+    "noMessages": "No messages yet.",
+    "back": "← Back",
+    "online": "Online",
+    "wantsToChat": "{{username}} wants to chat about {{listing}}.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "messageLabel": "Message",
+    "placeholder": "Write a message…",
+    "send": "Send",
+    "sendFailed": "Couldn't send that message.",
+    "decideFailed": "Couldn't answer this request.",
+    "status": {
+      "pending": "Request pending",
+      "accepted": "Accepted",
+      "declined": "Declined"
+    },
+    "disabled": {
+      "sellerAccept": "Accept this request to reply.",
+      "waitingSeller": "Waiting for the seller to accept your request.",
+      "youDeclined": "You declined this request.",
+      "sellerDeclined": "The seller declined this request."
+    },
+    "start": {
+      "button": "Message the seller",
+      "signedOut": "Log in to message the seller",
+      "label": "Your message about {{title}}",
+      "placeholder": "Is this still available?",
+      "send": "Send request",
+      "note": "The seller has to accept before you can exchange more messages.",
+      "failed": "Couldn't start that conversation.",
+      "openMessages": "Open your messages"
+    }
   },
   "modal": {
     "login": {

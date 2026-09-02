@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import Avatar from "../objects/Avatar";
 import { deriveThreadView } from "../../lib/chatState";
 import { deriveInitials } from "../../lib/initials";
@@ -12,12 +14,10 @@ export function ConversationList({
   selectedId?: string;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation();
+
   if (conversations.length === 0) {
-    return (
-      <p className="text-muted p-4 text-sm">
-        No conversations yet. Message a seller from their listing to start one.
-      </p>
-    );
+    return <p className="text-muted p-4 text-sm">{t("chat.empty")}</p>;
   }
 
   return (
@@ -44,6 +44,7 @@ function ConversationRow({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation();
   const { other_user: other, last_message: last, unread_count: unread } = conversation;
   const view = deriveThreadView(conversation);
 
@@ -84,10 +85,10 @@ function ConversationRow({
             is that it is waiting on someone. */}
         {conversation.status === "accepted" ? (
           <p className="text-muted truncate text-sm">
-            {last ? last.body : <span className="italic">No messages yet</span>}
+            {last ? last.body : <span className="italic">{t("chat.noMessagePreview")}</span>}
           </p>
         ) : (
-          <p className="text-muted truncate text-sm italic">{view.statusLabel}</p>
+          <p className="text-muted truncate text-sm italic">{t(view.statusKey)}</p>
         )}
       </div>
     </button>

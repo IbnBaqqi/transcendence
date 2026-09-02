@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useListing } from "../../api/listings";
 import { useStartConversation } from "../../api/conversations";
@@ -9,6 +10,7 @@ import Button from "../objects/Button";
 import type { Listing } from "../../api/types";
 
 export function StartConversationSection({ listingId }: { listingId: string }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { openModal } = useModal();
 
@@ -22,7 +24,7 @@ export function StartConversationSection({ listingId }: { listingId: string }) {
   if (!user) {
     return (
       <Button variant="secondary" onClick={() => openModal("login")}>
-        Log in to message the seller
+        {t("chat.start.signedOut")}
       </Button>
     );
   }
@@ -33,6 +35,7 @@ export function StartConversationSection({ listingId }: { listingId: string }) {
 // Split out for the same reason as ReserveForm: TypeScript loses the "not
 // undefined" narrowing inside an async handler, a prop never does.
 function StartConversationForm({ listing }: { listing: Listing }) {
+  const { t } = useTranslation();
   const { openChat } = useModal();
   const start = useStartConversation();
 
@@ -60,14 +63,14 @@ function StartConversationForm({ listing }: { listing: Listing }) {
         setError(err.message);
         return;
       }
-      setError(isApiError(err) ? err.message : "Couldn't start that conversation.");
+      setError(isApiError(err) ? err.message : t("chat.start.failed"));
     }
   }
 
   if (!open) {
     return (
       <Button variant="secondary" onClick={() => setOpen(true)}>
-        Message the seller
+        {t("chat.start.button")}
       </Button>
     );
   }
@@ -75,14 +78,14 @@ function StartConversationForm({ listing }: { listing: Listing }) {
   return (
     <div className="border-line space-y-3 rounded-lg border p-4">
       <label htmlFor="first-message" className="text-muted block text-sm">
-        Your message about {listing.title}
+        {t("chat.start.label", { title: listing.title })}
       </label>
       <textarea
         id="first-message"
         rows={3}
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="Is this still available?"
+        placeholder={t("chat.start.placeholder")}
         className="border-line bg-surface text-foreground w-full rounded-md border px-3 py-2"
       />
 
@@ -92,16 +95,14 @@ function StartConversationForm({ listing }: { listing: Listing }) {
           disabled={!body.trim() || start.isPending}
           onClick={() => void handleSend()}
         >
-          {start.isPending ? "Sending…" : "Send request"}
+          {start.isPending ? t("common.saving") : t("chat.start.send")}
         </Button>
         <Button variant="secondary" onClick={() => setOpen(false)}>
-          Cancel
+          {t("common.cancel")}
         </Button>
       </div>
 
-      <p className="text-muted text-sm">
-        The seller has to accept before you can exchange more messages.
-      </p>
+      <p className="text-muted text-sm">{t("chat.start.note")}</p>
 
       {error && (
         <p role="alert" className="text-berry-500 text-sm">
@@ -110,7 +111,7 @@ function StartConversationForm({ listing }: { listing: Listing }) {
       )}
       {duplicate && (
         <Button variant="tertiary" onClick={() => openChat()}>
-          Open your messages
+          {t("chat.start.openMessages")}
         </Button>
       )}
     </div>

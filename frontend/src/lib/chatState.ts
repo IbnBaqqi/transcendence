@@ -6,15 +6,16 @@ export interface ThreadView {
   canSend: boolean;
   // Seller answering a pending request. The buyer never gets this.
   canDecide: boolean;
-  // Why the send box is closed, addressed to whoever is reading it.
-  sendDisabledReason: string | null;
-  statusLabel: string;
+  // Translation keys, not text: this layer has no t(). Components translate,
+  // the same way orderState hands back statusKey/waitingKey.
+  sendDisabledKey: string | null;
+  statusKey: string;
 }
 
-const STATUS_LABELS: Record<ConversationStatus, string> = {
-  pending: "Request pending",
-  accepted: "Accepted",
-  declined: "Declined",
+const STATUS_KEYS: Record<ConversationStatus, string> = {
+  pending: "chat.status.pending",
+  accepted: "chat.status.accepted",
+  declined: "chat.status.declined",
 };
 
 // Pick rather than Conversation: this reads only two fields, and the list item
@@ -26,21 +27,19 @@ export function deriveThreadView(conversation: Pick<Conversation, "status" | "ro
   const canSend = status === "accepted";
   const canDecide = status === "pending" && role === "seller";
 
-  let sendDisabledReason: string | null = null;
+  let sendDisabledKey: string | null = null;
   if (status === "pending") {
-    sendDisabledReason =
-      role === "seller"
-        ? "Accept this request to reply."
-        : "Waiting for the seller to accept your request.";
+    sendDisabledKey =
+      role === "seller" ? "chat.disabled.sellerAccept" : "chat.disabled.waitingSeller";
   } else if (status === "declined") {
-    sendDisabledReason =
-      role === "seller" ? "You declined this request." : "The seller declined this request.";
+    sendDisabledKey =
+      role === "seller" ? "chat.disabled.youDeclined" : "chat.disabled.sellerDeclined";
   }
 
   return {
     canSend,
     canDecide,
-    sendDisabledReason,
-    statusLabel: STATUS_LABELS[status],
+    sendDisabledKey,
+    statusKey: STATUS_KEYS[status],
   };
 }

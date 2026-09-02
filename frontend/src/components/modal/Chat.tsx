@@ -34,9 +34,9 @@ export function Chat() {
       <div className="flex-1 overflow-y-auto">
         {!user ? (
           <div className="space-y-3 p-4">
-            <p className="text-muted text-sm">You're signed out. Log in to see your messages.</p>
+            <p className="text-muted text-sm">{t("chat.signedOut")}</p>
             <Button variant="primary" onClick={() => openModal("login")}>
-              Log In
+              {t("common.logIn")}
             </Button>
           </div>
         ) : selectedId ? (
@@ -51,7 +51,7 @@ export function Chat() {
           <Skeleton
             variant="error"
             className="m-4 h-24"
-            message={isApiError(error) ? error.message : "Couldn't load your conversations."}
+            message={isApiError(error) ? error.message : t("chat.listError")}
             onRetry={() => refetch()}
           />
         ) : (
