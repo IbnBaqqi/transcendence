@@ -98,6 +98,25 @@ describe("deriveOrderView - strangers", () => {
       expect(deriveOrderView(makeOrder({ status }), STRANGER).actions).toEqual([]);
     },
   );
+
+  // The waiting copy is written from inside the deal ("Waiting for you to
+  // confirm"), so handing it to a bystander both leaks and reads as a lie.
+  test.each(["pending", "confirmed", "completed", "cancelled"] as const)(
+    "a stranger is never told whose turn it is on a %s order",
+    (status) => {
+      const view = deriveOrderView(makeOrder({ status }), STRANGER);
+      expect(view.waitingOn).toBeNull();
+      expect(view.waitingLabel).toBeNull();
+    },
+  );
+
+  // The same path a signed-in user takes for one render while AuthProvider
+  // resolves - this is what OrderDetail was showing sellers.
+  test("a viewer whose session hasn't resolved is told nothing either", () => {
+    const view = deriveOrderView(makeOrder({ status: "pending" }), undefined);
+    expect(view.waitingOn).toBeNull();
+    expect(view.waitingLabel).toBeNull();
+  });
 });
 
 describe("deriveOrderView - status label", () => {

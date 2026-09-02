@@ -37,34 +37,40 @@ export function deriveOrderView(order: Order, userId: string | undefined): Order
 
   if (order.status === "pending") {
     if (role === "seller") actions.push("confirm");
-    if (role !== "none") actions.push("cancel");
 
-    waitingOn = role === "seller" ? "you" : "them";
-    waitingLabel =
-      role === "seller"
-        ? "Waiting for you to confirm this reservation."
-        : "Waiting for the seller to confirm this reservation.";
+    if (role !== "none") {
+      actions.push("cancel");
+      waitingOn = role === "seller" ? "you" : "them";
+      waitingLabel =
+        role === "seller"
+          ? "Waiting for you to confirm this reservation."
+          : "Waiting for the seller to confirm this reservation.";
+    }
   }
 
   if (order.status === "confirmed") {
     // Marking twice is a 409, so the button goes once that side's stamp is set.
     if (role === "seller" && !sellerMarked) actions.push("handover");
     if (role === "buyer" && !buyerMarked) actions.push("receive");
-    if (role !== "none" && !handshakeStarted) actions.push("cancel");
 
-    const yourTurn = role === "seller" ? !sellerMarked : !buyerMarked;
-    if (role !== "none") waitingOn = yourTurn ? "you" : "them";
+    // Everything below is addressed to one of the two parties, so a stranger
+    // (or a viewer whose session hasn't resolved) gets none of it.
+    if (role !== "none") {
+      if (!handshakeStarted) actions.push("cancel");
 
-    if (!handshakeStarted) {
-      waitingLabel = "Arrange the handover between yourselves, then mark it here.";
-    } else if (role === "seller") {
-      waitingLabel = sellerMarked
-        ? "You marked the handover - waiting for the buyer to confirm receipt."
-        : "The buyer confirmed receipt - mark the handover to complete the order.";
-    } else if (role === "buyer") {
-      waitingLabel = buyerMarked
-        ? "You confirmed receipt - waiting for the seller to mark the handover."
-        : "The seller marked the handover - confirm you received the goods.";
+      waitingOn = (role === "seller" ? !sellerMarked : !buyerMarked) ? "you" : "them";
+
+      if (!handshakeStarted) {
+        waitingLabel = "Arrange the handover between yourselves, then mark it here.";
+      } else if (role === "seller") {
+        waitingLabel = sellerMarked
+          ? "You marked the handover - waiting for the buyer to confirm receipt."
+          : "The buyer confirmed receipt - mark the handover to complete the order.";
+      } else {
+        waitingLabel = buyerMarked
+          ? "You confirmed receipt - waiting for the seller to mark the handover."
+          : "The seller marked the handover - confirm you received the goods.";
+      }
     }
   }
 
