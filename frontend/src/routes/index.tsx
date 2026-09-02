@@ -9,6 +9,7 @@ import Profile from "../pages/Profile";
 import User from "../pages/User";
 import Dashboard from "../pages/Dashboard";
 import Orders from "../pages/Orders";
+import Following from "../pages/Following";
 import OrderDetail from "../pages/OrderDetail";
 import Notifications from "../pages/Notifications";
 import Privacy from "../pages/Privacy";
@@ -33,6 +34,7 @@ export default function AppRouter() {
           <Route path="/users/:id" element={<User />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/orders" element={<Orders />} />
+          <Route path="/following" element={<Following />} />
           <Route path="/orders/:id" element={<OrderDetail />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/privacy" element={<Privacy />} />

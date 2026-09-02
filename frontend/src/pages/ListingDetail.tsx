@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { ReserveListingSection } from "../components/forms/ReserveListingSection";
+import { SellerFollowSection } from "../components/objects/SellerFollowSection";
 
 // Still the #21 stub. The reserve box is self-contained, so whoever builds the
 // real page moves one line rather than untangling the order flow from it.
@@ -18,7 +19,8 @@ export default function ListingDetail() {
         {/* TODO(#21): image gallery, full description, seller info. */}
         {t("pages.listingDetail.stub")}
       </p>
-      <div className="mt-6">
+      <div className="mt-6 space-y-4">
+        <SellerFollowSection listingId={id ?? ""} />
         <ReserveListingSection listingId={id ?? ""} />
       </div>
     </div>

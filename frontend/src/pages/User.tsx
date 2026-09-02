@@ -8,9 +8,12 @@ import { useParams } from "react-router-dom";
 import Avatar from "../components/objects/Avatar.tsx";
 import Button from "../components/objects/Button.tsx";
 import { ListingCard } from "../components/objects/ListingCard";
+import { FollowButton } from "../components/objects/FollowButton";
+import { PresenceIndicator } from "../components/objects/PresenceIndicator";
 import { useModal } from "../providers/modalContext";
 import { useAuth } from "../hooks/useAuth";
 import { usePublicProfile } from "../api/profile";
+import { useFollowers } from "../api/follows";
 import { useSearchListings } from "../api/listings";
 import { useLocalizedCategoryNames } from "../api/categories";
 import { isApiError } from "../api/client";
@@ -36,6 +39,12 @@ export default function User() {
     isError: listingsError,
   } = useSearchListings({ seller_id: id, limit: 20 });
   const categoryName = useLocalizedCategoryNames();
+
+  // profile.id, not the route param: query keys are compared as strings, and
+  // the follow button invalidates the key built from profile.id. A URL with
+  // different casing would leave this count one behind, with nothing to show
+  // that the invalidation missed.
+  const { data: followers } = useFollowers(profile?.id, user?.id);
 
   // 400 = the id isn't a UUID, 404 = no such user. Both mean "nothing here".
   if (isApiError(error) && (error.status === 404 || error.status === 400)) {
@@ -76,27 +85,24 @@ export default function User() {
           <div className="font-bold">{profile.username}</div>
           {/* No presence field means we are not signed in, not that they are
               offline - so show nothing rather than assert a falsehood. */}
-          {profile.presence && (
-            <div className="text-muted flex items-center gap-2 text-sm">
-              {/* A dot plus the word, so it doesn't rely on colour alone. */}
-              <span
-                aria-hidden="true"
-                className={`h-2 w-2 rounded-full ${
-                  profile.presence.is_online ? "bg-accent" : "bg-surface-soft"
-                }`}
-              />
-              {profile.presence.is_online ? t("pages.user.online") : t("pages.user.offline")}
+          {profile.presence && <PresenceIndicator presence={profile.presence} />}
+          {followers && (
+            <div className="text-muted text-sm">
+              {t("follows.followers", { count: followers.length })}
             </div>
           )}
         </div>
       </div>
 
-      {/* openChat() can't target a user yet - that arrives with the chat UI (#88). */}
-      {!isSelf && (
-        <Button variant="secondary" onClick={() => openChat()}>
-          {t("pages.user.messageUser")}
-        </Button>
-      )}
+      <div className="flex flex-wrap items-start gap-3">
+        {/* openChat() can't target a user yet - that arrives with the chat UI (#88). */}
+        {!isSelf && (
+          <Button variant="secondary" onClick={() => openChat()}>
+            {t("pages.user.messageUser")}
+          </Button>
+        )}
+        <FollowButton userId={profile.id} />
+      </div>
 
       <div className="space-y-1">
         <h2 className="text-foreground text-lg font-bold">{t("pages.user.details")}</h2>

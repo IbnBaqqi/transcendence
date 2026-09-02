@@ -4,7 +4,9 @@
     "home": "Etusivu",
     "openChat": "Avaa keskustelu",
     "notifications": "Ilmoitukset",
-    "addListing": "Lisää ilmoitus"
+    "addListing": "Lisää ilmoitus",
+    "orders": "Tilaukset",
+    "following": "Seuratut"
   },
   "language": {
     "en": "English",
@@ -86,7 +88,20 @@
   },
   "listings": {
     "available": "{{qty}} {{unit}} saatavilla",
-    "showingOf": "Näytetään {{shown}} / {{total}}"
+    "showingOf": "Näytetään {{shown}} / {{total}}",
+    "seller": "Myyjä"
+  },
+  "presence": {
+    "online": "Paikalla",
+    "offline": "Poissa"
+  },
+  "follows": {
+    "follow": "Seuraa",
+    "unfollow": "Lopeta seuraaminen",
+    "updating": "Päivitetään…",
+    "error": "Päivitys ei onnistunut. Yritä uudelleen.",
+    "followers_one": "{{count}} seuraaja",
+    "followers_other": "{{count}} seuraajaa"
   },
   "orders": {
     "title": "Tilaukset",
@@ -189,6 +204,13 @@
         "soldOut": "Loppuunmyyty"
       }
     },
+    "following": {
+      "title": "Seuratut",
+      "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi seuraamasi.",
+      "empty": "Et seuraa vielä ketään.",
+      "emptyHint": "Seuraa myyjää hänen profiilistaan, niin hän ilmestyy tähän.",
+      "error": "Seurattujen lataaminen ei onnistunut."
+    },
     "addListing": {
       "title": "Lisää ilmoitus"
     },
@@ -214,8 +236,6 @@
     },
     "user": {
       "title": "Käyttäjäprofiili",
-      "online": "Paikalla",
-      "offline": "Poissa",
       "messageUser": "Lähetä viesti",
       "details": "Tiedot",
       "firstName": "Etunimi",
