@@ -12,6 +12,7 @@ function renderLogin(login: AuthContextValue["login"]) {
     login,
     signup: vi.fn(),
     logout: vi.fn(),
+    restoreSession: vi.fn(),
   };
   const onClose = vi.fn();
   render(
