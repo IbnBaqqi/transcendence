@@ -133,7 +133,7 @@ export default function User() {
         </p>
         {hiddenListings > 0 && (
           <p className="text-muted mt-2 text-sm">
-            Showing {listings.length} of {sellerListings!.total}
+            {t("listings.showingOf", { shown: listings.length, total: sellerListings!.total })}
           </p>
         )}
         {listings.length > 0 && (

@@ -85,7 +85,8 @@
     "other": "Muu"
   },
   "listings": {
-    "available": "{{qty}} {{unit}} saatavilla"
+    "available": "{{qty}} {{unit}} saatavilla",
+    "showingOf": "Näytetään {{shown}} / {{total}}"
   },
   "pages": {
     "home": {
@@ -192,5 +193,26 @@
     "maxImages_other": "Voit lisätä enintään {{max}} kuvaa.",
     "unsupportedImageType": "\"{{name}}\" ei ole tuettu kuvatyyppi (käytä JPEG-, PNG- tai WebP-kuvia).",
     "fileTooLarge": "\"{{name}}\" on suurempi kuin {{mb}} MB."
+  },
+  "auth": {
+    "continueWithGoogle": "Jatka Googlella",
+    "continueWithGitHub": "Jatka GitHubilla",
+    "orSignInWithEmail": "tai kirjaudu sähköpostilla",
+    "orSignUpWithEmail": "tai rekisteröidy sähköpostilla",
+    "callback": {
+      "completing": "Viimeistellään kirjautumista…",
+      "cancelledTitle": "Kirjautuminen peruutettu",
+      "failedTitle": "Kirjautuminen ei onnistunut",
+      "noSession": "Istuntoa ei voitu aloittaa.",
+      "backHome": "Takaisin etusivulle",
+      "accessDenied": "Kirjautuminen peruutettiin. Mitään ei muutettu.",
+      "invalidState": "Kirjautumisessa tapahtui virhe. Yritä uudelleen.",
+      "invalidRequest": "Kirjautumisessa tapahtui virhe. Yritä uudelleen.",
+      "noEmail": "Palveluntarjoajan tilillä ei ole vahvistettua sähköpostiosoitetta.",
+      "emailInUse": "Tällä sähköpostilla on jo tili. Kirjaudu sisään salasanallasi.",
+      "alreadyLinked": "Tämä tili on jo liitetty toiseen käyttäjään.",
+      "retry": "Jotain meni pieleen. Yritä uudelleen.",
+      "serverError": "Palvelussamme tapahtui virhe. Yritä uudelleen."
+    }
   }
 }

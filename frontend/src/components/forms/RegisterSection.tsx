@@ -47,7 +47,7 @@ export function RegisterSection({ onClose }: { onClose: () => void }) {
         <OAuthButtons />
         <div className="text-muted flex items-center gap-3 text-xs">
           <span className="border-line h-px flex-1 border-t" />
-          or sign up with email
+          {t("auth.orSignUpWithEmail")}
           <span className="border-line h-px flex-1 border-t" />
         </div>
         <div className="space-y-2">

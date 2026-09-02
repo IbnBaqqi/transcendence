@@ -85,7 +85,8 @@
     "other": "Annat"
   },
   "listings": {
-    "available": "{{qty}} {{unit}} tillgängliga"
+    "available": "{{qty}} {{unit}} tillgängliga",
+    "showingOf": "Visar {{shown}} av {{total}}"
   },
   "pages": {
     "home": {
@@ -192,5 +193,26 @@
     "maxImages_other": "Du kan bara lägga till högst {{max}} bilder.",
     "unsupportedImageType": "\"{{name}}\" är inte en stödd bildtyp (använd JPEG, PNG eller WebP).",
     "fileTooLarge": "\"{{name}}\" är större än {{mb}} MB."
+  },
+  "auth": {
+    "continueWithGoogle": "Fortsätt med Google",
+    "continueWithGitHub": "Fortsätt med GitHub",
+    "orSignInWithEmail": "eller logga in med e-post",
+    "orSignUpWithEmail": "eller registrera dig med e-post",
+    "callback": {
+      "completing": "Slutför inloggningen…",
+      "cancelledTitle": "Inloggningen avbröts",
+      "failedTitle": "Inloggningen slutfördes inte",
+      "noSession": "Vi kunde inte starta en session.",
+      "backHome": "Tillbaka till startsidan",
+      "accessDenied": "Inloggningen avbröts. Inget ändrades.",
+      "invalidState": "Något gick fel med inloggningen. Försök igen.",
+      "invalidRequest": "Något gick fel med inloggningen. Försök igen.",
+      "noEmail": "Ditt konto hos leverantören har ingen verifierad e-postadress.",
+      "emailInUse": "Det finns redan ett konto med den här e-postadressen. Logga in med ditt lösenord.",
+      "alreadyLinked": "Det här kontot är redan kopplat till en annan användare.",
+      "retry": "Något gick fel. Försök igen.",
+      "serverError": "Något gick fel hos oss. Försök igen."
+    }
   }
 }

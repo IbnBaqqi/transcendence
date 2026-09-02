@@ -85,7 +85,8 @@
     "other": "Other"
   },
   "listings": {
-    "available": "{{qty}} {{unit}} available"
+    "available": "{{qty}} {{unit}} available",
+    "showingOf": "Showing {{shown}} of {{total}}"
   },
   "pages": {
     "home": {
@@ -192,5 +193,26 @@
     "maxImages_other": "You can only add up to {{max}} images.",
     "unsupportedImageType": "\"{{name}}\" isn't a supported image type (use JPEG, PNG or WebP).",
     "fileTooLarge": "\"{{name}}\" is larger than {{mb}}MB."
+  },
+  "auth": {
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGitHub": "Continue with GitHub",
+    "orSignInWithEmail": "or sign in with email",
+    "orSignUpWithEmail": "or sign up with email",
+    "callback": {
+      "completing": "Completing sign-in…",
+      "cancelledTitle": "Sign-in cancelled",
+      "failedTitle": "Sign-in didn't complete",
+      "noSession": "We couldn't start a session.",
+      "backHome": "Back to home",
+      "accessDenied": "Sign-in was cancelled. No changes were made.",
+      "invalidState": "Something went wrong with the sign-in. Please try again.",
+      "invalidRequest": "Something went wrong with the sign-in. Please try again.",
+      "noEmail": "Your provider account doesn't have a verified email.",
+      "emailInUse": "An account with this email already exists. Sign in with your password instead.",
+      "alreadyLinked": "This account is already linked to another user.",
+      "retry": "Something went wrong. Please try again.",
+      "serverError": "Something went wrong on our end. Please try again."
+    }
   }
 }

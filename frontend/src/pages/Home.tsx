@@ -57,7 +57,7 @@ export default function Home() {
           so rather than letting the 21st listing be invisible. */}
       {data && data.total > listings!.length && (
         <p className="text-muted mt-2 text-sm">
-          Showing {listings!.length} of {data.total}
+          {t("listings.showingOf", { shown: listings!.length, total: data.total })}
         </p>
       )}
       {listings && listings.length > 0 && (
