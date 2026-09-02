@@ -121,10 +121,15 @@ func (s *Service) RedeemSession(ctx context.Context, raw string) (LoginResult, e
 		return LoginResult{}, err
 	}
 
+	info, err := s.UserInfo(ctx, user)
+	if err != nil {
+		return LoginResult{}, err
+	}
+
 	return LoginResult{
 		AccessToken:  accessToken,
 		RefreshToken: next,
-		User:         toUserInfo(user),
+		User:         info,
 	}, nil
 }
 

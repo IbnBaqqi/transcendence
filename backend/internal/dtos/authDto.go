@@ -26,8 +26,10 @@ type AuthResponse struct {
 }
 
 type UserInfo struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
+	ID          string   `json:"id"`
+	Username    string   `json:"username"`
+	Email       string   `json:"email"`
+	Role        string   `json:"role"`
+	HasPassword bool     `json:"has_password"`
+	Providers   []string `json:"providers"`
 }
