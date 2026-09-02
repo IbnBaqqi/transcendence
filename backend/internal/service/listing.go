@@ -344,6 +344,15 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, err
 	}
 
+	// Parsed here rather than left to the ::uuid cast in the query: Postgres
+	// answers a malformed value with an error the service cannot tell from a
+	// real failure, so it would reach the client as 500 instead of 400.
+	if q.SellerID != "" {
+		if _, err := uuid.Parse(q.SellerID); err != nil {
+			return dtos.PaginatedListings{}, &ValidationError{Message: "Seller id must be a UUID"}
+		}
+	}
+
 	page := defaultPage
 	if q.Page != "" {
 		p, err := strconv.Atoi(q.Page)
@@ -417,6 +426,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		Category: normaliseCategory(q.Category),
 		Tag:      tag,
 		Location: q.Location,
+		SellerID: q.SellerID,
 		Sort:     sortKey,
 		Offset:   int32(offset),
 		Limit:    int32(limit),
