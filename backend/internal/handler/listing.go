@@ -81,34 +81,6 @@ func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, dtos.WithTags(dtos.ToListingResponse(listing), tags))
 }
 
-func (h *Handler) GetListings(w http.ResponseWriter, r *http.Request) {
-	listings, err := h.Listing.ListListings(r.Context())
-	if err != nil {
-		respondWithServiceError(w, r, err)
-		return
-	}
-
-	ids := make([]uuid.UUID, 0, len(listings))
-	for _, l := range listings {
-		ids = append(ids, l.ID)
-	}
-
-	byListing, err := h.ListingImage.ImagesByListing(r.Context(), ids)
-	if err != nil {
-		respondWithServiceError(w, r, err)
-		return
-	}
-
-	tagsByListing, err := h.Listing.TagsByListing(r.Context(), ids)
-	if err != nil {
-		respondWithServiceError(w, r, err)
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK,
-		dtos.WithTagsEach(dtos.ToListingResponsesWithImages(listings, byListing), tagsByListing))
-}
-
 func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIDParam(r)
 	if err != nil {
