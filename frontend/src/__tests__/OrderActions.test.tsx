@@ -25,7 +25,7 @@ const calls = {
 
 type Mutation = ReturnType<typeof useConfirmOrder>;
 
-const stub = (mutateAsync: unknown) => ({ mutateAsync, isPending: false }) as Mutation;
+const stub = (mutateAsync: unknown, isPending = false) => ({ mutateAsync, isPending }) as Mutation;
 
 beforeEach(() => {
   Object.values(calls).forEach((fn) => fn.mockReset().mockResolvedValue(undefined));
@@ -114,6 +114,17 @@ describe("OrderActions", () => {
     await user.click(screen.getByRole("button", { name: "Cancel order" }));
 
     expect(calls.cancel).toHaveBeenCalledWith(order.id);
+  });
+
+  // While one action is in flight every button is disabled, so a double-click
+  // or an impatient cancel can't race the request that's already running.
+  test("an in-flight action says so and locks the other buttons", () => {
+    vi.mocked(useConfirmOrder).mockReturnValue(stub(calls.confirm, true));
+    renderActions(makeOrder({ status: "pending" }), SELLER_ID);
+
+    expect(screen.getByRole("button", { name: "Confirming…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel order" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Confirm reservation" })).not.toBeInTheDocument();
   });
 
   test("renders nothing at all for a finished order", () => {
