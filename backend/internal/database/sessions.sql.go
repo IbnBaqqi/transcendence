@@ -105,6 +105,23 @@ func (q *Queries) RevokeSession(ctx context.Context, arg RevokeSessionParams) (i
 	return result.RowsAffected()
 }
 
+const revokeSessionsForPasswordChange = `-- name: RevokeSessionsForPasswordChange :exec
+UPDATE refresh_tokens
+SET revoked_at = now(),
+    revoked_reason = 'password_change'
+WHERE user_id = $1
+    AND expires_at > now()
+    AND (revoked_at IS NULL OR revoked_reason = 'rotated')
+`
+
+// Rotated rows included, for the reason RevokeSessionsForUser gives: a token
+// inside the grace window is still redeemable, so skipping them would leave a
+// logged-out session usable for another 30 seconds.
+func (q *Queries) RevokeSessionsForPasswordChange(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, revokeSessionsForPasswordChange, userID)
+	return err
+}
+
 const revokeSessionsForPasswordReset = `-- name: RevokeSessionsForPasswordReset :exec
 UPDATE refresh_tokens
 SET revoked_at = now(),
