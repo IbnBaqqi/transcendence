@@ -59,9 +59,12 @@ func TestTheWrongCurrentPasswordChangesNothing(t *testing.T) {
 
 	_, err = svc.ChangePassword(ctx, user.ID, "not-the-current-one", "a-brand-new-password")
 
-	var authErr *AuthError
-	if !errors.As(err, &authErr) {
-		t.Fatalf("error = %v, want an auth error", err)
+	// Forbidden, not unauthorised: 401 tells the frontend's interceptor the
+	// session expired, so it would refresh and replay - and sign the user out
+	// if that refresh failed. A typo must not end a session.
+	var forbidden *ForbiddenError
+	if !errors.As(err, &forbidden) {
+		t.Fatalf("error = %v, want a forbidden error", err)
 	}
 
 	// The refusal has to happen before the write, not merely be reported.
@@ -192,5 +195,30 @@ func TestARejectedNewPasswordLeavesTheOldOneWorking(t *testing.T) {
 
 	if _, err := svc.Login(ctx, login); err != nil {
 		t.Errorf("the original password stopped working after a rejected change: %v", err)
+	}
+}
+
+func TestTheNewPasswordHasToBeDifferent(t *testing.T) {
+	svc, db := newService(t)
+	ctx := context.Background()
+
+	_, login := signedUpUser(t, svc)
+
+	user, err := db.GetUserByEmail(ctx, login.Email)
+	if err != nil {
+		t.Fatalf("looking up the user: %v", err)
+	}
+
+	_, err = svc.ChangePassword(ctx, user.ID, login.Password, login.Password)
+
+	var invalid *ValidationError
+	if !errors.As(err, &invalid) {
+		t.Fatalf("error = %v, want a validation error", err)
+	}
+
+	// The point of refusing: a no-op change would still have revoked every
+	// session, so the caller's own session has to survive it.
+	if _, err := svc.Login(ctx, login); err != nil {
+		t.Errorf("the password stopped working after a refused no-op change: %v", err)
 	}
 }

@@ -33,11 +33,17 @@ func (s *Service) ChangePassword(ctx context.Context, userID uuid.UUID, current,
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password.String), []byte(current)); err != nil {
-		return "", &AuthError{Message: "Current password is incorrect"}
+		return "", &ForbiddenError{Message: "Current password is incorrect"}
 	}
 
 	if err := validatePassword(next); err != nil {
 		return "", err
+	}
+
+	// A change to the same value is a no-op that still ends every other
+	// session, which is a lot of consequence for nothing happening.
+	if current == next {
+		return "", &ValidationError{Message: "New password must be different from the current one"}
 	}
 
 	// Outside the transaction on purpose - bcrypt would hold the row locks open

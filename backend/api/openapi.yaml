@@ -4706,23 +4706,32 @@ paths:
         "204":
           description: Done. The refresh cookie carries the replacement session.
         "400":
-          description: Bad body, or the new password fails the rules.
+          description: |
+            Bad body, or the new password fails the rules - including being the
+            same as the current one, which would end every other session for a
+            change that changes nothing.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
         "401":
           description: |
-            Not signed in, or the current password is wrong. The messages
-            differ, which is safe here: an unauthenticated caller never reaches
-            the password check, so this endpoint cannot be used to test
-            passwords without a session.
+            Not signed in. A wrong current password is 403, not 401 - see below.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
         "403":
-          description: An API key cannot change a password; log in.
+          description: |
+            The session is valid but this attempt is not: the current password
+            is wrong, or an API key was used instead of a browser session. The
+            two are told apart by the message.
+
+            A wrong password is deliberately **not** 401. That status means
+            "your session is no good", and clients act on it - this one's web
+            frontend silently refreshes and replays the request, which would
+            spend a second bcrypt on the same wrong password and, if the
+            refresh happened to fail, sign the user out over a typo.
           content:
             application/json:
               schema:
