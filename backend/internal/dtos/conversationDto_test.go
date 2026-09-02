@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func userWithPresence(lastSeen sql.NullTime, show bool) database.User {
-	return database.User{
+func userWithPresence(lastSeen sql.NullTime, show bool) database.GetChatUserRow {
+	return database.GetChatUserRow{
 		ID:               uuid.New(),
 		Username:         "seller",
 		LastSeenAt:       lastSeen,

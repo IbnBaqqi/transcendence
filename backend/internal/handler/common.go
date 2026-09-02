@@ -117,26 +117,30 @@ func viewerID(r *http.Request) uuid.UUID {
 // Fails closed on a lookup error: a wrong "hidden" is cosmetic, a wrong
 // "online" means someone keeps watching a person who blocked them.
 func (h *Handler) hidePresenceIfBlocked(r *http.Request, viewer uuid.UUID, other *database.User) {
-	if viewer == other.ID {
-		return
+	if h.presenceHidden(r, viewer, other.ID) {
+		other.ShowOnlineStatus = false
+	}
+}
+
+// The decision on its own, for callers holding a row type other than
+// database.User.
+func (h *Handler) presenceHidden(r *http.Request, viewer, otherID uuid.UUID) bool {
+	if viewer == otherID {
+		return false
 	}
 
 	if viewer == uuid.Nil {
-		other.ShowOnlineStatus = false
-		return
+		return true
 	}
 
-	blocked, err := h.Block.ExistsBetween(r.Context(), viewer, other.ID)
+	blocked, err := h.Block.ExistsBetween(r.Context(), viewer, otherID)
 	if err != nil {
 		slog.Warn("presence block check failed, hiding presence",
 			"error", err, "request_id", middleware.GetReqID(r.Context()))
-		other.ShowOnlineStatus = false
-		return
+		return true
 	}
 
-	if blocked {
-		other.ShowOnlineStatus = false
-	}
+	return blocked
 }
 
 // viewerName is the authenticated caller's username, for a response that
