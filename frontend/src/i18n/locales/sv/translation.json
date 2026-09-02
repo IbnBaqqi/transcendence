@@ -171,8 +171,17 @@
       "stub": "Sök och filter - inte byggt ännu (#25)."
     },
     "dashboard": {
-      "title": "Säljarpanel",
-      "stub": "Säljarpanel - inte byggt ännu (#23).",
+      "title": "Säljarens panel",
+      "signedOut": "Du är utloggad. Logga in för att se din panel.",
+      "myListings": "Mina annonser",
+      "needsYou": "Kräver din åtgärd ({{count}})",
+      "inProgress": "Pågående ({{count}})",
+      "finished": "Avslutade ({{count}})",
+      "noListings": "Du har inte lagt upp någon annons än.",
+      "addListing": "Lägg upp din första annons",
+      "noOrders": "Ingen har beställt av dig än.",
+      "listingsError": "Kunde inte ladda dina annonser.",
+      "ordersError": "Kunde inte ladda dina beställningar.",
       "listing": {
         "allRemaining": "{{qty}} {{unit}} kvar",
         "remaining": "{{left}} av {{original}} {{unit}} kvar",
