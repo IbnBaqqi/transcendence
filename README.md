@@ -35,6 +35,37 @@ sudo rm -rf frontend/node_modules && (cd frontend && npm ci)
 Running the container as your own user does not help — the daemon prepares the
 mount point before the container starts, so its user is irrelevant.
 
+### The production-shaped stack, over HTTPS
+
+The dev stack above is plain HTTP and reloads on every edit, which is what you
+want while working. To run the thing the way it is meant to be served — both
+images built, no source mounts, no toolchain in the containers, everything on
+**one HTTPS origin**:
+
+```bash
+make setup                                        # includes `make certs`
+docker compose -f docker-compose.prod.yml up --build
+```
+
+Then <https://localhost>. The API is behind the same origin at
+`/api/v1`, so there is no second port and nothing to configure in the browser.
+Migrations run themselves here: a one-shot `migrator` service applies them
+before the backend starts.
+
+**Your browser will warn about the certificate, and that is expected.**
+`make certs` generates a self-signed one — nothing trusts the issuer, because
+there is no issuer. Click through it. If you would rather not, `mkcert -install
+&& mkcert localhost` writes a locally-trusted certificate to the same two paths
+and the warning goes away.
+
+Two things follow from having TLS rather than being incidental to it. The
+refresh cookie is `Secure` in this stack, so it is only ever sent over HTTPS —
+which is why plain `http://localhost` redirects instead of serving the app; a
+session started there would fail to refresh with nothing on screen to say why.
+And nginx listens on 8443 inside the container rather than 443, because it runs
+as a non-root user that cannot bind a privileged port — compose publishes it as
+443, so the privileged bind happens in the daemon.
+
 ## Modules
 
 The subject requires a written justification for the modules we claim —
