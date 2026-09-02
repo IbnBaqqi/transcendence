@@ -8,17 +8,22 @@ export
 unexport TEST_DB_URL
 
 .PHONY: run build test test-db test-race test-coverage clean dev lint sqlc fmt deps \
-        migrate-up migrate-down migrate-status seed db-reset demo \
+        migrate-up migrate-down migrate-status seed tag-sweep db-reset demo \
         docker-build docker-up docker-down docker-logs
 
 # Run the application
 run:
 	@go run ./cmd/server
 
-# Run with hot reload (requires air: go install github.com/air-verse/air@latest)
+# Run with hot reload. Pinned and run through `go run` for the reason the
+# linters below are: an installed binary can be any version, so `command -v`
+# proves presence but not agreement - and the dev container builds this exact
+# version, so a mismatch here is a reload that behaves differently on two
+# machines with no diff to explain it.
+AIR := github.com/air-verse/air@v1.67.4
+
 dev:
-	$(require-air)
-	@air
+	@go run $(AIR)
 
 # Build the application
 build:
@@ -105,8 +110,6 @@ deps:
 # confusing driver error instead of saying what's actually missing.
 require-db-url = @test -n "$(DB_URL)" || { echo "DB_URL not set - copy .env.example to .env"; exit 1; }
 
-require-air = @command -v air >/dev/null || { echo "air not installed - go install github.com/air-verse/air@latest"; exit 1; }
-
 # Same idea for the test database: without it `go test` silently SKIPS every
 # database test and still prints ok, which reads like success.
 require-test-db-url = @test -n "$(TEST_DB_URL)" || { echo "TEST_DB_URL not set - see .env.example"; exit 1; }
@@ -138,6 +141,17 @@ db-reset:
 seed:
 	$(require-db-url)
 	@go run ./cmd/seed
+
+# Deletes tags no listing uses. Safe against a live database: it takes the
+# advisory lock every tag writer takes, so it cannot delete a tag a concurrent
+# listing write is attaching.
+#
+# It holds that lock exclusively for the whole scan, so every listing save that
+# touches tags waits for it. Milliseconds at this size, but that makes it a
+# maintenance window rather than something to cron every hour on a large table.
+tag-sweep:
+	$(require-db-url)
+	@go run ./cmd/tagsweep
 
 migrate-down:
 	$(require-db-url)

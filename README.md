@@ -7,6 +7,80 @@ real money. Built for the 42 `ft_transcendence` project.
 React + TypeScript frontend, Go backend, PostgreSQL, all runnable with
 `docker compose up`.
 
+## Running it
+
+```bash
+make setup          # .env from the example, and one directory - see below
+docker compose up
+```
+
+Then <http://localhost:5173> for the app and <http://localhost:8080/api/docs>
+for the API. Migrations are a separate step the first time:
+`cd backend && make migrate-up`.
+
+**`make setup` before the first `up`, and the order matters.** It creates
+`frontend/node_modules` and `backend/uploads` so that Docker does not. A
+container cannot mount onto a path that does not exist, so the daemon creates
+any missing subdirectory of a bind mount — as **root**, inside your working
+tree. Both directories are gitignored, so both are absent on a fresh clone and
+both get created that way. After that, the next host-side command that writes
+there fails with `EACCES` — `npm ci` for one, `make run` saving an uploaded
+image for the other — with an error that blames permissions and never mentions
+Docker.
+
+**This is a Linux thing.** Docker Desktop for macOS maps bind-mount ownership to
+the host user, so nothing lands root-owned and none of the above happens there —
+measured both ways on both platforms. `make setup` is still the right first
+command everywhere; `mkdir -p` costs nothing.
+
+Already hit it, on Linux? The directories have to go before they can be
+recreated — but **no `sudo` is needed**, because they are empty. Docker's volume
+shadows each one, so everything written there goes into the volume rather than
+the tree, and removing a directory needs write permission on its *parent*, which
+you have:
+
+```bash
+rmdir frontend/node_modules backend/uploads
+make setup && (cd frontend && npm ci)
+```
+
+`rmdir` also fails safely if one of them somehow is not empty, which is the
+point at which `sudo rm -rf` becomes the right tool rather than the reflex.
+
+Running the container as your own user does not help — the daemon prepares the
+mount point before the container starts, so its user is irrelevant.
+
+### The production-shaped stack, over HTTPS
+
+The dev stack above is plain HTTP and reloads on every edit, which is what you
+want while working. To run the thing the way it is meant to be served — both
+images built, no source mounts, no toolchain in the containers, everything on
+**one HTTPS origin**:
+
+```bash
+make setup                                        # includes `make certs`
+docker compose -f docker-compose.prod.yml up --build
+```
+
+Then <https://localhost>. The API is behind the same origin at
+`/api/v1`, so there is no second port and nothing to configure in the browser.
+Migrations run themselves here: a one-shot `migrator` service applies them
+before the backend starts.
+
+**Your browser will warn about the certificate, and that is expected.**
+`make certs` generates a self-signed one — nothing trusts the issuer, because
+there is no issuer. Click through it. If you would rather not, `mkcert -install
+&& mkcert localhost` writes a locally-trusted certificate to the same two paths
+and the warning goes away.
+
+Two things follow from having TLS rather than being incidental to it. The
+refresh cookie is `Secure` in this stack, so it is only ever sent over HTTPS —
+which is why plain `http://localhost` redirects instead of serving the app; a
+session started there would fail to refresh with nothing on screen to say why.
+And nginx listens on 8443 inside the container rather than 443, because it runs
+as a non-root user that cannot bind a privileged port — compose publishes it as
+443, so the privileged bind happens in the daemon.
+
 ## Modules
 
 The subject requires a written justification for the modules we claim —
@@ -223,6 +297,32 @@ That drops and recreates the database, applies the migrations and re-seeds.
 Note that `make docker-down` does **not** do this — it deliberately keeps the
 volume, so the old schema comes straight back.
 
+## Cleaning up unused tags
+
+A tag is created the first time a listing uses it and is not removed when the
+last listing drops it, so the table grows with every new name anyone types.
+Collecting the unused ones is a deliberate command rather than something the
+listing write path does:
+
+```bash
+cd backend && make tag-sweep
+```
+
+Nothing schedules it, so tags accumulate until someone runs it.
+
+It is safe against a live database in the sense that matters: it takes the same
+advisory lock every tag write takes, so it cannot collect a tag a listing is
+being saved with — a sweep without that lock deletes the tag *and* the new
+listing's link to it, and neither side reports an error.
+
+It is not free, though. That lock is exclusive and is held for the whole scan,
+so every listing save that touches tags waits for the sweep to finish. The scan
+is a full pass over `tags`, which is the table that grows without bound — so
+this is a maintenance window, not a background job. Run it when a short stall on
+listing saves does not matter, and if the table ever gets big enough for that to
+hurt, batch the delete with a `LIMIT` and re-take the lock per batch rather than
+running the whole thing more often.
+
 ## Roles and the first admin
 
 Accounts are `USER` or `ADMIN` — those two values only, enforced by a `CHECK`
@@ -355,6 +455,32 @@ goroutine. Two consequences worth knowing:
 
 A full queue drops rather than blocks, for the same reason: blocking would put
 the mail server back on the request path.
+
+## Hot reload
+
+Both halves of the stack pick up edits without a restart, whichever way you
+started it:
+
+```bash
+docker compose up        # frontend via Vite, backend via air
+cd backend && make dev   # backend only, on the host
+```
+
+Save a `.go` file and the backend rebuilds in a few seconds. `api/openapi.yaml`
+counts too — it is `go:embed`-ed into the binary, so editing the spec without
+watching it would leave `/api/docs` serving a stale copy with nothing to say
+why.
+
+Two things worth knowing. The **first `docker compose up` after pulling this
+builds an image** rather than pulling one, because the backend now runs a `dev`
+stage from `backend/Dockerfile`; later ups hit the layer cache. And **air is
+pinned to one version** in both the Dockerfile and the Makefile, so the
+container and the host behave identically — `make dev` runs it through `go run`
+rather than from your `PATH`, so there is nothing to install.
+
+The build output goes to `/tmp/air`, deliberately outside the repository: under
+compose the source is a bind mount, so a binary written into the tree would
+appear on your machine owned by the container's user.
 
 ## Running the tests
 

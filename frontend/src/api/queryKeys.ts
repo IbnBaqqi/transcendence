@@ -11,7 +11,6 @@
 export const keys = {
   listings: {
     all: ["listings"] as const,
-    list: () => [...keys.listings.all, "list"] as const,
     detail: (id: string) => [...keys.listings.all, "detail", id] as const,
     // The query string is part of the key: different filters are different
     // cache entries, so going back to a previous search is instant.

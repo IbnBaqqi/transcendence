@@ -2119,32 +2119,6 @@ paths:
   # listings (public reads)
   # ---------------------------------------------------------------------------
   /listings:
-    get:
-      tags: [listings]
-      summary: List the available listings
-      operationId: getListings
-      security: []
-      description: |
-        Newest first, and **sold-out listings are excluded** (`quantity > 0`).
-        A sold-out listing is still reachable through `/listings/{id}` and
-        still appears in `/me/saved`.
-
-        Unpaginated — use `/listings/search` for filtering, sorting and pages.
-      responses:
-        "200":
-          description: The available listings, each with its photos attached.
-          content:
-            application/json:
-              schema:
-                # An array response has no named schema; describe it inline.
-                type: array
-                items:
-                  $ref: "#/components/schemas/Listing"
-        "429":
-          $ref: "#/components/responses/RateLimited"
-        "500":
-          $ref: "#/components/responses/ServerError"
-
     post:
       tags: [listings]
       summary: Create a listing

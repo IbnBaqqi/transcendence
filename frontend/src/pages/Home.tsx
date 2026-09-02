@@ -1,11 +1,14 @@
-import { useListings } from "../api/listings";
+import { useSearchListings } from "../api/listings";
 import { useCategoryNames } from "../api/categories";
 import { ListingCard } from "../components/objects/ListingCard";
 import { Skeleton } from "../components/objects/Skeleton";
 
 export default function Home() {
-  // useListings() gives us the query's state: the data plus loading/error flags.
-  const { data: listings, isPending, isError, refetch } = useListings();
+  // /listings/search with no filters is the same set as the old unpaginated
+  // /listings, one page at a time. The query state is the data plus the
+  // loading/error flags.
+  const { data, isPending, isError, refetch } = useSearchListings({ page: 1, limit: 20 });
+  const listings = data?.items;
   const categoryName = useCategoryNames();
 
   return (
@@ -47,6 +50,13 @@ export default function Home() {
           message="No listings yet."
           onRetry={() => refetch()}
         />
+      )}
+      {/* One page is all there is until #25 builds the browse surface, so say
+          so rather than letting the 21st listing be invisible. */}
+      {data && data.total > listings!.length && (
+        <p className="text-muted mt-2 text-sm">
+          Showing {listings!.length} of {data.total}
+        </p>
       )}
       {listings && listings.length > 0 && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

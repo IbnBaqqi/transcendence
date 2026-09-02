@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/storage"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
 )
@@ -250,11 +251,11 @@ func TestASuspendedSellerLeavesTheReadPaths(t *testing.T) {
 	listings := NewListingService(f.db, nil)
 	profiles := NewProfileService(f.db, nil)
 
-	before, err := listings.ListListings(ctx)
+	before, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{})
 	if err != nil {
 		t.Fatalf("browsing: %v", err)
 	}
-	if len(before) == 0 {
+	if len(before.Items) == 0 {
 		t.Fatal("the listing is not in browse to begin with, so this proves nothing")
 	}
 
@@ -262,11 +263,11 @@ func TestASuspendedSellerLeavesTheReadPaths(t *testing.T) {
 		t.Fatalf("suspending: %v", err)
 	}
 
-	after, err := listings.ListListings(ctx)
+	after, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{})
 	if err != nil {
 		t.Fatalf("browsing: %v", err)
 	}
-	for _, l := range after {
+	for _, l := range after.Items {
 		if l.ID == listing.ID {
 			t.Error("a suspended seller's listing is still in the browse list")
 		}
@@ -280,12 +281,12 @@ func TestASuspendedSellerLeavesTheReadPaths(t *testing.T) {
 		t.Fatalf("reinstating: %v", err)
 	}
 
-	back, err := listings.ListListings(ctx)
+	back, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{})
 	if err != nil {
 		t.Fatalf("browsing: %v", err)
 	}
 	var found bool
-	for _, l := range back {
+	for _, l := range back.Items {
 		if l.ID == listing.ID {
 			found = true
 		}

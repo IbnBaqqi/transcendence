@@ -90,6 +90,10 @@ func normaliseTags(raw []string) ([]string, error) {
 }
 
 func applyTags(ctx context.Context, qtx *database.Queries, listingID uuid.UUID, tags []string) error {
+	if err := qtx.LockTagsShared(ctx); err != nil {
+		return err
+	}
+
 	if err := qtx.DetachAllTags(ctx, listingID); err != nil {
 		return err
 	}
@@ -168,10 +172,6 @@ func (s *ListingService) GetListing(ctx context.Context, id uuid.UUID) (database
 		return database.Listing{}, &NotFoundError{Message: "Listing not found"}
 	}
 	return listing, nil
-}
-
-func (s *ListingService) ListListings(ctx context.Context) ([]database.Listing, error) {
-	return s.db.ListListings(ctx)
 }
 
 // UpdateListing edits a listing the caller owns.

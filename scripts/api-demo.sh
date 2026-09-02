@@ -102,8 +102,8 @@ listing=$(req POST /listings 201 "${auth[@]}" \
 listing_id=$(printf '%s' "$listing" | json id)
 pass "POST   /listings          created listing $listing_id"
 
-req GET /listings 200 "${auth[@]}" >/dev/null
-pass "GET    /listings          listed"
+req GET "/listings/search" 200 "${auth[@]}" >/dev/null
+pass "GET    /listings/search   listed"
 
 req GET "/listings/$listing_id" 200 "${auth[@]}" >/dev/null
 pass "GET    /listings/{id}     read"
@@ -145,7 +145,11 @@ step "6. Revoke, and the key stops working"
 req DELETE "/me/api-keys/$key_id" 204 -H "Authorization: Bearer $token" >/dev/null
 pass "revoked key $key_id"
 
-req GET /listings 401 "${auth[@]}" >/dev/null
+# Any route would answer 401 here - Authenticate runs above the public ones and
+# rejects a presented-but-invalid key before routing, which is why this check
+# used to sit on /listings. An authenticated route is simply a more honest
+# subject for "the key stops working".
+req GET /me/profile 401 "${auth[@]}" >/dev/null
 pass "the same key now answers 401"
 info "revocation applies on the next request - the key is looked up every time"
 
