@@ -72,25 +72,20 @@ describe("deriveOrderView - confirmed, half-marked", () => {
 
   // Only the null case was asserted, so the two seller branches could be
   // swapped - telling the side that already marked to go and mark it - and
-  // every test still passed.
+  // every test still passed. Keys catch that swap the same way the sentences
+  // did; the sentences themselves are pinned by the locale files.
   test("each side is told what its own half-marked state means", () => {
-    expect(deriveOrderView(sellerDone, SELLER_ID).waitingLabel).toBe(
-      "You marked the handover - waiting for the buyer to confirm receipt.",
-    );
-    expect(deriveOrderView(sellerDone, BUYER_ID).waitingLabel).toBe(
-      "The seller marked the handover - confirm you received the goods.",
+    expect(deriveOrderView(sellerDone, SELLER_ID).waitingKey).toBe("orders.waiting.youHandedOver");
+    expect(deriveOrderView(sellerDone, BUYER_ID).waitingKey).toBe(
+      "orders.waiting.sellerHandedOver",
     );
 
     const buyerDone = makeOrder({
       status: "confirmed",
       buyer_received_at: "2026-09-02T12:00:00Z",
     });
-    expect(deriveOrderView(buyerDone, BUYER_ID).waitingLabel).toBe(
-      "You confirmed receipt - waiting for the seller to mark the handover.",
-    );
-    expect(deriveOrderView(buyerDone, SELLER_ID).waitingLabel).toBe(
-      "The buyer confirmed receipt - mark the handover to complete the order.",
-    );
+    expect(deriveOrderView(buyerDone, BUYER_ID).waitingKey).toBe("orders.waiting.youReceived");
+    expect(deriveOrderView(buyerDone, SELLER_ID).waitingKey).toBe("orders.waiting.buyerReceived");
   });
 
   test("the mirror case works too", () => {
@@ -119,8 +114,8 @@ describe("deriveOrderView - terminal states", () => {
   // An admin can refund an order and both parties still see it, so a missing
   // label here is a wordless, unstyled pill in their list.
   test("refunded has a label of its own", () => {
-    expect(deriveOrderView(makeOrder({ status: "refunded" }), BUYER_ID).statusLabel).toBe(
-      "Refunded",
+    expect(deriveOrderView(makeOrder({ status: "refunded" }), BUYER_ID).statusKey).toBe(
+      "orders.status.refunded",
     );
   });
 });
@@ -140,7 +135,7 @@ describe("deriveOrderView - strangers", () => {
     (status) => {
       const view = deriveOrderView(makeOrder({ status }), STRANGER);
       expect(view.waitingOn).toBeNull();
-      expect(view.waitingLabel).toBeNull();
+      expect(view.waitingKey).toBeNull();
     },
   );
 
@@ -149,15 +144,17 @@ describe("deriveOrderView - strangers", () => {
   test("a viewer whose session hasn't resolved is told nothing either", () => {
     const view = deriveOrderView(makeOrder({ status: "pending" }), undefined);
     expect(view.waitingOn).toBeNull();
-    expect(view.waitingLabel).toBeNull();
+    expect(view.waitingKey).toBeNull();
   });
 });
 
 describe("deriveOrderView - status label", () => {
-  test("capitalises the raw status for the pill", () => {
-    expect(deriveOrderView(makeOrder({ status: "pending" }), BUYER_ID).statusLabel).toBe("Pending");
-    expect(deriveOrderView(makeOrder({ status: "completed" }), BUYER_ID).statusLabel).toBe(
-      "Completed",
+  test("maps the raw status to its own key", () => {
+    expect(deriveOrderView(makeOrder({ status: "pending" }), BUYER_ID).statusKey).toBe(
+      "orders.status.pending",
+    );
+    expect(deriveOrderView(makeOrder({ status: "completed" }), BUYER_ID).statusKey).toBe(
+      "orders.status.completed",
     );
   });
 });

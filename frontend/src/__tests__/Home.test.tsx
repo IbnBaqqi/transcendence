@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 
 import Home from "../pages/Home";
 import { useSearchListings } from "../api/listings";
-import { useCategoryNames } from "../api/categories";
+import { useLocalizedCategoryNames } from "../api/categories";
 import { makeListing } from "../test/factories";
 import type { Listing, Paginated } from "../api/types";
 
@@ -42,7 +42,7 @@ const secondSample = makeListing({
 });
 
 beforeEach(() => {
-  vi.mocked(useCategoryNames).mockReturnValue(
+  vi.mocked(useLocalizedCategoryNames).mockReturnValue(
     (slug: string) => ({ mushrooms: "Mushrooms", berries: "Berries" })[slug] ?? slug,
   );
 });

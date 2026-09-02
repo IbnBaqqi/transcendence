@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import Button from "./Button";
 import { isApiError } from "../../api/client";
@@ -14,15 +15,16 @@ import { deriveOrderView, type OrderAction } from "../../lib/orderState";
 import { useAuth } from "../../hooks/useAuth";
 import type { Order } from "../../api/types";
 
-const LABELS: Record<OrderAction, { idle: string; busy: string }> = {
-  confirm: { idle: "Confirm reservation", busy: "Confirming…" },
-  handover: { idle: "Mark handed over", busy: "Marking…" },
-  receive: { idle: "Confirm receipt", busy: "Confirming…" },
-  cancel: { idle: "Cancel order", busy: "Cancelling…" },
+const LABEL_KEYS: Record<OrderAction, { idle: string; busy: string }> = {
+  confirm: { idle: "orders.actions.confirm", busy: "orders.actions.confirming" },
+  handover: { idle: "orders.actions.handover", busy: "orders.actions.marking" },
+  receive: { idle: "orders.actions.receive", busy: "orders.actions.confirming" },
+  cancel: { idle: "orders.actions.cancel", busy: "orders.actions.cancelling" },
 };
 
 export function OrderActions({ order }: { order: Order }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
@@ -47,11 +49,11 @@ export function OrderActions({ order }: { order: Order }) {
       // second tab did. Refetch so the buttons redraw rather than insisting.
       if (isApiError(err) && err.status === 409) {
         void qc.invalidateQueries({ queryKey: keys.orders.all });
-        setError("This order just changed. Refreshed - check the actions again.");
+        setError(t("orders.moved"));
         return;
       }
       // 403 lands here: the backend's message names the rule we got wrong.
-      setError(isApiError(err) ? err.message : "Something went wrong. Please try again.");
+      setError(isApiError(err) ? err.message : t("common.somethingWentWrong"));
     }
   }
 
@@ -67,7 +69,7 @@ export function OrderActions({ order }: { order: Order }) {
             disabled={busy}
             onClick={() => void run(action)}
           >
-            {mutations[action].isPending ? LABELS[action].busy : LABELS[action].idle}
+            {t(mutations[action].isPending ? LABEL_KEYS[action].busy : LABEL_KEYS[action].idle)}
           </Button>
         ))}
       </div>

@@ -13,7 +13,7 @@ export function makeAddListingSchema(validSlugs: readonly string[]) {
     title: titleSchema,
     description: descriptionSchema,
     category: categorySchema.refine((slug) => validSlugs.includes(slug), {
-      message: "Choose a category from the list",
+      params: { i18n: "validation.chooseCategory" },
     }),
     price: priceSchema,
     quantity: quantitySchema,

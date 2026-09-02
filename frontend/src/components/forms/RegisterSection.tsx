@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import { Form } from "./Form";
 import { FormField } from "./FormField";
 import { registerSchema, type RegisterFormSchema } from "../../schemas/register";
@@ -9,6 +10,7 @@ import { isApiError } from "../../api/client";
 import OAuthButtons from "./OAuthButtons";
 
 export function RegisterSection({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const { signup } = useAuth();
   const form = useForm<RegisterFormSchema>({
     resolver: zodResolver(registerSchema),
@@ -34,7 +36,7 @@ export function RegisterSection({ onClose }: { onClose: () => void }) {
         else if (details.email) form.setError("email", { message: details.email });
         else form.setError("root", { message: err.message });
       } else {
-        form.setError("root", { message: "Something went wrong. Please try again." });
+        form.setError("root", { message: t("common.somethingWentWrong") });
       }
     }
   };
@@ -45,21 +47,21 @@ export function RegisterSection({ onClose }: { onClose: () => void }) {
         <OAuthButtons />
         <div className="text-muted flex items-center gap-3 text-xs">
           <span className="border-line h-px flex-1 border-t" />
-          or sign up with email
+          {t("auth.orSignUpWithEmail")}
           <span className="border-line h-px flex-1 border-t" />
         </div>
         <div className="space-y-2">
-          <FormField label="Username" name="username" validateOnChange />
-          <FormField label="Email" name="email" validateOnChange />
-          <FormField label="Password" name="password" type="password" validateOnChange />
+          <FormField label={t("forms.username")} name="username" validateOnChange />
+          <FormField label={t("forms.email")} name="email" validateOnChange />
+          <FormField label={t("forms.password")} name="password" type="password" validateOnChange />
         </div>
         {errors.root?.message && <p className="text-berry-500 text-sm">{errors.root.message}</p>}
         <div className="flex flex-row gap-2">
           <Button variant="primary" type="submit" disabled={!isValid || isSubmitting}>
-            {isSubmitting ? "Registering…" : "Register"}
+            {isSubmitting ? t("common.registering") : t("common.register")}
           </Button>
           <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
         </div>
       </div>

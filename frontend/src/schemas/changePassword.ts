@@ -3,12 +3,12 @@ import { passwordSchema } from "./common";
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "Current password is required"),
+    currentPassword: z.string().min(1),
     newPassword: passwordSchema,
     confirmPassword: passwordSchema,
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords do not match",
+    params: { i18n: "validation.passwordsMismatch" },
     path: ["confirmPassword"],
   });
 

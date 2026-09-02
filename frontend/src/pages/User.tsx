@@ -12,12 +12,14 @@ import { useModal } from "../providers/modalContext";
 import { useAuth } from "../hooks/useAuth";
 import { usePublicProfile } from "../api/profile";
 import { useSearchListings } from "../api/listings";
-import { useCategoryNames } from "../api/categories";
+import { useLocalizedCategoryNames } from "../api/categories";
 import { isApiError } from "../api/client";
 import { deriveInitials } from "../lib/initials";
 import NotFound from "./NotFound";
+import { useTranslation } from "react-i18next";
 
 export default function User() {
+  const { t } = useTranslation();
   // string | undefined: TypeScript can't know this route has an ":id".
   const { id } = useParams();
   const { user } = useAuth();
@@ -33,19 +35,19 @@ export default function User() {
     isPending: listingsPending,
     isError: listingsError,
   } = useSearchListings({ seller_id: id, limit: 20 });
-  const categoryName = useCategoryNames();
+  const categoryName = useLocalizedCategoryNames();
 
   // 400 = the id isn't a UUID, 404 = no such user. Both mean "nothing here".
   if (isApiError(error) && (error.status === 404 || error.status === 400)) {
     return <NotFound />;
   }
 
-  if (isLoading) return <p className="text-muted p-8 text-sm">Loading…</p>;
+  if (isLoading) return <p className="text-muted p-8 text-sm">{t("common.loading")}</p>;
 
   if (error || !profile) {
     return (
       <p className="text-berry-500 p-8 text-sm">
-        {isApiError(error) ? error.message : "Couldn't load this profile."}
+        {isApiError(error) ? error.message : t("pages.user.profileError")}
       </p>
     );
   }
@@ -58,7 +60,7 @@ export default function User() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
-      <h1 className="text-foreground text-3xl font-bold">User Profile</h1>
+      <h1 className="text-foreground text-3xl font-bold">{t("pages.user.title")}</h1>
 
       <div className="flex flex-row gap-4">
         <div>
@@ -83,7 +85,7 @@ export default function User() {
                   profile.presence.is_online ? "bg-accent" : "bg-surface-soft"
                 }`}
               />
-              {profile.presence.is_online ? "Online" : "Offline"}
+              {profile.presence.is_online ? t("pages.user.online") : t("pages.user.offline")}
             </div>
           )}
         </div>
@@ -92,43 +94,46 @@ export default function User() {
       {/* openChat() can't target a user yet - that arrives with the chat UI (#88). */}
       {!isSelf && (
         <Button variant="secondary" onClick={() => openChat()}>
-          Message User
+          {t("pages.user.messageUser")}
         </Button>
       )}
 
       <div className="space-y-1">
-        <h2 className="text-foreground text-lg font-bold">Details</h2>
+        <h2 className="text-foreground text-lg font-bold">{t("pages.user.details")}</h2>
         <div className="grid max-w-fit grid-cols-2 gap-4">
           <div className="flex flex-col">
-            <div className="text-muted">First Name</div>
+            <div className="text-muted">{t("pages.user.firstName")}</div>
             <div>{profile.firstname ?? "—"}</div>
           </div>
           <div className="flex flex-col">
-            <div className="text-muted">Last Name</div>
+            <div className="text-muted">{t("pages.user.lastName")}</div>
             <div>{profile.lastname ?? "—"}</div>
           </div>
           <div className="flex flex-col">
-            <div className="text-muted">Location</div>
+            <div className="text-muted">{t("pages.user.location")}</div>
             <div>{profile.location ?? "—"}</div>
           </div>
         </div>
       </div>
 
       <div className="space-y-1">
-        <h2 className="text-foreground text-lg font-bold">Bio</h2>
-        <div>{profile.bio ?? <span className="text-muted">No bio yet.</span>}</div>
+        <h2 className="text-foreground text-lg font-bold">{t("pages.user.bio")}</h2>
+        <div>{profile.bio ?? <span className="text-muted">{t("pages.user.noBio")}</span>}</div>
       </div>
 
       <div className="space-y-1">
-        <h2 className="text-foreground text-lg font-bold">Listings</h2>
+        <h2 className="text-foreground text-lg font-bold">{t("pages.user.listings")}</h2>
         <p role="status" aria-live="polite" className="text-muted mt-4">
-          {listingsPending && "Loading..."}
-          {listingsError && "Couldn't load listings. Try again."}
-          {!listingsPending && !listingsError && listings.length === 0 && "No listings yet!"}
+          {listingsPending && t("pages.user.loadingListings")}
+          {listingsError && t("pages.user.listingsError")}
+          {!listingsPending &&
+            !listingsError &&
+            listings.length === 0 &&
+            t("pages.user.noListings")}
         </p>
         {hiddenListings > 0 && (
           <p className="text-muted mt-2 text-sm">
-            Showing {listings.length} of {sellerListings!.total}
+            {t("listings.showingOf", { shown: listings.length, total: sellerListings!.total })}
           </p>
         )}
         {listings.length > 0 && (

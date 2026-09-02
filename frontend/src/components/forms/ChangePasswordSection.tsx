@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import { Form } from "./Form";
 import { FormField } from "./FormField";
 import { changePasswordSchema, type ChangePasswordFormValues } from "../../schemas/changePassword";
@@ -7,6 +8,7 @@ import Button from "../objects/Button.tsx";
 import { useState } from "react";
 
 export function ChangePasswordSection() {
+  const { t } = useTranslation();
   const [isEditing, setEditing] = useState(false);
 
   const form = useForm<ChangePasswordFormValues>({
@@ -29,14 +31,19 @@ export function ChangePasswordSection() {
           <>
             <div className="flex flex-col gap-4">
               <FormField
-                label="Current password"
+                label={t("forms.currentPassword")}
                 name="currentPassword"
                 type="password"
                 validateOnChange
               />
-              <FormField label="New password" name="newPassword" type="password" validateOnChange />
               <FormField
-                label="Confirm password"
+                label={t("forms.newPassword")}
+                name="newPassword"
+                type="password"
+                validateOnChange
+              />
+              <FormField
+                label={t("forms.confirmPassword")}
                 name="confirmPassword"
                 type="password"
                 validateOnChange
@@ -45,7 +52,7 @@ export function ChangePasswordSection() {
             <div className="flex flex-row gap-2">
               <Button variant="primary" type="submit" disabled={!form.formState.isValid}>
                 {/* TODO: blocked by #109 Insert API here */}
-                Save
+                {t("common.save")}
               </Button>
               {/* TODO: blocked by #109 Using states, once forms are live we can make cancel only appear if user is in edit mode */}
               <Button
@@ -55,7 +62,7 @@ export function ChangePasswordSection() {
                   setEditing(false);
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </>
@@ -63,7 +70,7 @@ export function ChangePasswordSection() {
           <>
             <div>********</div>
             <Button variant="primary" onClick={() => setEditing(true)}>
-              Edit Password
+              {t("forms.editPassword")}
             </Button>
           </>
         )}

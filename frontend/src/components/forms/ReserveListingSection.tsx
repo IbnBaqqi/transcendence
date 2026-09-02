@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useListing } from "../../api/listings";
@@ -14,6 +15,7 @@ import type { Listing } from "../../api/types";
 
 export function ReserveListingSection({ listingId }: { listingId: string }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const { openModal } = useModal();
 
   // Fetches by id rather than taking a listing prop: React Query dedupes by
@@ -33,26 +35,26 @@ export function ReserveListingSection({ listingId }: { listingId: string }) {
       <Skeleton
         variant="error"
         className="h-40 w-full"
-        message="Couldn't load this listing."
+        message={t("orders.reserve.loadError")}
         onRetry={() => refetch()}
       />
     );
   }
 
   if (user?.id === listing.seller_id) {
-    return <p className="text-muted text-sm">This is your own listing.</p>;
+    return <p className="text-muted text-sm">{t("orders.reserve.ownListing")}</p>;
   }
 
   if (listing.quantity <= 0) {
-    return <p className="text-muted text-sm">Sold out - nothing left to reserve.</p>;
+    return <p className="text-muted text-sm">{t("orders.reserve.soldOut")}</p>;
   }
 
   if (!user) {
     return (
       <div className="border-line space-y-3 rounded-lg border p-4">
-        <p className="text-muted text-sm">Log in to reserve from this seller.</p>
+        <p className="text-muted text-sm">{t("orders.reserve.logInToReserve")}</p>
         <Button variant="primary" onClick={() => openModal("login")}>
-          Log In
+          {t("common.logIn")}
         </Button>
       </div>
     );
@@ -64,6 +66,7 @@ export function ReserveListingSection({ listingId }: { listingId: string }) {
 // Split out so the listing is a plain prop: TypeScript drops the "not
 // undefined" narrowing inside the async handler, and a prop never loses it.
 function ReserveForm({ listing }: { listing: Listing }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const createOrder = useCreateOrder();
@@ -91,7 +94,7 @@ function ReserveForm({ listing }: { listing: Listing }) {
         setError(err.message);
         return;
       }
-      setError(isApiError(err) ? err.message : "Couldn't reserve this listing. Please try again.");
+      setError(isApiError(err) ? err.message : t("orders.reserve.error"));
     }
   }
 
@@ -102,14 +105,14 @@ function ReserveForm({ listing }: { listing: Listing }) {
           €{listing.price.toFixed(2)} / {listing.unit}
         </p>
         <p className="text-muted text-sm">
-          {available} {listing.unit} available
+          {t("listings.available", { qty: available, unit: listing.unit })}
         </p>
       </div>
 
       <div className="flex items-end gap-3">
         <div className="flex flex-col gap-1">
           <label htmlFor="reserve-quantity" className="text-muted text-sm">
-            Quantity ({listing.unit})
+            {t("orders.reserve.quantityLabel", { unit: listing.unit })}
           </label>
           <input
             id="reserve-quantity"
@@ -126,18 +129,17 @@ function ReserveForm({ listing }: { listing: Listing }) {
           disabled={!valid || createOrder.isPending}
           onClick={() => void handleReserve()}
         >
-          {createOrder.isPending ? "Reserving…" : "Request to buy"}
+          {createOrder.isPending ? t("orders.reserve.submitting") : t("orders.reserve.submit")}
         </Button>
       </div>
 
       {valid ? (
         <p className="text-muted text-sm">
-          Total €{(listing.price * quantity).toFixed(2)} - you pay the seller directly, not
-          Metsätori.
+          {t("orders.reserve.total", { total: (listing.price * quantity).toFixed(2) })}
         </p>
       ) : (
         <p className="text-muted text-sm">
-          Choose between 1 and {available} {listing.unit}.
+          {t("orders.reserve.chooseBetween", { max: available, unit: listing.unit })}
         </p>
       )}
 

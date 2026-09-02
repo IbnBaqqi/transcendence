@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { api } from "./client";
 import { keys } from "./queryKeys";
@@ -33,4 +34,21 @@ export function categoryNames(categories: Category[]): (slug: string) => string 
 export function useCategoryNames(): (slug: string) => string {
   const { data } = useCategories();
   return useMemo(() => categoryNames(data ?? []), [data]);
+}
+
+/**
+ * Like useCategoryNames, but prefers a `categories.<slug>` label from the
+ * active locale when one exists, falling back to the backend-provided name.
+ * The backend keeps returning slugs, so this is a pure frontend lookup.
+ */
+export function useLocalizedCategoryNames(): (slug: string) => string {
+  const { t } = useTranslation();
+  const backendName = useCategoryNames();
+  return useMemo(() => {
+    return (slug: string) => {
+      const key = `categories.${slug}`;
+      const translated = t(key);
+      return translated !== key ? translated : backendName(slug);
+    };
+  }, [backendName, t]);
 }

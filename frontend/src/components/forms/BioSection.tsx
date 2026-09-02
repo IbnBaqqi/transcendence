@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import { Form } from "./Form";
 import { FormTextArea } from "./FormTextArea";
 import { bioSchema, type BioFormValues } from "../../schemas/common";
@@ -9,6 +10,7 @@ import { useOwnProfile, useUpdateOwnProfile } from "../../api/profile";
 import { isApiError } from "../../api/client";
 
 export function BioSection() {
+  const { t } = useTranslation();
   const [isEditing, setEditing] = useState(false);
   const { data: profile } = useOwnProfile();
   const update = useUpdateOwnProfile();
@@ -37,7 +39,7 @@ export function BioSection() {
       setEditing(false);
     } catch (err) {
       form.setError("root", {
-        message: isApiError(err) ? err.message : "Something went wrong. Please try again.",
+        message: isApiError(err) ? err.message : t("common.somethingWentWrong"),
       });
     }
   };
@@ -53,7 +55,7 @@ export function BioSection() {
           {isEditing ? (
             <>
               <Button variant="primary" type="submit" disabled={!isValid || isSubmitting}>
-                {isSubmitting ? "Saving…" : "Save"}
+                {isSubmitting ? t("common.saving") : t("common.save")}
               </Button>
               <Button
                 variant="secondary"
@@ -62,12 +64,12 @@ export function BioSection() {
                   setEditing(false);
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </>
           ) : (
             <Button variant="primary" type="button" onClick={() => setEditing(true)}>
-              Edit Text
+              {t("forms.editText")}
             </Button>
           )}
         </div>

@@ -1,0 +1,314 @@
+{
+  "brand": "Metsätori",
+  "nav": {
+    "home": "Home",
+    "openChat": "Open chat",
+    "notifications": "Notifications",
+    "addListing": "Add listing"
+  },
+  "language": {
+    "en": "English",
+    "fi": "Suomi",
+    "sv": "Svenska",
+    "label": "Language"
+  },
+  "common": {
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "logIn": "Log In",
+    "loggingIn": "Logging in…",
+    "login": "Log in",
+    "logOut": "Log Out",
+    "loggingOut": "Logging out…",
+    "register": "Register",
+    "registering": "Registering…",
+    "loading": "Loading…",
+    "loadingDots": "Loading...",
+    "tryAgain": "Try again",
+    "somethingWentWrong": "Something went wrong. Please try again.",
+    "couldNotReachServer": "Could not reach the server",
+    "deleteAccount": "Delete Account"
+  },
+  "forms": {
+    "email": "Email",
+    "password": "Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "username": "Username",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Phone",
+    "city": "City",
+    "unit": "Unit",
+    "price": "Price",
+    "quantity": "Quantity",
+    "pricePlaceholder": "*in local currency",
+    "unitPlaceholder": "e.g. 'kg' or 'dl'",
+    "editDetails": "Edit Details",
+    "editText": "Edit Text",
+    "editPassword": "Edit Password",
+    "category": {
+      "loading": "Loading categories…",
+      "unavailable": "Categories unavailable",
+      "choose": "Choose a category",
+      "noCategories": "No categories are available",
+      "loadError": "Could not load categories."
+    },
+    "addListing": {
+      "title": "Title",
+      "photos": "Photos",
+      "description": "Description",
+      "category": "Category",
+      "priceQuantity": "Price & Quantity",
+      "save": "Save"
+    }
+  },
+  "dropzone": {
+    "noPhotos": "No photos yet.",
+    "noPhoto": "No photo yet.",
+    "dragDrop": "Drag & drop or click to upload",
+    "dragDropAddListing": "Drag & drop photos here, or click to browse",
+    "uploading": "Uploading…",
+    "uploadFailed": "Upload failed",
+    "retry": "Retry",
+    "removePhoto": "Remove photo",
+    "addPhoto": "Add photo",
+    "ariaUploadPhotos": "Upload photos"
+  },
+  "categories": {
+    "mushrooms": "Mushrooms",
+    "berries": "Berries",
+    "greens": "Greens",
+    "vegetables": "Vegetables",
+    "other": "Other"
+  },
+  "listings": {
+    "available": "{{qty}} {{unit}} available",
+    "showingOf": "Showing {{shown}} of {{total}}"
+  },
+  "orders": {
+    "title": "Orders",
+    "signedOut": "You're signed out. Log in to see your orders.",
+    "signedOutDetail": "You're signed out. Log in to see this order.",
+    "tabs": {
+      "buying": "Buying",
+      "selling": "Selling"
+    },
+    "empty": {
+      "purchases": "You haven't reserved anything yet.",
+      "sales": "No one has reserved from you yet.",
+      "browse": "Browse listings"
+    },
+    "listError": "Couldn't load your orders.",
+    "detailError": "Couldn't load this order.",
+    "allOrders": "← All orders",
+    "yourRole": "You're the {{role}} on this order.",
+    "role": {
+      "buyer": "buyer",
+      "seller": "seller",
+      "none": "—"
+    },
+    "noPayments": "Metsätori handles no payments - arrange payment and pickup between yourselves.",
+    "viewListing": "View the listing",
+    "notYet": "Not yet",
+    "fields": {
+      "quantity": "Quantity",
+      "unitPrice": "Unit price",
+      "total": "Total",
+      "reserved": "Reserved",
+      "handedOver": "Seller handed over",
+      "received": "Buyer confirmed receipt"
+    },
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    },
+    "actions": {
+      "confirm": "Confirm reservation",
+      "confirming": "Confirming…",
+      "handover": "Mark handed over",
+      "marking": "Marking…",
+      "receive": "Confirm receipt",
+      "cancel": "Cancel order",
+      "cancelling": "Cancelling…"
+    },
+    "moved": "This order just changed. Refreshed - check the actions again.",
+    "waiting": {
+      "youConfirm": "Waiting for you to confirm this reservation.",
+      "sellerConfirms": "Waiting for the seller to confirm this reservation.",
+      "arrange": "Arrange the handover between yourselves, then mark it here.",
+      "youHandedOver": "You marked the handover - waiting for the buyer to confirm receipt.",
+      "buyerReceived": "The buyer confirmed receipt - mark the handover to complete the order.",
+      "youReceived": "You confirmed receipt - waiting for the seller to mark the handover.",
+      "sellerHandedOver": "The seller marked the handover - confirm you received the goods."
+    },
+    "reserve": {
+      "ownListing": "This is your own listing.",
+      "soldOut": "Sold out - nothing left to reserve.",
+      "logInToReserve": "Log in to reserve from this seller.",
+      "loadError": "Couldn't load this listing.",
+      "quantityLabel": "Quantity ({{unit}})",
+      "submit": "Request to buy",
+      "submitting": "Reserving…",
+      "total": "Total €{{total}} - you pay the seller directly, not Metsätori.",
+      "chooseBetween": "Choose between 1 and {{max}} {{unit}}.",
+      "error": "Couldn't reserve this listing. Please try again."
+    }
+  },
+  "pages": {
+    "home": {
+      "latestFinds": "Latest Finds",
+      "listingsError": "Couldn't load listings.",
+      "noListings": "No listings yet."
+    },
+    "search": {
+      "title": "Search",
+      "stub": "Search & filters - not built yet (#25)."
+    },
+    "dashboard": {
+      "title": "Seller Dashboard",
+      "stub": "Seller dashboard - not built yet (#23)."
+    },
+    "addListing": {
+      "title": "Add Listing"
+    },
+    "listingDetail": {
+      "title": "Listing {{id}}",
+      "stub": "Listing detail page - not built yet (#21)."
+    },
+    "notifications": {
+      "title": "Notifications"
+    },
+    "profile": {
+      "title": "Profile & Settings",
+      "signedOut": "You're signed out. Log in to see and edit your profile.",
+      "contactDetails": "Contact Details",
+      "password": "Password",
+      "bio": "Bio",
+      "accountManagement": "Account Management"
+    },
+    "notFound": {
+      "title": "404 - Page not found",
+      "subtitle": "That page doesn't exist or has moved",
+      "backHome": "Back to home"
+    },
+    "user": {
+      "title": "User Profile",
+      "online": "Online",
+      "offline": "Offline",
+      "messageUser": "Message User",
+      "details": "Details",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "location": "Location",
+      "bio": "Bio",
+      "noBio": "No bio yet.",
+      "listings": "Listings",
+      "loadingListings": "Loading...",
+      "listingsError": "Couldn't load listings. Try again.",
+      "noListings": "No listings yet!",
+      "profileError": "Couldn't load this profile."
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "close": "Close"
+  },
+  "modal": {
+    "login": {
+      "title": "Log in",
+      "notRegistered": "Not registered yet? "
+    },
+    "register": {
+      "title": "Register",
+      "alreadyHaveAccount": "Already have an account? "
+    },
+    "deleteAccount": {
+      "title": "Delete Account"
+    },
+    "imageUpload": {
+      "title": "Upload image"
+    }
+  },
+  "avatar": {
+    "edit": "Edit",
+    "editAria": "Edit profile picture"
+  },
+  "errorBoundary": {
+    "somethingWentWrong": "Something went wrong",
+    "refresh": "Please refresh the page.",
+    "message": "Try another page, or refresh to start over."
+  },
+  "skeleton": {
+    "tryAgain": "Try again"
+  },
+  "footer": {
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service"
+  },
+  "legal": {
+    "lastUpdated": "Last updated: {{date}}",
+    "questions": "Questions? Reach out at: "
+  },
+  "validation": {
+    "nameTooLong": "Name must be less than 150 characters.",
+    "titleTooLongBytes": "Title must be under 100 bytes.",
+    "locationTooLong": "Location name is too long.",
+    "chooseCategory": "Choose a category from the list",
+    "passwordsMismatch": "Passwords do not match",
+    "maxImages_one": "You can only add up to {{max}} image.",
+    "maxImages_other": "You can only add up to {{max}} images.",
+    "unsupportedImageType": "\"{{name}}\" isn't a supported image type (use JPEG, PNG or WebP).",
+    "fileTooLarge": "\"{{name}}\" is larger than {{mb}}MB.",
+    "usernameRequired": "Username is required",
+    "usernameTooLong": "Username must be less than 50 characters",
+    "usernameNoSpaces": "Username cannot contain spaces",
+    "emailRequired": "Email is required",
+    "emailTooLong": "Email must be less than 150 characters",
+    "emailInvalid": "Invalid email address",
+    "nameRequired": "Name is required",
+    "passwordTooShort": "Password must be at least 8 characters long",
+    "passwordTooLongChars": "Password must be less than 64 characters",
+    "passwordNoSpaces": "Password cannot contain spaces",
+    "phoneRequired": "Phone number is required",
+    "phoneTooLong": "Phone number must be less than 15 digits",
+    "phoneInvalid": "Invalid phone number",
+    "titleRequired": "Title is required",
+    "titleTooLong": "Title is too long",
+    "descriptionTooLong": "Description is too long",
+    "categoryRequired": "Category is required",
+    "priceInvalid": "Price must be greater than 0",
+    "quantityInvalid": "Quantity must be greater than 0",
+    "unitRequired": "Unit is required",
+    "unitTooLong": "Unit is too long",
+    "locationRequired": "Location is required",
+    "locationInvalidChars": "Location contains characters that are not letters",
+    "bioTooLong": "Bio is too long"
+  },
+  "auth": {
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGitHub": "Continue with GitHub",
+    "orSignInWithEmail": "or sign in with email",
+    "orSignUpWithEmail": "or sign up with email",
+    "callback": {
+      "completing": "Completing sign-in…",
+      "cancelledTitle": "Sign-in cancelled",
+      "failedTitle": "Sign-in didn't complete",
+      "noSession": "We couldn't start a session.",
+      "backHome": "Back to home",
+      "accessDenied": "Sign-in was cancelled. No changes were made.",
+      "invalidState": "Something went wrong with the sign-in. Please try again.",
+      "invalidRequest": "Something went wrong with the sign-in. Please try again.",
+      "noEmail": "Your provider account doesn't have a verified email.",
+      "emailInUse": "An account with this email already exists. Sign in with your password instead.",
+      "alreadyLinked": "This account is already linked to another user.",
+      "retry": "Something went wrong. Please try again.",
+      "serverError": "Something went wrong on our end. Please try again."
+    }
+  }
+}

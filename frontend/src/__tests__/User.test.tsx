@@ -6,7 +6,7 @@ import { ModalProvider } from "../providers/ModalProvider";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { usePublicProfile } from "../api/profile";
 import { useSearchListings } from "../api/listings";
-import { useCategoryNames } from "../api/categories";
+import { useLocalizedCategoryNames } from "../api/categories";
 import type { ApiError } from "../api/client";
 import { makeListing, makePublicProfile } from "../test/factories";
 // Aliased: "User" is already the page component above.
@@ -81,7 +81,7 @@ function renderPage(
 }
 
 beforeEach(() => {
-  vi.mocked(useCategoryNames).mockReturnValue(
+  vi.mocked(useLocalizedCategoryNames).mockReturnValue(
     (slug: string) => ({ mushrooms: "Mushrooms", berries: "Berries" })[slug] ?? slug,
   );
 });

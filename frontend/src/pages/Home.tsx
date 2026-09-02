@@ -1,19 +1,21 @@
 import { useSearchListings } from "../api/listings";
-import { useCategoryNames } from "../api/categories";
+import { useLocalizedCategoryNames } from "../api/categories";
 import { ListingCard } from "../components/objects/ListingCard";
 import { Skeleton } from "../components/objects/Skeleton";
+import { useTranslation } from "react-i18next";
 
 export default function Home() {
+  const { t } = useTranslation();
   // /listings/search with no filters is the same set as the old unpaginated
   // /listings, one page at a time. The query state is the data plus the
   // loading/error flags.
   const { data, isPending, isError, refetch } = useSearchListings({ page: 1, limit: 20 });
   const listings = data?.items;
-  const categoryName = useCategoryNames();
+  const categoryName = useLocalizedCategoryNames();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">Latest Finds</h1>
+      <h1 className="text-foreground text-2xl font-bold">{t("pages.home.latestFinds")}</h1>
       {/*
         Live region: always in the DOM so assistive tech has something to
         watch. When the text inside changes, screen readers announce it.
@@ -39,7 +41,7 @@ export default function Home() {
         <Skeleton
           variant="error"
           className="mt-6 h-56 w-full"
-          message="Couldn't load listings."
+          message={t("pages.home.listingsError")}
           onRetry={() => refetch()}
         />
       )}
@@ -47,15 +49,15 @@ export default function Home() {
         <Skeleton
           variant="error"
           className="mt-6 h-56 w-full"
-          message="No listings yet."
+          message={t("pages.home.noListings")}
           onRetry={() => refetch()}
         />
       )}
       {/* One page is all there is until #25 builds the browse surface, so say
           so rather than letting the 21st listing be invisible. */}
-      {data && data.total > listings!.length && (
+      {data && data.total > data.items.length && (
         <p className="text-muted mt-2 text-sm">
-          Showing {listings!.length} of {data.total}
+          {t("listings.showingOf", { shown: data.items.length, total: data.total })}
         </p>
       )}
       {listings && listings.length > 0 && (

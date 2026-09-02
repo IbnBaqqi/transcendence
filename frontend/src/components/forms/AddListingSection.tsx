@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import { Form } from "./Form";
 import { FormField } from "./FormField";
 import { CategorySelect } from "./CategorySelect";
@@ -18,6 +19,7 @@ import { useImageGallery } from "../../hooks/useImageGallery";
 const MAX_LISTING_IMAGES = 5;
 
 export function AddListingSection() {
+  const { t } = useTranslation();
   const { data: categories } = useCategories();
   const schema = useMemo(
     () => makeAddListingSchema(flattenCategories(categories ?? []).map((c) => c.slug)),
@@ -65,43 +67,51 @@ export function AddListingSection() {
       <div className="space-y-4">
         <div className="space-y-2">
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">Title</h2>
+            <h2 className="text-foreground text-lg font-bold">{t("forms.addListing.title")}</h2>
             <FormField name="title" width="max-w-md" validateOnChange />
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">Photos</h2>
+            <h2 className="text-foreground text-lg font-bold">{t("forms.addListing.photos")}</h2>
             <ImageDropzone
               images={photos}
               onFilesSelected={addPhotos}
               onRemove={removePhoto}
               multiple
-              emptyMessage="No photos yet."
-              helperText="Drag & drop photos here, or click to browse"
+              emptyMessage={t("dropzone.noPhotos")}
+              helperText={t("dropzone.dragDropAddListing")}
             />
             {photoError && <p className="text-berry-500 text-sm">{photoError}</p>}
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">Description</h2>
+            <h2 className="text-foreground text-lg font-bold">
+              {t("forms.addListing.description")}
+            </h2>
             <FormTextArea name="description" />
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">Category</h2>
-            <CategorySelect name="category" ariaLabel="Category" width="max-w-md" />
+            <h2 className="text-foreground text-lg font-bold">{t("forms.addListing.category")}</h2>
+            <CategorySelect
+              name="category"
+              ariaLabel={t("forms.addListing.category")}
+              width="max-w-md"
+            />
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">Price & Quantity</h2>
+            <h2 className="text-foreground text-lg font-bold">
+              {t("forms.addListing.priceQuantity")}
+            </h2>
             <div className="flex flex-row gap-4">
               <FormField
                 name="price"
-                label="Price"
-                placeholder="*in local currency"
+                label={t("forms.price")}
+                placeholder={t("forms.pricePlaceholder")}
                 type="number"
                 width="max-w-sm"
                 validateOnChange
               />
               <FormField
                 name="quantity"
-                label="Quantity"
+                label={t("forms.quantity")}
                 type="number"
                 width="max-w-sm"
                 validateOnChange
@@ -109,8 +119,8 @@ export function AddListingSection() {
             </div>
             <FormField
               name="unit"
-              label="Unit"
-              placeholder="e.g. 'kg' or 'dl'"
+              label={t("forms.unit")}
+              placeholder={t("forms.unitPlaceholder")}
               width="max-w-md"
               validateOnChange
             />
@@ -118,7 +128,7 @@ export function AddListingSection() {
         </div>
         <Button variant="primary" type="submit" disabled={!form.formState.isValid}>
           {/* TODO: blocked by #109 Insert API here */}
-          Save
+          {t("forms.addListing.save")}
         </Button>
       </div>
     </Form>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ImageDropzone } from "../objects/ImageDropzone";
 import { useImageGallery } from "../../hooks/useImageGallery";
 import Button from "../objects/Button.tsx";
@@ -14,6 +15,7 @@ type ImageUploadSectionProps = {
 // and hands it back to the caller via onComplete - nothing is sent over the
 // network here.
 export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionProps) {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const { images, addFiles, removeImage } = useImageGallery({
     maxFiles: 1,
@@ -38,7 +40,7 @@ export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionPr
         images={images}
         onFilesSelected={handleFilesSelected}
         onRemove={removeImage}
-        emptyMessage="No photo yet."
+        emptyMessage={t("dropzone.noPhoto")}
         emptyBoxClassName="h-48 w-48 mx-auto"
         thumbnailClassName="h-48 w-48"
         shape="circle"
@@ -46,10 +48,10 @@ export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionPr
       {error && <p className="text-berry-500 text-center text-sm">{error}</p>}
       <div className="flex flex-row gap-2">
         <Button variant="primary" type="button" onClick={handleSave} disabled={images.length === 0}>
-          Save
+          {t("common.save")}
         </Button>
         <Button variant="secondary" type="button" onClick={onClose}>
-          Cancel
+          {t("common.cancel")}
         </Button>
       </div>
     </div>

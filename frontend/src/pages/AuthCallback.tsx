@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+
 import { useAuth } from "../hooks/useAuth";
 
 // The backend never puts the access token in the redirect URL - it only sets
@@ -7,25 +9,28 @@ import { useAuth } from "../hooks/useAuth";
 // probably a cookie now, go revive the session". Errors arrive as a URL slug,
 // not JSON, so axios error handling never applies to this page (see
 // OAUTH_FRONTEND_HANDOFF.md for the full contract).
-const ERROR_MESSAGES: Record<string, string> = {
-  access_denied: "Sign-in was cancelled. No changes were made.",
-  invalid_state: "Something went wrong with the sign-in. Please try again.",
-  invalid_request: "Something went wrong with the sign-in. Please try again.",
-  no_email: "Your provider account doesn't have a verified email.",
-  email_in_use: "An account with this email already exists. Sign in with your password instead.",
-  already_linked: "This account is already linked to another user.",
-  retry: "Something went wrong. Please try again.",
-  server_error: "Something went wrong on our end. Please try again.",
+// Keys rather than sentences, resolved at render: the page can outlive a
+// language change, and a string captured here would not follow it.
+const ERROR_KEYS: Record<string, string> = {
+  access_denied: "auth.callback.accessDenied",
+  invalid_state: "auth.callback.invalidState",
+  invalid_request: "auth.callback.invalidRequest",
+  no_email: "auth.callback.noEmail",
+  email_in_use: "auth.callback.emailInUse",
+  already_linked: "auth.callback.alreadyLinked",
+  retry: "auth.callback.retry",
+  server_error: "auth.callback.serverError",
 };
 
 export default function AuthCallback() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { restoreSession } = useAuth();
   const errorSlug = searchParams.get("error");
   const message = useMemo(
-    () => (errorSlug ? (ERROR_MESSAGES[errorSlug] ?? ERROR_MESSAGES.server_error) : null),
-    [errorSlug],
+    () => (errorSlug ? t(ERROR_KEYS[errorSlug] ?? ERROR_KEYS.server_error) : null),
+    [errorSlug, t],
   );
   const [restoring, setRestoring] = useState(true);
 
@@ -51,21 +56,23 @@ export default function AuthCallback() {
       {message ? (
         <>
           <h1 className="text-foreground text-2xl font-bold">
-            {errorSlug === "access_denied" ? "Sign-in cancelled" : "Sign-in didn't complete"}
+            {errorSlug === "access_denied"
+              ? t("auth.callback.cancelledTitle")
+              : t("auth.callback.failedTitle")}
           </h1>
           <p className="text-muted mt-2">{message}</p>
           <a href="/" className="text-accent mt-6 inline-block hover:underline">
-            Back to home
+            {t("auth.callback.backHome")}
           </a>
         </>
       ) : restoring ? (
-        <p className="text-muted">Completing sign-in…</p>
+        <p className="text-muted">{t("auth.callback.completing")}</p>
       ) : (
         <>
-          <h1 className="text-foreground text-2xl font-bold">Sign-in didn't complete</h1>
-          <p className="text-muted mt-2">We couldn't start a session.</p>
+          <h1 className="text-foreground text-2xl font-bold">{t("auth.callback.failedTitle")}</h1>
+          <p className="text-muted mt-2">{t("auth.callback.noSession")}</p>
           <a href="/" className="text-accent mt-6 inline-block hover:underline">
-            Back to home
+            {t("auth.callback.backHome")}
           </a>
         </>
       )}

@@ -1,6 +1,6 @@
-import type { Document } from "../components/types/DocumentTypes.ts";
+import type { Document } from "../../components/types/DocumentTypes";
 
-export const Terms: Document = {
+export const terms: Document = {
   title: "Terms of Service",
   lastUpdated: "July 2026",
   intro: [

@@ -1,0 +1,314 @@
+{
+  "brand": "Metsätori",
+  "nav": {
+    "home": "Etusivu",
+    "openChat": "Avaa keskustelu",
+    "notifications": "Ilmoitukset",
+    "addListing": "Lisää ilmoitus"
+  },
+  "language": {
+    "en": "English",
+    "fi": "Suomi",
+    "sv": "Svenska",
+    "label": "Kieli"
+  },
+  "common": {
+    "save": "Tallenna",
+    "saving": "Tallennetaan…",
+    "cancel": "Peruuta",
+    "logIn": "Kirjaudu sisään",
+    "loggingIn": "Kirjaudutaan…",
+    "login": "Kirjaudu sisään",
+    "logOut": "Kirjaudu ulos",
+    "loggingOut": "Kirjaudutaan ulos…",
+    "register": "Rekisteröidy",
+    "registering": "Rekisteröidytään…",
+    "loading": "Ladataan…",
+    "loadingDots": "Ladataan...",
+    "tryAgain": "Yritä uudelleen",
+    "somethingWentWrong": "Jokin meni pieleen. Yritä uudelleen.",
+    "couldNotReachServer": "Palvelimeen ei saada yhteyttä",
+    "deleteAccount": "Poista tili"
+  },
+  "forms": {
+    "email": "Sähköposti",
+    "password": "Salasana",
+    "currentPassword": "Nykyinen salasana",
+    "newPassword": "Uusi salasana",
+    "confirmPassword": "Vahvista salasana",
+    "username": "Käyttäjänimi",
+    "firstName": "Etunimi",
+    "lastName": "Sukunimi",
+    "phone": "Puhelin",
+    "city": "Kaupunki",
+    "unit": "Yksikkö",
+    "price": "Hinta",
+    "quantity": "Määrä",
+    "pricePlaceholder": "*paikallisessa valuutassa",
+    "unitPlaceholder": "esim. 'kg' tai 'dl'",
+    "editDetails": "Muokkaa tietoja",
+    "editText": "Muokkaa tekstiä",
+    "editPassword": "Vaihda salasana",
+    "category": {
+      "loading": "Ladataan luokkia…",
+      "unavailable": "Luokat eivät ole saatavilla",
+      "choose": "Valitse luokka",
+      "noCategories": "Luokkia ei ole saatavilla",
+      "loadError": "Luokkia ei voitu ladata."
+    },
+    "addListing": {
+      "title": "Otsikko",
+      "photos": "Kuvat",
+      "description": "Kuvaus",
+      "category": "Luokka",
+      "priceQuantity": "Hinta ja määrä",
+      "save": "Tallenna"
+    }
+  },
+  "dropzone": {
+    "noPhotos": "Ei kuvia vielä.",
+    "noPhoto": "Ei kuvaa vielä.",
+    "dragDrop": "Vedä ja pudota tai klikkaa ladataksesi",
+    "dragDropAddListing": "Vedä ja pudota kuvat tähän tai klikkaa selataksesi",
+    "uploading": "Ladataan…",
+    "uploadFailed": "Lataus epäonnistui",
+    "retry": "Yritä uudelleen",
+    "removePhoto": "Poista kuva",
+    "addPhoto": "Lisää kuva",
+    "ariaUploadPhotos": "Lataa kuvia"
+  },
+  "categories": {
+    "mushrooms": "Sienet",
+    "berries": "Marjat",
+    "greens": "Vihreät",
+    "vegetables": "Vihannekset",
+    "other": "Muu"
+  },
+  "listings": {
+    "available": "{{qty}} {{unit}} saatavilla",
+    "showingOf": "Näytetään {{shown}} / {{total}}"
+  },
+  "orders": {
+    "title": "Tilaukset",
+    "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tilauksesi.",
+    "signedOutDetail": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tämän tilauksen.",
+    "tabs": {
+      "buying": "Ostot",
+      "selling": "Myynnit"
+    },
+    "empty": {
+      "purchases": "Et ole vielä varannut mitään.",
+      "sales": "Kukaan ei ole vielä varannut sinulta.",
+      "browse": "Selaa ilmoituksia"
+    },
+    "listError": "Tilauksiasi ei voitu ladata.",
+    "detailError": "Tätä tilausta ei voitu ladata.",
+    "allOrders": "← Kaikki tilaukset",
+    "yourRole": "Olet tämän tilauksen {{role}}.",
+    "role": {
+      "buyer": "ostaja",
+      "seller": "myyjä",
+      "none": "—"
+    },
+    "noPayments": "Metsätori ei käsittele maksuja - sopikaa maksusta ja noudosta keskenänne.",
+    "viewListing": "Näytä ilmoitus",
+    "notYet": "Ei vielä",
+    "fields": {
+      "quantity": "Määrä",
+      "unitPrice": "Yksikköhinta",
+      "total": "Yhteensä",
+      "reserved": "Varattu",
+      "handedOver": "Myyjä luovutti",
+      "received": "Ostaja vahvisti vastaanoton"
+    },
+    "status": {
+      "pending": "Odottaa",
+      "confirmed": "Vahvistettu",
+      "completed": "Valmis",
+      "cancelled": "Peruttu",
+      "refunded": "Hyvitetty"
+    },
+    "actions": {
+      "confirm": "Vahvista varaus",
+      "confirming": "Vahvistetaan…",
+      "handover": "Merkitse luovutetuksi",
+      "marking": "Merkitään…",
+      "receive": "Vahvista vastaanotto",
+      "cancel": "Peruuta tilaus",
+      "cancelling": "Perutaan…"
+    },
+    "moved": "Tämä tilaus juuri muuttui. Päivitetty - tarkista toiminnot uudelleen.",
+    "waiting": {
+      "youConfirm": "Odotetaan, että vahvistat tämän varauksen.",
+      "sellerConfirms": "Odotetaan, että myyjä vahvistaa tämän varauksen.",
+      "arrange": "Sopikaa luovutus keskenänne ja merkitkää se sitten tähän.",
+      "youHandedOver": "Merkitsit luovutuksen - odotetaan, että ostaja vahvistaa vastaanoton.",
+      "buyerReceived": "Ostaja vahvisti vastaanoton - merkitse luovutus, niin tilaus valmistuu.",
+      "youReceived": "Vahvistit vastaanoton - odotetaan, että myyjä merkitsee luovutuksen.",
+      "sellerHandedOver": "Myyjä merkitsi luovutuksen - vahvista, että sait tuotteet."
+    },
+    "reserve": {
+      "ownListing": "Tämä on oma ilmoituksesi.",
+      "soldOut": "Loppuunmyyty - ei enää varattavaa.",
+      "logInToReserve": "Kirjaudu sisään varataksesi tältä myyjältä.",
+      "loadError": "Tätä ilmoitusta ei voitu ladata.",
+      "quantityLabel": "Määrä ({{unit}})",
+      "submit": "Lähetä ostopyyntö",
+      "submitting": "Varataan…",
+      "total": "Yhteensä {{total}} € - maksat suoraan myyjälle, et Metsätorille.",
+      "chooseBetween": "Valitse 1 ja {{max}} {{unit}} väliltä.",
+      "error": "Varausta ei voitu tehdä. Yritä uudelleen."
+    }
+  },
+  "pages": {
+    "home": {
+      "latestFinds": "Uusimmat löydöt",
+      "listingsError": "Ilmoituksia ei voitu ladata.",
+      "noListings": "Ei ilmoituksia vielä."
+    },
+    "search": {
+      "title": "Haku",
+      "stub": "Haku ja suodattimet - ei vielä rakennettu (#25)."
+    },
+    "dashboard": {
+      "title": "Myyjän hallintapaneeli",
+      "stub": "Myyjän hallintapaneeli - ei vielä rakennettu (#23)."
+    },
+    "addListing": {
+      "title": "Lisää ilmoitus"
+    },
+    "listingDetail": {
+      "title": "Ilmoitus {{id}}",
+      "stub": "Ilmoitussivu - ei vielä rakennettu (#21)."
+    },
+    "notifications": {
+      "title": "Ilmoitukset"
+    },
+    "profile": {
+      "title": "Profiili ja asetukset",
+      "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi ja muokataksesi profiiliasi.",
+      "contactDetails": "Yhteystiedot",
+      "password": "Salasana",
+      "bio": "Kuvaus",
+      "accountManagement": "Tilin hallinta"
+    },
+    "notFound": {
+      "title": "404 - Sivua ei löydy",
+      "subtitle": "Tätä sivua ei ole olemassa tai se on siirtynyt",
+      "backHome": "Takaisin etusivulle"
+    },
+    "user": {
+      "title": "Käyttäjäprofiili",
+      "online": "Paikalla",
+      "offline": "Poissa",
+      "messageUser": "Lähetä viesti",
+      "details": "Tiedot",
+      "firstName": "Etunimi",
+      "lastName": "Sukunimi",
+      "location": "Sijainti",
+      "bio": "Kuvaus",
+      "noBio": "Ei kuvausta vielä.",
+      "listings": "Ilmoitukset",
+      "loadingListings": "Ladataan...",
+      "listingsError": "Ilmoituksia ei voitu ladata. Yritä uudelleen.",
+      "noListings": "Ei ilmoituksia vielä!",
+      "profileError": "Profiilia ei voitu ladata."
+    }
+  },
+  "chat": {
+    "title": "Keskustelu",
+    "close": "Sulje"
+  },
+  "modal": {
+    "login": {
+      "title": "Kirjaudu sisään",
+      "notRegistered": "Etkö ole rekisteröitynyt? "
+    },
+    "register": {
+      "title": "Rekisteröidy",
+      "alreadyHaveAccount": "Onko sinulla jo tili? "
+    },
+    "deleteAccount": {
+      "title": "Poista tili"
+    },
+    "imageUpload": {
+      "title": "Lataa kuva"
+    }
+  },
+  "avatar": {
+    "edit": "Muokkaa",
+    "editAria": "Muokkaa profiilikuvaa"
+  },
+  "errorBoundary": {
+    "somethingWentWrong": "Jokin meni pieleen",
+    "refresh": "Päivitä sivu.",
+    "message": "Yritä toista sivua tai päivitä aloittaaksesi alusta."
+  },
+  "skeleton": {
+    "tryAgain": "Yritä uudelleen"
+  },
+  "footer": {
+    "privacyPolicy": "Tietosuojakäytäntö",
+    "termsOfService": "Käyttöehdot"
+  },
+  "legal": {
+    "lastUpdated": "Päivitetty viimeksi: {{date}}",
+    "questions": "Kysyttävää? Ota yhteyttä: "
+  },
+  "validation": {
+    "nameTooLong": "Nimen on oltava alle 150 merkkiä.",
+    "titleTooLongBytes": "Otsikon on oltava alle 100 tavua.",
+    "locationTooLong": "Sijainnin nimi on liian pitkä.",
+    "chooseCategory": "Valitse luokka luettelosta",
+    "passwordsMismatch": "Salasanat eivät täsmää",
+    "maxImages_one": "Voit lisätä enintään {{max}} kuvan.",
+    "maxImages_other": "Voit lisätä enintään {{max}} kuvaa.",
+    "unsupportedImageType": "\"{{name}}\" ei ole tuettu kuvatyyppi (käytä JPEG-, PNG- tai WebP-kuvia).",
+    "fileTooLarge": "\"{{name}}\" on suurempi kuin {{mb}} MB.",
+    "usernameRequired": "Käyttäjätunnus vaaditaan",
+    "usernameTooLong": "Käyttäjätunnus saa olla enintään 50 merkkiä",
+    "usernameNoSpaces": "Käyttäjätunnuksessa ei voi olla välilyöntejä",
+    "emailRequired": "Sähköposti vaaditaan",
+    "emailTooLong": "Sähköposti saa olla enintään 150 merkkiä",
+    "emailInvalid": "Virheellinen sähköpostiosoite",
+    "nameRequired": "Nimi vaaditaan",
+    "passwordTooShort": "Salasanan on oltava vähintään 8 merkkiä",
+    "passwordTooLongChars": "Salasana saa olla enintään 64 merkkiä",
+    "passwordNoSpaces": "Salasanassa ei voi olla välilyöntejä",
+    "phoneRequired": "Puhelinnumero vaaditaan",
+    "phoneTooLong": "Puhelinnumero saa olla enintään 15 numeroa",
+    "phoneInvalid": "Virheellinen puhelinnumero",
+    "titleRequired": "Otsikko vaaditaan",
+    "titleTooLong": "Otsikko on liian pitkä",
+    "descriptionTooLong": "Kuvaus on liian pitkä",
+    "categoryRequired": "Kategoria vaaditaan",
+    "priceInvalid": "Hinnan on oltava suurempi kuin 0",
+    "quantityInvalid": "Määrän on oltava suurempi kuin 0",
+    "unitRequired": "Yksikkö vaaditaan",
+    "unitTooLong": "Yksikkö on liian pitkä",
+    "locationRequired": "Sijainti vaaditaan",
+    "locationInvalidChars": "Sijainti sisältää merkkejä jotka eivät ole kirjaimia",
+    "bioTooLong": "Esittely on liian pitkä"
+  },
+  "auth": {
+    "continueWithGoogle": "Jatka Googlella",
+    "continueWithGitHub": "Jatka GitHubilla",
+    "orSignInWithEmail": "tai kirjaudu sähköpostilla",
+    "orSignUpWithEmail": "tai rekisteröidy sähköpostilla",
+    "callback": {
+      "completing": "Viimeistellään kirjautumista…",
+      "cancelledTitle": "Kirjautuminen peruutettu",
+      "failedTitle": "Kirjautuminen ei onnistunut",
+      "noSession": "Istuntoa ei voitu aloittaa.",
+      "backHome": "Takaisin etusivulle",
+      "accessDenied": "Kirjautuminen peruutettiin. Mitään ei muutettu.",
+      "invalidState": "Kirjautumisessa tapahtui virhe. Yritä uudelleen.",
+      "invalidRequest": "Kirjautumisessa tapahtui virhe. Yritä uudelleen.",
+      "noEmail": "Palveluntarjoajan tilillä ei ole vahvistettua sähköpostiosoitetta.",
+      "emailInUse": "Tällä sähköpostilla on jo tili. Kirjaudu sisään salasanallasi.",
+      "alreadyLinked": "Tämä tili on jo liitetty toiseen käyttäjään.",
+      "retry": "Jotain meni pieleen. Yritä uudelleen.",
+      "serverError": "Palvelussamme tapahtui virhe. Yritä uudelleen."
+    }
+  }
+}
