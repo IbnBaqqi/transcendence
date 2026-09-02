@@ -67,6 +67,10 @@ export interface Order {
 
 // --- Chat ---
 
+export interface AvatarResponse {
+  avatar_url: string;
+}
+
 export interface Presence {
   is_online: boolean;
   last_seen_at?: Timestamp; // absent when hidden AND when never seen
