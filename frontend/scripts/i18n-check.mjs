@@ -37,6 +37,18 @@ function walk(dir) {
 
 const files = SCAN_DIRS.flatMap((dir) => walk(join(SRC, dir))).filter((f) => f.endsWith(".tsx"));
 
+// Stricter than isProse, for values that are not JSX text: a default prop is
+// as often a Tailwind class list as it is copy. Sentence punctuation or a
+// capital tells them apart - "Try again" has one, "h-56 w-full" does not.
+function looksLikeCopy(value) {
+  return (
+    /[A-Za-z]/.test(value) &&
+    /\s/.test(value) &&
+    /^[A-Za-z0-9 .,!?'\u2019"&\u20AC%\u2026-]+$/.test(value) &&
+    /[A-Z]|[!?\u2026]/.test(value)
+  );
+}
+
 function isProse(text) {
   return /[A-Za-z]/.test(text) && /\s/.test(text) && !/^[?—–‑]+$/.test(text);
 }
@@ -84,21 +96,20 @@ for (const file of files) {
   };
   attrVisit(sf);
 
-  // 3. Default prop values in signatures (`retryLabel = "Try again",`).
-  // Only flag prose-like values: CSS class strings and SVG geometry (which are
-  // lowercase, colon/bracket/slash-heavy) that dominate attribute values.
-  for (const match of source.matchAll(/([A-Za-z]+)\s*=\s*"([^"]+)"\s*,?$/gm)) {
-    const value = match[2];
-    if (!/[A-Za-z]/.test(value)) continue;
-    if (!/\s/.test(value)) continue;
-    if (!/^[A-Za-z0-9 .,!?''\u2019"&\u20AC%\u2026-]+$/.test(value)) continue;
-    if (!/[A-Z]|[!?\u2026]/.test(value)) continue;
-    issues.push({ file, line: lineOf(source, match.index), text: value, kind: "default" });
-  }
-}
-
-function lineOf(source, index) {
-  return source.slice(0, index).split("\n").length;
+  // 3. Default prop values in destructuring (`{ retryLabel = "Try again" }`).
+  // Via the AST, not a regex over the source: a regex cannot tell a default
+  // value from a JSX attribute, and SVG path geometry is prose by every
+  // character test a regex can apply - letters, digits, spaces, an uppercase M.
+  // That flagged every inline icon. A BindingElement initializer is a default
+  // value and nothing else.
+  const defaultVisit = (node) => {
+    if (ts.isBindingElement(node) && node.initializer && ts.isStringLiteral(node.initializer)) {
+      const value = node.initializer.text;
+      if (looksLikeCopy(value)) report(node.initializer.getStart(sf), value, "default");
+    }
+    ts.forEachChild(node, defaultVisit);
+  };
+  defaultVisit(sf);
 }
 
 if (issues.length === 0) {
