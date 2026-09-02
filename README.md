@@ -7,6 +7,49 @@ real money. Built for the 42 `ft_transcendence` project.
 React + TypeScript frontend, Go backend, PostgreSQL, all runnable with
 `docker compose up`.
 
+## Running it
+
+```bash
+make setup          # .env from the example, and one directory - see below
+docker compose up
+```
+
+Then <http://localhost:5173> for the app and <http://localhost:8080/api/docs>
+for the API. Migrations are a separate step the first time:
+`cd backend && make migrate-up`.
+
+**`make setup` before the first `up`, and the order matters.** It creates
+`frontend/node_modules` and `backend/uploads` so that Docker does not. A
+container cannot mount onto a path that does not exist, so the daemon creates
+any missing subdirectory of a bind mount — as **root**, inside your working
+tree. Both directories are gitignored, so both are absent on a fresh clone and
+both get created that way. After that, the next host-side command that writes
+there fails with `EACCES` — `npm ci` for one, `make run` saving an uploaded
+image for the other — with an error that blames permissions and never mentions
+Docker.
+
+**This is a Linux thing.** Docker Desktop for macOS maps bind-mount ownership to
+the host user, so nothing lands root-owned and none of the above happens there —
+measured both ways on both platforms. `make setup` is still the right first
+command everywhere; `mkdir -p` costs nothing.
+
+Already hit it, on Linux? The directories have to go before they can be
+recreated — but **no `sudo` is needed**, because they are empty. Docker's volume
+shadows each one, so everything written there goes into the volume rather than
+the tree, and removing a directory needs write permission on its *parent*, which
+you have:
+
+```bash
+rmdir frontend/node_modules backend/uploads
+make setup && (cd frontend && npm ci)
+```
+
+`rmdir` also fails safely if one of them somehow is not empty, which is the
+point at which `sudo rm -rf` becomes the right tool rather than the reflex.
+
+Running the container as your own user does not help — the daemon prepares the
+mount point before the container starts, so its user is irrelevant.
+
 ## Modules
 
 The subject requires a written justification for the modules we claim —
@@ -381,6 +424,32 @@ goroutine. Two consequences worth knowing:
 
 A full queue drops rather than blocks, for the same reason: blocking would put
 the mail server back on the request path.
+
+## Hot reload
+
+Both halves of the stack pick up edits without a restart, whichever way you
+started it:
+
+```bash
+docker compose up        # frontend via Vite, backend via air
+cd backend && make dev   # backend only, on the host
+```
+
+Save a `.go` file and the backend rebuilds in a few seconds. `api/openapi.yaml`
+counts too — it is `go:embed`-ed into the binary, so editing the spec without
+watching it would leave `/api/docs` serving a stale copy with nothing to say
+why.
+
+Two things worth knowing. The **first `docker compose up` after pulling this
+builds an image** rather than pulling one, because the backend now runs a `dev`
+stage from `backend/Dockerfile`; later ups hit the layer cache. And **air is
+pinned to one version** in both the Dockerfile and the Makefile, so the
+container and the host behave identically — `make dev` runs it through `go run`
+rather than from your `PATH`, so there is nothing to install.
+
+The build output goes to `/tmp/air`, deliberately outside the repository: under
+compose the source is a bind mount, so a binary written into the tree would
+appear on your machine owned by the container's user.
 
 ## Running the tests
 

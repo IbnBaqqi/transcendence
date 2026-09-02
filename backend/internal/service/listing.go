@@ -174,10 +174,6 @@ func (s *ListingService) GetListing(ctx context.Context, id uuid.UUID) (database
 	return listing, nil
 }
 
-func (s *ListingService) ListListings(ctx context.Context) ([]database.Listing, error) {
-	return s.db.ListListings(ctx)
-}
-
 // UpdateListing edits a listing the caller owns.
 func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, listingID uuid.UUID, input dtos.UpdateListingInput) (database.Listing, error) {
 	category := normaliseCategory(input.Category)

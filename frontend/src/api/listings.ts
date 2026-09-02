@@ -11,6 +11,7 @@ export type ListingSort = "newest" | "oldest" | "price_asc" | "price_desc";
 export interface ListingSearchParams {
   keyword?: string;
   category?: string;
+  seller_id?: string;
   min_price?: number;
   max_price?: number;
   location?: string;
@@ -30,16 +31,6 @@ export function toQueryString(params: ListingSearchParams): string {
   search.sort();
 
   return search.toString();
-}
-
-export function useListings() {
-  return useQuery({
-    queryKey: keys.listings.list(),
-    queryFn: async () => {
-      const res = await api.get<Listing[]>("/listings");
-      return res.data ?? []; // insurance: an empty result must not be null
-    },
-  });
 }
 
 export function useListing(id: string) {

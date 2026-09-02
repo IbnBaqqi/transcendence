@@ -7,12 +7,6 @@ RETURNING *;
 SELECT * FROM listings
 WHERE listings.id = $1;
 
--- name: ListListings :many
-SELECT * FROM listings
-WHERE listings.quantity > 0 AND listings.removed_at IS NULL
-  AND EXISTS (SELECT 1 FROM users u WHERE u.id = listings.seller_id AND u.is_visible)
-ORDER BY created_at DESC;
-
 -- name: UpdateListing :one
 UPDATE listings
 SET title = $2,
