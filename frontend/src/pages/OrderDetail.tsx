@@ -15,8 +15,11 @@ function formatStamp(at: Timestamp | null) {
 
 export default function OrderDetail() {
   const { id } = useParams();
-  const { user } = useAuth();
-  const { data: order, isLoading, error } = useOrder(id ?? "");
+  // isLoading matters here: AuthProvider reports user as null for one render,
+  // and the order request can resolve first - which renders the page with no
+  // role, so no buttons and the wrong side's copy.
+  const { user, isLoading: authLoading } = useAuth();
+  const { data: order, isLoading: orderLoading, error } = useOrder(id ?? "");
 
   // 403 means "not your order" - same answer as 404, and it doesn't confirm
   // that an order with this id exists.
@@ -24,7 +27,7 @@ export default function OrderDetail() {
     return <NotFound />;
   }
 
-  if (isLoading) return <p className="text-muted p-8 text-sm">Loading…</p>;
+  if (authLoading || orderLoading) return <p className="text-muted p-8 text-sm">Loading…</p>;
 
   if (error || !order) {
     return (
