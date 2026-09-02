@@ -36,6 +36,8 @@ describe("makeAddListingSchema", () => {
     const result = makeAddListingSchema(SLUGS).safeParse({ ...VALID, category: "" });
 
     expect(result.success).toBe(false);
+    // The empty case is a different message from the unrecognised one below,
+    // which is the point of the test - and neither is zod's generic copy now.
     expect(result.error?.issues[0].message).toBe("Category is required");
   });
 });

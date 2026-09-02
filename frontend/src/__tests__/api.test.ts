@@ -2,6 +2,7 @@ import { AxiosError, AxiosHeaders } from "axios";
 
 import { isApiError, toApiError } from "../api/client";
 import { toQueryString } from "../api/listings";
+import i18next from "../i18n";
 
 // Whatever toApiError accepts, without exporting the wire type just for a test.
 type WireError = Parameters<typeof toApiError>[0];
@@ -25,6 +26,17 @@ function axiosError(response?: { status: number; data: unknown }): WireError {
 }
 
 describe("toApiError", () => {
+  beforeEach(async () => {
+    // The localized-fallback tests switch language; keep the rest deterministic.
+    if (i18next.language !== "en") await i18next.changeLanguage("en");
+  });
+
+  afterAll(async () => {
+    // Leave the shared singleton back on the default so later describes in
+    // this file (and any other test file in the same worker) stay green.
+    if (i18next.language !== "en") await i18next.changeLanguage("en");
+  });
+
   test("uses the backend's message on a 4xx", () => {
     const err = toApiError(axiosError({ status: 404, data: { error: "listing not found" } }));
 
@@ -44,7 +56,7 @@ describe("toApiError", () => {
     const err = toApiError(axiosError({ status: 500, data: "" }));
 
     expect(err.status).toBe(500);
-    expect(err.message).toBe("Something went wrong");
+    expect(err.message).toBe("Something went wrong. Please try again.");
   });
 
   // status 0 is what lets a component say "check your connection" instead of
@@ -54,6 +66,23 @@ describe("toApiError", () => {
 
     expect(err.status).toBe(0);
     expect(err.message).toBe("Could not reach the server");
+  });
+
+  test("passes through a backend-provided message verbatim, even when localized", async () => {
+    await i18next.changeLanguage("fi");
+
+    const err = toApiError(axiosError({ status: 404, data: { error: "listing not found" } }));
+
+    expect(err.message).toBe("listing not found");
+  });
+
+  test("localizes the synthesized fallbacks to the active language", async () => {
+    await i18next.changeLanguage("fi");
+
+    expect(toApiError(axiosError({ status: 500, data: "" })).message).toBe(
+      "Jokin meni pieleen. Yritä uudelleen.",
+    );
+    expect(toApiError(axiosError()).message).toBe("Palvelimeen ei saada yhteyttä");
   });
 });
 

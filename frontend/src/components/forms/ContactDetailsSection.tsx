@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import { Form } from "./Form";
 import { FormField } from "./FormField";
 import { contactDetailsSchema, type ContactDetailsFormValues } from "../../schemas/contactDetails";
@@ -9,6 +10,7 @@ import { useOwnProfile, useUpdateOwnProfile } from "../../api/profile";
 import { isApiError } from "../../api/client";
 
 export function ContactDetailsSection() {
+  const { t } = useTranslation();
   const [isEditing, setEditing] = useState(false);
   const { data: profile } = useOwnProfile();
   const update = useUpdateOwnProfile();
@@ -46,7 +48,7 @@ export function ContactDetailsSection() {
       setEditing(false);
     } catch (err) {
       form.setError("root", {
-        message: isApiError(err) ? err.message : "Something went wrong. Please try again.",
+        message: isApiError(err) ? err.message : t("common.somethingWentWrong"),
       });
     }
   };
@@ -55,17 +57,17 @@ export function ContactDetailsSection() {
     <Form form={form} onSubmit={handleSubmit} className="max-w-fit" isEditing={isEditing}>
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-4">
-          <FormField label="First name" name="firstname" validateOnChange />
-          <FormField label="Last name" name="lastname" />
-          <FormField label="Phone" name="phone_number" type="tel" />
-          <FormField label="City" name="location" validateOnChange />
+          <FormField label={t("forms.firstName")} name="firstname" validateOnChange />
+          <FormField label={t("forms.lastName")} name="lastname" />
+          <FormField label={t("forms.phone")} name="phone_number" type="tel" />
+          <FormField label={t("forms.city")} name="location" validateOnChange />
         </div>
         {errors.root?.message && <p className="text-berry-500 text-sm">{errors.root.message}</p>}
         <div className="flex flex-row gap-2">
           {isEditing ? (
             <>
               <Button variant="primary" type="submit" disabled={!isValid || isSubmitting}>
-                {isSubmitting ? "Saving…" : "Save"}
+                {isSubmitting ? t("common.saving") : t("common.save")}
               </Button>
               <Button
                 variant="secondary"
@@ -74,12 +76,12 @@ export function ContactDetailsSection() {
                   setEditing(false);
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </>
           ) : (
             <Button variant="primary" type="button" onClick={() => setEditing(true)}>
-              Edit Details
+              {t("forms.editDetails")}
             </Button>
           )}
         </div>

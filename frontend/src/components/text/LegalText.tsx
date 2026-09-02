@@ -1,5 +1,6 @@
 import type { Block, Document } from "../types/DocumentTypes.ts";
 import Mailto from "../objects/Mailto.tsx";
+import { useTranslation } from "react-i18next";
 
 function LegalParagraph({ paragraphs }: { paragraphs: string[] }) {
   return (
@@ -35,11 +36,12 @@ function LegalSection({ block }: { block: Block }) {
 
 export function LegalDocument({ document }: { document: Document }) {
   const { title, lastUpdated, intro, blocks, contactEmail } = document;
+  const { t } = useTranslation();
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="text-foreground text-3xl font-bold">{title}</h1>
-      <p className="text-muted mt-2 text-sm">Last updated: {lastUpdated}</p>
+      <p className="text-muted mt-2 text-sm">{t("legal.lastUpdated", { date: lastUpdated })}</p>
 
       <div className="text-muted mt-6 space-y-4">
         {intro.map((text) => (
@@ -55,7 +57,8 @@ export function LegalDocument({ document }: { document: Document }) {
 
       {contactEmail && (
         <p className="text-muted mt-10">
-          Questions? Reach out at: <Mailto label={contactEmail} mailto={contactEmail} />
+          {t("legal.questions")}
+          <Mailto label={contactEmail} mailto={contactEmail} />
         </p>
       )}
     </div>

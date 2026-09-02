@@ -1,4 +1,5 @@
 import type { HTMLAttributes } from "react";
+import { useTranslation } from "react-i18next";
 import Button from "./Button";
 
 interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
@@ -25,10 +26,12 @@ export function Skeleton({
   variant = "loading",
   onRetry,
   message,
-  retryLabel = "Try again",
+  retryLabel,
   className = "",
   ...props
 }: SkeletonProps) {
+  const { t } = useTranslation();
+  const retryText = retryLabel ?? t("skeleton.tryAgain");
   if (variant === "error") {
     return (
       <div
@@ -41,7 +44,7 @@ export function Skeleton({
             <Button variant="primary" onClick={onRetry}>
               <div className="inline-flex items-center gap-1.5">
                 <RefreshIcon className="size-4" />
-                {retryLabel}
+                {retryText}
               </div>
             </Button>
           )}

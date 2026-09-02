@@ -2,12 +2,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { AddListingSection } from "../components/forms/AddListingSection";
-import { useCategories } from "../api/categories";
+import { useCategories, categoryNames, useLocalizedCategoryNames } from "../api/categories";
 import type { Category } from "../api/types";
 
 vi.mock("../api/categories", async () => {
   const actual = await vi.importActual<typeof import("../api/categories")>("../api/categories");
-  return { ...actual, useCategories: vi.fn() };
+  return { ...actual, useCategories: vi.fn(), useLocalizedCategoryNames: vi.fn() };
 });
 
 const TREE: Category[] = [
@@ -24,6 +24,9 @@ function mockCategories(data: Category[] | undefined) {
     isPending: data === undefined,
     isError: false,
   } as ReturnType<typeof useCategories>);
+  // CategorySelect resolves option labels through the localized hook; feed it
+  // names derived from whatever data this render is pretending to have.
+  vi.mocked(useLocalizedCategoryNames).mockReturnValue(categoryNames(data ?? []));
 }
 
 describe("AddListingSection", () => {

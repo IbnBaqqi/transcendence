@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import i18next from "../i18n";
 
 export type GalleryImageStatus = "pending" | "uploading" | "uploaded" | "error";
 
@@ -54,22 +55,27 @@ export function useImageGallery({
     (files: File[]) => {
       const remaining = maxFiles - imagesRef.current.length;
       if (remaining <= 0) {
-        onError?.(`You can only add up to ${maxFiles} image${maxFiles === 1 ? "" : "s"}.`);
+        onError?.(i18next.t("validation.maxImages", { count: maxFiles, max: maxFiles }));
         return;
       }
 
       const next: GalleryImage[] = [];
       for (const file of files) {
         if (next.length >= remaining) {
-          onError?.(`You can only add up to ${maxFiles} image${maxFiles === 1 ? "" : "s"}.`);
+          onError?.(i18next.t("validation.maxImages", { count: maxFiles, max: maxFiles }));
           break;
         }
         if (!acceptedTypes.includes(file.type)) {
-          onError?.(`"${file.name}" isn't a supported image type (use JPEG, PNG or WebP).`);
+          onError?.(i18next.t("validation.unsupportedImageType", { name: file.name }));
           continue;
         }
         if (file.size > maxSizeBytes) {
-          onError?.(`"${file.name}" is larger than ${Math.round(maxSizeBytes / (1024 * 1024))}MB.`);
+          onError?.(
+            i18next.t("validation.fileTooLarge", {
+              name: file.name,
+              mb: Math.round(maxSizeBytes / (1024 * 1024)),
+            }),
+          );
           continue;
         }
 

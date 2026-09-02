@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent, type DragEvent, type KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { Skeleton } from "./Skeleton";
 import type { GalleryImage } from "../../hooks/useImageGallery";
 
@@ -37,16 +38,19 @@ export function ImageDropzone({
   multiple = false,
   disabled = false,
   accept = "image/jpeg,image/png,image/webp",
-  emptyMessage = "No photos yet.",
-  helperText = "Drag & drop or click to upload",
+  emptyMessage,
+  helperText,
   emptyBoxClassName = "h-56 w-full",
   thumbnailClassName = "h-28 w-28",
   shape = "square",
   className = "",
 }: ImageDropzoneProps) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const [isHover, setIsHover] = useState(false);
+  const empty = emptyMessage ?? t("dropzone.noPhotos");
+  const helper = helperText ?? t("dropzone.dragDrop");
 
   const openFileBrowser = () => {
     if (disabled) return;
@@ -114,7 +118,7 @@ export function ImageDropzone({
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          aria-label="Upload photos"
+          aria-label={t("dropzone.ariaUploadPhotos")}
           aria-disabled={disabled}
           className={`relative ${emptyBoxClassName} ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
         >
@@ -126,11 +130,11 @@ export function ImageDropzone({
             onMouseLeave={() => setIsHover(false)}
           />
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center">
-            <span className="text-foreground text-sm font-medium">{emptyMessage}</span>
+            <span className="text-foreground text-sm font-medium">{empty}</span>
             <span
               className={`${isHover ? "text-berry-500" : "text-muted"} text-xs transition-colors duration-150`}
             >
-              {helperText}
+              {helper}
             </span>
           </div>
         </div>
@@ -152,14 +156,14 @@ export function ImageDropzone({
 
               {image.status === "uploading" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                  <span className="text-xs font-medium text-white">Uploading…</span>
+                  <span className="text-xs font-medium text-white">{t("dropzone.uploading")}</span>
                 </div>
               )}
 
               {image.status === "error" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/60 p-1 text-center">
                   <span className="text-xs font-medium text-white">
-                    {image.error ?? "Upload failed"}
+                    {image.error ?? t("dropzone.uploadFailed")}
                   </span>
                   {onRetry && (
                     <button
@@ -167,7 +171,7 @@ export function ImageDropzone({
                       onClick={() => onRetry(image.id)}
                       className="text-xs font-semibold text-white underline"
                     >
-                      Retry
+                      {t("dropzone.retry")}
                     </button>
                   )}
                 </div>
@@ -177,7 +181,7 @@ export function ImageDropzone({
                 <button
                   type="button"
                   onClick={() => onRemove(image.id)}
-                  aria-label="Remove photo"
+                  aria-label={t("dropzone.removePhoto")}
                   className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-xs leading-none text-white hover:bg-black/80"
                 >
                   ×
@@ -190,7 +194,7 @@ export function ImageDropzone({
             <button
               type="button"
               onClick={openFileBrowser}
-              aria-label="Add photo"
+              aria-label={t("dropzone.addPhoto")}
               className={`text-muted hover:text-foreground hover:border-accent border-line flex items-center justify-center border-2 border-dashed ${roundedClass} ${thumbnailClassName}`}
             >
               +

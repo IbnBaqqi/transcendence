@@ -2,6 +2,7 @@ import axios, { type AxiosError } from "axios";
 
 import type { AuthResponse } from "./types";
 import { ACCESS_TOKEN_KEY } from "../providers/AuthContext";
+import i18next from "../i18n";
 
 // prod can override via env. dev falls back to "/api/v1". This is the base for
 // both the axios instance below and the top-level OAuth navigation links
@@ -28,7 +29,12 @@ export function toApiError(error: AxiosError<ErrorBody>): ApiError {
 
   return {
     status: res?.status ?? 0,
-    message: res?.data?.error ?? (res ? "Something went wrong" : "Could not reach the server"),
+    // The backend hasn't been localized, so a message it actually sent is
+    // passed through verbatim; only the client-synthesized fallbacks are
+    // translated here, in whatever language is active at request time.
+    message:
+      res?.data?.error ??
+      (res ? i18next.t("common.somethingWentWrong") : i18next.t("common.couldNotReachServer")),
     details: res?.data?.details,
   };
 }

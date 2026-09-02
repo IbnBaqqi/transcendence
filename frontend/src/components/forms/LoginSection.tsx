@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import { Form } from "./Form";
 import { FormField } from "./FormField";
 import { loginSchema, type LoginFormSchema } from "../../schemas/login";
@@ -9,6 +10,7 @@ import { isApiError } from "../../api/client";
 import OAuthButtons from "./OAuthButtons";
 
 export function LoginSection({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const form = useForm<LoginFormSchema>({
     resolver: zodResolver(loginSchema),
@@ -27,7 +29,7 @@ export function LoginSection({ onClose }: { onClose: () => void }) {
       // The backend deliberately sends one message for a wrong email and a
       // wrong password, and rate limits speak for themselves - trust its copy.
       form.setError("root", {
-        message: isApiError(err) ? err.message : "Something went wrong. Please try again.",
+        message: isApiError(err) ? err.message : t("common.somethingWentWrong"),
       });
     }
   };
@@ -38,20 +40,20 @@ export function LoginSection({ onClose }: { onClose: () => void }) {
         <OAuthButtons />
         <div className="text-muted flex items-center gap-3 text-xs">
           <span className="border-line h-px flex-1 border-t" />
-          or sign in with email
+          {t("auth.orSignInWithEmail")}
           <span className="border-line h-px flex-1 border-t" />
         </div>
         <div className="space-y-2">
-          <FormField label="Email" name="email" validateOnChange />
-          <FormField label="Password" name="password" type="password" validateOnChange />
+          <FormField label={t("forms.email")} name="email" validateOnChange />
+          <FormField label={t("forms.password")} name="password" type="password" validateOnChange />
         </div>
         {errors.root?.message && <p className="text-berry-500 text-sm">{errors.root.message}</p>}
         <div className="flex flex-row gap-2">
           <Button variant="primary" type="submit" disabled={!isValid || isSubmitting}>
-            {isSubmitting ? "Logging in…" : "Log In"}
+            {isSubmitting ? t("common.loggingIn") : t("common.logIn")}
           </Button>
           <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
         </div>
       </div>

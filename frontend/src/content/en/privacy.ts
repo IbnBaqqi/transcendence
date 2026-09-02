@@ -1,6 +1,6 @@
-import type { Document } from "../components/types/DocumentTypes.ts";
+import type { Document } from "../../components/types/DocumentTypes";
 
-export const Privacy: Document = {
+export const privacy: Document = {
   title: "Privacy Policy",
   lastUpdated: "July 2026",
   intro: ["Built for a 42 curriculum project at Hive, Helsinki. Not a commercial legal service."],

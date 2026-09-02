@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   children: ReactNode; // whatever the boundary wraps
@@ -26,13 +27,22 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return (
-        <div className="mx-auto max-w-2xl p-9 text-center">
-          <h1 className="text-foreground text-2xl font-bold">Something went wrong</h1>
-          <p className="text-muted mt-2">{this.props.message ?? "Please refresh the page."}</p>
-        </div>
-      );
+      return <ErrorBoundaryFallback message={this.props.message} />;
     }
     return this.props.children; // no error -> render normally
   }
+}
+
+// The boundary itself stays a class (React requires that to catch errors), so
+// the hook lives in this small function component instead.
+function ErrorBoundaryFallback({ message }: { message?: string }) {
+  const { t } = useTranslation();
+  return (
+    <div className="mx-auto max-w-2xl p-9 text-center">
+      <h1 className="text-foreground text-2xl font-bold">
+        {t("errorBoundary.somethingWentWrong")}
+      </h1>
+      <p className="text-muted mt-2">{message ?? t("errorBoundary.refresh")}</p>
+    </div>
+  );
 }

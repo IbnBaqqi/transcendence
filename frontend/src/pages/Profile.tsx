@@ -19,8 +19,10 @@ import { useAuth } from "../hooks/useAuth";
 import { useOwnProfile } from "../api/profile";
 import { isApiError } from "../api/client";
 import { deriveInitials } from "../lib/initials";
+import { useTranslation } from "react-i18next";
 
 export default function Profile() {
+  const { t } = useTranslation();
   const { openModal } = useModal();
   const { logout } = useAuth();
 
@@ -57,22 +59,20 @@ export default function Profile() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
-      <h1 className="text-foreground text-3xl font-bold">Profile &amp; Settings</h1>
+      <h1 className="text-foreground text-3xl font-bold">{t("pages.profile.title")}</h1>
       {signedOut ? (
         <div className="space-y-3">
-          <p className="text-muted text-sm">
-            You're signed out. Log in to see and edit your profile.
-          </p>
+          <p className="text-muted text-sm">{t("pages.profile.signedOut")}</p>
           <Button variant="primary" onClick={() => openModal("login")}>
-            Log In
+            {t("common.logIn")}
           </Button>
         </div>
       ) : error ? (
         <p className="text-berry-500 text-sm">
-          {isApiError(error) ? error.message : "Something went wrong. Please try again."}
+          {isApiError(error) ? error.message : t("common.somethingWentWrong")}
         </p>
       ) : isLoading || !profile ? (
-        <p className="text-muted text-sm">Loading…</p>
+        <p className="text-muted text-sm">{t("common.loading")}</p>
       ) : (
         <>
           <div className="flex flex-row gap-4">
@@ -92,15 +92,17 @@ export default function Profile() {
             </div>
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">Contact Details</h2>
+            <h2 className="text-foreground text-lg font-bold">
+              {t("pages.profile.contactDetails")}
+            </h2>
             <ContactDetailsSection />
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">Password</h2>
+            <h2 className="text-foreground text-lg font-bold">{t("pages.profile.password")}</h2>
             <ChangePasswordSection />
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">Bio</h2>
+            <h2 className="text-foreground text-lg font-bold">{t("pages.profile.bio")}</h2>
             <BioSection />
           </div>
           {/* NOTE: No backend for these kind of preferences yet. Discussions were held about
@@ -123,14 +125,16 @@ export default function Profile() {
           {/*   </div> */}
           {/* </div> */}
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">Account Management</h2>
+            <h2 className="text-foreground text-lg font-bold">
+              {t("pages.profile.accountManagement")}
+            </h2>
             <div className="flex flex-row gap-4">
               <Button variant="primary" onClick={handleLogout} disabled={isLoggingOut}>
-                {isLoggingOut ? "Logging out…" : "Log Out"}
+                {isLoggingOut ? t("common.loggingOut") : t("common.logOut")}
               </Button>
               {/* NOTE: Delete Account currently waiting for backend functionality to wire into */}
               <Button variant="secondary" onClick={() => openModal("deleteAccount")}>
-                Delete Account
+                {t("common.deleteAccount")}
               </Button>
             </div>
           </div>
