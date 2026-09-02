@@ -41,6 +41,7 @@ type ListingSearchQuery struct {
 	MinPrice string
 	MaxPrice string
 	Location string
+	SellerID string
 	Sort     string
 	Page     string
 	Limit    string

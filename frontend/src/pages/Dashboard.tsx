@@ -1,14 +1,5 @@
-// Stub for #23.
-//
-// Nothing behind this page exists yet, so it's a visual pass: hardcode local
-// fixtures. Listings can reuse the `Listing` type from ../api/types, but
-// orders and payouts have no types - keep those shapes local to this file.
-// Don't add an `Order` type to api/types.ts before #13 defines what an order
-// actually is; a guessed type in the shared contract is worse than none.
-//
-// Conceptually this page is behind auth, but protected routes are #46 and
-// backend auth is unfinished - don't try to gate it yet.
 import { useTranslation } from "react-i18next";
+
 export default function Dashboard() {
   const { t } = useTranslation();
   return (

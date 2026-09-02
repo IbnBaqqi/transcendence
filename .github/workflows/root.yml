@@ -1,0 +1,124 @@
+name: Root
+
+# The filtering lives in the `changes` job below, NOT in a `paths:` filter on
+# the trigger. That is what lets this check be required in branch protection:
+# a workflow filtered out at the trigger never reports at all, so a required
+# check waits forever and the PR can never merge. A job skipped by `if:` does
+# report - as "skipped", which protection accepts.
+#
+# So do not move these paths back up into `on:`. It looks like the same thing
+# and it silently wedges every PR that touches nothing at the repo root.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  changes:
+    name: Detect changes (root)
+    runs-on: ubuntu-latest
+    # Listing a pull request's files is the pull-requests scope, not contents.
+    # Without this the call 403s wherever the default token is restricted, and
+    # the fail-open below quietly runs everything on every PR.
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      root: ${{ steps.filter.outputs.run }}
+
+    steps:
+      # No checkout: the API knows what a pull request touches, and skipping the
+      # clone is what keeps this job seconds rather than tens of them.
+      - name: Decide whether a root file changed
+        id: filter
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # A push to main is not a pull request and has nothing to diff
+          # against here - main gets the full set.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Fail open: if the listing fails, run everything rather than
+          # reporting a green PR nothing was checked on.
+          if ! files=$(gh api \
+            "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            --paginate --jq '.[].filename'); then
+            echo "could not list changed files - running everything"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # scripts/ as a whole rather than api-demo.sh alone: a second script
+          # added later is invisible to the narrow form. This workflow watches
+          # only its own file under .github/workflows, unlike backend.yml and
+          # frontend.yml - nothing here builds on a shared action.
+          if printf '%s\n' "$files" | grep -qE '^(docker-compose\.yml|docker-compose\.prod\.yml|\.env\.example|scripts/|README\.md|\.gitignore|LICENSE|\.github/CODEOWNERS|\.github/workflows/root\.yml)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  checks:
+    name: Root Files
+    needs: changes
+    # Runs when the gate says so, and also when the gate did not succeed at
+    # all: a failed detection job would otherwise skip this, and a skipped
+    # required check is accepted - a green PR nothing was checked on. The
+    # script fails open on its own errors; this covers the job dying around
+    # it. !cancelled() rather than always(), so cancelling a run still stops
+    # the checks.
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.root == 'true') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+
+      - name: Check both compose files parse
+        # The copy is required, not a convenience: services in both files
+        # declare env_file: .env, which is a path that must exist, and
+        # --env-file only redirects variable interpolation. Without a real .env
+        # the parse fails on the missing file instead of checking the compose
+        # file. Copying the example also asserts the thing actually wanted -
+        # that .env.example is enough to bring either stack up.
+        run: |
+          cp .env.example .env
+          docker compose config -q
+          docker compose -f docker-compose.prod.yml config -q
+
+      - name: Check every compose variable exists in .env.example
+        # Both files: the prod stack interpolates the same POSTGRES_* values and
+        # would come up with empty ones just as quietly.
+        #
+        # A compose-side default does not exempt a variable. The name is
+        # extracted up to the `:`, so ${RATE_LIMIT_PER_MINUTE:-60} still has to
+        # appear in .env.example - the example is where someone finds out the
+        # knob exists, and a default buried in compose is not that.
+        #
+        # It has to be uncommented, which is the one place this disagrees with
+        # how .env.example documents optional knobs: those are commented out so
+        # the file does not become a second source of truth for their values.
+        # The two sets do not overlap today. If they ever do, the fix is to
+        # uncomment the entry here rather than to relax this check, because a
+        # variable compose actually interpolates is not optional.
+        run: |
+          missing=$(grep -ohE '\$\{[A-Z_][A-Z0-9_]*' docker-compose.yml docker-compose.prod.yml \
+            | sed 's/^\${//' | sort -u \
+            | while read -r var; do
+                grep -qE "^${var}=" .env.example || echo "$var"
+              done)
+          if [ -n "$missing" ]; then
+            echo "compose interpolates variables .env.example does not define:"
+            echo "$missing"
+            exit 1
+          fi
+
+      - name: Check the demo script
+        # Pinned like staticcheck and gosec: the runner image ships shellcheck,
+        # but that version moves when the image updates and can fail a commit
+        # nobody touched.
+        run: docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:v0.10.0 scripts/api-demo.sh

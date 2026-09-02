@@ -28,6 +28,19 @@ func (q *Queries) AttachTag(ctx context.Context, arg AttachTagParams) error {
 	return err
 }
 
+const deleteUnusedTags = `-- name: DeleteUnusedTags :execrows
+DELETE FROM tags t
+WHERE NOT EXISTS (SELECT 1 FROM listing_tags lt WHERE lt.tag_id = t.id)
+`
+
+func (q *Queries) DeleteUnusedTags(ctx context.Context) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteUnusedTags)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const detachAllTags = `-- name: DetachAllTags :exec
 DELETE FROM listing_tags
 WHERE listing_id = $1
@@ -101,6 +114,24 @@ func (q *Queries) ListTagsForListings(ctx context.Context, listingIds []uuid.UUI
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockTagsForSweep = `-- name: LockTagsForSweep :exec
+SELECT pg_advisory_xact_lock(5170163)
+`
+
+func (q *Queries) LockTagsForSweep(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, lockTagsForSweep)
+	return err
+}
+
+const lockTagsShared = `-- name: LockTagsShared :exec
+SELECT pg_advisory_xact_lock_shared(5170163)
+`
+
+func (q *Queries) LockTagsShared(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, lockTagsShared)
+	return err
 }
 
 const upsertTag = `-- name: UpsertTag :one

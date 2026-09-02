@@ -16,6 +16,7 @@ type SearchListingsParams struct {
 	MinPrice string
 	MaxPrice string
 	Location string
+	SellerID string
 	Sort     string
 	Offset   int32
 	Limit    int32
@@ -99,6 +100,12 @@ func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string,
 	if arg.Location != "" {
 		p := next("%" + escapeLike(arg.Location) + "%")
 		b.WriteString(" AND addresses.location ILIKE " + p + " ESCAPE '\\'")
+	}
+	// Above the countOnly split with the other filters: below it, the rows
+	// would be one seller's while total counted everybody's.
+	if arg.SellerID != "" {
+		p := next(arg.SellerID)
+		b.WriteString(" AND listings.seller_id = " + p + "::uuid")
 	}
 
 	if !countOnly {

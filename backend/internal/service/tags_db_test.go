@@ -216,3 +216,280 @@ func TestUpsertTagSurvivesAConcurrentInsertOfTheSameName(t *testing.T) {
 		t.Error("the racing upsert returned no id")
 	}
 }
+
+func countTags(t *testing.T, db *database.DB, name string) int {
+	t.Helper()
+
+	var n int
+	if err := db.QueryRow(`SELECT count(*) FROM tags WHERE name = $1`, name).Scan(&n); err != nil {
+		t.Fatalf("counting %s: %v", name, err)
+	}
+	return n
+}
+
+func TestASweepRemovesATagNothingUses(t *testing.T) {
+	listings, db, seller := tagFixture(t)
+	ctx := context.Background()
+
+	created := createTagged(t, listings, seller, "Chanterelles", []string{"roadside"})
+
+	if _, err := listings.UpdateListing(ctx, seller, created.ID, dtos.UpdateListingInput{
+		Title: "Chanterelles", Category: "mushrooms", Price: 18.00, Quantity: 4, Unit: "kg",
+	}); err != nil {
+		t.Fatalf("dropping the tag: %v", err)
+	}
+
+	deleted, err := NewTagService(db).SweepUnused(ctx)
+	if err != nil {
+		t.Fatalf("sweeping: %v", err)
+	}
+	if deleted != 1 {
+		t.Errorf("deleted = %d, want 1", deleted)
+	}
+	if got := countTags(t, db, "roadside"); got != 0 {
+		t.Errorf("roadside rows = %d, want 0", got)
+	}
+}
+
+func TestASweepKeepsATagAnotherListingStillUses(t *testing.T) {
+	listings, db, seller := tagFixture(t)
+	ctx := context.Background()
+
+	first := createTagged(t, listings, seller, "Chanterelles", []string{"roadside", "sunny"})
+	second := createTagged(t, listings, seller, "Morels", []string{"roadside"})
+
+	if _, err := listings.UpdateListing(ctx, seller, first.ID, dtos.UpdateListingInput{
+		Title: "Chanterelles", Category: "mushrooms", Price: 18.00, Quantity: 4, Unit: "kg",
+	}); err != nil {
+		t.Fatalf("dropping the first listing's tags: %v", err)
+	}
+
+	deleted, err := NewTagService(db).SweepUnused(ctx)
+	if err != nil {
+		t.Fatalf("sweeping: %v", err)
+	}
+	if deleted != 1 {
+		t.Errorf("deleted = %d, want 1 - only sunny is unused", deleted)
+	}
+
+	got, err := db.ListTagsForListing(ctx, second.ID)
+	if err != nil {
+		t.Fatalf("reading the survivor's tags: %v", err)
+	}
+	if len(got) != 1 || got[0] != "roadside" {
+		t.Errorf("the survivor's tags = %q, want [roadside] - the sweep took a tag still in use", got)
+	}
+}
+
+func TestASweepCollectsATagOrphanedByADeletedListing(t *testing.T) {
+	listings, db, seller := tagFixture(t)
+	ctx := context.Background()
+
+	created := createTagged(t, listings, seller, "Chanterelles", []string{"roadside"})
+
+	if err := listings.DeleteListing(ctx, seller, created.ID); err != nil {
+		t.Fatalf("deleting the listing: %v", err)
+	}
+
+	if _, err := NewTagService(db).SweepUnused(ctx); err != nil {
+		t.Fatalf("sweeping: %v", err)
+	}
+	if got := countTags(t, db, "roadside"); got != 0 {
+		t.Errorf("roadside rows = %d, want 0", got)
+	}
+}
+
+func waitForATagLockWaiter(t *testing.T, db *database.DB) {
+	t.Helper()
+
+	waitFor(t, db, `
+		SELECT count(*) FROM pg_locks
+		WHERE locktype = 'advisory'
+		  AND objid = 5170163
+		  AND NOT granted
+		  AND database = (SELECT oid FROM pg_database WHERE datname = current_database())`,
+		"nothing ever blocked on the tag lock - the writer did not take it")
+}
+
+func waitForABlockedRowLock(t *testing.T, db *database.DB) {
+	t.Helper()
+
+	waitFor(t, db, `
+		SELECT count(*) FROM pg_stat_activity
+		WHERE datname = current_database()
+		  AND wait_event_type = 'Lock'
+		  AND pid <> pg_backend_pid()`,
+		"the sweep never blocked on the wedge - it was not inside its delete")
+}
+
+func waitFor(t *testing.T, db *database.DB, query, complaint string) {
+	t.Helper()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		var waiters int
+		if err := db.QueryRow(query).Scan(&waiters); err != nil {
+			t.Fatalf("reading pg_locks: %v", err)
+		}
+		if waiters > 0 {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal(complaint)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+func TestAConcurrentAdoptSurvivesTheSweep(t *testing.T) {
+	listings, db, seller := tagFixture(t)
+	ctx := context.Background()
+
+	created := createTagged(t, listings, seller, "Chanterelles", []string{"roadside"})
+	if _, err := listings.UpdateListing(ctx, seller, created.ID, dtos.UpdateListingInput{
+		Title: "Chanterelles", Category: "mushrooms", Price: 18.00, Quantity: 4, Unit: "kg",
+	}); err != nil {
+		t.Fatalf("dropping the tag: %v", err)
+	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatalf("opening the sweep transaction: %v", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := db.Queries.WithTx(tx.Tx)
+	if err := qtx.LockTagsForSweep(ctx); err != nil {
+		t.Fatalf("taking the sweep lock: %v", err)
+	}
+
+	type adopt struct {
+		listing database.Listing
+		err     error
+	}
+	done := make(chan adopt, 1)
+	go func() {
+		listing, err := listings.CreateListing(ctx, seller, dtos.CreateListingInput{
+			Title: "Morels", Category: "mushrooms", Price: 18.00, Quantity: 4, Unit: "kg",
+			Tags: []string{"roadside"},
+		})
+		done <- adopt{listing: listing, err: err}
+	}()
+
+	waitForATagLockWaiter(t, db)
+
+	select {
+	case got := <-done:
+		t.Fatalf("the adopt finished while the sweep held the lock: %v", got.err)
+	default:
+	}
+
+	if _, err := qtx.DeleteUnusedTags(ctx); err != nil {
+		t.Fatalf("deleting: %v", err)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("committing the sweep: %v", err)
+	}
+
+	got := <-done
+	if got.err != nil {
+		t.Fatalf("the blocked adopt failed: %v", got.err)
+	}
+
+	if n := countTags(t, db, "roadside"); n != 1 {
+		t.Errorf("roadside rows = %d, want 1 - the sweep and the adopt did not agree", n)
+	}
+
+	tags, err := db.ListTagsForListing(ctx, got.listing.ID)
+	if err != nil {
+		t.Fatalf("reading the adopter's tags: %v", err)
+	}
+	if len(tags) != 1 || tags[0] != "roadside" {
+		t.Errorf("the adopter's tags = %q, want [roadside] - the cascade took the attachment", tags)
+	}
+}
+
+func TestASweepDoesNotOutliveItsLock(t *testing.T) {
+	listings, db, seller := tagFixture(t)
+	ctx := context.Background()
+
+	created := createTagged(t, listings, seller, "Chanterelles", []string{"roadside", "wedge"})
+	if _, err := listings.UpdateListing(ctx, seller, created.ID, dtos.UpdateListingInput{
+		Title: "Chanterelles", Category: "mushrooms", Price: 18.00, Quantity: 4, Unit: "kg",
+	}); err != nil {
+		t.Fatalf("dropping the tags: %v", err)
+	}
+
+	// A row lock on one of the orphans, so the sweep parks inside its DELETE
+	// instead of finishing in a millisecond. It takes no advisory lock: this
+	// session stands in for a slow delete, not for a writer.
+	wedge, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatalf("opening the wedge: %v", err)
+	}
+	defer func() { _ = wedge.Rollback() }()
+
+	if _, err := wedge.ExecContext(ctx, `SELECT id FROM tags WHERE name = 'wedge' FOR UPDATE`); err != nil {
+		t.Fatalf("wedging: %v", err)
+	}
+
+	swept := make(chan int64, 1)
+	failed := make(chan error, 1)
+	go func() {
+		deleted, err := NewTagService(db).SweepUnused(ctx)
+		if err != nil {
+			failed <- err
+			return
+		}
+		swept <- deleted
+	}()
+
+	waitForABlockedRowLock(t, db)
+
+	type adopt struct {
+		listing database.Listing
+		err     error
+	}
+	adopted := make(chan adopt, 1)
+	go func() {
+		listing, err := listings.CreateListing(ctx, seller, dtos.CreateListingInput{
+			Title: "Morels", Category: "mushrooms", Price: 18.00, Quantity: 4, Unit: "kg",
+			Tags: []string{"roadside"},
+		})
+		adopted <- adopt{listing: listing, err: err}
+	}()
+
+	waitForATagLockWaiter(t, db)
+
+	select {
+	case got := <-adopted:
+		t.Fatalf("the adopt ran while the sweep was mid-delete: %v", got.err)
+	default:
+	}
+
+	if err := wedge.Commit(); err != nil {
+		t.Fatalf("releasing the wedge: %v", err)
+	}
+
+	select {
+	case err := <-failed:
+		t.Fatalf("sweeping: %v", err)
+	case deleted := <-swept:
+		if deleted != 2 {
+			t.Errorf("deleted = %d, want 2", deleted)
+		}
+	}
+
+	got := <-adopted
+	if got.err != nil {
+		t.Fatalf("the blocked adopt failed: %v", got.err)
+	}
+
+	tags, err := db.ListTagsForListing(ctx, got.listing.ID)
+	if err != nil {
+		t.Fatalf("reading the adopter's tags: %v", err)
+	}
+	if len(tags) != 1 || tags[0] != "roadside" {
+		t.Errorf("the adopter's tags = %q, want [roadside] - the cascade took the attachment", tags)
+	}
+}

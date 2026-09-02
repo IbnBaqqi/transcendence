@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -32,11 +33,13 @@ func authRouter(t *testing.T) http.Handler {
 	r := chi.NewRouter()
 	r.Use(mw.Authenticate(jwt, nil))
 	r.Post("/auth/signup", h.Signup)
+	r.Post("/auth/login", h.Login)
 	r.Post("/auth/refresh", h.Refresh)
 	r.Post("/auth/logout", h.Logout)
 	r.Group(func(r chi.Router) {
 		r.Use(mw.RequiredAuth)
 		r.Get("/auth/me", h.Me)
+		r.Post("/me/password", h.ChangePassword)
 	})
 
 	return r
@@ -160,7 +163,10 @@ func TestMeReturnsTheSessionsIdentity(t *testing.T) {
 		t.Fatalf("me = %d: %s", res.code, res.body)
 	}
 
-	for _, want := range []string{`"username":"aino"`, `"email":"aino@example.test"`, `"role":"USER"`, `"id":"`} {
+	for _, want := range []string{
+		`"username":"aino"`, `"email":"aino@example.test"`, `"role":"USER"`, `"id":"`,
+		`"has_password":true`, `"providers":[]`,
+	} {
 		if !strings.Contains(res.body, want) {
 			t.Errorf("body is missing %s:\n%s", want, res.body)
 		}
@@ -173,5 +179,64 @@ func TestMeWithoutATokenIs401(t *testing.T) {
 	res := send(t, r, http.MethodGet, "/auth/me", "", nil, "")
 	if res.code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want 401", res.code)
+	}
+}
+
+func TestLoginAndMeDescribeTheAccountTheSameWay(t *testing.T) {
+	r := authRouter(t)
+	signupVia(t, r)
+
+	login := send(t, r, http.MethodPost, "/auth/login",
+		`{"email":"aino@example.test","password":"password123"}`, nil, "")
+	if login.code != http.StatusOK {
+		t.Fatalf("login = %d: %s", login.code, login.body)
+	}
+
+	var body struct {
+		AccessToken string          `json:"access_token"`
+		User        json.RawMessage `json:"user"`
+	}
+	if err := json.Unmarshal([]byte(login.body), &body); err != nil {
+		t.Fatalf("decoding the login response: %v", err)
+	}
+
+	me := send(t, r, http.MethodGet, "/auth/me", "", nil, body.AccessToken)
+	if me.code != http.StatusOK {
+		t.Fatalf("me = %d: %s", me.code, me.body)
+	}
+
+	var fromLogin, fromMe map[string]any
+	if err := json.Unmarshal(body.User, &fromLogin); err != nil {
+		t.Fatalf("decoding the login user: %v", err)
+	}
+	if err := json.Unmarshal([]byte(me.body), &fromMe); err != nil {
+		t.Fatalf("decoding the me body: %v", err)
+	}
+
+	if !reflect.DeepEqual(fromLogin, fromMe) {
+		t.Errorf("the two calls describe one account differently:\nlogin: %v\nme:    %v", fromLogin, fromMe)
+	}
+}
+
+func TestAWrongCurrentPasswordIsForbiddenNotUnauthorised(t *testing.T) {
+	r := authRouter(t)
+	accessToken, _ := signupVia(t, r)
+
+	wrong := send(t, r, http.MethodPost, "/me/password",
+		`{"current_password":"not-the-one","new_password":"a-brand-new-password"}`, nil, accessToken)
+
+	// 403, because 401 means "your session is no good" and the frontend's
+	// interceptor acts on it: silent refresh, replay, and a sign-out if the
+	// refresh fails. A mistyped password must not end a session.
+	if wrong.code != http.StatusForbidden {
+		t.Errorf("wrong password = %d, want 403: %s", wrong.code, wrong.body)
+	}
+
+	// The other half of the distinction: no session really is 401.
+	none := send(t, r, http.MethodPost, "/me/password",
+		`{"current_password":"anything","new_password":"a-brand-new-password"}`, nil, "")
+
+	if none.code != http.StatusUnauthorized {
+		t.Errorf("no session = %d, want 401: %s", none.code, none.body)
 	}
 }
