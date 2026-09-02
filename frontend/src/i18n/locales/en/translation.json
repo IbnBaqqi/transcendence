@@ -92,6 +92,12 @@
     "online": "Online",
     "offline": "Offline"
   },
+  "follows": {
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "updating": "Updating…",
+    "error": "Couldn't update. Please try again."
+  },
   "orders": {
     "title": "Orders",
     "signedOut": "You're signed out. Log in to see your orders.",

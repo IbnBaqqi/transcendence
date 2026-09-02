@@ -92,6 +92,12 @@
     "online": "Online",
     "offline": "Offline"
   },
+  "follows": {
+    "follow": "Följ",
+    "unfollow": "Sluta följa",
+    "updating": "Uppdaterar…",
+    "error": "Kunde inte uppdatera. Försök igen."
+  },
   "orders": {
     "title": "Beställningar",
     "signedOut": "Du är utloggad. Logga in för att se dina beställningar.",

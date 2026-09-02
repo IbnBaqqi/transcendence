@@ -92,6 +92,12 @@
     "online": "Paikalla",
     "offline": "Poissa"
   },
+  "follows": {
+    "follow": "Seuraa",
+    "unfollow": "Lopeta seuraaminen",
+    "updating": "Päivitetään…",
+    "error": "Päivitys ei onnistunut. Yritä uudelleen."
+  },
   "orders": {
     "title": "Tilaukset",
     "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tilauksesi.",
