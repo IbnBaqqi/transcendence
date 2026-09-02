@@ -89,7 +89,12 @@ describe("ReserveListingSection", () => {
     await user.clear(screen.getByLabelText(/Quantity/));
     await user.type(screen.getByLabelText(/Quantity/), "9");
 
-    expect(screen.getByRole("button", { name: "Request to buy" })).toBeDisabled();
+    const submit = screen.getByRole("button", { name: "Request to buy" });
+    expect(submit).toBeDisabled();
+
+    // Clicking it is the point: without this the assertion below passes on a
+    // button that was never pressed.
+    await user.click(submit);
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 

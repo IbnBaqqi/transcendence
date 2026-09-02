@@ -87,5 +87,8 @@ describe("Orders", () => {
   test("a signed-out visitor is asked to log in, not shown an error", () => {
     renderPage({ data: undefined, isPending: false, isError: false }, null);
     expect(screen.getByRole("button", { name: "Log In" })).toBeInTheDocument();
+    // The page must not fire GET /orders while signed out - it would 401 and
+    // burn a refresh attempt on the interceptor.
+    expect(useOrders).toHaveBeenCalledWith({ enabled: false });
   });
 });

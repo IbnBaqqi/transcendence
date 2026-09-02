@@ -21,6 +21,9 @@ export function ReserveListingSection({ listingId }: { listingId: string }) {
   // drops into the #21 stub with one line.
   const { data: listing, isPending } = useListing(listingId);
 
+  // An empty id leaves the query disabled, which React Query still reports as
+  // pending - so answer it before the skeleton branch spins forever.
+  if (!listingId) return null;
   if (isPending) return <Skeleton className="h-40 w-full" />;
   if (!listing) return null;
 
@@ -82,7 +85,7 @@ function ReserveForm({ listing }: { listing: Listing }) {
     <div className="border-line space-y-3 rounded-lg border p-4">
       <div>
         <p className="text-accent font-medium">
-          €{Number(listing.price).toFixed(2)} / {listing.unit}
+          €{listing.price.toFixed(2)} / {listing.unit}
         </p>
         <p className="text-muted text-sm">
           {available} {listing.unit} available
