@@ -24,6 +24,15 @@ export interface ListingImage {
   position: number;
 }
 
+// Who posted a listing, enough to render a card. Null only when the lookup
+// failed - a listing always has a seller - so degrade rather than read meaning
+// into it.
+export interface ListingSeller {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+}
+
 export interface Listing {
   id: string;
   seller_id: string;
@@ -36,6 +45,7 @@ export interface Listing {
   created_at: Timestamp;
   updated_at: Timestamp;
   images: ListingImage[]; // always an array, never null
+  seller: ListingSeller | null;
 }
 
 export interface Category {
