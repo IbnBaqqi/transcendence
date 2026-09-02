@@ -142,6 +142,10 @@ seed:
 # Deletes tags no listing uses. Safe against a live database: it takes the
 # advisory lock every tag writer takes, so it cannot delete a tag a concurrent
 # listing write is attaching.
+#
+# It holds that lock exclusively for the whole scan, so every listing save that
+# touches tags waits for it. Milliseconds at this size, but that makes it a
+# maintenance window rather than something to cron every hour on a large table.
 tag-sweep:
 	$(require-db-url)
 	@go run ./cmd/tagsweep

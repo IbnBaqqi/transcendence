@@ -236,10 +236,18 @@ cd backend && make tag-sweep
 
 Nothing schedules it, so tags accumulate until someone runs it.
 
-It is safe against a live database. It takes the same advisory lock every tag
-write takes, so it cannot collect a tag a listing is being saved with — a sweep
-without that lock deletes the tag *and* the new listing's link to it, and
-neither side reports an error.
+It is safe against a live database in the sense that matters: it takes the same
+advisory lock every tag write takes, so it cannot collect a tag a listing is
+being saved with — a sweep without that lock deletes the tag *and* the new
+listing's link to it, and neither side reports an error.
+
+It is not free, though. That lock is exclusive and is held for the whole scan,
+so every listing save that touches tags waits for the sweep to finish. The scan
+is a full pass over `tags`, which is the table that grows without bound — so
+this is a maintenance window, not a background job. Run it when a short stall on
+listing saves does not matter, and if the table ever gets big enough for that to
+hurt, batch the delete with a `LIMIT` and re-take the lock per batch rather than
+running the whole thing more often.
 
 ## Roles and the first admin
 
