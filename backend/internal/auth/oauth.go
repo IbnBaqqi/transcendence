@@ -106,10 +106,15 @@ func (s *Service) LoginWithIdentity(ctx context.Context, in OAuthLogin) (LoginRe
 		return LoginResult{}, fmt.Errorf("oauth login: issue token: %w", err)
 	}
 
+	info, err := s.UserInfo(ctx, user)
+	if err != nil {
+		return LoginResult{}, fmt.Errorf("oauth login: %w", err)
+	}
+
 	return LoginResult{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User:         toUserInfo(user),
+		User:         info,
 	}, nil
 }
 
@@ -124,10 +129,15 @@ func (s *Service) sessionFor(ctx context.Context, q *database.Queries, user data
 		return LoginResult{}, fmt.Errorf("oauth login: store session: %w", err)
 	}
 
+	info, err := s.UserInfo(ctx, user)
+	if err != nil {
+		return LoginResult{}, fmt.Errorf("oauth login: %w", err)
+	}
+
 	return LoginResult{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User:         toUserInfo(user),
+		User:         info,
 	}, nil
 }
 
