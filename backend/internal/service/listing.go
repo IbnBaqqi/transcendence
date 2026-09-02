@@ -90,6 +90,10 @@ func normaliseTags(raw []string) ([]string, error) {
 }
 
 func applyTags(ctx context.Context, qtx *database.Queries, listingID uuid.UUID, tags []string) error {
+	if err := qtx.LockTagsShared(ctx); err != nil {
+		return err
+	}
+
 	if err := qtx.DetachAllTags(ctx, listingID); err != nil {
 		return err
 	}
