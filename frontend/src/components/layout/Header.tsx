@@ -21,8 +21,6 @@ export default function Header() {
   // to ask for it - disabled while signed out, where it would only 401.
   const { data: profile } = useOwnProfile({ enabled: Boolean(user) });
 
-  // Initials still come from the session: they are the fallback, and waiting
-  // for the profile would leave the corner empty on every load.
   const initials = user ? deriveInitials(user.username) : "?";
 
   return (
@@ -76,7 +74,7 @@ export default function Header() {
             </svg>
           </Link>
           {user ? (
-            <Link to="/profile">
+            <Link to="/profile" aria-label={t("nav.profile")}>
               <Avatar
                 size="sm"
                 initials={initials}
@@ -85,7 +83,7 @@ export default function Header() {
               />
             </Link>
           ) : (
-            <button type="button" onClick={() => openModal("login")}>
+            <button type="button" aria-label={t("common.logIn")} onClick={() => openModal("login")}>
               <Avatar size="sm" initials="?" interactive />
             </button>
           )}

@@ -46,9 +46,6 @@ export default function Profile() {
   const deleteAvatar = useDeleteAvatar(profile?.id);
   const [avatarError, setAvatarError] = useState<string | null>(null);
 
-  // Shown only while the upload is in flight. Cleared either way afterwards,
-  // so the stored URL wins: a preview left in place looks right on this screen
-  // and nowhere else, including after a reload.
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const avatarPreviewUrl = useMemo(
     () => (avatarFile ? URL.createObjectURL(avatarFile) : undefined),

@@ -12,8 +12,6 @@ export function ListingCard({
 }: {
   listing: Listing;
   categoryName: string;
-  // Off on a seller's own profile, where every card would name the person
-  // whose page it already is.
   showSeller?: boolean;
 }) {
   const { t } = useTranslation();

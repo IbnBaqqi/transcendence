@@ -185,15 +185,32 @@ test("removing a picture calls the delete endpoint", async () => {
   expect(deleteAvatar).toHaveBeenCalled();
 });
 
-// A failed upload has to say so. The preview is dropped either way, so the
-// screen must not keep showing a picture that was never stored.
-test("a rejected upload surfaces the reason", async () => {
+// The backend's own message is more useful than anything written here - 413
+// says the image is too large, 415 says the type is wrong.
+test("a rejected upload surfaces the reason and keeps no preview", async () => {
   uploadAvatar.mockRejectedValue({ status: 413, message: "Image is too large" });
+  const user = userEvent.setup();
+  const { container } = renderPage({ data: WITH_AVATAR });
+
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
+  const input = document.querySelector('input[type="file"]');
+  fireEvent.change(input as HTMLInputElement, {
+    target: { files: [new File(["x"], "big.png", { type: "image/png" })] },
+  });
+  await user.click(await screen.findByRole("button", { name: "Save" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Image is too large");
+  // The picture was never stored, so the screen must fall back to what is.
+  await waitFor(() => {
+    expect(container.querySelector("img")).toHaveAttribute("src", "/uploads/stored.png");
+  });
+});
+
+test("a rejected removal surfaces the reason", async () => {
+  deleteAvatar.mockRejectedValue({ status: 500, message: "Something broke" });
   const user = userEvent.setup();
   renderPage({ data: WITH_AVATAR });
 
-  await user.click(screen.getByRole("button", { name: "Remove photo" }));
-  deleteAvatar.mockRejectedValue({ status: 500, message: "Something broke" });
   await user.click(screen.getByRole("button", { name: "Remove photo" }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Something broke");

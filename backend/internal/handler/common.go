@@ -106,9 +106,15 @@ func viewerID(r *http.Request) uuid.UUID {
 	return user.ID
 }
 
-// hidePresenceIfBlocked blanks a user's online status when the viewer must not
-// see it. The list endpoints do this in SQL; these are the paths that fetch one
-// user at a time.
+func (h *Handler) hidePresenceIfBlocked(r *http.Request, viewer uuid.UUID, other *database.User) {
+	if h.presenceHidden(r, viewer, other.ID) {
+		other.ShowOnlineStatus = false
+	}
+}
+
+// presenceHidden decides whether a viewer may see someone's online status. The
+// list endpoints do this in SQL; these are the paths that fetch one user at a
+// time.
 //
 // Anonymous viewers get no presence at all. GET /users/{id} is public, so
 // leaving them alone would let a blocked user read the blocker's status simply
@@ -116,14 +122,6 @@ func viewerID(r *http.Request) uuid.UUID {
 //
 // Fails closed on a lookup error: a wrong "hidden" is cosmetic, a wrong
 // "online" means someone keeps watching a person who blocked them.
-func (h *Handler) hidePresenceIfBlocked(r *http.Request, viewer uuid.UUID, other *database.User) {
-	if h.presenceHidden(r, viewer, other.ID) {
-		other.ShowOnlineStatus = false
-	}
-}
-
-// The decision on its own, for callers holding a row type other than
-// database.User.
 func (h *Handler) presenceHidden(r *http.Request, viewer, otherID uuid.UUID) bool {
 	if viewer == otherID {
 		return false

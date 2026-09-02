@@ -82,12 +82,12 @@ export function useDeleteAvatar(userId: string | undefined) {
   });
 }
 
-// Awaited by onSuccess, so isPending stays true until the new URL has actually
-// arrived - otherwise the button frees up while the old avatar is still on
-// screen.
 function invalidateAvatar(queryClient: QueryClient, userId: string | undefined) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: keys.me.profile() }),
+    // Listing responses carry seller.avatar_url, so a cached search still shows
+    // the old picture on your own cards until it goes stale.
+    queryClient.invalidateQueries({ queryKey: keys.listings.all }),
     userId
       ? queryClient.invalidateQueries({ queryKey: keys.users.detail(userId) })
       : Promise.resolve(),

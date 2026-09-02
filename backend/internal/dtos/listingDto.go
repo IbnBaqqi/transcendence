@@ -56,8 +56,6 @@ type PaginatedListings struct {
 	TotalPages int               `json:"total_pages"`
 }
 
-// ListingSeller is who posted a listing, enough for a card: a name and a face.
-// Not presence - a card is not a chat row.
 type ListingSeller struct {
 	ID        uuid.UUID `json:"id"`
 	Username  string    `json:"username"`

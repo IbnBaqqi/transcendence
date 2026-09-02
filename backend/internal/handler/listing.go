@@ -53,9 +53,6 @@ func (h *Handler) sellerIsHidden(r *http.Request, sellerID uuid.UUID) bool {
 	return !visible
 }
 
-// A listing always has a seller, so a missing one here is a lookup failure
-// rather than a real absence: log it and answer with the listing anyway, since
-// a card without a name beats a page that will not load.
 func (h *Handler) withSeller(r *http.Request, item dtos.ListingResponse) dtos.ListingResponse {
 	seller, err := h.Listing.SellerFor(r.Context(), item.SellerID)
 	if err != nil {

@@ -462,7 +462,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, err
 	}
 
-	bySeller, err := s.sellersFor(ctx, items)
+	bySeller, err := s.SellersFor(ctx, items)
 	if err != nil {
 		return dtos.PaginatedListings{}, err
 	}
@@ -481,9 +481,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 	}, nil
 }
 
-// One query for the page, not one per row: a page of twenty listings from the
-// same seller asks about that seller once.
-func (s *ListingService) sellersFor(
+func (s *ListingService) SellersFor(
 	ctx context.Context,
 	items []database.Listing,
 ) (map[uuid.UUID]dtos.ListingSeller, error) {

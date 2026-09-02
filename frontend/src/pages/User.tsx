@@ -149,7 +149,6 @@ export default function User() {
                 key={listing.id}
                 listing={listing}
                 categoryName={categoryName(listing.category)}
-                // This is already their page; naming them on every card is noise.
                 showSeller={false}
               />
             ))}
