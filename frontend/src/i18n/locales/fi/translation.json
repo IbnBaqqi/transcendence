@@ -172,7 +172,13 @@
     },
     "dashboard": {
       "title": "Myyjän hallintapaneeli",
-      "stub": "Myyjän hallintapaneeli - ei vielä rakennettu (#23)."
+      "stub": "Myyjän hallintapaneeli - ei vielä rakennettu (#23).",
+      "listing": {
+        "allRemaining": "{{qty}} {{unit}} jäljellä",
+        "remaining": "{{left}} / {{original}} {{unit}} jäljellä",
+        "sold": "{{count}} myyty",
+        "soldOut": "Loppuunmyyty"
+      }
     },
     "addListing": {
       "title": "Lisää ilmoitus"

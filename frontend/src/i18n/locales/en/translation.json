@@ -172,7 +172,13 @@
     },
     "dashboard": {
       "title": "Seller Dashboard",
-      "stub": "Seller dashboard - not built yet (#23)."
+      "stub": "Seller dashboard - not built yet (#23).",
+      "listing": {
+        "allRemaining": "{{qty}} {{unit}} left",
+        "remaining": "{{left}} of {{original}} {{unit}} left",
+        "sold": "{{count}} sold",
+        "soldOut": "Sold out"
+      }
     },
     "addListing": {
       "title": "Add Listing"

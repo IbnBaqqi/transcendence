@@ -172,7 +172,13 @@
     },
     "dashboard": {
       "title": "Säljarpanel",
-      "stub": "Säljarpanel - inte byggt ännu (#23)."
+      "stub": "Säljarpanel - inte byggt ännu (#23).",
+      "listing": {
+        "allRemaining": "{{qty}} {{unit}} kvar",
+        "remaining": "{{left}} av {{original}} {{unit}} kvar",
+        "sold": "{{count}} sålda",
+        "soldOut": "Slutsåld"
+      }
     },
     "addListing": {
       "title": "Lägg till annons"
