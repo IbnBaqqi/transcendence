@@ -55,9 +55,9 @@ export default function Home() {
       )}
       {/* One page is all there is until #25 builds the browse surface, so say
           so rather than letting the 21st listing be invisible. */}
-      {data && data.total > listings!.length && (
+      {data && data.total > data.items.length && (
         <p className="text-muted mt-2 text-sm">
-          {t("listings.showingOf", { shown: listings!.length, total: data.total })}
+          {t("listings.showingOf", { shown: data.items.length, total: data.total })}
         </p>
       )}
       {listings && listings.length > 0 && (
