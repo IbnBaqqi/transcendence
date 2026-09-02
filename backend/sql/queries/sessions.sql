@@ -52,3 +52,14 @@ SET revoked_at = now(),
 WHERE user_id = $1
     AND expires_at > now()
     AND (revoked_at IS NULL OR revoked_reason = 'rotated');
+
+-- name: RevokeSessionsForPasswordChange :exec
+-- Rotated rows included, for the reason RevokeSessionsForUser gives: a token
+-- inside the grace window is still redeemable, so skipping them would leave a
+-- logged-out session usable for another 30 seconds.
+UPDATE refresh_tokens
+SET revoked_at = now(),
+    revoked_reason = 'password_change'
+WHERE user_id = $1
+    AND expires_at > now()
+    AND (revoked_at IS NULL OR revoked_reason = 'rotated');
