@@ -1,41 +1,77 @@
 name: Root
 
-# Do not make this check required in branch protection while the paths filter
-# below exists. A required check whose workflow is filtered out never reports at
-# all, so GitHub waits on it forever and the PR can never merge. Same constraint
-# as backend.yml and frontend.yml.
+# The filtering lives in the `changes` job below, NOT in a `paths:` filter on
+# the trigger. That is what lets this check be required in branch protection:
+# a workflow filtered out at the trigger never reports at all, so a required
+# check waits forever and the PR can never merge. A job skipped by `if:` does
+# report - as "skipped", which protection accepts.
 #
-# The paths list is repeated under push rather than shared with a YAML anchor:
-# GitHub's workflow parser rejects anchors outright.
+# So do not move these paths back up into `on:`. It looks like the same thing
+# and it silently wedges every PR that touches nothing at the repo root.
 on:
   pull_request:
     branches: [main]
-    paths:
-      - "docker-compose.yml"
-      - ".env.example"
-      # The whole directory rather than api-demo.sh alone: a second script
-      # added later is invisible to the narrow form.
-      - "scripts/**"
-      - "README.md"
-      - ".gitignore"
-      - "LICENSE"
-      - ".github/CODEOWNERS"
-      - ".github/workflows/root.yml"
   push:
     branches: [main]
-    paths:
-      - "docker-compose.yml"
-      - ".env.example"
-      - "scripts/**"
-      - "README.md"
-      - ".gitignore"
-      - "LICENSE"
-      - ".github/CODEOWNERS"
-      - ".github/workflows/root.yml"
 
 jobs:
+  changes:
+    name: Detect changes (root)
+    runs-on: ubuntu-latest
+    # Listing a pull request's files is the pull-requests scope, not contents.
+    # Without this the call 403s wherever the default token is restricted, and
+    # the fail-open below quietly runs everything on every PR.
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      root: ${{ steps.filter.outputs.run }}
+
+    steps:
+      # No checkout: the API knows what a pull request touches, and skipping the
+      # clone is what keeps this job seconds rather than tens of them.
+      - name: Decide whether a root file changed
+        id: filter
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # A push to main is not a pull request and has nothing to diff
+          # against here - main gets the full set.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Fail open: if the listing fails, run everything rather than
+          # reporting a green PR nothing was checked on.
+          if ! files=$(gh api \
+            "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            --paginate --jq '.[].filename'); then
+            echo "could not list changed files - running everything"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # scripts/ as a whole rather than api-demo.sh alone: a second script
+          # added later is invisible to the narrow form. This workflow watches
+          # only its own file under .github/workflows, unlike backend.yml and
+          # frontend.yml - nothing here builds on a shared action.
+          if printf '%s\n' "$files" | grep -qE '^(docker-compose\.yml|\.env\.example|scripts/|README\.md|\.gitignore|LICENSE|\.github/CODEOWNERS|\.github/workflows/root\.yml)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
   checks:
     name: Root Files
+    needs: changes
+    # Runs when the gate says so, and also when the gate did not succeed at
+    # all: a failed detection job would otherwise skip this, and a skipped
+    # required check is accepted - a green PR nothing was checked on. The
+    # script fails open on its own errors; this covers the job dying around
+    # it. !cancelled() rather than always(), so cancelling a run still stops
+    # the checks.
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.root == 'true') }}
     runs-on: ubuntu-latest
 
     steps:
