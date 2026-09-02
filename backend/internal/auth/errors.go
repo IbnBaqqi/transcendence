@@ -27,6 +27,24 @@ func (e *AuthError) Error() string {
 	return e.Message
 }
 
+// ForbiddenError indicates the caller is authenticated but failed a check that
+// re-proves who they are - today, the current password on a password change.
+//
+// Not AuthError, and the difference is load-bearing rather than pedantic. 401
+// means "your session is no good", and the frontend's response interceptor
+// acts on it: it silently refreshes and replays the request. A 401 for a
+// mistyped password would burn a second bcrypt on the replay, and if the
+// refresh itself failed it would clear the token and sign the user out - for a
+// typo. 403 says "the session is fine, this particular attempt is not", which
+// no interceptor treats as a session problem.
+type ForbiddenError struct {
+	Message string
+}
+
+func (e *ForbiddenError) Error() string {
+	return e.Message
+}
+
 // AccountExistsError indicates an OAuth sign-in matched an account that has a
 // password, which has to be proven before the identity can be linked.
 type AccountExistsError struct {
