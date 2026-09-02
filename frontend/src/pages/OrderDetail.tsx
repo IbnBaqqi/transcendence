@@ -23,7 +23,7 @@ export default function OrderDetail() {
   // role, so no buttons and the wrong side's copy.
   const { user, isLoading: authLoading } = useAuth();
   const { openModal } = useModal();
-  const { data: order, isLoading: orderLoading, error, refetch } = useOrder(id ?? "");
+  const { data: order, isLoading: orderLoading, error, refetch } = useOrder(id ?? "", user?.id);
 
   // 403 means "not your order" - same answer as 404, and it doesn't confirm
   // that an order with this id exists.

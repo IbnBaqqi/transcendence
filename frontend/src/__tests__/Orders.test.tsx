@@ -90,6 +90,15 @@ describe("Orders", () => {
     expect(screen.getByRole("button", { name: "Selling (1)" })).toBeInTheDocument();
   });
 
+  // "(0)" beside a skeleton asserts an empty list before one has arrived.
+  test("tabs carry no count until the orders land", () => {
+    renderPage({ data: undefined, isPending: true, isError: false }, VIEWER_USER);
+
+    expect(screen.getByRole("button", { name: "Buying" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Selling" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /\(0\)/ })).not.toBeInTheDocument();
+  });
+
   test("an empty list explains itself instead of rendering nothing", () => {
     renderPage({ data: [], isPending: false, isError: false }, VIEWER_USER);
     expect(screen.getByText("You haven't reserved anything yet.")).toBeInTheDocument();

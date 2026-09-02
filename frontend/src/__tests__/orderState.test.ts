@@ -70,6 +70,29 @@ describe("deriveOrderView - confirmed, half-marked", () => {
     expect(deriveOrderView(sellerDone, BUYER_ID).waitingOn).toBe("you");
   });
 
+  // Only the null case was asserted, so the two seller branches could be
+  // swapped - telling the side that already marked to go and mark it - and
+  // every test still passed.
+  test("each side is told what its own half-marked state means", () => {
+    expect(deriveOrderView(sellerDone, SELLER_ID).waitingLabel).toBe(
+      "You marked the handover - waiting for the buyer to confirm receipt.",
+    );
+    expect(deriveOrderView(sellerDone, BUYER_ID).waitingLabel).toBe(
+      "The seller marked the handover - confirm you received the goods.",
+    );
+
+    const buyerDone = makeOrder({
+      status: "confirmed",
+      buyer_received_at: "2026-09-02T12:00:00Z",
+    });
+    expect(deriveOrderView(buyerDone, BUYER_ID).waitingLabel).toBe(
+      "You confirmed receipt - waiting for the seller to mark the handover.",
+    );
+    expect(deriveOrderView(buyerDone, SELLER_ID).waitingLabel).toBe(
+      "The buyer confirmed receipt - mark the handover to complete the order.",
+    );
+  });
+
   test("the mirror case works too", () => {
     const buyerDone = makeOrder({
       status: "confirmed",

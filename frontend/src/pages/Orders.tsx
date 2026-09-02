@@ -48,10 +48,12 @@ export default function Orders() {
 
       <div className="border-line mt-4 flex gap-2 border-b">
         <TabButton active={tab === "purchases"} onClick={() => setTab("purchases")}>
-          Buying ({purchases.length})
+          {/* No count until the list arrives - "(0)" next to a skeleton is a
+              claim we can't make yet. */}
+          Buying{orders && ` (${purchases.length})`}
         </TabButton>
         <TabButton active={tab === "sales"} onClick={() => setTab("sales")}>
-          Selling ({sales.length})
+          Selling{orders && ` (${sales.length})`}
         </TabButton>
       </div>
 

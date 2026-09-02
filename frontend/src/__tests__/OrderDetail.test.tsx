@@ -149,5 +149,13 @@ describe("OrderDetail", () => {
     );
 
     expect(screen.getByRole("button", { name: "Log In" })).toBeInTheDocument();
+    // No user id means the query stays disabled: fetching would 401 and burn a
+    // refresh, the same reason useOrders takes `enabled`.
+    expect(useOrder).toHaveBeenCalledWith("o1", undefined);
+  });
+
+  test("passes the viewer's id to the query so it only runs when signed in", () => {
+    renderDetail({ data: makeOrder(), isLoading: false }, { user: SELLER });
+    expect(useOrder).toHaveBeenCalledWith("o1", SELLER_ID);
   });
 });

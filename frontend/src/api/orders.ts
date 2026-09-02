@@ -32,11 +32,14 @@ export function useOrders(options: { enabled?: boolean } = {}) {
   });
 }
 
-export function useOrder(id: string) {
+// userId, not a useAuth() call: api/ stays free of hook dependencies, and the
+// caller already has the user. Signed out means no request - it would 401 and
+// burn a refresh, same reason useOrders takes `enabled`.
+export function useOrder(id: string, userId?: string) {
   return useQuery({
     queryKey: keys.orders.detail(id),
     queryFn: async () => toOrder((await api.get<OrderWire>(apiPath`/orders/${id}`)).data),
-    enabled: id !== "",
+    enabled: id !== "" && !!userId,
   });
 }
 
