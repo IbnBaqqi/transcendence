@@ -4,6 +4,7 @@ CLAUDE.md
 THEORY.md
 AGENTS.md
 opencode.json
+frontend-priorities.txt
 
 # --- Environment / secrets ---
 .env
@@ -48,4 +49,6 @@ desktop.ini
 *.swo
 *~
 
-# air's build output
+# Self-signed TLS material for the local production stack (make certs).
+# Generated, never committed - a private key in a repository is a leaked key.
+certs/
