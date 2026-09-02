@@ -17,7 +17,9 @@ const STATUS_LABELS: Record<ConversationStatus, string> = {
   declined: "Declined",
 };
 
-export function deriveThreadView(conversation: Conversation): ThreadView {
+// Pick rather than Conversation: this reads only two fields, and the list item
+// (Omit<Conversation, "created_at">) has to work here too.
+export function deriveThreadView(conversation: Pick<Conversation, "status" | "role">): ThreadView {
   const { status, role } = conversation;
 
   // Only an accepted thread takes messages - pending and declined both 409.

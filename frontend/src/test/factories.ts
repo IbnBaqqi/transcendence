@@ -1,4 +1,10 @@
-import type { Conversation, Listing, Order, PublicProfile } from "../api/types";
+import type {
+  Conversation,
+  ConversationListItem,
+  Listing,
+  Order,
+  PublicProfile,
+} from "../api/types";
 
 // Override only what a test cares about, so adding a field to Listing doesn't
 // mean editing every test that builds one.
@@ -74,6 +80,22 @@ export function makeConversation(overrides: Partial<Conversation> = {}): Convers
     },
     created_at: "1970-01-01T00:00:00Z",
     updated_at: "1970-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+export function makeConversationListItem(
+  overrides: Partial<ConversationListItem> = {},
+): ConversationListItem {
+  // Built off makeConversation so the two fixtures cannot drift. The list item
+  // is the conversation minus created_at, plus the two list-only fields.
+  // created_at is destructured off because the API does not send it on a list item
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { created_at: _created, ...base } = makeConversation();
+  return {
+    ...base,
+    last_message: null,
+    unread_count: 0,
     ...overrides,
   };
 }

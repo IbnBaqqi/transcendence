@@ -1,0 +1,95 @@
+import Avatar from "../objects/Avatar";
+import { deriveThreadView } from "../../lib/chatState";
+import { deriveInitials } from "../../lib/initials";
+import type { ConversationListItem } from "../../api/types";
+
+export function ConversationList({
+  conversations,
+  selectedId,
+  onSelect,
+}: {
+  conversations: ConversationListItem[];
+  selectedId?: string;
+  onSelect: (id: string) => void;
+}) {
+  if (conversations.length === 0) {
+    return (
+      <p className="text-muted p-4 text-sm">
+        No conversations yet. Message a seller from their listing to start one.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="divide-line divide-y">
+      {conversations.map((conversation) => (
+        <li key={conversation.id}>
+          <ConversationRow
+            conversation={conversation}
+            selected={conversation.id === selectedId}
+            onSelect={() => onSelect(conversation.id)}
+          />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ConversationRow({
+  conversation,
+  selected,
+  onSelect,
+}: {
+  conversation: ConversationListItem;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const { other_user: other, last_message: last, unread_count: unread } = conversation;
+  const view = deriveThreadView(conversation);
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-current={selected}
+      className={`hover:bg-surface-muted flex w-full gap-3 p-3 text-left transition-colors ${
+        selected ? "bg-surface-muted" : ""
+      }`}
+    >
+      <div className="relative shrink-0">
+        <Avatar size="sm" initials={deriveInitials(other.username)} />
+        {/* The dot is decorative - the row already names the state in text
+            below when it matters, and presence is absent when hidden. */}
+        {other.presence.is_online && (
+          <span
+            aria-hidden="true"
+            className="bg-accent border-surface absolute right-0 bottom-0 h-2.5 w-2.5 rounded-full border-2"
+          />
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-foreground truncate font-medium">{other.username}</span>
+          {unread > 0 && (
+            <span className="bg-accent text-accent-contrast shrink-0 rounded-full px-2 py-0.5 text-xs font-medium">
+              {unread}
+            </span>
+          )}
+        </div>
+
+        <p className="text-muted truncate text-sm">{conversation.listing_title}</p>
+
+        {/* A pending or declined thread has no useful preview - what matters
+            is that it is waiting on someone. */}
+        {conversation.status === "accepted" ? (
+          <p className="text-muted truncate text-sm">
+            {last ? last.body : <span className="italic">No messages yet</span>}
+          </p>
+        ) : (
+          <p className="text-muted truncate text-sm italic">{view.statusLabel}</p>
+        )}
+      </div>
+    </button>
+  );
+}
