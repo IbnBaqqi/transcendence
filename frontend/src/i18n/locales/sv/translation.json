@@ -88,7 +88,8 @@
   },
   "listings": {
     "available": "{{qty}} {{unit}} tillgängliga",
-    "showingOf": "Visar {{shown}} av {{total}}"
+    "showingOf": "Visar {{shown}} av {{total}}",
+    "seller": "Säljare"
   },
   "presence": {
     "online": "Online",
