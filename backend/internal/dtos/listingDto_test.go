@@ -39,7 +39,7 @@ func TestToListingResponseJSON(t *testing.T) {
 		`"title":"Golden Chanterelles","description":"","category":"mushrooms",` +
 		`"price":18,"quantity":4,"unit":"kg",` +
 		`"created_at":"1970-01-01T00:00:00Z","updated_at":"1970-01-01T00:00:00Z",` +
-		`"images":[],"tags":[]}`
+		`"images":[],"tags":[],"seller":null}`
 
 	if got != want {
 		t.Errorf("JSON shape changed\n got: %s\nwant: %s", got, want)
@@ -81,5 +81,46 @@ func TestToListingResponsesEmptyIsArray(t *testing.T) {
 	}
 	if got := string(b); got != "[]" {
 		t.Errorf("expected [] for an empty result, got %s", got)
+	}
+}
+
+func TestWithSellerEachMatchesOnSellerID(t *testing.T) {
+	sellerA, sellerB := uuid.New(), uuid.New()
+	items := []ListingResponse{
+		{ID: uuid.New(), SellerID: sellerA},
+		{ID: uuid.New(), SellerID: sellerB},
+		{ID: uuid.New(), SellerID: sellerA},
+	}
+	bySeller := map[uuid.UUID]ListingSeller{
+		sellerA: {ID: sellerA, Username: "matti"},
+	}
+
+	got := WithSellerEach(items, bySeller)
+
+	if got[0].Seller == nil || got[0].Seller.Username != "matti" {
+		t.Errorf("first item seller = %+v, want matti", got[0].Seller)
+	}
+	// Two listings from the same seller both get one, from a single map entry.
+	if got[2].Seller == nil || got[2].Seller.Username != "matti" {
+		t.Errorf("third item seller = %+v, want matti", got[2].Seller)
+	}
+	// A seller the lookup did not return stays null rather than borrowing
+	// whichever entry happened to be last.
+	if got[1].Seller != nil {
+		t.Errorf("second item seller = %+v, want nil", got[1].Seller)
+	}
+}
+
+func TestToListingSellerBuildsTheAvatarPath(t *testing.T) {
+	id := uuid.New()
+
+	with := ToListingSeller(id, "matti", sql.NullString{String: "a.png", Valid: true})
+	if with.AvatarURL == nil || *with.AvatarURL != UploadURLPrefix+"a.png" {
+		t.Errorf("avatar_url = %v, want %q", with.AvatarURL, UploadURLPrefix+"a.png")
+	}
+
+	without := ToListingSeller(id, "matti", sql.NullString{})
+	if without.AvatarURL != nil {
+		t.Errorf("avatar_url with none set = %q, want nil", *without.AvatarURL)
 	}
 }

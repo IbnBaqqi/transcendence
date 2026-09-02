@@ -1,6 +1,7 @@
 package dtos
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -55,6 +56,14 @@ type PaginatedListings struct {
 	TotalPages int               `json:"total_pages"`
 }
 
+// ListingSeller is who posted a listing, enough for a card: a name and a face.
+// Not presence - a card is not a chat row.
+type ListingSeller struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	AvatarURL *string   `json:"avatar_url"`
+}
+
 // ListingResponse is the public JSON shape for a listing.
 type ListingResponse struct {
 	ID          uuid.UUID              `json:"id"`
@@ -69,6 +78,7 @@ type ListingResponse struct {
 	UpdatedAt   time.Time              `json:"updated_at"`
 	Images      []ListingImageResponse `json:"images"`
 	Tags        []string               `json:"tags"`
+	Seller      *ListingSeller         `json:"seller"`
 	RemovedAt   *time.Time             `json:"removed_at,omitempty"`
 }
 
@@ -120,6 +130,28 @@ func ToListingResponsesWithImages(
 		out = append(out, ToListingResponseWithImages(r, byListing[r.ID]))
 	}
 	return out
+}
+
+func ToListingSeller(id uuid.UUID, username string, avatarFilename sql.NullString) ListingSeller {
+	return ListingSeller{
+		ID:        id,
+		Username:  username,
+		AvatarURL: avatarURL(avatarFilename),
+	}
+}
+
+func WithSeller(item ListingResponse, seller *ListingSeller) ListingResponse {
+	item.Seller = seller
+	return item
+}
+
+func WithSellerEach(items []ListingResponse, bySeller map[uuid.UUID]ListingSeller) []ListingResponse {
+	for i, item := range items {
+		if seller, ok := bySeller[item.SellerID]; ok {
+			items[i].Seller = &seller
+		}
+	}
+	return items
 }
 
 func WithTags(item ListingResponse, tags []string) ListingResponse {
