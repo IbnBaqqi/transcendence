@@ -39,6 +39,7 @@ func authRouter(t *testing.T) http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Use(mw.RequiredAuth)
 		r.Get("/auth/me", h.Me)
+		r.Post("/me/password", h.ChangePassword)
 	})
 
 	return r
@@ -214,5 +215,28 @@ func TestLoginAndMeDescribeTheAccountTheSameWay(t *testing.T) {
 
 	if !reflect.DeepEqual(fromLogin, fromMe) {
 		t.Errorf("the two calls describe one account differently:\nlogin: %v\nme:    %v", fromLogin, fromMe)
+	}
+}
+
+func TestAWrongCurrentPasswordIsForbiddenNotUnauthorised(t *testing.T) {
+	r := authRouter(t)
+	accessToken, _ := signupVia(t, r)
+
+	wrong := send(t, r, http.MethodPost, "/me/password",
+		`{"current_password":"not-the-one","new_password":"a-brand-new-password"}`, nil, accessToken)
+
+	// 403, because 401 means "your session is no good" and the frontend's
+	// interceptor acts on it: silent refresh, replay, and a sign-out if the
+	// refresh fails. A mistyped password must not end a session.
+	if wrong.code != http.StatusForbidden {
+		t.Errorf("wrong password = %d, want 403: %s", wrong.code, wrong.body)
+	}
+
+	// The other half of the distinction: no session really is 401.
+	none := send(t, r, http.MethodPost, "/me/password",
+		`{"current_password":"anything","new_password":"a-brand-new-password"}`, nil, "")
+
+	if none.code != http.StatusUnauthorized {
+		t.Errorf("no session = %d, want 401: %s", none.code, none.body)
 	}
 }
