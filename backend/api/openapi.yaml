@@ -2241,6 +2241,26 @@ paths:
           schema:
             type: string
             maxLength: 200
+        - name: seller_id
+          in: query
+          description: |
+            Only this seller's listings. A well-formed id nobody owns returns an
+            empty page rather than a 404, like `category` and `tag`: a
+            bookmarked profile is better served by no results than by an error.
+            A malformed one is a 400.
+
+            This is the **public** view of a seller's listings, because the
+            filter inherits the endpoint's visibility rules rather than
+            replacing them: sold-out and moderator-removed listings are absent,
+            and a suspended or deleted seller returns nothing at all. A seller
+            looking at their own inventory needs all of those, which is a
+            different endpoint.
+          schema:
+            type: string
+            format: uuid
+          examples:
+            seller:
+              value: 3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34
         - name: min_price
           in: query
           description: Non-negative. Must not exceed `max_price`.
