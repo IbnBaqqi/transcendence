@@ -441,6 +441,32 @@ goroutine. Two consequences worth knowing:
 A full queue drops rather than blocks, for the same reason: blocking would put
 the mail server back on the request path.
 
+## Hot reload
+
+Both halves of the stack pick up edits without a restart, whichever way you
+started it:
+
+```bash
+docker compose up        # frontend via Vite, backend via air
+cd backend && make dev   # backend only, on the host
+```
+
+Save a `.go` file and the backend rebuilds in a few seconds. `api/openapi.yaml`
+counts too — it is `go:embed`-ed into the binary, so editing the spec without
+watching it would leave `/api/docs` serving a stale copy with nothing to say
+why.
+
+Two things worth knowing. The **first `docker compose up` after pulling this
+builds an image** rather than pulling one, because the backend now runs a `dev`
+stage from `backend/Dockerfile`; later ups hit the layer cache. And **air is
+pinned to one version** in both the Dockerfile and the Makefile, so the
+container and the host behave identically — `make dev` runs it through `go run`
+rather than from your `PATH`, so there is nothing to install.
+
+The build output goes to `/tmp/air`, deliberately outside the repository: under
+compose the source is a bind mount, so a binary written into the tree would
+appear on your machine owned by the container's user.
+
 ## Running the tests
 
 ```bash
