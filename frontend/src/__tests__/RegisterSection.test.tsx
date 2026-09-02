@@ -10,6 +10,7 @@ function renderRegister(signup: AuthContextValue["signup"]) {
     login: vi.fn(),
     signup,
     logout: vi.fn(),
+    restoreSession: vi.fn(),
   };
   const onClose = vi.fn();
   render(

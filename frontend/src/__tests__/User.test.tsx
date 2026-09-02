@@ -33,7 +33,14 @@ const OTHER_SELLERS_LISTING = makeListing({
 const NOT_FOUND: ApiError = { status: 404, message: "User not found" };
 
 function authStub(user: AuthUser | null): AuthContextValue {
-  return { user, isLoading: false, login: vi.fn(), signup: vi.fn(), logout: vi.fn() };
+  return {
+    user,
+    isLoading: false,
+    login: vi.fn(),
+    signup: vi.fn(),
+    logout: vi.fn(),
+    restoreSession: vi.fn(),
+  };
 }
 
 // Both queries default to "loaded fine"; a test overrides only what it cares about.
