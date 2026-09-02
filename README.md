@@ -7,6 +7,49 @@ real money. Built for the 42 `ft_transcendence` project.
 React + TypeScript frontend, Go backend, PostgreSQL, all runnable with
 `docker compose up`.
 
+## Running it
+
+```bash
+make setup          # .env from the example, and one directory - see below
+docker compose up
+```
+
+Then <http://localhost:5173> for the app and <http://localhost:8080/api/docs>
+for the API. Migrations are a separate step the first time:
+`cd backend && make migrate-up`.
+
+**`make setup` before the first `up`, and the order matters.** It creates
+`frontend/node_modules` and `backend/uploads` so that Docker does not. A
+container cannot mount onto a path that does not exist, so the daemon creates
+any missing subdirectory of a bind mount — as **root**, inside your working
+tree. Both directories are gitignored, so both are absent on a fresh clone and
+both get created that way. After that, the next host-side command that writes
+there fails with `EACCES` — `npm ci` for one, `make run` saving an uploaded
+image for the other — with an error that blames permissions and never mentions
+Docker.
+
+**This is a Linux thing.** Docker Desktop for macOS maps bind-mount ownership to
+the host user, so nothing lands root-owned and none of the above happens there —
+measured both ways on both platforms. `make setup` is still the right first
+command everywhere; `mkdir -p` costs nothing.
+
+Already hit it, on Linux? The directories have to go before they can be
+recreated — but **no `sudo` is needed**, because they are empty. Docker's volume
+shadows each one, so everything written there goes into the volume rather than
+the tree, and removing a directory needs write permission on its *parent*, which
+you have:
+
+```bash
+rmdir frontend/node_modules backend/uploads
+make setup && (cd frontend && npm ci)
+```
+
+`rmdir` also fails safely if one of them somehow is not empty, which is the
+point at which `sudo rm -rf` becomes the right tool rather than the reflex.
+
+Running the container as your own user does not help — the daemon prepares the
+mount point before the container starts, so its user is irrelevant.
+
 ## Modules
 
 The subject requires a written justification for the modules we claim —
