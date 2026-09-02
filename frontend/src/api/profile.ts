@@ -4,10 +4,14 @@ import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
 import type { AvatarResponse, OwnProfile, ProfileUpdateInput, PublicProfile } from "./types";
 
-export function useOwnProfile() {
+// Defaults to enabled: the profile page reads the 401 from this to decide it is
+// signed out. Callers that already know there is no session pass false, so they
+// do not spend a request and a refresh attempt learning it again.
+export function useOwnProfile(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: keys.me.profile(),
     queryFn: async () => (await api.get<OwnProfile>("/me/profile")).data,
+    enabled: options.enabled ?? true,
   });
 }
 

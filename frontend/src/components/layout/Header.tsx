@@ -2,6 +2,7 @@
 // NavLink: a Link that knows if it points to the current page, so you can style the active one differently
 import { useModal } from "../../providers/modalContext";
 import { useAuth } from "../../hooks/useAuth";
+import { useOwnProfile } from "../../api/profile";
 import { deriveInitials } from "../../lib/initials";
 import { Link, NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -16,8 +17,12 @@ export default function Header() {
   const { openModal, openChat } = useModal();
   const { t } = useTranslation();
 
-  // Names live on the profile, not the auth session - header works from the
-  // username alone and "?" covers signed-out visitors.
+  // The picture lives on the profile, not the auth session, so the header has
+  // to ask for it - disabled while signed out, where it would only 401.
+  const { data: profile } = useOwnProfile({ enabled: Boolean(user) });
+
+  // Initials still come from the session: they are the fallback, and waiting
+  // for the profile would leave the corner empty on every load.
   const initials = user ? deriveInitials(user.username) : "?";
 
   return (
@@ -72,7 +77,12 @@ export default function Header() {
           </Link>
           {user ? (
             <Link to="/profile">
-              <Avatar size="sm" initials={initials} interactive />
+              <Avatar
+                size="sm"
+                initials={initials}
+                imageUrl={profile?.avatar_url ?? undefined}
+                interactive
+              />
             </Link>
           ) : (
             <button type="button" onClick={() => openModal("login")}>
