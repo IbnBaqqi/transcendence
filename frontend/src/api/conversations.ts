@@ -35,13 +35,12 @@ export function useConversation(id: string) {
 
 export function useMessages(id: string) {
   return useQuery({
-    // The API answers newest-first (ORDER BY id DESC); reverse once here so
-    // every consumer gets oldest-at-top and none of them re-sorts.
+    // Oldest-first, as sent. The underlying query is ORDER BY id DESC but
+    // ListMessages reverses before responding (conversation.go), so reversing
+    // again here would render the thread backwards.
     queryKey: keys.conversations.messages(id),
     queryFn: async () =>
-      ((await api.get<Message[]>(apiPath`/conversations/${id}/messages`)).data ?? [])
-        .slice()
-        .reverse(),
+      (await api.get<Message[]>(apiPath`/conversations/${id}/messages`)).data ?? [],
     enabled: id !== "",
     refetchInterval: THREAD_POLL_MS,
   });

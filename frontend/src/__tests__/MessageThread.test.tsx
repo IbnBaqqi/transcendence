@@ -135,6 +135,18 @@ describe("MessageThread", () => {
     expect(screen.getByText("mine").className).not.toBe(screen.getByText("theirs").className);
   });
 
+  // The API sends oldest-first; anything that re-sorts here renders the thread
+  // backwards, which reads as coherent until you check the timestamps.
+  test("renders messages in the order the API sent them", () => {
+    renderThread(makeConversation({ status: "accepted" }), [
+      makeMessage({ id: "m1", body: "first" }),
+      makeMessage({ id: "m2", body: "second" }),
+    ]);
+
+    const bodies = screen.getAllByText(/first|second/).map((el) => el.textContent);
+    expect(bodies).toEqual(["first", "second"]);
+  });
+
   test("opening the thread clears its unread badge", () => {
     const conversation = makeConversation({ status: "accepted" });
     renderThread(conversation);
