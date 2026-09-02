@@ -5,10 +5,11 @@ const PILL_STYLES: Record<OrderStatus, string> = {
   pending: "bg-surface-muted text-muted",
   confirmed: "bg-soft text-soft-contrast",
   completed: "bg-accent text-accent-contrast",
+  // The two terminal failures share a ground and differ in weight: cancelled
+  // means the trade never happened, refunded means it did and was unwound,
+  // which is the more consequential of the two.
   cancelled: "bg-surface-soft text-muted",
-  // Distinct from cancelled: a refund unwound a trade that happened, which is
-  // a different outcome to the buyer than one that never started.
-  refunded: "bg-surface-muted text-muted",
+  refunded: "bg-surface-soft text-foreground font-semibold",
 };
 
 export function OrderStatusPill({ status, label }: { status: OrderStatus; label: string }) {
