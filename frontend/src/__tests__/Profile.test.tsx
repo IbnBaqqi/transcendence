@@ -37,6 +37,7 @@ const AUTH_STUB: AuthContextValue = {
   login: vi.fn().mockResolvedValue(undefined),
   signup: vi.fn(),
   logout: vi.fn().mockResolvedValue(undefined),
+  restoreSession: vi.fn(),
 };
 
 beforeEach(() => {
