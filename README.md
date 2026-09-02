@@ -34,12 +34,18 @@ measured both ways on both platforms. `make setup` is still the right first
 command everywhere; `mkdir -p` costs nothing.
 
 Already hit it, on Linux? The directories have to go before they can be
-recreated:
+recreated — but **no `sudo` is needed**, because they are empty. Docker's volume
+shadows each one, so everything written there goes into the volume rather than
+the tree, and removing a directory needs write permission on its *parent*, which
+you have:
 
 ```bash
-sudo rm -rf frontend/node_modules backend/uploads
+rmdir frontend/node_modules backend/uploads
 make setup && (cd frontend && npm ci)
 ```
+
+`rmdir` also fails safely if one of them somehow is not empty, which is the
+point at which `sudo rm -rf` becomes the right tool rather than the reflex.
 
 Running the container as your own user does not help — the daemon prepares the
 mount point before the container starts, so its user is irrelevant.
