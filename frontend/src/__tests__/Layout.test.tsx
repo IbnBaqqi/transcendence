@@ -12,6 +12,7 @@ const AUTH_STUB: AuthContextValue = {
   login: vi.fn(),
   signup: vi.fn(),
   logout: vi.fn(),
+  restoreSession: vi.fn(),
 };
 
 function Boom(): never {
