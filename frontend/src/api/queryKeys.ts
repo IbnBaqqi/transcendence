@@ -38,6 +38,12 @@ export const keys = {
     detail: (id: string) => [...keys.users.all, "detail", id] as const,
   },
 
+  follows: {
+    all: ["follows"] as const,
+    following: () => [...keys.follows.all, "following"] as const,
+    followers: (id: string) => [...keys.follows.all, "followers", id] as const,
+  },
+
   me: {
     all: ["me"] as const,
     profile: () => [...keys.me.all, "profile"] as const,
