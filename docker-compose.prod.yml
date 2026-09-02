@@ -49,6 +49,19 @@ services:
     environment:
       DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
       UPLOAD_DIR: /app/uploads
+      # .env is the dev file, and three of its values are wrong for this stack.
+      # Overridden here rather than fixed there, because dev still needs them.
+      #
+      # The browser reaches everything through nginx on 8080, so that is the
+      # frontend origin - .env says 5173, which is Vite and is not running here.
+      # OAuth redirects land on this value, so a stale one sends the user to a
+      # dead port at the end of a successful sign-in.
+      FRONTEND_URL: http://localhost:8080
+      # No mailpit service in this stack, so .env's SMTP_HOST=mailpit does not
+      # resolve. Empty means Configured() is false and notifications are logged
+      # instead of sent: a loud no-op beats a silent failure against a host that
+      # is not there. Set a real host to actually send.
+      SMTP_HOST: ""
     volumes:
       - uploads_prod:/app/uploads
     depends_on:
