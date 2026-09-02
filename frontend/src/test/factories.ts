@@ -1,4 +1,4 @@
-import type { Listing, Order, PublicProfile } from "../api/types";
+import type { Conversation, Listing, Order, PublicProfile } from "../api/types";
 
 // Override only what a test cares about, so adding a field to Listing doesn't
 // mean editing every test that builds one.
@@ -54,6 +54,24 @@ export function makeOrder(overrides: Partial<Order> = {}): Order {
     status: "pending",
     seller_handed_over_at: null,
     buyer_received_at: null,
+    created_at: "1970-01-01T00:00:00Z",
+    updated_at: "1970-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+export function makeConversation(overrides: Partial<Conversation> = {}): Conversation {
+  return {
+    id: "0b8e3a25-6d4c-4f99-8a32-7c1e9b2f5d68",
+    listing_id: "01a02305-b81c-7dcb-86a0-7f75e33e0af3",
+    listing_title: "Golden Chanterelles",
+    status: "accepted",
+    role: "buyer",
+    other_user: {
+      id: SELLER_ID,
+      username: "oscarroff",
+      presence: { is_online: true },
+    },
     created_at: "1970-01-01T00:00:00Z",
     updated_at: "1970-01-01T00:00:00Z",
     ...overrides,
