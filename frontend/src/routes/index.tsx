@@ -12,11 +12,15 @@ import Notifications from "../pages/Notifications";
 import Privacy from "../pages/Privacy";
 import Terms from "../pages/Terms";
 import NotFound from "../pages/NotFound";
+import AuthCallback from "../pages/AuthCallback";
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Top-level redirect target from the OAuth flow - rendered outside the
+            app shell since it's a transient page, not normal UI. */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           {/* ":id" is a URL parameter - the page reads it with useParams() */}

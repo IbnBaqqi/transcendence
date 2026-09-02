@@ -6,6 +6,7 @@ import { loginSchema, type LoginFormSchema } from "../../schemas/login";
 import Button from "../objects/Button.tsx";
 import { useAuth } from "../../hooks/useAuth";
 import { isApiError } from "../../api/client";
+import OAuthButtons from "./OAuthButtons";
 
 export function LoginSection({ onClose }: { onClose: () => void }) {
   const { login } = useAuth();
@@ -34,6 +35,12 @@ export function LoginSection({ onClose }: { onClose: () => void }) {
   return (
     <Form form={form} onSubmit={handleSubmit} isEditing={true}>
       <div className="space-y-4">
+        <OAuthButtons />
+        <div className="text-muted flex items-center gap-3 text-xs">
+          <span className="border-line h-px flex-1 border-t" />
+          or sign in with email
+          <span className="border-line h-px flex-1 border-t" />
+        </div>
         <div className="space-y-2">
           <FormField label="Email" name="email" validateOnChange />
           <FormField label="Password" name="password" type="password" validateOnChange />

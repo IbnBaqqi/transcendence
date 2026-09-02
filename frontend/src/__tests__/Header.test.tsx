@@ -13,6 +13,7 @@ function renderHeader(auth?: Partial<AuthContextValue>) {
     login: vi.fn(),
     signup: vi.fn(),
     logout: vi.fn(),
+    restoreSession: vi.fn(),
     ...auth,
   };
   render(
