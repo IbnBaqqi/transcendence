@@ -17,7 +17,18 @@ type OrdersQuery = ReturnType<typeof useOrders>;
 // exactly the case the two tabs exist to separate.
 const VIEWER = BUYER_ID;
 
-const purchase = makeOrder({ id: "o-buy", listing_title: "Chanterelles" });
+const purchase = makeOrder({
+  id: "o-buy",
+  listing_title: "Chanterelles",
+  created_at: "2026-09-01T10:00:00Z",
+});
+// Newer than `purchase`, and declared second in the array below, so only the
+// sort can put it on top.
+const newerPurchase = makeOrder({
+  id: "o-buy-2",
+  listing_title: "Morels",
+  created_at: "2026-09-02T10:00:00Z",
+});
 const sale = makeOrder({
   id: "o-sell",
   listing_title: "Cloudberries",
@@ -82,6 +93,35 @@ describe("Orders", () => {
   test("an empty list explains itself instead of rendering nothing", () => {
     renderPage({ data: [], isPending: false, isError: false }, VIEWER_USER);
     expect(screen.getByText("You haven't reserved anything yet.")).toBeInTheDocument();
+  });
+
+  test("lists the newest order first regardless of the order the API sent", () => {
+    renderPage({ data: [purchase, newerPurchase], isPending: false, isError: false }, VIEWER_USER);
+
+    const titles = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    expect(titles).toEqual(["Morels", "Chanterelles"]);
+  });
+
+  test("a failed load shows the message and offers a retry", async () => {
+    const user = userEvent.setup();
+    const refetch = vi.fn();
+    renderPage(
+      {
+        data: undefined,
+        isPending: false,
+        isError: true,
+        // An ApiError, not an Error: that is what the axios interceptor rejects
+        // with, and what isApiError() in the page narrows on.
+        error: { status: 500, message: "Couldn't reach the server" },
+        refetch,
+      } as unknown as Partial<OrdersQuery>,
+      VIEWER_USER,
+    );
+
+    expect(screen.getByText("Couldn't reach the server")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(refetch).toHaveBeenCalled();
   });
 
   test("a signed-out visitor is asked to log in, not shown an error", () => {

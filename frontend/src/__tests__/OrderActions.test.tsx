@@ -81,6 +81,41 @@ describe("OrderActions", () => {
     expect(calls.cancel).not.toHaveBeenCalled();
   });
 
+  // The map in OrderActions wires four hooks to four action names. Only
+  // asserting confirm leaves the others free to be crossed: the buttons would
+  // read correctly and POST the wrong transition.
+  test("the seller's handover button hits the handover endpoint", async () => {
+    const user = userEvent.setup();
+    const order = makeOrder({ status: "confirmed" });
+    renderActions(order, SELLER_ID);
+
+    await user.click(screen.getByRole("button", { name: "Mark handed over" }));
+
+    expect(calls.handover).toHaveBeenCalledWith(order.id);
+    expect(calls.receive).not.toHaveBeenCalled();
+  });
+
+  test("the buyer's receipt button hits the receive endpoint", async () => {
+    const user = userEvent.setup();
+    const order = makeOrder({ status: "confirmed" });
+    renderActions(order, BUYER_ID);
+
+    await user.click(screen.getByRole("button", { name: "Confirm receipt" }));
+
+    expect(calls.receive).toHaveBeenCalledWith(order.id);
+    expect(calls.handover).not.toHaveBeenCalled();
+  });
+
+  test("cancel hits the cancel endpoint", async () => {
+    const user = userEvent.setup();
+    const order = makeOrder({ status: "pending" });
+    renderActions(order, BUYER_ID);
+
+    await user.click(screen.getByRole("button", { name: "Cancel order" }));
+
+    expect(calls.cancel).toHaveBeenCalledWith(order.id);
+  });
+
   test("renders nothing at all for a finished order", () => {
     const { container } = renderActions(makeOrder({ status: "completed" }), BUYER_ID);
     expect(container).toBeEmptyDOMElement();

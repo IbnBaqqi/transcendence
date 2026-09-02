@@ -119,6 +119,30 @@ describe("ReserveListingSection", () => {
     expect(screen.queryByRole("button", { name: "Request to buy" })).not.toBeInTheDocument();
   });
 
+  // The guard added for #21: an empty id leaves the query disabled, which
+  // React Query still reports as pending - without the guard this renders a
+  // skeleton forever.
+  test("an empty listing id renders nothing rather than a permanent skeleton", () => {
+    vi.mocked(useListing).mockReturnValue({
+      data: undefined,
+      isPending: true,
+    } as ReturnType<typeof useListing>);
+
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AuthContext.Provider value={authStub(VIEWER)}>
+          <ModalProvider>
+            <MemoryRouter>
+              <ReserveListingSection listingId="" />
+            </MemoryRouter>
+          </ModalProvider>
+        </AuthContext.Provider>
+      </QueryClientProvider>,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
   test("the seller can't reserve from themselves", () => {
     const seller: User = { ...VIEWER, id: SELLER_ID };
     renderSection(makeListing(), seller);
