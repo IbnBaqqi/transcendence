@@ -455,7 +455,7 @@ components:
 
     UserInfo:
       type: object
-      required: [id, username, email, role]
+      required: [id, username, email, role, has_password, providers]
       properties:
         id:
           type: string
@@ -468,6 +468,25 @@ components:
         role:
           type: string
           examples: ["USER"]
+        has_password:
+          type: boolean
+          description: |
+            Whether the account can sign in with a password, and therefore
+            whether password flows apply to it at all. An account created
+            through a provider has none: `/auth/forgot-password` answers 202
+            for it like any other address, but mails "reset unavailable"
+            instead of a link. Branch on this rather than on `providers` being
+            empty — this is the condition the backend itself enforces.
+        providers:
+          type: array
+          description: |
+            The OAuth providers linked to this account, for display — "You sign
+            in with Google". Empty for a password-only account. Never sent on
+            another user's profile: knowing an address belongs to a Google
+            account tells an attacker what to forge.
+          items:
+            type: string
+            examples: ["google"]
 
     AuthResponse:
       type: object

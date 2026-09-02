@@ -121,10 +121,15 @@ func (s *Service) Signup(ctx context.Context, input dtos.CreateUserRequest) (Sig
 		return SignupResponse{}, fmt.Errorf("signup: issue token: %w", err)
 	}
 
+	info, err := s.UserInfo(ctx, user)
+	if err != nil {
+		return SignupResponse{}, fmt.Errorf("signup: %w", err)
+	}
+
 	return SignupResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User:         toUserInfo(user),
+		User:         info,
 	}, nil
 }
 
@@ -169,10 +174,15 @@ func (s *Service) Login(ctx context.Context, input dtos.LoginRequest) (LoginResu
 		return LoginResult{}, fmt.Errorf("login: store session: %w", err)
 	}
 
+	info, err := s.UserInfo(ctx, user)
+	if err != nil {
+		return LoginResult{}, fmt.Errorf("login: %w", err)
+	}
+
 	return LoginResult{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User:         toUserInfo(user),
+		User:         info,
 	}, nil
 }
 
@@ -275,13 +285,27 @@ func isUniqueViolation(err error, constraint string) bool {
 	return pqErr.Code == "23505" && pqErr.Constraint == constraint
 }
 
-func toUserInfo(user database.User) dtos.UserInfo {
-	return dtos.UserInfo{
-		ID:       user.ID.String(),
-		Username: user.Username,
-		Email:    user.Email,
-		Role:     user.Role,
+// UserInfo reads the linked providers, so it must not be called inside an open
+// transaction: it queries the pool, and would miss an identity the caller has
+// linked but not yet committed. Every call site today is either after its
+// commit or outside a transaction entirely.
+func (s *Service) UserInfo(ctx context.Context, user database.User) (dtos.UserInfo, error) {
+	providers, err := s.db.ListProvidersForUser(ctx, user.ID)
+	if err != nil {
+		return dtos.UserInfo{}, fmt.Errorf("user info: list providers: %w", err)
 	}
+	if providers == nil {
+		providers = []string{}
+	}
+
+	return dtos.UserInfo{
+		ID:          user.ID.String(),
+		Username:    user.Username,
+		Email:       user.Email,
+		Role:        user.Role,
+		HasPassword: user.Password.Valid,
+		Providers:   providers,
+	}, nil
 }
 
 func suspendedLoginMessage(reason sql.NullString) string {
