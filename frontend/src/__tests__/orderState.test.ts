@@ -82,12 +82,23 @@ describe("deriveOrderView - confirmed, half-marked", () => {
 });
 
 describe("deriveOrderView - terminal states", () => {
-  test.each(["completed", "cancelled"] as const)("%s offers nothing to anyone", (status) => {
-    const order = makeOrder({ status });
-    expect(deriveOrderView(order, BUYER_ID).actions).toEqual([]);
-    expect(deriveOrderView(order, SELLER_ID).actions).toEqual([]);
-    expect(deriveOrderView(order, BUYER_ID).waitingOn).toBeNull();
-    expect(deriveOrderView(order, SELLER_ID).waitingOn).toBeNull();
+  test.each(["completed", "cancelled", "refunded"] as const)(
+    "%s offers nothing to anyone",
+    (status) => {
+      const order = makeOrder({ status });
+      expect(deriveOrderView(order, BUYER_ID).actions).toEqual([]);
+      expect(deriveOrderView(order, SELLER_ID).actions).toEqual([]);
+      expect(deriveOrderView(order, BUYER_ID).waitingOn).toBeNull();
+      expect(deriveOrderView(order, SELLER_ID).waitingOn).toBeNull();
+    },
+  );
+
+  // An admin can refund an order and both parties still see it, so a missing
+  // label here is a wordless, unstyled pill in their list.
+  test("refunded has a label of its own", () => {
+    expect(deriveOrderView(makeOrder({ status: "refunded" }), BUYER_ID).statusLabel).toBe(
+      "Refunded",
+    );
   });
 });
 

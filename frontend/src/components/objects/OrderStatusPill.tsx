@@ -6,6 +6,8 @@ const PILL_STYLES: Record<OrderStatus, string> = {
   confirmed: "bg-soft text-soft-contrast",
   completed: "bg-accent text-accent-contrast",
   cancelled: "bg-surface-soft text-muted",
+  // Terminal like cancelled, and reads as the same kind of outcome.
+  refunded: "bg-surface-soft text-muted",
 };
 
 export function OrderStatusPill({ status, label }: { status: OrderStatus; label: string }) {

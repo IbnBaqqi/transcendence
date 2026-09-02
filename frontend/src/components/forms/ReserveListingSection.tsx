@@ -61,7 +61,9 @@ function ReserveForm({ listing }: { listing: Listing }) {
   const [error, setError] = useState<string | null>(null);
 
   const available = listing.quantity;
-  const quantity = Number.parseInt(quantityText, 10);
+  // Number, not parseInt: parseInt("1.5") is 1, so the field would read 1.5
+  // while we reserved 1. Number("1.5") keeps Number.isInteger meaningful.
+  const quantity = Number(quantityText);
   const valid = Number.isInteger(quantity) && quantity >= 1 && quantity <= available;
 
   async function handleReserve() {

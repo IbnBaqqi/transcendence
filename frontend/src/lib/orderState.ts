@@ -19,6 +19,9 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   confirmed: "Confirmed",
   completed: "Completed",
   cancelled: "Cancelled",
+  // Set only by an admin resolving a dispute (POST /admin/orders/{id}/resolve).
+  // Both parties still see the order, so it needs a label like any other.
+  refunded: "Refunded",
 };
 
 export function deriveOrderView(order: Order, userId: string | undefined): OrderView {

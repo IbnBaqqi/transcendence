@@ -44,7 +44,7 @@ export interface Category {
   children: Category[];
 }
 
-export type OrderStatus = "pending" | "confirmed" | "completed" | "cancelled";
+export type OrderStatus = "pending" | "confirmed" | "completed" | "cancelled" | "refunded";
 
 export interface Order {
   id: string;

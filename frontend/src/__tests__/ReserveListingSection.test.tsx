@@ -98,6 +98,21 @@ describe("ReserveListingSection", () => {
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 
+  // parseInt would take "1.5" as 1: the field reads 1.5, the order says 1.
+  test("a decimal quantity is refused rather than silently truncated", async () => {
+    const user = userEvent.setup();
+    renderSection(makeListing({ quantity: 5 }), VIEWER);
+
+    await user.clear(screen.getByLabelText(/Quantity/));
+    await user.type(screen.getByLabelText(/Quantity/), "1.5");
+
+    const submit = screen.getByRole("button", { name: "Request to buy" });
+    expect(submit).toBeDisabled();
+
+    await user.click(submit);
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
   test("a sold-out listing offers no form at all", () => {
     renderSection(makeListing({ quantity: 0 }), VIEWER);
     expect(screen.getByText("Sold out - nothing left to reserve.")).toBeInTheDocument();
