@@ -36,11 +36,17 @@ setup: certs
 # local stack. `mkcert -install && mkcert localhost` produces a trusted one for
 # anyone who has it, written to the same two paths.
 certs:
+	@command -v openssl >/dev/null || { \
+		echo "openssl not found - it generates certs/ (apt install openssl, brew install openssl)"; \
+		exit 1; }
 	@mkdir -p certs
-	@test -f certs/localhost.pem || openssl req -x509 -newkey rsa:2048 -nodes \
-		-keyout certs/localhost-key.pem -out certs/localhost.pem -days 365 \
-		-subj "/CN=localhost" \
-		-addext "subjectAltName=DNS:localhost,IP:127.0.0.1" 2>/dev/null
+	@if [ ! -f certs/localhost.pem ] || [ ! -f certs/localhost-key.pem ]; then \
+		out=$$(openssl req -x509 -newkey rsa:2048 -nodes \
+			-keyout certs/localhost-key.pem -out certs/localhost.pem -days 365 \
+			-subj "/CN=localhost" \
+			-addext "subjectAltName=DNS:localhost,IP:127.0.0.1" 2>&1) \
+			|| { echo "$$out" >&2; exit 1; }; \
+	fi
 	@# openssl writes the key 0600, and the frontend image runs nginx as uid 101,
 	@# which then cannot read it. Readable rather than root-owned or a privileged
 	@# container: this key is generated, gitignored, valid only for localhost and
