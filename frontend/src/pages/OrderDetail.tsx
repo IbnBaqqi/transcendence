@@ -6,6 +6,9 @@ import { useAuth } from "../hooks/useAuth";
 import { deriveOrderView } from "../lib/orderState";
 import { OrderActions } from "../components/objects/OrderActions";
 import { OrderStatusPill } from "../components/objects/OrderStatusPill";
+import { Skeleton } from "../components/objects/Skeleton";
+import Button from "../components/objects/Button";
+import { useModal } from "../providers/modalContext";
 import type { Timestamp } from "../api/types";
 import NotFound from "./NotFound";
 
@@ -19,7 +22,8 @@ export default function OrderDetail() {
   // and the order request can resolve first - which renders the page with no
   // role, so no buttons and the wrong side's copy.
   const { user, isLoading: authLoading } = useAuth();
-  const { data: order, isLoading: orderLoading, error } = useOrder(id ?? "");
+  const { openModal } = useModal();
+  const { data: order, isLoading: orderLoading, error, refetch } = useOrder(id ?? "");
 
   // 403 means "not your order" - same answer as 404, and it doesn't confirm
   // that an order with this id exists.
@@ -29,11 +33,29 @@ export default function OrderDetail() {
 
   if (authLoading || orderLoading) return <p className="text-muted p-8 text-sm">Loading…</p>;
 
+  // A shared order link gives a signed-out visitor a 401, which isn't in the
+  // set above - so offer the login rather than a dead error line.
+  if (!user) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-3 px-4 py-8">
+        <p className="text-muted text-sm">You're signed out. Log in to see this order.</p>
+        <Button variant="primary" onClick={() => openModal("login")}>
+          Log In
+        </Button>
+      </div>
+    );
+  }
+
   if (error || !order) {
     return (
-      <p className="text-berry-500 p-8 text-sm">
-        {isApiError(error) ? error.message : "Couldn't load this order."}
-      </p>
+      <div className="mx-auto max-w-2xl px-4 py-8">
+        <Skeleton
+          variant="error"
+          className="h-40 w-full"
+          message={isApiError(error) ? error.message : "Couldn't load this order."}
+          onRetry={() => refetch()}
+        />
+      </div>
     );
   }
 

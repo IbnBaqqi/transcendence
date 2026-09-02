@@ -143,6 +143,33 @@ describe("ReserveListingSection", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  test("a failed listing load says so and offers a retry", async () => {
+    const user = userEvent.setup();
+    const refetch = vi.fn();
+    vi.mocked(useListing).mockReturnValue({
+      data: undefined,
+      isPending: false,
+      isError: true,
+      refetch,
+    } as unknown as ReturnType<typeof useListing>);
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AuthContext.Provider value={authStub(VIEWER)}>
+          <ModalProvider>
+            <MemoryRouter>
+              <ReserveListingSection listingId="l1" />
+            </MemoryRouter>
+          </ModalProvider>
+        </AuthContext.Provider>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("Couldn't load this listing.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(refetch).toHaveBeenCalled();
+  });
+
   test("the seller can't reserve from themselves", () => {
     const seller: User = { ...VIEWER, id: SELLER_ID };
     renderSection(makeListing(), seller);

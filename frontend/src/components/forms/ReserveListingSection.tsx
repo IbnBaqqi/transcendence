@@ -19,13 +19,25 @@ export function ReserveListingSection({ listingId }: { listingId: string }) {
   // Fetches by id rather than taking a listing prop: React Query dedupes by
   // key, so this costs nothing next to the page's own fetch and the section
   // drops into the #21 stub with one line.
-  const { data: listing, isPending } = useListing(listingId);
+  const { data: listing, isPending, isError, refetch } = useListing(listingId);
 
   // An empty id leaves the query disabled, which React Query still reports as
   // pending - so answer it before the skeleton branch spins forever.
   if (!listingId) return null;
   if (isPending) return <Skeleton className="h-40 w-full" />;
-  if (!listing) return null;
+
+  // Without this the box just disappears, on a page that has nothing else on
+  // it - the same silent blank Orders.tsx already avoids.
+  if (isError || !listing) {
+    return (
+      <Skeleton
+        variant="error"
+        className="h-40 w-full"
+        message="Couldn't load this listing."
+        onRetry={() => refetch()}
+      />
+    );
+  }
 
   if (user?.id === listing.seller_id) {
     return <p className="text-muted text-sm">This is your own listing.</p>;

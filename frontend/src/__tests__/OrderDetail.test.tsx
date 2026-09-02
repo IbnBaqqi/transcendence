@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import OrderDetail from "../pages/OrderDetail";
@@ -11,6 +12,7 @@ import {
   useReceiveOrder,
 } from "../api/orders";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
+import { ModalProvider } from "../providers/ModalProvider";
 import { makeOrder, SELLER_ID } from "../test/factories";
 import type { Order, User } from "../api/types";
 
@@ -42,7 +44,7 @@ const SELLER: User = {
 };
 
 function renderDetail(
-  query: { data?: Order; isLoading?: boolean; error?: unknown },
+  query: { data?: Order; isLoading?: boolean; error?: unknown; refetch?: () => void },
   auth: { user: User | null; isLoading?: boolean },
 ) {
   vi.mocked(useOrder).mockReturnValue({
@@ -62,11 +64,13 @@ function renderDetail(
   return render(
     <QueryClientProvider client={new QueryClient()}>
       <AuthContext.Provider value={value}>
-        <MemoryRouter initialEntries={["/orders/o1"]}>
-          <Routes>
-            <Route path="/orders/:id" element={<OrderDetail />} />
-          </Routes>
-        </MemoryRouter>
+        <ModalProvider>
+          <MemoryRouter initialEntries={["/orders/o1"]}>
+            <Routes>
+              <Route path="/orders/:id" element={<OrderDetail />} />
+            </Routes>
+          </MemoryRouter>
+        </ModalProvider>
       </AuthContext.Provider>
     </QueryClientProvider>,
   );
@@ -112,13 +116,38 @@ describe("OrderDetail", () => {
     expect(screen.getByText("404 - Page not found")).toBeInTheDocument();
   });
 
-  test("any other error says so rather than pretending the order is missing", () => {
+  test("any other error offers a retry rather than a dead end", async () => {
+    const user = userEvent.setup();
+    const refetch = vi.fn();
     renderDetail(
-      { data: undefined, isLoading: false, error: { status: 500, message: "Server exploded" } },
+      {
+        data: undefined,
+        isLoading: false,
+        error: { status: 500, message: "Server exploded" },
+        refetch,
+      },
       { user: SELLER },
     );
 
     expect(screen.getByText("Server exploded")).toBeInTheDocument();
     expect(screen.queryByText("404 - Page not found")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  // A shared order link: the 401 isn't in the not-found set, so without this
+  // branch the visitor gets a bare error line and no way to act.
+  test("a signed-out visitor following an order link is offered the login", () => {
+    renderDetail(
+      {
+        data: undefined,
+        isLoading: false,
+        error: { status: 401, message: "Authentication required" },
+      },
+      { user: null },
+    );
+
+    expect(screen.getByRole("button", { name: "Log In" })).toBeInTheDocument();
   });
 });
