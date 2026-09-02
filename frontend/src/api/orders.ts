@@ -23,10 +23,12 @@ export interface CreateOrderInput {
 
 // --- Reads ---
 
-export function useOrders() {
+export function useOrders(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: keys.orders.list(),
     queryFn: async () => ((await api.get<OrderWire[]>("/orders")).data ?? []).map(toOrder),
+    // Signed-out callers pass false: the request would 401 and burn a refresh.
+    enabled: options.enabled ?? true,
   });
 }
 

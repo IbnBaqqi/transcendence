@@ -28,6 +28,11 @@ export default function Header() {
           <NavLink to="/" className={navLinkClass}>
             Home
           </NavLink>
+          {user && (
+            <NavLink to="/orders" className={navLinkClass}>
+              Orders
+            </NavLink>
+          )}
           <button
             type="button"
             onClick={openChat}
