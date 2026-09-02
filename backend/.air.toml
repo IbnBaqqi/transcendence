@@ -1,9 +1,15 @@
 root = "."
-tmp_dir = "tmp"
+
+# Outside the source tree on purpose. Inside a container the tree is a bind
+# mount, so anything written here appears on the host owned by the container's
+# user - which is how frontend/node_modules ended up owned by root (#184). An
+# absolute path the mount does not reach avoids the question entirely, and host
+# runs behave the same.
+tmp_dir = "/tmp/air"
 
 [build]
-  cmd = "go build -o ./tmp/server ./cmd/server"
-  bin = "./tmp/server"
+  cmd = "go build -o /tmp/air/server ./cmd/server"
+  bin = "/tmp/air/server"
   # yaml is here because api/openapi.yaml is //go:embed-ed into the binary.
   # Drop it and editing the spec leaves /docs serving the old one until someone
   # restarts by hand, with nothing to say why.
