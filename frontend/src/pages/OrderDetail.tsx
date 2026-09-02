@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import { useOrder } from "../api/orders";
 import { isApiError } from "../api/client";
@@ -12,8 +13,8 @@ import { useModal } from "../providers/modalContext";
 import type { Timestamp } from "../api/types";
 import NotFound from "./NotFound";
 
-function formatStamp(at: Timestamp | null) {
-  return at ? new Date(at).toLocaleString() : "Not yet";
+function formatStamp(at: Timestamp | null, notYet: string) {
+  return at ? new Date(at).toLocaleString() : notYet;
 }
 
 export default function OrderDetail() {
@@ -22,6 +23,7 @@ export default function OrderDetail() {
   // and the order request can resolve first - which renders the page with no
   // role, so no buttons and the wrong side's copy.
   const { user, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const { openModal } = useModal();
   const { data: order, isLoading: orderLoading, error, refetch } = useOrder(id ?? "", user?.id);
 
@@ -31,16 +33,17 @@ export default function OrderDetail() {
     return <NotFound />;
   }
 
-  if (authLoading || orderLoading) return <p className="text-muted p-8 text-sm">Loading…</p>;
+  if (authLoading || orderLoading)
+    return <p className="text-muted p-8 text-sm">{t("common.loading")}</p>;
 
   // A shared order link gives a signed-out visitor a 401, which isn't in the
   // set above - so offer the login rather than a dead error line.
   if (!user) {
     return (
       <div className="mx-auto max-w-2xl space-y-3 px-4 py-8">
-        <p className="text-muted text-sm">You're signed out. Log in to see this order.</p>
+        <p className="text-muted text-sm">{t("orders.signedOutDetail")}</p>
         <Button variant="primary" onClick={() => openModal("login")}>
-          Log In
+          {t("common.logIn")}
         </Button>
       </div>
     );
@@ -52,7 +55,7 @@ export default function OrderDetail() {
         <Skeleton
           variant="error"
           className="h-40 w-full"
-          message={isApiError(error) ? error.message : "Couldn't load this order."}
+          message={isApiError(error) ? error.message : t("orders.detailError")}
           onRetry={() => refetch()}
         />
       </div>
@@ -65,42 +68,51 @@ export default function OrderDetail() {
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
       <div>
         <Link to="/orders" className="text-muted text-sm hover:underline">
-          ← All orders
+          {t("orders.allOrders")}
         </Link>
         <div className="mt-2 flex items-start justify-between gap-3">
           <h1 className="text-foreground text-2xl font-bold">{order.listing_title}</h1>
-          <OrderStatusPill status={order.status} label={view.statusLabel} />
+          <OrderStatusPill status={order.status} label={t(view.statusKey)} />
         </div>
         <p className="text-muted mt-1 text-sm">
-          You're the {view.role === "none" ? "—" : view.role} on this order.
+          {t("orders.yourRole", { role: t(`orders.role.${view.role}`) })}
         </p>
       </div>
 
-      {view.waitingLabel && (
+      {view.waitingKey && (
         <p
           className={`text-sm ${
             view.waitingOn === "you" ? "text-foreground font-medium" : "text-muted"
           }`}
         >
-          {view.waitingLabel}
+          {t(view.waitingKey)}
         </p>
       )}
 
       <OrderActions order={order} />
 
       <dl className="border-line divide-line divide-y rounded-lg border">
-        <Row label="Quantity" value={String(order.quantity)} />
-        <Row label="Unit price" value={`€${order.unit_price.toFixed(2)}`} />
-        <Row label="Total" value={`€${order.total_price.toFixed(2)}`} />
-        <Row label="Reserved" value={new Date(order.created_at).toLocaleString()} />
-        <Row label="Seller handed over" value={formatStamp(order.seller_handed_over_at)} />
-        <Row label="Buyer confirmed receipt" value={formatStamp(order.buyer_received_at)} />
+        <Row label={t("orders.fields.quantity")} value={String(order.quantity)} />
+        <Row label={t("orders.fields.unitPrice")} value={`€${order.unit_price.toFixed(2)}`} />
+        <Row label={t("orders.fields.total")} value={`€${order.total_price.toFixed(2)}`} />
+        <Row
+          label={t("orders.fields.reserved")}
+          value={new Date(order.created_at).toLocaleString()}
+        />
+        <Row
+          label={t("orders.fields.handedOver")}
+          value={formatStamp(order.seller_handed_over_at, t("orders.notYet"))}
+        />
+        <Row
+          label={t("orders.fields.received")}
+          value={formatStamp(order.buyer_received_at, t("orders.notYet"))}
+        />
       </dl>
 
       <p className="text-muted text-sm">
-        Metsätori handles no payments - arrange payment and pickup between yourselves.{" "}
+        {t("orders.noPayments")}{" "}
         <Link to={`/listings/${order.listing_id}`} className="text-accent hover:underline">
-          View the listing
+          {t("orders.viewListing")}
         </Link>
       </p>
     </div>

@@ -88,6 +88,78 @@
     "available": "{{qty}} {{unit}} tillgängliga",
     "showingOf": "Visar {{shown}} av {{total}}"
   },
+  "orders": {
+    "title": "Beställningar",
+    "signedOut": "Du är utloggad. Logga in för att se dina beställningar.",
+    "signedOutDetail": "Du är utloggad. Logga in för att se den här beställningen.",
+    "tabs": {
+      "buying": "Köper",
+      "selling": "Säljer"
+    },
+    "empty": {
+      "purchases": "Du har inte reserverat något än.",
+      "sales": "Ingen har reserverat från dig än.",
+      "browse": "Bläddra bland annonser"
+    },
+    "listError": "Kunde inte ladda dina beställningar.",
+    "detailError": "Kunde inte ladda den här beställningen.",
+    "allOrders": "← Alla beställningar",
+    "yourRole": "Du är {{role}} i den här beställningen.",
+    "role": {
+      "buyer": "köpare",
+      "seller": "säljare",
+      "none": "—"
+    },
+    "noPayments": "Metsätori hanterar inga betalningar - kom överens om betalning och upphämtning sinsemellan.",
+    "viewListing": "Visa annonsen",
+    "notYet": "Inte än",
+    "fields": {
+      "quantity": "Antal",
+      "unitPrice": "Styckpris",
+      "total": "Totalt",
+      "reserved": "Reserverad",
+      "handedOver": "Säljaren lämnade över",
+      "received": "Köparen bekräftade mottagandet"
+    },
+    "status": {
+      "pending": "Väntar",
+      "confirmed": "Bekräftad",
+      "completed": "Slutförd",
+      "cancelled": "Avbruten",
+      "refunded": "Återbetald"
+    },
+    "actions": {
+      "confirm": "Bekräfta reservationen",
+      "confirming": "Bekräftar…",
+      "handover": "Markera som överlämnad",
+      "marking": "Markerar…",
+      "receive": "Bekräfta mottagande",
+      "cancel": "Avbryt beställningen",
+      "cancelling": "Avbryter…"
+    },
+    "moved": "Beställningen ändrades nyss. Uppdaterad - kontrollera åtgärderna igen.",
+    "waiting": {
+      "youConfirm": "Väntar på att du bekräftar reservationen.",
+      "sellerConfirms": "Väntar på att säljaren bekräftar reservationen.",
+      "arrange": "Kom överens om överlämningen sinsemellan och markera den sedan här.",
+      "youHandedOver": "Du markerade överlämningen - väntar på att köparen bekräftar mottagandet.",
+      "buyerReceived": "Köparen bekräftade mottagandet - markera överlämningen för att slutföra beställningen.",
+      "youReceived": "Du bekräftade mottagandet - väntar på att säljaren markerar överlämningen.",
+      "sellerHandedOver": "Säljaren markerade överlämningen - bekräfta att du fick varorna."
+    },
+    "reserve": {
+      "ownListing": "Det här är din egen annons.",
+      "soldOut": "Slutsåld - inget kvar att reservera.",
+      "logInToReserve": "Logga in för att reservera från den här säljaren.",
+      "loadError": "Kunde inte ladda den här annonsen.",
+      "quantityLabel": "Antal ({{unit}})",
+      "submit": "Begär att köpa",
+      "submitting": "Reserverar…",
+      "total": "Totalt {{total}} € - du betalar säljaren direkt, inte Metsätori.",
+      "chooseBetween": "Välj mellan 1 och {{max}} {{unit}}.",
+      "error": "Kunde inte reservera den här annonsen. Försök igen."
+    }
+  },
   "pages": {
     "home": {
       "latestFinds": "Senaste fynden",

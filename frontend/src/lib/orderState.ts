@@ -7,21 +7,21 @@ export type OrderAction = "confirm" | "handover" | "receive" | "cancel";
 
 export interface OrderView {
   role: OrderRole;
-  statusLabel: string;
+  statusKey: string;
   waitingOn: "you" | "them" | null;
-  waitingLabel: string | null;
+  waitingKey: string | null;
   actions: OrderAction[];
 }
 
 // Record<OrderStatus, string> makes a new status a compile error, not a blank pill.
-const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: "Pending",
-  confirmed: "Confirmed",
-  completed: "Completed",
-  cancelled: "Cancelled",
+const STATUS_KEYS: Record<OrderStatus, string> = {
+  pending: "orders.status.pending",
+  confirmed: "orders.status.confirmed",
+  completed: "orders.status.completed",
+  cancelled: "orders.status.cancelled",
   // Set only by an admin resolving a dispute (POST /admin/orders/{id}/resolve).
   // Both parties still see the order, so it needs a label like any other.
-  refunded: "Refunded",
+  refunded: "orders.status.refunded",
 };
 
 export function deriveOrderView(order: Order, userId: string | undefined): OrderView {
@@ -36,7 +36,7 @@ export function deriveOrderView(order: Order, userId: string | undefined): Order
 
   const actions: OrderAction[] = [];
   let waitingOn: OrderView["waitingOn"] = null;
-  let waitingLabel: string | null = null;
+  let waitingKey: string | null = null;
 
   if (order.status === "pending") {
     if (role === "seller") actions.push("confirm");
@@ -44,10 +44,8 @@ export function deriveOrderView(order: Order, userId: string | undefined): Order
     if (role !== "none") {
       actions.push("cancel");
       waitingOn = role === "seller" ? "you" : "them";
-      waitingLabel =
-        role === "seller"
-          ? "Waiting for you to confirm this reservation."
-          : "Waiting for the seller to confirm this reservation.";
+      waitingKey =
+        role === "seller" ? "orders.waiting.youConfirm" : "orders.waiting.sellerConfirms";
     }
   }
 
@@ -64,15 +62,11 @@ export function deriveOrderView(order: Order, userId: string | undefined): Order
       waitingOn = (role === "seller" ? !sellerMarked : !buyerMarked) ? "you" : "them";
 
       if (!handshakeStarted) {
-        waitingLabel = "Arrange the handover between yourselves, then mark it here.";
+        waitingKey = "orders.waiting.arrange";
       } else if (role === "seller") {
-        waitingLabel = sellerMarked
-          ? "You marked the handover - waiting for the buyer to confirm receipt."
-          : "The buyer confirmed receipt - mark the handover to complete the order.";
+        waitingKey = sellerMarked ? "orders.waiting.youHandedOver" : "orders.waiting.buyerReceived";
       } else {
-        waitingLabel = buyerMarked
-          ? "You confirmed receipt - waiting for the seller to mark the handover."
-          : "The seller marked the handover - confirm you received the goods.";
+        waitingKey = buyerMarked ? "orders.waiting.youReceived" : "orders.waiting.sellerHandedOver";
       }
     }
   }
@@ -81,9 +75,9 @@ export function deriveOrderView(order: Order, userId: string | undefined): Order
 
   return {
     role,
-    statusLabel: STATUS_LABELS[order.status],
+    statusKey: STATUS_KEYS[order.status],
     waitingOn,
-    waitingLabel,
+    waitingKey,
     actions,
   };
 }

@@ -88,6 +88,78 @@
     "available": "{{qty}} {{unit}} available",
     "showingOf": "Showing {{shown}} of {{total}}"
   },
+  "orders": {
+    "title": "Orders",
+    "signedOut": "You're signed out. Log in to see your orders.",
+    "signedOutDetail": "You're signed out. Log in to see this order.",
+    "tabs": {
+      "buying": "Buying",
+      "selling": "Selling"
+    },
+    "empty": {
+      "purchases": "You haven't reserved anything yet.",
+      "sales": "No one has reserved from you yet.",
+      "browse": "Browse listings"
+    },
+    "listError": "Couldn't load your orders.",
+    "detailError": "Couldn't load this order.",
+    "allOrders": "← All orders",
+    "yourRole": "You're the {{role}} on this order.",
+    "role": {
+      "buyer": "buyer",
+      "seller": "seller",
+      "none": "—"
+    },
+    "noPayments": "Metsätori handles no payments - arrange payment and pickup between yourselves.",
+    "viewListing": "View the listing",
+    "notYet": "Not yet",
+    "fields": {
+      "quantity": "Quantity",
+      "unitPrice": "Unit price",
+      "total": "Total",
+      "reserved": "Reserved",
+      "handedOver": "Seller handed over",
+      "received": "Buyer confirmed receipt"
+    },
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    },
+    "actions": {
+      "confirm": "Confirm reservation",
+      "confirming": "Confirming…",
+      "handover": "Mark handed over",
+      "marking": "Marking…",
+      "receive": "Confirm receipt",
+      "cancel": "Cancel order",
+      "cancelling": "Cancelling…"
+    },
+    "moved": "This order just changed. Refreshed - check the actions again.",
+    "waiting": {
+      "youConfirm": "Waiting for you to confirm this reservation.",
+      "sellerConfirms": "Waiting for the seller to confirm this reservation.",
+      "arrange": "Arrange the handover between yourselves, then mark it here.",
+      "youHandedOver": "You marked the handover - waiting for the buyer to confirm receipt.",
+      "buyerReceived": "The buyer confirmed receipt - mark the handover to complete the order.",
+      "youReceived": "You confirmed receipt - waiting for the seller to mark the handover.",
+      "sellerHandedOver": "The seller marked the handover - confirm you received the goods."
+    },
+    "reserve": {
+      "ownListing": "This is your own listing.",
+      "soldOut": "Sold out - nothing left to reserve.",
+      "logInToReserve": "Log in to reserve from this seller.",
+      "loadError": "Couldn't load this listing.",
+      "quantityLabel": "Quantity ({{unit}})",
+      "submit": "Request to buy",
+      "submitting": "Reserving…",
+      "total": "Total €{{total}} - you pay the seller directly, not Metsätori.",
+      "chooseBetween": "Choose between 1 and {{max}} {{unit}}.",
+      "error": "Couldn't reserve this listing. Please try again."
+    }
+  },
   "pages": {
     "home": {
       "latestFinds": "Latest Finds",

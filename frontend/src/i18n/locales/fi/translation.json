@@ -88,6 +88,78 @@
     "available": "{{qty}} {{unit}} saatavilla",
     "showingOf": "Näytetään {{shown}} / {{total}}"
   },
+  "orders": {
+    "title": "Tilaukset",
+    "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tilauksesi.",
+    "signedOutDetail": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tämän tilauksen.",
+    "tabs": {
+      "buying": "Ostot",
+      "selling": "Myynnit"
+    },
+    "empty": {
+      "purchases": "Et ole vielä varannut mitään.",
+      "sales": "Kukaan ei ole vielä varannut sinulta.",
+      "browse": "Selaa ilmoituksia"
+    },
+    "listError": "Tilauksiasi ei voitu ladata.",
+    "detailError": "Tätä tilausta ei voitu ladata.",
+    "allOrders": "← Kaikki tilaukset",
+    "yourRole": "Olet tämän tilauksen {{role}}.",
+    "role": {
+      "buyer": "ostaja",
+      "seller": "myyjä",
+      "none": "—"
+    },
+    "noPayments": "Metsätori ei käsittele maksuja - sopikaa maksusta ja noudosta keskenänne.",
+    "viewListing": "Näytä ilmoitus",
+    "notYet": "Ei vielä",
+    "fields": {
+      "quantity": "Määrä",
+      "unitPrice": "Yksikköhinta",
+      "total": "Yhteensä",
+      "reserved": "Varattu",
+      "handedOver": "Myyjä luovutti",
+      "received": "Ostaja vahvisti vastaanoton"
+    },
+    "status": {
+      "pending": "Odottaa",
+      "confirmed": "Vahvistettu",
+      "completed": "Valmis",
+      "cancelled": "Peruttu",
+      "refunded": "Hyvitetty"
+    },
+    "actions": {
+      "confirm": "Vahvista varaus",
+      "confirming": "Vahvistetaan…",
+      "handover": "Merkitse luovutetuksi",
+      "marking": "Merkitään…",
+      "receive": "Vahvista vastaanotto",
+      "cancel": "Peruuta tilaus",
+      "cancelling": "Perutaan…"
+    },
+    "moved": "Tämä tilaus juuri muuttui. Päivitetty - tarkista toiminnot uudelleen.",
+    "waiting": {
+      "youConfirm": "Odotetaan, että vahvistat tämän varauksen.",
+      "sellerConfirms": "Odotetaan, että myyjä vahvistaa tämän varauksen.",
+      "arrange": "Sopikaa luovutus keskenänne ja merkitkää se sitten tähän.",
+      "youHandedOver": "Merkitsit luovutuksen - odotetaan, että ostaja vahvistaa vastaanoton.",
+      "buyerReceived": "Ostaja vahvisti vastaanoton - merkitse luovutus, niin tilaus valmistuu.",
+      "youReceived": "Vahvistit vastaanoton - odotetaan, että myyjä merkitsee luovutuksen.",
+      "sellerHandedOver": "Myyjä merkitsi luovutuksen - vahvista, että sait tuotteet."
+    },
+    "reserve": {
+      "ownListing": "Tämä on oma ilmoituksesi.",
+      "soldOut": "Loppuunmyyty - ei enää varattavaa.",
+      "logInToReserve": "Kirjaudu sisään varataksesi tältä myyjältä.",
+      "loadError": "Tätä ilmoitusta ei voitu ladata.",
+      "quantityLabel": "Määrä ({{unit}})",
+      "submit": "Lähetä ostopyyntö",
+      "submitting": "Varataan…",
+      "total": "Yhteensä {{total}} € - maksat suoraan myyjälle, et Metsätorille.",
+      "chooseBetween": "Valitse 1 ja {{max}} {{unit}} väliltä.",
+      "error": "Varausta ei voitu tehdä. Yritä uudelleen."
+    }
+  },
   "pages": {
     "home": {
       "latestFinds": "Uusimmat löydöt",

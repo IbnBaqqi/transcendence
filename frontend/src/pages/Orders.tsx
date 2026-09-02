@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import { useOrders } from "../api/orders";
 import { isApiError } from "../api/client";
@@ -19,20 +20,21 @@ function byNewest(a: Order, b: Order) {
 
 export default function Orders() {
   const { user, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const { openModal } = useModal();
   const [tab, setTab] = useState<Tab>("purchases");
 
   const { data: orders, isPending, isError, error, refetch } = useOrders({ enabled: !!user });
 
-  if (authLoading) return <p className="text-muted p-8 text-sm">Loading…</p>;
+  if (authLoading) return <p className="text-muted p-8 text-sm">{t("common.loading")}</p>;
 
   if (!user) {
     return (
       <div className="mx-auto max-w-4xl space-y-3 px-4 py-8">
-        <h1 className="text-foreground text-2xl font-bold">Orders</h1>
-        <p className="text-muted text-sm">You're signed out. Log in to see your orders.</p>
+        <h1 className="text-foreground text-2xl font-bold">{t("orders.title")}</h1>
+        <p className="text-muted text-sm">{t("orders.signedOut")}</p>
         <Button variant="primary" onClick={() => openModal("login")}>
-          Log In
+          {t("common.logIn")}
         </Button>
       </div>
     );
@@ -44,16 +46,18 @@ export default function Orders() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">Orders</h1>
+      <h1 className="text-foreground text-2xl font-bold">{t("orders.title")}</h1>
 
       <div className="border-line mt-4 flex gap-2 border-b">
         <TabButton active={tab === "purchases"} onClick={() => setTab("purchases")}>
           {/* No count until the list arrives - "(0)" next to a skeleton is a
               claim we can't make yet. */}
-          Buying{orders && ` (${purchases.length})`}
+          {t("orders.tabs.buying")}
+          {orders && ` (${purchases.length})`}
         </TabButton>
         <TabButton active={tab === "sales"} onClick={() => setTab("sales")}>
-          Selling{orders && ` (${sales.length})`}
+          {t("orders.tabs.selling")}
+          {orders && ` (${sales.length})`}
         </TabButton>
       </div>
 
@@ -69,7 +73,7 @@ export default function Orders() {
         <Skeleton
           variant="error"
           className="mt-6 h-28 w-full"
-          message={isApiError(error) ? error.message : "Couldn't load your orders."}
+          message={isApiError(error) ? error.message : t("orders.listError")}
           onRetry={() => refetch()}
         />
       )}
@@ -77,13 +81,11 @@ export default function Orders() {
       {orders && shown.length === 0 && (
         <div className="border-line mt-6 rounded-lg border border-dashed p-8 text-center">
           <p className="text-muted text-sm">
-            {tab === "purchases"
-              ? "You haven't reserved anything yet."
-              : "No one has reserved from you yet."}
+            {tab === "purchases" ? t("orders.empty.purchases") : t("orders.empty.sales")}
           </p>
           {tab === "purchases" && (
             <Link to="/search" className="text-accent mt-2 inline-block text-sm hover:underline">
-              Browse listings
+              {t("orders.empty.browse")}
             </Link>
           )}
         </div>
