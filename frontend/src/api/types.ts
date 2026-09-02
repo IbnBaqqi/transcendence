@@ -141,6 +141,14 @@ export interface LoginInput {
   password: string;
 }
 
+// POST /me/password. Requires a browser session (not an API key) and the
+// current password. All other sessions are revoked; a fresh session is
+// returned as a new refresh cookie.
+export interface ChangePasswordInput {
+  current_password: string;
+  new_password: string;
+}
+
 // Returned by signup, login and refresh alike, so one code path can start a
 // session from any of them. The refresh token itself is never here: it travels
 // as an HttpOnly cookie.

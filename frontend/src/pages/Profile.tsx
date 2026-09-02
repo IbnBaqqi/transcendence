@@ -2,9 +2,10 @@
 //
 // Username and email are identity - the API offers no way to change them, so
 // they render read-only. Contact details and bio are editable in their
-// sections below (PATCH /me/profile). Password change has no backend endpoint
-// yet (#32/#33) and the preference toggles have no matching settings fields,
-// so they stay commented out below until then.
+// sections below (PATCH /me/profile). Password change is handled via
+// POST /me/password (requires the current password). The preference toggles
+// have no matching settings fields, so they stay commented out below until
+// then.
 //
 // This page is only viewable for the logged-in user of the same profile.
 // To view another user's profile we have User.tsx

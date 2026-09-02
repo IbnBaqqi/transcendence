@@ -11,6 +11,7 @@ import type { OwnProfile } from "../api/types";
 vi.mock("../api/profile", () => ({
   useOwnProfile: vi.fn(),
   useUpdateOwnProfile: vi.fn(),
+  useChangePassword: vi.fn(),
 }));
 
 const mockedProfile = vi.mocked(useOwnProfile);

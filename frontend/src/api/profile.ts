@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
-import type { OwnProfile, ProfileUpdateInput, PublicProfile } from "./types";
+import type { ChangePasswordInput, OwnProfile, ProfileUpdateInput, PublicProfile } from "./types";
 
 export function useOwnProfile() {
   return useQuery({
@@ -31,6 +31,14 @@ export function usePublicProfile(id: string | undefined) {
     // The default is retry: 1 (lib/queryClient.ts). A 404 here is a real
     // answer - no point asking twice.
     retry: false,
+  });
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async (input: ChangePasswordInput) => {
+      await api.post("/me/password", input, { withCredentials: true });
+    },
   });
 }
 
