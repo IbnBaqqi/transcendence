@@ -4,6 +4,7 @@ import { ModalContext, type DialogType, type ImageUploadModalOptions } from "./m
 export function ModalProvider({ children }: { children: ReactNode }) {
   const [activeModal, setActiveModal] = useState<DialogType>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatConversationId, setChatConversationId] = useState<string | null>(null);
   const [imageUploadOptions, setImageUploadOptions] = useState<ImageUploadModalOptions | null>(
     null,
   );
@@ -23,11 +24,20 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       value={{
         activeModal,
         chatOpen,
+        chatConversationId,
         imageUploadOptions,
         openModal,
         closeModal,
-        openChat: () => setChatOpen(true),
-        closeChat: () => setChatOpen(false),
+        openChat: (conversationId?: string) => {
+          setChatConversationId(conversationId ?? null);
+          setChatOpen(true);
+        },
+        // Cleared on close, or reopening from the header would drop you back
+        // into whichever thread you were last in.
+        closeChat: () => {
+          setChatConversationId(null);
+          setChatOpen(false);
+        },
       }}
     >
       {children}

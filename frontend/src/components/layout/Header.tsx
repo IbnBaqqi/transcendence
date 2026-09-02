@@ -37,9 +37,11 @@ export default function Header() {
               Orders
             </NavLink>
           )}
+          {/* openChat is wrapped, not passed straight to onClick: it takes an
+              optional conversation id and would receive the click event. */}
           <button
             type="button"
-            onClick={openChat}
+            onClick={() => openChat()}
             aria-label={t("nav.openChat")}
             className="text-muted hover:text-foreground"
           >

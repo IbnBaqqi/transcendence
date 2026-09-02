@@ -12,10 +12,13 @@ export interface ImageUploadModalOptions {
 export interface ModalContextValue {
   activeModal: DialogType;
   chatOpen: boolean;
+  // The thread to open on, when something opened the chat with one in mind
+  // (starting a conversation from a listing). Null means "show the list".
+  chatConversationId: string | null;
   imageUploadOptions: ImageUploadModalOptions | null;
   openModal: (modal: DialogType, options?: ImageUploadModalOptions) => void;
   closeModal: () => void;
-  openChat: () => void;
+  openChat: (conversationId?: string) => void;
   closeChat: () => void;
 }
 
