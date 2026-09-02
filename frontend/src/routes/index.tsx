@@ -8,6 +8,8 @@ import Search from "../pages/Search";
 import Profile from "../pages/Profile";
 import User from "../pages/User";
 import Dashboard from "../pages/Dashboard";
+import Orders from "../pages/Orders";
+import OrderDetail from "../pages/OrderDetail";
 import Notifications from "../pages/Notifications";
 import Privacy from "../pages/Privacy";
 import Terms from "../pages/Terms";
@@ -30,6 +32,8 @@ export default function AppRouter() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/users/:id" element={<User />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/orders/:id" element={<OrderDetail />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
