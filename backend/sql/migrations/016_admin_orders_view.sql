@@ -1,5 +1,12 @@
 -- +goose Up
 
+-- The seven days live here rather than in Go so the rule has one home: the
+-- admin list, its count and /resolve all read `stuck` from this view instead
+-- of re-deriving it. The cost is that tuning the threshold is a migration with
+-- CREATE OR REPLACE VIEW rather than an edit to a constant - and the 409 in
+-- internal/service/admin_order.go spells "7 days" out for the user, so it is a
+-- second copy that has to move with this one.
+
 CREATE VIEW admin_orders AS
 SELECT shapes.*,
        COALESCE(shapes.handshake_stuck OR shapes.stranded, false)::boolean AS stuck

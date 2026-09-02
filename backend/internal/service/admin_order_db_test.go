@@ -777,3 +777,41 @@ func TestTheAdminOrdersViewCarriesEveryOrderColumn(t *testing.T) {
 		}
 	}
 }
+
+func TestASuspendedPairIsNotStranded(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+
+	// Suspended directly rather than through the admin service: this is about
+	// what the view reads, and the fixture should not depend on how a
+	// suspension is applied.
+	for _, id := range []uuid.UUID{f.buyer, f.seller} {
+		if _, err := f.db.ExecContext(ctx,
+			`UPDATE users SET suspended_at = now() WHERE id = $1`, id); err != nil {
+			t.Fatalf("suspending: %v", err)
+		}
+	}
+
+	resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
+	if err != nil {
+		t.Fatalf("reading resolvability: %v", err)
+	}
+
+	// An order between two suspended users is just as unreachable as one
+	// between two deleted ones, and the predicate reads deleted_at anyway.
+	// That is the decision, not an oversight: suspension is reversible, so the
+	// order can become actionable again, while deletion cannot be undone.
+	if resolvable.Stranded {
+		t.Error("a suspended pair was flagged stranded - suspension is reversible, so the order is not permanently stuck")
+	}
+	if resolvable.Stuck {
+		t.Error("a suspended pair made the order stuck")
+	}
+
+	_, err = f.admins.Resolve(ctx, f.admin, f.order.ID, "cancelled", "both suspended")
+
+	var conflict *ConflictError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("resolve error = %v, want a conflict - an admin must not end an order that can still move", err)
+	}
+}
