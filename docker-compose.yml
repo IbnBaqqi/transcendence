@@ -43,7 +43,12 @@ services:
 
   # --- backend (Go) ---
   backend:
-    image: golang:1.26.3-alpine
+    # The dev stage: the Go toolchain plus a pinned air, watching the bind mount
+    # below. target is required - an untargeted build takes the file's last
+    # stage, which is the migrator.
+    build:
+      context: ./backend
+      target: dev
     working_dir: /app
     env_file: .env
     environment:
@@ -52,13 +57,16 @@ services:
       #   RATE_LIMIT_PER_MINUTE=10 docker compose up -d backend
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-60}
       UPLOAD_DIR: /app/uploads
-    command: go run ./cmd/server                              # plain go run (not reload)
     ports:
       - "8080:8080"
     volumes:
       - ./backend:/app                                        # live source
       - uploads:/app/uploads                                  # images survive rebuilds
-      - go-mod-cache:/go/pkg/mod                              # cache deps between runs
+      - go-mod-cache:/go/pkg/mod                              # downloaded modules
+      # Compiled package objects. GOCACHE defaults into the container's
+      # writable layer, so without this every `down` throws away the build and
+      # the first edit afterwards recompiles every dependency.
+      - go-build-cache:/root/.cache/go-build
     depends_on:
       db:
         condition: service_healthy                            # wait for the healthcheck above
@@ -79,4 +87,5 @@ services:
 volumes:
   postgres_data:
   go-mod-cache:
+  go-build-cache:
   uploads:
