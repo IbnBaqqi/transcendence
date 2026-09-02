@@ -19,17 +19,26 @@ for the API. Migrations are a separate step the first time:
 `cd backend && make migrate-up`.
 
 **`make setup` before the first `up`, and the order matters.** It creates
-`frontend/node_modules` so that Docker does not. A container cannot mount onto a
-path that does not exist, so the daemon creates any missing subdirectory of a
-bind mount — as **root**, inside your working tree. Start with `docker compose
-up` on a fresh checkout and you get an empty root-owned `frontend/node_modules`,
-after which every host-side `npm ci` fails with `EACCES` and an error that
-blames permissions without mentioning Docker.
+`frontend/node_modules` and `backend/uploads` so that Docker does not. A
+container cannot mount onto a path that does not exist, so the daemon creates
+any missing subdirectory of a bind mount — as **root**, inside your working
+tree. Both directories are gitignored, so both are absent on a fresh clone and
+both get created that way. After that, the next host-side command that writes
+there fails with `EACCES` — `npm ci` for one, `make run` saving an uploaded
+image for the other — with an error that blames permissions and never mentions
+Docker.
 
-Already hit it? The directory has to go before npm can recreate it:
+**This is a Linux thing.** Docker Desktop for macOS maps bind-mount ownership to
+the host user, so nothing lands root-owned and none of the above happens there —
+measured both ways on both platforms. `make setup` is still the right first
+command everywhere; `mkdir -p` costs nothing.
+
+Already hit it, on Linux? The directories have to go before they can be
+recreated:
 
 ```bash
-sudo rm -rf frontend/node_modules && (cd frontend && npm ci)
+sudo rm -rf frontend/node_modules backend/uploads
+make setup && (cd frontend && npm ci)
 ```
 
 Running the container as your own user does not help — the daemon prepares the
