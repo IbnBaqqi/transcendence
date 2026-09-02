@@ -17,7 +17,7 @@ on:
 
 jobs:
   changes:
-    name: Detect changes
+    name: Detect changes (backend)
     runs-on: ubuntu-latest
     # Listing a pull request's files is the pull-requests scope, not contents.
     # Without this the call 403s wherever the default token is restricted, and
@@ -65,7 +65,13 @@ jobs:
   tests:
     name: Backend Tests
     needs: changes
-    if: needs.changes.outputs.backend == 'true'
+    # Runs when the gate says so, and also when the gate did not succeed at
+    # all: a failed detection job would otherwise skip these, and a skipped
+    # required check is accepted - a green PR nothing was checked on. The
+    # script fails open on its own errors; this covers the job dying around
+    # it. !cancelled() rather than always(), so cancelling a run still stops
+    # the suite.
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.backend == 'true') }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -123,7 +129,13 @@ jobs:
   style:
     name: Backend Style
     needs: changes
-    if: needs.changes.outputs.backend == 'true'
+    # Runs when the gate says so, and also when the gate did not succeed at
+    # all: a failed detection job would otherwise skip these, and a skipped
+    # required check is accepted - a green PR nothing was checked on. The
+    # script fails open on its own errors; this covers the job dying around
+    # it. !cancelled() rather than always(), so cancelling a run still stops
+    # the suite.
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.backend == 'true') }}
     runs-on: ubuntu-latest
     defaults:
       run:
