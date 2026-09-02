@@ -4,6 +4,7 @@ CLAUDE.md
 THEORY.md
 AGENTS.md
 opencode.json
+frontend-priorities.txt
 
 # --- Environment / secrets ---
 .env
