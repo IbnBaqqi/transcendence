@@ -142,6 +142,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 				r.Delete("/me/api-keys/{id}", h.RevokeAPIKey)
 
 				r.Delete("/me", h.DeleteAccount)
+				r.Post("/me/password", h.ChangePassword)
 			})
 
 			r.Get("/me/settings", h.GetSettings)
