@@ -11,7 +11,7 @@ import { ListingCard } from "../components/objects/ListingCard";
 import { useModal } from "../providers/modalContext";
 import { useAuth } from "../hooks/useAuth";
 import { usePublicProfile } from "../api/profile";
-import { useListings } from "../api/listings";
+import { useSearchListings } from "../api/listings";
 import { useCategoryNames } from "../api/categories";
 import { isApiError } from "../api/client";
 import { deriveInitials } from "../lib/initials";
@@ -25,9 +25,14 @@ export default function User() {
 
   const { data: profile, isLoading, error } = usePublicProfile(id);
 
-  // TODO: there's no way to ask for one seller's listings, so we fetch them
-  // all and filter here. Replace once the API supports it.
-  const { data: allListings, isPending: listingsPending, isError: listingsError } = useListings();
+  // The URL param rather than profile.id, so the query can start before the
+  // profile resolves: the backend compares uuids, so the casing the API
+  // canonicalises does not matter to it the way it did to a string filter here.
+  const {
+    data: sellerListings,
+    isPending: listingsPending,
+    isError: listingsError,
+  } = useSearchListings({ seller_id: id, limit: 20 });
   const categoryName = useCategoryNames();
 
   // 400 = the id isn't a UUID, 404 = no such user. Both mean "nothing here".
@@ -48,9 +53,7 @@ export default function User() {
   // Your own page has no "message yourself" button.
   const isSelf = user?.id === profile.id;
 
-  // profile.id, not the URL param: the API accepts an upper-case UUID and
-  // answers with the canonical lower-case one, which is what listings carry.
-  const listings = allListings?.filter((listing) => listing.seller_id === profile.id) ?? [];
+  const listings = sellerListings?.items ?? [];
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
