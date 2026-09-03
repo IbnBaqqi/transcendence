@@ -154,12 +154,17 @@ export interface Notification {
   created_at: Timestamp;
 }
 
+// Upper case, matching the backend's own values (auth/auth.go). A union rather
+// than string so a typo or a lower-cased fixture fails the build instead of
+// quietly failing an admin check.
+export type UserRole = "USER" | "ADMIN";
+
 // Auth Foundation additions. Mirrors backend UserInfo.
 export interface User {
   id: string;
   username: string;
   email: string;
-  role: string;
+  role: UserRole;
   // Whether the account can sign in with a password (false for a
   // provider-only account). Branch on this rather than providers being empty.
   has_password: boolean;
@@ -272,4 +277,64 @@ export interface ApiKey {
 // `key` again.
 export interface CreatedApiKey extends ApiKey {
   key: string;
+}
+
+// --- Moderation (admin) ---
+
+// Present tense: what an admin asks for.
+export type ModerationRequestAction = "remove" | "restore" | "dismiss";
+
+// Past tense: what the audit log records. Deliberately a different union from
+// ModerationRequestAction - the two enums are not the same words, and sharing
+// one type would let a request value into the log's renderer.
+export type ModerationLogAction = "removed" | "restored" | "dismissed";
+
+export type ReportReason = "spam" | "prohibited" | "misleading" | "offensive" | "other";
+
+export type ReportStatus = "open" | "upheld" | "dismissed";
+
+// One row of the queue: a listing with at least one open report. Grouped by
+// listing, not by report - three complaints about one listing are one problem
+// and one decision resolves all three.
+export interface ReportedListing {
+  listing_id: string;
+  title: string;
+  seller_id: string;
+  removed_at: Timestamp | null;
+  report_count: number;
+  first_reported_at: Timestamp;
+}
+
+export interface Report {
+  id: string;
+  // Null once the reporter deletes their account: the complaint is about the
+  // listing, not the person, so it outlives them.
+  reporter_id: string | null;
+  reason: ReportReason;
+  // Attacker-controlled text. Render as plain text, never as markup.
+  detail?: string;
+  status: ReportStatus;
+  created_at: Timestamp;
+}
+
+export interface ModerationAction {
+  id: string;
+  listing_id: string;
+  // Null once that admin's account is deleted - an audit row that vanishes
+  // with its author is not an audit row.
+  moderator_id: string | null;
+  action: ModerationLogAction;
+  note?: string;
+  created_at: Timestamp;
+}
+
+export interface ModerateListingInput {
+  action: ModerationRequestAction;
+  // Required by the API for "remove", optional otherwise.
+  note?: string;
+}
+
+export interface ModerateListingResponse {
+  listing: Listing;
+  reports_resolved: number;
 }

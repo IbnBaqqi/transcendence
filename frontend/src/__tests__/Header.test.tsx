@@ -105,12 +105,12 @@ test("places the language switcher at the far left of the nav", () => {
   expect(switcher.compareDocumentPosition(home) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
-const SIGNED_IN = {
+const SIGNED_IN: Partial<AuthContextValue> = {
   user: {
     id: "u1",
     username: "or99",
     email: "o@example.com",
-    role: "user",
+    role: "USER",
     has_password: true,
     providers: [],
   },
@@ -141,4 +141,21 @@ test("does not ask for a profile while signed out", () => {
   renderHeader({ user: null });
 
   expect(useOwnProfile).toHaveBeenLastCalledWith({ enabled: false });
+});
+
+// The link is UX, not a lock - /admin/listings is guarded by RequireAdmin and
+// every endpoint under it by RequireRole(ADMIN). This just stops the nav
+// advertising a section three quarters of users cannot open.
+test("offers the admin section to an admin", () => {
+  renderHeader({ user: { ...SIGNED_IN.user!, role: "ADMIN" } });
+  expect(screen.getByRole("link", { name: "Admin" })).toHaveAttribute("href", "/admin/listings");
+});
+
+test("hides it from an ordinary user and from a visitor", () => {
+  renderHeader(SIGNED_IN);
+  expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
+
+  cleanup();
+  renderHeader({ user: null });
+  expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
 });

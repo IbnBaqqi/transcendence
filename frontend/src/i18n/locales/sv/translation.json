@@ -7,7 +7,8 @@
     "addListing": "Lägg till annons",
     "orders": "Beställningar",
     "following": "Följer",
-    "profile": "Profil"
+    "profile": "Profil",
+    "admin": "Admin"
   },
   "language": {
     "en": "English",
@@ -118,20 +119,54 @@
     "listEmpty": "Du har inte blockerat någon.",
     "listError": "Kunde inte ladda vilka du har blockerat."
   },
-  "notifications": {
-    "markAllRead": "Markera alla som lästa",
-    "markAllReadError": "Kunde inte markera dem som lästa. Försök igen.",
-    "empty": "Inget nytt.",
-    "seeAll": "Visa alla",
-    "unread_one": "{{count}} oläst",
-    "unread_other": "{{count}} olästa",
-    "kind": {
-      "order_placed": "Någon beställde din {{title}}",
-      "order_handed_over": "Din beställning {{title}} har lämnats över",
-      "order_cancelled": "Din beställning {{title}} avbröts",
-      "order_resolved": "Supporten löste din beställning {{title}}",
-      "chat_request": "Någon skickade ett meddelande om {{title}}"
-    }
+  "moderation": {
+    "firstReported": "Först rapporterad {{date}}",
+    "reportCount_one": "{{count}} rapport",
+    "reportCount_other": "{{count}} rapporter",
+    "alreadyRemoved": "Borttagen",
+    "queueEmpty": "Inget i kön. Alla rapporter är avgjorda.",
+    "queueError": "Kunde inte ladda moderationskön.",
+    "showDetail": "Visa detaljer",
+    "hideDetail": "Dölj detaljer",
+    "reportsTitle": "Rapporter",
+    "historyTitle": "Moderationshistorik",
+    "reportsEmpty": "Inga rapporter.",
+    "historyEmpty": "Aldrig åtgärdad.",
+    "deletedReporter": "Rapportören har raderat sitt konto",
+    "deletedModerator": "Moderatorn har raderat sitt konto",
+    "reason": {
+      "spam": "Skräppost",
+      "prohibited": "Förbjuden vara",
+      "misleading": "Vilseledande",
+      "offensive": "Stötande",
+      "other": "Annat"
+    },
+    "status": {
+      "open": "Öppen",
+      "upheld": "Bifallen",
+      "dismissed": "Avvisad"
+    },
+    "action": {
+      "removed": "Borttagen",
+      "restored": "Återställd",
+      "dismissed": "Avvisad"
+    },
+    "decide": {
+      "remove": "Ta bort",
+      "restore": "Återställ",
+      "dismiss": "Avvisa"
+    },
+    "noteRequired": "Orsak (obligatorisk)",
+    "noteOptional": "Anteckning (valfri)",
+    "noteRemaining_one": "{{count}} tecken kvar",
+    "noteRemaining_other": "{{count}} tecken kvar",
+    "confirm": "Bekräfta",
+    "deciding": "Behandlar…",
+    "decideFailed": "Kunde inte spara beslutet.",
+    "resolvedCount_one": "Löste {{count}} rapport",
+    "resolvedCount_other": "Löste {{count}} rapporter",
+    "reportsError": "Kunde inte ladda rapporterna.",
+    "historyError": "Kunde inte ladda historiken."
   },
   "orders": {
     "title": "Beställningar",
@@ -281,6 +316,9 @@
       "listingsError": "Kunde inte ladda annonserna. Försök igen.",
       "noListings": "Inga annonser ännu!",
       "profileError": "Kunde inte ladda denna profil."
+    },
+    "adminListings": {
+      "title": "Moderationskö"
     }
   },
   "chat": {
@@ -447,6 +485,21 @@
       "created": "Skapad {{date}}",
       "lastSeen": "senast sedd {{date}}",
       "neverUsed": "aldrig använd"
+    }
+  },
+  "notifications": {
+    "markAllRead": "Markera alla som lästa",
+    "markAllReadError": "Kunde inte markera dem som lästa. Försök igen.",
+    "empty": "Inget nytt.",
+    "seeAll": "Visa alla",
+    "unread_one": "{{count}} oläst",
+    "unread_other": "{{count}} olästa",
+    "kind": {
+      "order_placed": "Någon beställde din {{title}}",
+      "order_handed_over": "Din beställning {{title}} har lämnats över",
+      "order_cancelled": "Din beställning {{title}} avbröts",
+      "order_resolved": "Supporten löste din beställning {{title}}",
+      "chat_request": "Någon skickade ett meddelande om {{title}}"
     }
   }
 }
