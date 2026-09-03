@@ -109,6 +109,15 @@
     "followers_one": "{{count}} följare",
     "followers_other": "{{count}} följare"
   },
+  "blocks": {
+    "block": "Blockera",
+    "unblock": "Avblockera",
+    "updating": "Uppdaterar…",
+    "blocked": "Du har blockerat den här personen. Hen kan inte skicka meddelanden till dig, och du inte till hen.",
+    "listTitle": "Blockerade personer",
+    "listEmpty": "Du har inte blockerat någon.",
+    "listError": "Kunde inte ladda vilka du har blockerat."
+  },
   "orders": {
     "title": "Beställningar",
     "signedOut": "Du är utloggad. Logga in för att se dina beställningar.",
