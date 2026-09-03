@@ -81,6 +81,7 @@ export function makeConversation(overrides: Partial<Conversation> = {}): Convers
     other_user: {
       id: SELLER_ID,
       username: "oscarroff",
+      avatar_url: null,
       presence: { is_online: true },
     },
     created_at: "1970-01-01T00:00:00Z",
