@@ -16,7 +16,7 @@ export function NotificationBell() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const { data: notifications } = useNotifications({ enabled: signedIn });
+  const { data: notifications, isError } = useNotifications({ enabled: signedIn });
   const unread = unreadCount(notifications);
 
   useEffect(() => {
@@ -77,7 +77,12 @@ export function NotificationBell() {
           </div>
 
           {!notifications ? (
-            <p className="text-muted px-3 py-4 text-sm">{t("common.loading")}</p>
+            // Same branch, two meanings: with no data the panel is either
+            // still waiting or has given up. "See all" below is the way out -
+            // the page has the retry.
+            <p className="text-muted px-3 py-4 text-sm">
+              {isError ? t("pages.notifications.error") : t("common.loading")}
+            </p>
           ) : notifications.length === 0 ? (
             <p className="text-muted px-3 py-4 text-sm">{t("notifications.empty")}</p>
           ) : (

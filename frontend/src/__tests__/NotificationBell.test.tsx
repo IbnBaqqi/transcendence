@@ -42,8 +42,8 @@ beforeEach(() => {
   } as unknown as ReturnType<typeof useMarkNotificationsRead>);
 });
 
-function renderBell(user: User | null, notifications: Notification[] | undefined) {
-  vi.mocked(useNotifications).mockReturnValue({ data: notifications } as ReturnType<
+function renderBell(user: User | null, notifications: Notification[] | undefined, isError = false) {
+  vi.mocked(useNotifications).mockReturnValue({ data: notifications, isError } as ReturnType<
     typeof useNotifications
   >);
 
@@ -111,6 +111,25 @@ test("says it is loading before the first fetch lands", async () => {
   await userEvent.click(screen.getByLabelText("Notifications"));
   expect(screen.getByText("Loading…")).toBeInTheDocument();
   expect(screen.queryByText("Nothing new.")).not.toBeInTheDocument();
+});
+
+// A panel with no data is either still waiting or has given up, and saying
+// "Loading…" to someone whose fetch keeps failing is a lie that never resolves.
+test("says the list failed rather than loading forever", async () => {
+  renderBell(VIEWER, undefined, true);
+  await userEvent.click(screen.getByLabelText("Notifications"));
+  expect(screen.getByText("Couldn't load your notifications.")).toBeInTheDocument();
+  expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
+});
+
+// The list polls every 30s, so a failed refetch on top of a good cached list
+// is the common failure - and replacing that list with an error message would
+// throw away notifications the user can still act on.
+test("keeps showing a cached list when a refetch fails", async () => {
+  renderBell(VIEWER, [makeNotification({ listing_title: "Chanterelles" })], true);
+  await userEvent.click(screen.getByLabelText("Notifications"));
+  expect(screen.getByText("Someone ordered your Chanterelles")).toBeInTheDocument();
+  expect(screen.queryByText("Couldn't load your notifications.")).not.toBeInTheDocument();
 });
 
 test("keeps the panel shut until it is asked for", () => {
