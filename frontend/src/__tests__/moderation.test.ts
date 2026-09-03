@@ -11,6 +11,8 @@ vi.mock("../api/client", async (importOriginal) => ({
   api: { post: vi.fn().mockResolvedValue({ data: { listing: {}, reports_resolved: 3 } }) },
 }));
 
+const post = vi.mocked(api.post);
+
 const LISTING_ID = "01a02305-b81c-7dcb-86a0-7f75e33e0af3";
 
 function renderModerate(client: QueryClient) {
@@ -63,4 +65,24 @@ test("the moderation prefix covers the per-listing keys", () => {
   ]) {
     expect(JSON.stringify(key).startsWith(prefix.slice(0, -1))).toBe(true);
   }
+});
+
+// A failure here means this copy of the queue is out of date: a 409 is usually
+// another moderator getting there first, a 404 the listing being gone. The
+// refetch is the fix for both, so a decision that fails must still refresh the
+// queue rather than leaving a row that cannot be acted on.
+test("refetches the queue when a decision fails", async () => {
+  post.mockRejectedValueOnce({ status: 409, message: "Already removed" });
+
+  const client = new QueryClient();
+  const invalidate = vi.spyOn(client, "invalidateQueries");
+  const { result } = renderModerate(client);
+
+  await expect(
+    result.current.mutateAsync({ listingId: LISTING_ID, action: "remove", note: "spam" }),
+  ).rejects.toBeDefined();
+  await waitFor(() => expect(result.current.isError).toBe(true));
+
+  const invalidated = invalidate.mock.calls.map(([arg]) => JSON.stringify(arg?.queryKey));
+  expect(invalidated).toContain(JSON.stringify(keys.moderation.queue()));
 });

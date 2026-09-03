@@ -9,6 +9,14 @@ import type { ModerationAction, Report, ReportedListing } from "../api/types";
 vi.mock("../api/moderation", () => ({
   useListingReports: vi.fn(),
   useModerationHistory: vi.fn(),
+  // The expanded row renders ModerateDialog. Listing exports here means adding
+  // a hook to the module silently un-mocks it, which is how this broke.
+  useModerateListing: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    isSuccess: false,
+  })),
 }));
 
 const LISTING_ID = "01a02305-b81c-7dcb-86a0-7f75e33e0af3";

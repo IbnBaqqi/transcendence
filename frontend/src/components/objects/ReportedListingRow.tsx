@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useListingReports, useModerationHistory } from "../../api/moderation";
+import { ModerateDialog } from "./ModerateDialog";
 import type { ModerationAction, Report, ReportedListing } from "../../api/types";
 
 function ReportLine({ report }: { report: Report }) {
@@ -131,6 +132,8 @@ export function ReportedListingRow({ row }: { row: ReportedListing }) {
           </section>
         </div>
       )}
+
+      {expanded && <ModerateDialog listingId={row.listing_id} removed={removed} />}
     </li>
   );
 }

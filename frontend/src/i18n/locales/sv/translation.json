@@ -150,7 +150,21 @@
       "removed": "Borttagen",
       "restored": "Återställd",
       "dismissed": "Avvisad"
-    }
+    },
+    "decide": {
+      "remove": "Ta bort",
+      "restore": "Återställ",
+      "dismiss": "Avvisa"
+    },
+    "noteRequired": "Orsak (obligatorisk)",
+    "noteOptional": "Anteckning (valfri)",
+    "noteRemaining_one": "{{count}} tecken kvar",
+    "noteRemaining_other": "{{count}} tecken kvar",
+    "confirm": "Bekräfta",
+    "deciding": "Behandlar…",
+    "decideFailed": "Kunde inte spara beslutet.",
+    "resolvedCount_one": "Löste {{count}} rapport",
+    "resolvedCount_other": "Löste {{count}} rapporter"
   },
   "orders": {
     "title": "Beställningar",

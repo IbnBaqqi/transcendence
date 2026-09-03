@@ -150,7 +150,21 @@
       "removed": "Removed",
       "restored": "Restored",
       "dismissed": "Dismissed"
-    }
+    },
+    "decide": {
+      "remove": "Remove",
+      "restore": "Restore",
+      "dismiss": "Dismiss"
+    },
+    "noteRequired": "Reason (required)",
+    "noteOptional": "Note (optional)",
+    "noteRemaining_one": "{{count}} character left",
+    "noteRemaining_other": "{{count}} characters left",
+    "confirm": "Confirm",
+    "deciding": "Deciding…",
+    "decideFailed": "Couldn't record that decision.",
+    "resolvedCount_one": "Resolved {{count}} report",
+    "resolvedCount_other": "Resolved {{count}} reports"
   },
   "orders": {
     "title": "Orders",

@@ -58,5 +58,11 @@ export function useModerateListing() {
         qc.invalidateQueries({ queryKey: keys.listings.detail(listingId) }),
         qc.invalidateQueries({ queryKey: keys.listings.all }),
       ]),
+
+    // Every failure here means this copy of the queue is out of date: a 409 is
+    // usually another moderator getting there first, and a 404 is the listing
+    // being gone. Refetching is the fix for both, so it is the default rather
+    // than a branch per status.
+    onError: () => qc.invalidateQueries({ queryKey: keys.moderation.queue() }),
   });
 }

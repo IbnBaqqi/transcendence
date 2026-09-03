@@ -150,7 +150,21 @@
       "removed": "Poistettu",
       "restored": "Palautettu",
       "dismissed": "Hylätty"
-    }
+    },
+    "decide": {
+      "remove": "Poista",
+      "restore": "Palauta",
+      "dismiss": "Hylkää"
+    },
+    "noteRequired": "Syy (pakollinen)",
+    "noteOptional": "Huomautus (valinnainen)",
+    "noteRemaining_one": "{{count}} merkki jäljellä",
+    "noteRemaining_other": "{{count}} merkkiä jäljellä",
+    "confirm": "Vahvista",
+    "deciding": "Käsitellään…",
+    "decideFailed": "Päätöksen tallentaminen ei onnistunut.",
+    "resolvedCount_one": "Käsitelty {{count}} ilmoitus",
+    "resolvedCount_other": "Käsitelty {{count}} ilmoitusta"
   },
   "orders": {
     "title": "Tilaukset",
