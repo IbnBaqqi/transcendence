@@ -75,6 +75,26 @@ test("shows who is signed in", () => {
   expect(screen.getByText("F")).toBeInTheDocument();
 });
 
+// The bell is a notifications panel now, not a link, so it has nothing to show
+// a visitor with no account - and asking on their behalf is a 401 every poll.
+test("hangs the notification bell on a session, not on every visitor", () => {
+  renderHeader({ user: null });
+  expect(screen.queryByLabelText("Notifications")).not.toBeInTheDocument();
+
+  cleanup();
+  renderHeader({
+    user: {
+      id: "u1",
+      username: "forager",
+      email: "f@example.com",
+      role: "USER",
+      has_password: true,
+      providers: [],
+    },
+  });
+  expect(screen.getByLabelText("Notifications")).toBeInTheDocument();
+});
+
 test("places the language switcher at the far left of the nav", () => {
   renderHeader();
   const nav = screen.getByRole("navigation");

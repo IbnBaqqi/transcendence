@@ -282,7 +282,9 @@
       "stub": "Listing detail page - not built yet (#21)."
     },
     "notifications": {
-      "title": "Notifications"
+      "title": "Notifications",
+      "signedOut": "Sign in to see your notifications.",
+      "error": "Couldn't load your notifications."
     },
     "profile": {
       "title": "Profile & Settings",
@@ -481,6 +483,21 @@
       "created": "Created {{date}}",
       "lastSeen": "last seen {{date}}",
       "neverUsed": "never used"
+    }
+  },
+  "notifications": {
+    "markAllRead": "Mark all read",
+    "markAllReadError": "Couldn't mark them read. Try again.",
+    "empty": "Nothing new.",
+    "seeAll": "See all",
+    "unread_one": "{{count}} unread",
+    "unread_other": "{{count}} unread",
+    "kind": {
+      "order_placed": "Someone ordered your {{title}}",
+      "order_handed_over": "Your {{title}} order was handed over",
+      "order_cancelled": "Your {{title}} order was cancelled",
+      "order_resolved": "Support resolved your {{title}} order",
+      "chat_request": "Someone messaged you about {{title}}"
     }
   }
 }

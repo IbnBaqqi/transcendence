@@ -54,6 +54,7 @@ export const keys = {
     settings: () => [...keys.me.all, "settings"] as const,
     unread: () => [...keys.me.all, "unread"] as const,
     blocks: () => [...keys.me.all, "blocks"] as const,
+    notifications: () => [...keys.me.all, "notifications"] as const,
     saved: () => [...keys.me.all, "saved"] as const,
   },
 
