@@ -12,7 +12,14 @@ import type { Listing, Order, User } from "../api/types";
 vi.mock("../api/orders", () => ({ useOrders: vi.fn() }));
 vi.mock("../api/listings", () => ({ useSearchListings: vi.fn() }));
 
-const SELLER: User = { id: SELLER_ID, username: "seller", email: "s@x.test", role: "user" };
+const SELLER: User = {
+  id: SELLER_ID,
+  username: "seller",
+  email: "s@x.test",
+  role: "user",
+  has_password: true,
+  providers: [],
+};
 
 function renderDashboard({
   listings = [] as Listing[],
