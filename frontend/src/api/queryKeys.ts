@@ -71,6 +71,14 @@ export const keys = {
     history: (listingId: string) => [...keys.moderation.all, "history", listingId] as const,
   },
 
+  adminUsers: {
+    all: ["adminUsers"] as const,
+    // The filters are part of the key, so paging back to a previous view is
+    // instant and two different filters cannot overwrite each other.
+    list: (query: string) => [...keys.adminUsers.all, "list", query] as const,
+    history: (userId: string) => [...keys.adminUsers.all, "history", userId] as const,
+  },
+
   categories: {
     all: ["categories"] as const,
     list: () => [...keys.categories.all, "list"] as const,
