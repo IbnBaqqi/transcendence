@@ -118,6 +118,20 @@
     "listEmpty": "You haven't blocked anyone.",
     "listError": "Couldn't load who you've blocked."
   },
+  "notifications": {
+    "markAllRead": "Mark all read",
+    "markAllReadError": "Couldn't mark them read. Try again.",
+    "empty": "Nothing new.",
+    "seeAll": "See all",
+    "unread": "{{count}} unread",
+    "kind": {
+      "order_placed": "Someone ordered your {{title}}",
+      "order_handed_over": "Your {{title}} order was handed over",
+      "order_cancelled": "Your {{title}} order was cancelled",
+      "order_resolved": "Your {{title}} order is complete",
+      "chat_request": "Someone messaged you about {{title}}"
+    }
+  },
   "orders": {
     "title": "Orders",
     "signedOut": "You're signed out. Log in to see your orders.",

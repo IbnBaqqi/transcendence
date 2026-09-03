@@ -118,6 +118,20 @@
     "listEmpty": "Du har inte blockerat någon.",
     "listError": "Kunde inte ladda vilka du har blockerat."
   },
+  "notifications": {
+    "markAllRead": "Markera alla som lästa",
+    "markAllReadError": "Kunde inte markera dem som lästa. Försök igen.",
+    "empty": "Inget nytt.",
+    "seeAll": "Visa alla",
+    "unread": "{{count}} olästa",
+    "kind": {
+      "order_placed": "Någon beställde din {{title}}",
+      "order_handed_over": "Din beställning {{title}} har lämnats över",
+      "order_cancelled": "Din beställning {{title}} avbröts",
+      "order_resolved": "Din beställning {{title}} är klar",
+      "chat_request": "Någon skickade ett meddelande om {{title}}"
+    }
+  },
   "orders": {
     "title": "Beställningar",
     "signedOut": "Du är utloggad. Logga in för att se dina beställningar.",

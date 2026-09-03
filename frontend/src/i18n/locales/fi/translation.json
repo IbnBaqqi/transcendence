@@ -118,6 +118,20 @@
     "listEmpty": "Et ole estänyt ketään.",
     "listError": "Estettyjen lataaminen ei onnistunut."
   },
+  "notifications": {
+    "markAllRead": "Merkitse kaikki luetuiksi",
+    "markAllReadError": "Merkitseminen ei onnistunut. Yritä uudelleen.",
+    "empty": "Ei uutta.",
+    "seeAll": "Näytä kaikki",
+    "unread": "{{count}} lukematonta",
+    "kind": {
+      "order_placed": "Joku tilasi tuotteesi {{title}}",
+      "order_handed_over": "Tilauksesi {{title}} on luovutettu",
+      "order_cancelled": "Tilauksesi {{title}} peruttiin",
+      "order_resolved": "Tilauksesi {{title}} on valmis",
+      "chat_request": "Joku lähetti sinulle viestin tuotteesta {{title}}"
+    }
+  },
   "orders": {
     "title": "Tilaukset",
     "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tilauksesi.",
