@@ -62,6 +62,15 @@ export const keys = {
     list: () => [...keys.apiKeys.all, "list"] as const,
   },
 
+  moderation: {
+    all: ["moderation"] as const,
+    queue: () => [...keys.moderation.all, "queue"] as const,
+    // Keyed by listing because that is what a moderator acts on: both of
+    // these hang off one listing, not off a report.
+    reports: (listingId: string) => [...keys.moderation.all, "reports", listingId] as const,
+    history: (listingId: string) => [...keys.moderation.all, "history", listingId] as const,
+  },
+
   categories: {
     all: ["categories"] as const,
     list: () => [...keys.categories.all, "list"] as const,
