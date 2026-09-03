@@ -258,7 +258,8 @@
       "contactDetails": "Contact Details",
       "password": "Password",
       "bio": "Bio",
-      "accountManagement": "Account Management"
+      "accountManagement": "Account Management",
+      "apiKeys": "API keys"
     },
     "notFound": {
       "title": "404 - Page not found",
@@ -415,6 +416,36 @@
       "alreadyLinked": "This account is already linked to another user.",
       "retry": "Something went wrong. Please try again.",
       "serverError": "Something went wrong on our end. Please try again."
+    }
+  },
+  "apiKeys": {
+    "created": {
+      "title": "Your new API key",
+      "warning": "Copy it now. This is the only time it will be shown — closing this dialog loses it for good.",
+      "keyLabel": "API key",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyFailed": "Couldn't copy automatically. Select the key above and copy it manually.",
+      "note": "Saved as \"{{name}}\". You can revoke it at any time.",
+      "done": "Done"
+    },
+    "intro": "Keys let a program act as you, without a login. Treat one like a password.",
+    "nameLabel": "Name",
+    "namePlaceholder": "ci pipeline",
+    "create": "Create key",
+    "createFailed": "Couldn't create that key.",
+    "listError": "Couldn't load your API keys.",
+    "empty": "No API keys yet.",
+    "revoke": "Revoke",
+    "confirmRevoke": "Confirm revoke",
+    "revoking": "Revoking…",
+    "revoked": "Revoked",
+    "revokeFailed": "Couldn't revoke that key.",
+    "alreadyRevoked": "This key was already revoked.",
+    "fields": {
+      "created": "Created {{date}}",
+      "lastSeen": "last seen {{date}}",
+      "neverUsed": "never used"
     }
   }
 }
