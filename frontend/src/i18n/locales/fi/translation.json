@@ -429,7 +429,8 @@
     "locationInvalidChars": "Sijainti sisältää merkkejä jotka eivät ole kirjaimia",
     "bioTooLong": "Esittely on liian pitkä",
     "priceNegative": "Hinta ei voi olla negatiivinen",
-    "priceRangeInvalid": "Enimmäishinta ei voi olla vähimmäishintaa pienempi"
+    "priceRangeInvalid": "Enimmäishinta ei voi olla vähimmäishintaa pienempi",
+    "searchTextTooLong": "Hakuteksti on liian pitkä"
   },
   "auth": {
     "continueWithGoogle": "Jatka Googlella",

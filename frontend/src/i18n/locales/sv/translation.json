@@ -429,7 +429,8 @@
     "locationInvalidChars": "Platsen innehåller tecken som inte är bokstäver",
     "bioTooLong": "Presentationen är för lång",
     "priceNegative": "Priset kan inte vara negativt",
-    "priceRangeInvalid": "Högsta pris får inte vara lägre än lägsta pris"
+    "priceRangeInvalid": "Högsta pris får inte vara lägre än lägsta pris",
+    "searchTextTooLong": "Söktexten är för lång"
   },
   "auth": {
     "continueWithGoogle": "Fortsätt med Google",

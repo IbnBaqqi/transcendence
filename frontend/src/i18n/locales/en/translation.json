@@ -429,7 +429,8 @@
     "locationInvalidChars": "Location contains characters that are not letters",
     "bioTooLong": "Bio is too long",
     "priceNegative": "Price cannot be negative",
-    "priceRangeInvalid": "Max price must not be lower than min price"
+    "priceRangeInvalid": "Max price must not be lower than min price",
+    "searchTextTooLong": "Search text is too long"
   },
   "auth": {
     "continueWithGoogle": "Continue with Google",
