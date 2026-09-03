@@ -91,7 +91,7 @@ func (h *Handler) ModerateListing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, dtos.ModerateListingResponse{
-		Listing:         dtos.WithTags(dtos.ToListingResponseWithImages(listing, imgs), tags),
+		Listing:         h.withSeller(r, dtos.WithTags(dtos.ToListingResponseWithImages(listing, imgs), tags)),
 		ReportsResolved: resolved,
 	})
 }

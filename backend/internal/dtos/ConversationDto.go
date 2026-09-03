@@ -29,9 +29,10 @@ type PresenceResponse struct {
 }
 
 type ChatUserResponse struct {
-	ID       uuid.UUID        `json:"id"`
-	Username string           `json:"username"`
-	Presence PresenceResponse `json:"presence"`
+	ID        uuid.UUID        `json:"id"`
+	Username  string           `json:"username"`
+	AvatarURL *string          `json:"avatar_url"`
+	Presence  PresenceResponse `json:"presence"`
 }
 
 type MessageResponse struct {
@@ -85,6 +86,15 @@ func displayName(username string, deletedAt sql.NullTime) string {
 		return DeletedUserName
 	}
 	return username
+}
+
+// Deleting the deletedAt check leaves a deleted account's photo beside the
+// name that was anonymised to hide exactly that person.
+func displayAvatar(filename sql.NullString, deletedAt sql.NullTime) *string {
+	if deletedAt.Valid {
+		return nil
+	}
+	return avatarURL(filename)
 }
 
 func toPresence(lastSeen sql.NullTime, showOnlineStatus bool) PresenceResponse {
@@ -147,7 +157,7 @@ func ToMessageResponses(rows []database.Message) []MessageResponse {
 
 func ToConversationResponse(
 	c database.Conversation,
-	other database.User,
+	other database.GetChatUserRow,
 	viewerID uuid.UUID,
 ) ConversationResponse {
 	return ConversationResponse{
@@ -157,9 +167,10 @@ func ToConversationResponse(
 		Status:       c.Status,
 		Role:         roleFor(c.BuyerID, viewerID),
 		OtherUser: ChatUserResponse{
-			ID:       other.ID,
-			Username: displayName(other.Username, other.DeletedAt),
-			Presence: toPresence(other.LastSeenAt, other.ShowOnlineStatus),
+			ID:        other.ID,
+			Username:  displayName(other.Username, other.DeletedAt),
+			AvatarURL: displayAvatar(other.AvatarFilename, other.DeletedAt),
+			Presence:  toPresence(other.LastSeenAt, other.ShowOnlineStatus),
 		},
 		CreatedAt: c.CreatedAt.Time,
 		UpdatedAt: c.UpdatedAt.Time,
@@ -174,9 +185,10 @@ func ToConversationListItem(row database.ListConversationsForUserRow, viewerID u
 		Status:       row.Status,
 		Role:         roleFor(row.BuyerID, viewerID),
 		OtherUser: ChatUserResponse{
-			ID:       row.OtherUserID,
-			Username: displayName(row.OtherUsername, row.OtherDeletedAt),
-			Presence: toPresence(row.OtherLastSeenAt, row.OtherShowOnlineStatus),
+			ID:        row.OtherUserID,
+			Username:  displayName(row.OtherUsername, row.OtherDeletedAt),
+			AvatarURL: displayAvatar(row.OtherAvatarFilename, row.OtherDeletedAt),
+			Presence:  toPresence(row.OtherLastSeenAt, row.OtherShowOnlineStatus),
 		},
 		UnreadCount: row.UnreadCount,
 		UpdatedAt:   row.UpdatedAt.Time,

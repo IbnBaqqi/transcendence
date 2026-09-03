@@ -161,3 +161,12 @@ WHERE (sqlc.narg(role)::text IS NULL OR role = sqlc.narg(role)::text)
 -- The same function the listing predicates use, for the one visibility check
 -- that lives in Go rather than in a WHERE clause.
 SELECT COALESCE((SELECT is_visible FROM users WHERE id = sqlc.arg(user_id)), false)::boolean;
+
+-- name: ListSellersByIDs :many
+SELECT
+    users.id,
+    users.username,
+    profiles.avatar_filename
+FROM users
+LEFT JOIN profiles ON profiles.id = users.id
+WHERE users.id = ANY(sqlc.arg(user_ids)::uuid[]);

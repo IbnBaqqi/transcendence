@@ -53,6 +53,16 @@ func (h *Handler) sellerIsHidden(r *http.Request, sellerID uuid.UUID) bool {
 	return !visible
 }
 
+func (h *Handler) withSeller(r *http.Request, item dtos.ListingResponse) dtos.ListingResponse {
+	seller, err := h.Listing.SellerFor(r.Context(), item.SellerID)
+	if err != nil {
+		slog.Error("could not load the listing's seller",
+			"seller_id", item.SellerID, "request_id", middleware.GetReqID(r.Context()), "error", err)
+		return item
+	}
+	return dtos.WithSeller(item, seller)
+}
+
 func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
@@ -78,7 +88,7 @@ func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, dtos.WithTags(dtos.ToListingResponse(listing), tags))
+	respondWithJSON(w, http.StatusCreated, h.withSeller(r, dtos.WithTags(dtos.ToListingResponse(listing), tags)))
 }
 
 func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +122,7 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.WithTags(dtos.ToListingResponseWithImages(listing, imgs), tags))
+	respondWithJSON(w, http.StatusOK, h.withSeller(r, dtos.WithTags(dtos.ToListingResponseWithImages(listing, imgs), tags)))
 }
 
 func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
@@ -152,7 +162,7 @@ func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, dtos.WithTags(dtos.ToListingResponseWithImages(updated, imgs), tags))
+	respondWithJSON(w, http.StatusOK, h.withSeller(r, dtos.WithTags(dtos.ToListingResponseWithImages(updated, imgs), tags)))
 }
 
 func (h *Handler) DeleteListing(w http.ResponseWriter, r *http.Request) {

@@ -10,6 +10,7 @@ import (
 	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 const anonymiseUser = `-- name: AnonymiseUser :one
@@ -277,6 +278,45 @@ func (q *Queries) GetUserRole(ctx context.Context, id uuid.UUID) (string, error)
 	var role string
 	err := row.Scan(&role)
 	return role, err
+}
+
+const listSellersByIDs = `-- name: ListSellersByIDs :many
+SELECT
+    users.id,
+    users.username,
+    profiles.avatar_filename
+FROM users
+LEFT JOIN profiles ON profiles.id = users.id
+WHERE users.id = ANY($1::uuid[])
+`
+
+type ListSellersByIDsRow struct {
+	ID             uuid.UUID
+	Username       string
+	AvatarFilename sql.NullString
+}
+
+func (q *Queries) ListSellersByIDs(ctx context.Context, userIds []uuid.UUID) ([]ListSellersByIDsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listSellersByIDs, pq.Array(userIds))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListSellersByIDsRow
+	for rows.Next() {
+		var i ListSellersByIDsRow
+		if err := rows.Scan(&i.ID, &i.Username, &i.AvatarFilename); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listUsers = `-- name: ListUsers :many

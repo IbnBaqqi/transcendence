@@ -1,13 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
 import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
-import type { OwnProfile, ProfileUpdateInput, PublicProfile } from "./types";
+import type { AvatarResponse, OwnProfile, ProfileUpdateInput, PublicProfile } from "./types";
 
-export function useOwnProfile() {
+// Defaults to enabled: the profile page reads the 401 from this to decide it is
+// signed out. Callers that already know there is no session pass false, so they
+// do not spend a request and a refresh attempt learning it again.
+export function useOwnProfile(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: keys.me.profile(),
     queryFn: async () => (await api.get<OwnProfile>("/me/profile")).data,
+    enabled: options.enabled ?? true,
   });
 }
 
@@ -47,4 +51,45 @@ export function useUpdateOwnProfile() {
       queryClient.invalidateQueries({ queryKey: keys.me.profile() });
     },
   });
+}
+
+// userId so the viewer's own public profile is invalidated too: /me/profile and
+// /users/{id} are separate cache entries holding the same avatar, and dropping
+// this argument leaves one of them stale with nothing to report the miss.
+export function useUploadAvatar(userId: string | undefined) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const body = new FormData();
+      body.append("avatar", file);
+      // Content-Type is left to the browser: it carries a generated boundary,
+      // and setting the header by hand produces a body the server cannot parse.
+      return (await api.post<AvatarResponse>("/me/avatar", body)).data;
+    },
+    onSuccess: () => invalidateAvatar(queryClient, userId),
+  });
+}
+
+export function useDeleteAvatar(userId: string | undefined) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      await api.delete("/me/avatar");
+    },
+    onSuccess: () => invalidateAvatar(queryClient, userId),
+  });
+}
+
+function invalidateAvatar(queryClient: QueryClient, userId: string | undefined) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: keys.me.profile() }),
+    // Listing responses carry seller.avatar_url, so a cached search still shows
+    // the old picture on your own cards until it goes stale.
+    queryClient.invalidateQueries({ queryKey: keys.listings.all }),
+    userId
+      ? queryClient.invalidateQueries({ queryKey: keys.users.detail(userId) })
+      : Promise.resolve(),
+  ]);
 }
