@@ -8,6 +8,7 @@ import { usePublicProfile } from "../api/profile";
 import { useSearchListings } from "../api/listings";
 import { useLocalizedCategoryNames } from "../api/categories";
 import { useFollow, useFollowers, useFollowing, useUnfollow } from "../api/follows";
+import { useBlock, useBlocks, useUnblock } from "../api/blocks";
 import type { ApiError } from "../api/client";
 import { makeListing, makePublicProfile } from "../test/factories";
 // Aliased: "User" is already the page component above.
@@ -17,6 +18,7 @@ vi.mock("../api/profile");
 vi.mock("../api/listings");
 vi.mock("../api/categories");
 vi.mock("../api/follows");
+vi.mock("../api/blocks");
 
 type ProfileQuery = ReturnType<typeof usePublicProfile>;
 type FollowersQuery = ReturnType<typeof useFollowers>;
@@ -89,6 +91,13 @@ beforeEach(() => {
   );
 
   vi.mocked(useFollowers).mockReturnValue({ data: [] } as unknown as FollowersQuery);
+  vi.mocked(useBlocks).mockReturnValue({
+    data: [],
+    isPending: false,
+  } as unknown as ReturnType<typeof useBlocks>);
+  const idleBlock = { mutateAsync: vi.fn(), isPending: false };
+  vi.mocked(useBlock).mockReturnValue(idleBlock as unknown as ReturnType<typeof useBlock>);
+  vi.mocked(useUnblock).mockReturnValue(idleBlock as unknown as ReturnType<typeof useUnblock>);
   vi.mocked(useFollowing).mockReturnValue({
     data: [],
     isPending: false,
@@ -269,5 +278,29 @@ describe("User", () => {
     renderPage({ listings: { data: page([makeListing()]) } });
 
     expect(screen.queryByText(/showing/i)).not.toBeInTheDocument();
+  });
+
+  // Messaging a blocked person is a 403 and following one is incoherent, so
+  // the page must not keep offering either.
+  test("a blocked profile offers no message or follow, and says why", () => {
+    vi.mocked(useBlocks).mockReturnValue({
+      data: [{ id: PROFILE.id, username: PROFILE.username, blocked_at: null }],
+      isPending: false,
+    } as unknown as ReturnType<typeof useBlocks>);
+
+    renderPage({
+      currentUser: {
+        id: "99999999-9999-9999-9999-999999999999",
+        username: "visitor",
+        email: "v@example.com",
+        role: "user",
+        has_password: true,
+        providers: [],
+      },
+    });
+
+    expect(screen.queryByRole("button", { name: /message user/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Follow" })).not.toBeInTheDocument();
+    expect(screen.getByText(/you have blocked this person/i)).toBeInTheDocument();
   });
 });

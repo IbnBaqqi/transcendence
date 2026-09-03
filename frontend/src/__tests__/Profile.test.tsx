@@ -6,7 +6,13 @@ import { ModalProvider } from "../providers/ModalProvider";
 import { ModalRoot } from "../components/modal/ModalRoot";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { useDeleteAvatar, useOwnProfile, useUploadAvatar } from "../api/profile";
+import { useBlocks, useUnblock } from "../api/blocks";
 import type { OwnProfile, User } from "../api/types";
+
+vi.mock("../api/blocks", () => ({
+  useBlocks: vi.fn(),
+  useUnblock: vi.fn(),
+}));
 
 vi.mock("../api/profile", () => ({
   useOwnProfile: vi.fn(),
@@ -58,6 +64,15 @@ const deleteAvatar = vi.fn();
 
 beforeEach(() => {
   vi.mocked(AUTH_STUB.logout).mockClear();
+  vi.mocked(useBlocks).mockReturnValue({
+    data: [],
+    isPending: false,
+    isError: false,
+  } as unknown as ReturnType<typeof useBlocks>);
+  vi.mocked(useUnblock).mockReturnValue({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  } as unknown as ReturnType<typeof useUnblock>);
   uploadAvatar.mockReset().mockResolvedValue({ avatar_url: "/uploads/new.png" });
   deleteAvatar.mockReset().mockResolvedValue(undefined);
   vi.mocked(useUploadAvatar).mockReturnValue({

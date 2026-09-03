@@ -53,6 +53,7 @@ export const keys = {
     profile: () => [...keys.me.all, "profile"] as const,
     settings: () => [...keys.me.all, "settings"] as const,
     unread: () => [...keys.me.all, "unread"] as const,
+    blocks: () => [...keys.me.all, "blocks"] as const,
     saved: () => [...keys.me.all, "saved"] as const,
   },
 

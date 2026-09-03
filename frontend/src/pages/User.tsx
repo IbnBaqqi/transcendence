@@ -8,12 +8,14 @@ import { useParams } from "react-router-dom";
 import Avatar from "../components/objects/Avatar.tsx";
 import Button from "../components/objects/Button.tsx";
 import { ListingCard } from "../components/objects/ListingCard";
+import { BlockButton } from "../components/objects/BlockButton";
 import { FollowButton } from "../components/objects/FollowButton";
 import { PresenceIndicator } from "../components/objects/PresenceIndicator";
 import { useModal } from "../providers/modalContext";
 import { useAuth } from "../hooks/useAuth";
 import { usePublicProfile } from "../api/profile";
 import { useFollowers } from "../api/follows";
+import { useBlocks } from "../api/blocks";
 import { useSearchListings } from "../api/listings";
 import { useLocalizedCategoryNames } from "../api/categories";
 import { isApiError } from "../api/client";
@@ -45,6 +47,7 @@ export default function User() {
   // different casing would leave this count one behind, with nothing to show
   // that the invalidation missed.
   const { data: followers } = useFollowers(profile?.id, user?.id);
+  const { data: blocks } = useBlocks({ enabled: Boolean(user) });
 
   // 400 = the id isn't a UUID, 404 = no such user. Both mean "nothing here".
   if (isApiError(error) && (error.status === 404 || error.status === 400)) {
@@ -63,6 +66,7 @@ export default function User() {
 
   // Your own page has no "message yourself" button.
   const isSelf = user?.id === profile.id;
+  const isBlocked = blocks?.some((b) => b.id === profile.id) ?? false;
 
   const listings = sellerListings?.items ?? [];
 
@@ -93,15 +97,19 @@ export default function User() {
         </div>
       </div>
 
+      {/* Messaging a blocked person is a 403 and following one is incoherent,
+          so blocking removes both rather than leaving dead affordances. */}
       <div className="flex flex-wrap items-start gap-3">
-        {/* openChat() can't target a user yet - that arrives with the chat UI (#88). */}
-        {!isSelf && (
+        {!isSelf && !isBlocked && (
           <Button variant="secondary" onClick={() => openChat()}>
             {t("pages.user.messageUser")}
           </Button>
         )}
-        <FollowButton userId={profile.id} />
+        {!isBlocked && <FollowButton userId={profile.id} />}
+        <BlockButton userId={profile.id} />
       </div>
+
+      {isBlocked && <p className="text-muted text-sm">{t("blocks.blocked")}</p>}
 
       <div className="space-y-1">
         <h2 className="text-foreground text-lg font-bold">{t("pages.user.details")}</h2>
