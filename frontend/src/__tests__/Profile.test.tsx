@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import Profile from "../pages/Profile";
 import { ModalProvider } from "../providers/ModalProvider";
 import { ModalRoot } from "../components/modal/ModalRoot";
@@ -69,9 +70,14 @@ beforeEach(() => {
     isPending: false,
     isError: false,
   } as unknown as ReturnType<typeof useBlocks>);
+  // Matches what BlockedUsersSection actually reads. The old mutateAsync
+  // fixture passed only because an empty list short-circuits before the rows.
   vi.mocked(useUnblock).mockReturnValue({
-    mutateAsync: vi.fn(),
+    mutate: vi.fn(),
     isPending: false,
+    isError: false,
+    error: null,
+    variables: undefined,
   } as unknown as ReturnType<typeof useUnblock>);
   uploadAvatar.mockReset().mockResolvedValue({ avatar_url: "/uploads/new.png" });
   deleteAvatar.mockReset().mockResolvedValue(undefined);
@@ -93,11 +99,15 @@ function renderPage(
   authLoading = false,
 ) {
   mockedProfile.mockReturnValue(query as ReturnType<typeof useOwnProfile>);
+  // The blocked list links to each person, so the page needs a router as soon
+  // as that list has rows - an empty fixture hides the requirement.
   return render(
     <QueryClientProvider client={new QueryClient()}>
       <AuthContext.Provider value={{ ...AUTH_STUB, user: userOverride, isLoading: authLoading }}>
         <ModalProvider>
-          <Profile />
+          <MemoryRouter>
+            <Profile />
+          </MemoryRouter>
           <ModalRoot />
         </ModalProvider>
       </AuthContext.Provider>

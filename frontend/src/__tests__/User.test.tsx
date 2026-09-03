@@ -280,9 +280,7 @@ describe("User", () => {
     expect(screen.queryByText(/showing/i)).not.toBeInTheDocument();
   });
 
-  // Messaging a blocked person is a 403 and following one is incoherent, so
-  // the page must not keep offering either.
-  test("a blocked profile offers no message or follow, and says why", () => {
+  test("a blocked profile drops message but keeps follow, and says why", () => {
     vi.mocked(useBlocks).mockReturnValue({
       data: [{ id: PROFILE.id, username: PROFILE.username, blocked_at: null }],
       isPending: false,
@@ -304,5 +302,27 @@ describe("User", () => {
     // Follow stays: the backend permits it on a blocked user, and the friends
     // list offers it for the same person, so hiding it here only disagreed.
     expect(screen.getByRole("button", { name: "Follow" })).toBeInTheDocument();
+  });
+
+  // Unknown is not "not blocked": treating a pending list as unblocked shows
+  // the message button on a blocked profile and then takes it away.
+  test("offers no message button until the block list has arrived", () => {
+    vi.mocked(useBlocks).mockReturnValue({
+      data: undefined,
+      isPending: true,
+    } as unknown as ReturnType<typeof useBlocks>);
+
+    renderPage({
+      currentUser: {
+        id: "99999999-9999-9999-9999-999999999999",
+        username: "visitor",
+        email: "v@example.com",
+        role: "user",
+        has_password: true,
+        providers: [],
+      },
+    });
+
+    expect(screen.queryByRole("button", { name: /message user/i })).not.toBeInTheDocument();
   });
 });

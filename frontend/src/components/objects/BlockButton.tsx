@@ -9,6 +9,9 @@ import { useAuth } from "../../hooks/useAuth";
 export function BlockButton({ userId }: { userId: string }) {
   const { user, isLoading: authLoading } = useAuth();
   const { t } = useTranslation();
+  // Local state rather than the mutation's own isError, unlike
+  // BlockedUsersSection: there are two mutations here, so reading isError would
+  // mean OR-ing them and picking whichever error is the live one.
   const [error, setError] = useState<string | null>(null);
 
   const { data: blocks, isPending: blocksPending } = useBlocks({ enabled: Boolean(user) });

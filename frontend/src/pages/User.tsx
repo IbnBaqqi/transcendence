@@ -47,7 +47,7 @@ export default function User() {
   // different casing would leave this count one behind, with nothing to show
   // that the invalidation missed.
   const { data: followers } = useFollowers(profile?.id, user?.id);
-  const { data: blocks } = useBlocks({ enabled: Boolean(user) });
+  const { data: blocks, isPending: blocksPending } = useBlocks({ enabled: Boolean(user) });
 
   // 400 = the id isn't a UUID, 404 = no such user. Both mean "nothing here".
   if (isApiError(error) && (error.status === 404 || error.status === 400)) {
@@ -66,7 +66,9 @@ export default function User() {
 
   // Your own page has no "message yourself" button.
   const isSelf = user?.id === profile.id;
-  const isBlocked = blocks?.some((b) => b.id === profile.id) ?? false;
+  // Unknown until the list arrives, and false would mean "not blocked": the
+  // message button would appear on a blocked profile and then be taken away.
+  const isBlocked = blocksPending || (blocks?.some((b) => b.id === profile.id) ?? false);
 
   const listings = sellerListings?.items ?? [];
 
