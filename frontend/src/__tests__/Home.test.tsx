@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
 import Home from "../pages/Home";
@@ -76,21 +77,18 @@ describe("Home", () => {
     expect(screen.getByText("No listings yet.")).toBeInTheDocument();
   });
 
-  test("says how many were hidden when the page is not the whole set", () => {
+  test("offers a way to the rest when one page is not the whole set", async () => {
     mockListings({
       data: { items: [sample], total: 47, page: 1, limit: 20, total_pages: 3 },
       isPending: false,
       isError: false,
     });
     renderHome();
-    // Truncation was invisible before: one page is all there is until #25.
-    expect(screen.getByText(/showing 1 of 47/i)).toBeInTheDocument();
-  });
 
-  test("says nothing when the page is the whole set", () => {
-    mockListings({ data: page([sample]), isPending: false, isError: false });
-    renderHome();
-    expect(screen.queryByText(/showing/i)).not.toBeInTheDocument();
+    expect(screen.getByText("47 results")).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Next" }));
+
+    expect(useSearchListings).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }));
   });
 
   test("renders a card for each listing", () => {
