@@ -2,7 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useAdminUsers } from "../api/adminUsers";
-import { AccountActions } from "../components/objects/AccountActions";
+import { AccountRow } from "../components/objects/AccountRow";
 import { isApiError } from "../api/client";
 import { Skeleton } from "../components/objects/Skeleton";
 import {
@@ -12,51 +12,6 @@ import {
   withAdminUserFilters,
   type AdminUserFilters,
 } from "../lib/adminUserFilters";
-import type { AdminUser } from "../api/types";
-
-const STATUS_STYLES: Record<AdminUser["status"], string> = {
-  active: "text-foreground",
-  suspended: "text-berry-500",
-  // Deleted rows carry no information but do take up space, so they stay
-  // legible and quiet rather than being filtered out of the default view.
-  deleted: "text-muted",
-};
-
-function UserRow({ user }: { user: AdminUser }) {
-  const { t } = useTranslation();
-  const deleted = user.status === "deleted";
-
-  return (
-    <li className="border-line bg-surface flex items-start justify-between gap-4 rounded-lg border p-3">
-      <div className="min-w-0">
-        {/* deleted-<id> is anonymisation, not a name: showing it would put an
-            id on screen where a person used to be. */}
-        <p className={`font-medium ${deleted ? "text-muted italic" : "text-foreground"}`}>
-          {deleted ? t("adminUsers.deletedUser") : user.username}
-        </p>
-        {!deleted && <p className="text-muted text-sm">{user.email}</p>}
-        {user.suspension_reason && (
-          <p className="text-muted mt-1 text-sm">
-            {t("adminUsers.suspendedFor", { reason: user.suspension_reason })}
-          </p>
-        )}
-      </div>
-
-      <div className="flex shrink-0 flex-col items-end gap-1 text-sm">
-        <span className={STATUS_STYLES[user.status]}>{t(`adminUsers.status.${user.status}`)}</span>
-        <span className="text-muted text-xs">{t(`adminUsers.role.${user.role}`)}</span>
-        {/* A moderation signal, not presence: this ignores the user's own
-            show_online_status setting, so it must never read as "online". */}
-        <span className="text-muted text-xs">
-          {user.last_seen_at
-            ? t("adminUsers.lastSeen", { date: new Date(user.last_seen_at).toLocaleDateString() })
-            : t("adminUsers.neverSeen")}
-        </span>
-        <AccountActions account={user} />
-      </div>
-    </li>
-  );
-}
 
 export default function AdminUsers() {
   const { t } = useTranslation();
@@ -138,7 +93,7 @@ export default function AdminUsers() {
       {data && data.items.length > 0 && (
         <ul className="space-y-3">
           {data.items.map((user) => (
-            <UserRow key={user.id} user={user} />
+            <AccountRow key={user.id} account={user} />
           ))}
         </ul>
       )}

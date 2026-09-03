@@ -199,7 +199,18 @@
     "delete": "Radera",
     "deleteWarning": "Kontot anonymiseras, inte raderas. Beställningar finns kvar på båda sidor och motparten behåller sin kopia av konversationer.",
     "confirmUsername": "Skriv {{username}} för att bekräfta",
-    "deleteReason": "Orsak (sparas i loggen)"
+    "deleteReason": "Orsak (sparas i loggen)",
+    "showHistory": "Visa historik",
+    "hideHistory": "Dölj historik",
+    "historyTitle": "Kontohistorik",
+    "historyEmpty": "Aldrig åtgärdad.",
+    "historyError": "Kunde inte ladda historiken.",
+    "deletedModerator": "Moderatorn har raderat sitt konto",
+    "action": {
+      "suspended": "Avstängd",
+      "reinstated": "Återställd",
+      "deleted": "Raderad"
+    }
   },
   "orders": {
     "title": "Beställningar",

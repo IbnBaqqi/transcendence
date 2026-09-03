@@ -6,7 +6,12 @@ import AdminUsers from "../pages/AdminUsers";
 import { useAdminUsers } from "../api/adminUsers";
 import type { AdminUser, PaginatedAdminUsers } from "../api/types";
 
-vi.mock("../api/adminUsers", () => ({ useAdminUsers: vi.fn() }));
+vi.mock("../api/adminUsers", () => ({
+  useAdminUsers: vi.fn(),
+  // The rows carry a collapsed history panel. Collapsed means the query is
+  // disabled, so it only has to exist.
+  useUserHistory: vi.fn(() => ({ data: undefined, isError: false })),
+}));
 
 // The whole component, not the hooks behind it. These tests are about the list;
 // stubbing AccountActions' hooks one at a time meant every hook added to it

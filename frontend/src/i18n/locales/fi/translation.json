@@ -199,7 +199,18 @@
     "delete": "Poista",
     "deleteWarning": "Tili anonymisoidaan, ei poisteta. Tilaukset säilyvät molemmilla puolilla ja toinen osapuoli säilyttää oman kopionsa keskusteluista.",
     "confirmUsername": "Kirjoita {{username}} vahvistaaksesi",
-    "deleteReason": "Syy (jää lokiin)"
+    "deleteReason": "Syy (jää lokiin)",
+    "showHistory": "Näytä historia",
+    "hideHistory": "Piilota historia",
+    "historyTitle": "Tilin historia",
+    "historyEmpty": "Ei toimenpiteitä.",
+    "historyError": "Historian lataaminen ei onnistunut.",
+    "deletedModerator": "Moderaattori on poistanut tilinsä",
+    "action": {
+      "suspended": "Jäädytetty",
+      "reinstated": "Palautettu",
+      "deleted": "Poistettu"
+    }
   },
   "orders": {
     "title": "Tilaukset",
