@@ -213,7 +213,6 @@
     },
     "search": {
       "title": "Sök",
-      "stub": "Sök och filter - inte byggt ännu (#25).",
       "filters": "Filter",
       "keyword": "Sökord",
       "category": "Kategori",
@@ -228,7 +227,15 @@
         "price_desc": "Dyrast först"
       },
       "apply": "Använd filter",
-      "clearAll": "Rensa alla"
+      "clearAll": "Rensa alla",
+      "removeFilter": "Ta bort filter: {{filter}}",
+      "chips": {
+        "minPrice": "Minst {{value}} €",
+        "maxPrice": "Högst {{value}} €",
+        "location": "Plats: {{value}}"
+      },
+      "noResults": "Inga annonser matchar filtren.",
+      "listingsError": "Kunde inte ladda annonserna."
     },
     "dashboard": {
       "title": "Säljarens panel",

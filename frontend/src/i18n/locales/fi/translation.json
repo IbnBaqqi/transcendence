@@ -213,7 +213,6 @@
     },
     "search": {
       "title": "Haku",
-      "stub": "Haku ja suodattimet - ei vielä rakennettu (#25).",
       "filters": "Suodattimet",
       "keyword": "Hakusana",
       "category": "Luokka",
@@ -228,7 +227,15 @@
         "price_desc": "Kalleimmat ensin"
       },
       "apply": "Käytä suodattimia",
-      "clearAll": "Tyhjennä kaikki"
+      "clearAll": "Tyhjennä kaikki",
+      "removeFilter": "Poista suodatin: {{filter}}",
+      "chips": {
+        "minPrice": "Vähintään {{value}} €",
+        "maxPrice": "Enintään {{value}} €",
+        "location": "Sijainti: {{value}}"
+      },
+      "noResults": "Yksikään ilmoitus ei vastaa suodattimia.",
+      "listingsError": "Ilmoituksia ei voitu ladata."
     },
     "dashboard": {
       "title": "Myyjän hallintapaneeli",

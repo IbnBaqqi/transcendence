@@ -213,7 +213,6 @@
     },
     "search": {
       "title": "Search",
-      "stub": "Search & filters - not built yet (#25).",
       "filters": "Filters",
       "keyword": "Keyword",
       "category": "Category",
@@ -228,7 +227,15 @@
         "price_desc": "Most expensive first"
       },
       "apply": "Apply filters",
-      "clearAll": "Clear all"
+      "clearAll": "Clear all",
+      "removeFilter": "Remove filter: {{filter}}",
+      "chips": {
+        "minPrice": "Min €{{value}}",
+        "maxPrice": "Max €{{value}}",
+        "location": "In {{value}}"
+      },
+      "noResults": "No listings match these filters.",
+      "listingsError": "Couldn't load listings."
     },
     "dashboard": {
       "title": "Seller Dashboard",

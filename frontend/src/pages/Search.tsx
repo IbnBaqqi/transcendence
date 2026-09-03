@@ -1,21 +1,90 @@
-// stub for #25
-//
-// no useSearchParams() here yet - importing it without using it would fail
-// the build. whoever take #25 adds it: it's the hook that reads and writes
-// the query string (?category=berries&min_price=5), which is how filter
-// state gets shared in a URL instead of trapped in component state.
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
+import { SearchFilterSection } from "../components/forms/SearchFilterSection";
+import { FilterChips } from "../components/objects/FilterChips";
+import { ListingCard } from "../components/objects/ListingCard";
+import { Skeleton } from "../components/objects/Skeleton";
+import { useSearchListings } from "../api/listings";
+import { useLocalizedCategoryNames } from "../api/categories";
+import {
+  emptyFilters,
+  filtersToParams,
+  parseFilters,
+  toSearchQuery,
+  withFilters,
+  type SearchFilters,
+} from "../lib/searchFilters";
+
 export default function Search() {
   const { t } = useTranslation();
+  const [params, setParams] = useSearchParams();
+  // Parsed every render rather than mirrored into state: the URL is the filters.
+  const filters = parseFilters(params);
+
+  const update = (patch: Partial<SearchFilters>) =>
+    setParams(filtersToParams(withFilters(filters, patch)));
+
+  const { data, isPending, isError, refetch } = useSearchListings(toSearchQuery(filters));
+  const categoryName = useLocalizedCategoryNames();
+  const listings = data?.items;
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <h1 className="text-foreground text-2xl font-bold">{t("pages.search.title")}</h1>
-      <p className="text-muted mt-2">
-        {/* TODO(#25): filter panel (category, price range, location, rating),
-					active filters as dismissible chips, state synced to URL params
-					via useSearchParams. rating filter needs #16. */}
-        {t("pages.search.stub")}
-      </p>
+
+      {/* Remounting on a URL change is what reseeds the panel's draft inputs. */}
+      <SearchFilterSection
+        key={params.toString()}
+        initial={filters}
+        onApply={update}
+        onClear={() => setParams(filtersToParams(emptyFilters))}
+      />
+
+      <FilterChips filters={filters} onRemove={(key) => update({ [key]: "" })} />
+
+      {isPending && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-56 w-full" />
+          ))}
+        </div>
+      )}
+
+      {isError && (
+        <Skeleton
+          variant="error"
+          className="h-56 w-full"
+          message={t("pages.search.listingsError")}
+          onRetry={() => refetch()}
+        />
+      )}
+
+      {/* Unlike Home, no results here is a normal answer rather than a failure. */}
+      {listings?.length === 0 && (
+        <p role="status" className="text-muted">
+          {t("pages.search.noResults")}
+        </p>
+      )}
+
+      {/* Interim honesty line; #25's pagination controls replace it next. */}
+      {data && data.total > data.items.length && (
+        <p className="text-muted text-sm">
+          {t("listings.showingOf", { shown: data.items.length, total: data.total })}
+        </p>
+      )}
+
+      {listings && listings.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {listings.map((listing) => (
+            <ListingCard
+              key={listing.id}
+              listing={listing}
+              categoryName={categoryName(listing.category)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
