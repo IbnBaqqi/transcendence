@@ -9,8 +9,7 @@ import {
 } from "../lib/searchFilters";
 
 describe("withFilters", () => {
-  // The bug this exists for: filter down to three results while sitting on
-  // page 5 and you get a valid, empty page.
+  // Filter down to three results while on page 5 and you get a valid, empty page.
   test("changing a filter sends you back to page 1", () => {
     const onPage5 = { ...emptyFilters, page: 5 };
     expect(withFilters(onPage5, { category: "mushrooms" }).page).toBe(1);
@@ -38,7 +37,6 @@ describe("parseFilters", () => {
     });
   });
 
-  // A URL is user input: it can be typed, edited, or come from a stale link.
   test.each(["page=0", "page=-2", "page=abc", "page=1.5", ""])(
     "an unusable page (%s) falls back to 1",
     (query) => {

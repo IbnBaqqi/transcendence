@@ -1,28 +1,17 @@
-// The browse filters, as a value. Everything here is pure: the URL goes in,
-// a plain object comes out, and nothing touches React. That's what lets the
-// rules below be tested without rendering anything.
 import type { ListingSearchParams, ListingSort } from "../api/listings";
 
-// The backend caps limit at 50 (maxLimit in backend/internal/service/listing.go).
-// Exported so the pages and the pagination control can't disagree about it.
+// Backend caps limit at 50 (maxLimit in backend/internal/service/listing.go).
 export const PAGE_SIZE = 20;
 
-// Mirrors the sort allow-list the backend validates against. A value not in
-// here is a 400, so we coerce rather than forward it.
-const SORTS: readonly ListingSort[] = ["newest", "oldest", "price_asc", "price_desc"];
+// Mirrors the backend's sort allow-list; the literal tuple is what z.enum needs.
+export const SORTS = ["newest", "oldest", "price_asc", "price_desc"] as const;
 
-// The filters a chip can represent: the ones that are empty by default and get
-// dismissed one at a time. sort and page always have a value and both have
-// their own visible control, so they're not in here.
 const CHIP_KEYS = ["keyword", "category", "location", "min_price", "max_price"] as const;
 
-// `typeof X[number]` turns a const array into the union of its members, so the
-// list above is the single place a new filter gets added.
 export type FilterKey = (typeof CHIP_KEYS)[number];
 
-// Prices are strings, not numbers: that's what the URL holds and what an input
-// holds. Converting happens once, at the API boundary (toSearchQuery), so no
-// NaN can ever live in this object.
+// Prices stay strings here, as the URL and the inputs hold them. The number
+// conversion happens once, in toSearchQuery.
 export interface SearchFilters {
   keyword: string;
   category: string;
@@ -43,10 +32,7 @@ export const emptyFilters: SearchFilters = {
   page: 1,
 };
 
-// A hand-edited ?min_price=abc would otherwise reach the API as the literal
-// string "NaN" and come back a 400. Dropping it is the same treatment sort and
-// page get below. A too-long keyword is left alone on purpose: that's a real
-// value the backend rejects honestly, not a nonsense param we invented.
+// A hand-edited ?min_price=abc would otherwise reach the API as "NaN" and 400.
 function parsePrice(raw: string | null): string {
   if (raw === null || raw.trim() === "") return "";
   const value = Number(raw);
@@ -55,8 +41,6 @@ function parsePrice(raw: string | null): string {
 
 export function parseFilters(sp: URLSearchParams): SearchFilters {
   const sort = sp.get("sort") as ListingSort | null;
-  // Number(null) and Number("") are both 0, so a missing page falls through
-  // to 1 without a special case.
   const page = Number(sp.get("page"));
 
   return {
@@ -70,17 +54,12 @@ export function parseFilters(sp: URLSearchParams): SearchFilters {
   };
 }
 
-/**
- * The only way filters get updated. `page` falls back to 1 unless the patch
- * names it, so "change a filter, go back to page 1" is one rule in one place
- * instead of a thing every call site has to remember.
- */
+// The only updater: page falls back to 1 unless the patch names one, so
+// "change a filter, go back to page 1" lives in a single place.
 export function withFilters(prev: SearchFilters, patch: Partial<SearchFilters>): SearchFilters {
   return { ...prev, ...patch, page: patch.page ?? 1 };
 }
 
-// Defaults are left out: an untouched search is `/search`, not
-// `/search?sort=newest&page=1`, and the two still parse to the same filters.
 export function filtersToParams(f: SearchFilters): URLSearchParams {
   const sp = new URLSearchParams();
 
@@ -93,9 +72,8 @@ export function filtersToParams(f: SearchFilters): URLSearchParams {
   return sp;
 }
 
-// The API boundary. Empty strings are passed through rather than stripped -
-// toQueryString in api/listings.ts already drops "" and undefined alike, so
-// re-doing it here would be a second copy of the same rule.
+// Empty strings are passed on rather than stripped: toQueryString in
+// api/listings.ts already drops them.
 export function toSearchQuery(f: SearchFilters): ListingSearchParams {
   return {
     keyword: f.keyword,
@@ -109,11 +87,6 @@ export function toSearchQuery(f: SearchFilters): ListingSearchParams {
   };
 }
 
-/**
- * What the dismissible chips render. Derived, never stored: if the chips were
- * their own state, "remove the chip" and "remove the filter" would be two
- * operations that have to agree forever.
- */
 export function activeFilters(f: SearchFilters): { key: FilterKey; value: string }[] {
   return CHIP_KEYS.filter((key) => f[key] !== "").map((key) => ({ key, value: f[key] }));
 }
