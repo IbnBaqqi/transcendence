@@ -86,6 +86,29 @@ describe("Search", () => {
     expect(screen.getByTestId("query").textContent).toBe("?category=mushrooms&page=2");
   });
 
+  test("a chip dismissal reseeds the panel, paging leaves the draft alone", async () => {
+    const user = renderSearch("?keyword=bolete", {
+      data: { items: [makeListing()], total: 47, page: 1, limit: 20, total_pages: 3 },
+    });
+    const keyword = screen.getByLabelText("Keyword");
+    expect(keyword).toHaveValue("bolete");
+
+    await user.type(keyword, " and more");
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByLabelText("Keyword")).toHaveValue("bolete and more");
+
+    await user.click(screen.getByRole("button", { name: "Remove filter: bolete" }));
+    expect(screen.getByLabelText("Keyword")).toHaveValue("");
+  });
+
+  test("an empty page past the end does not claim nothing matched", () => {
+    renderSearch("?page=9", {
+      data: { items: [], total: 47, page: 9, limit: 20, total_pages: 3 },
+    });
+
+    expect(screen.queryByText("No listings match these filters.")).not.toBeInTheDocument();
+  });
+
   test("no results is a normal answer, not an error", () => {
     renderSearch("?keyword=nothing", { data: page([]) });
 

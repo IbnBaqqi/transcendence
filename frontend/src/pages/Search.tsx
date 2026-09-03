@@ -34,9 +34,10 @@ export default function Search() {
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
       <h1 className="text-foreground text-2xl font-bold">{t("pages.search.title")}</h1>
 
-      {/* Remounting on a URL change is what reseeds the panel's draft inputs. */}
+      {/* Remounting reseeds the draft inputs when the filters change from
+          outside. page is out of the key: paging must not discard a draft. */}
       <SearchFilterSection
-        key={params.toString()}
+        key={filtersToParams({ ...filters, page: 1 }).toString()}
         initial={filters}
         onApply={update}
         onClear={() => setParams(filtersToParams(emptyFilters))}
@@ -61,12 +62,11 @@ export default function Search() {
         />
       )}
 
-      {/* Unlike Home, no results here is a normal answer rather than a failure. */}
-      {listings?.length === 0 && (
-        <p role="status" className="text-muted">
-          {t("pages.search.noResults")}
-        </p>
-      )}
+      {/* Always in the DOM so the announcement lands. total, not items: an empty
+          page past the end is not the same as nothing matching. */}
+      <p role="status" aria-live="polite" className="text-muted">
+        {data?.total === 0 && t("pages.search.noResults")}
+      </p>
 
       {listings && listings.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -80,8 +80,7 @@ export default function Search() {
         </div>
       )}
 
-      {/* page/total_pages come off the response, not the request: the server
-          caps limit, so what it says is what actually happened. */}
+      {/* Off the response, not the request: the server caps limit. */}
       {data && data.total > 0 && (
         <Pagination
           page={data.page}
