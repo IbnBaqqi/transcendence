@@ -15,6 +15,7 @@ import { ContactDetailsSection } from "../components/forms/ContactDetailsSection
 import { ChangePasswordSection } from "../components/forms/ChangePasswordSection.tsx";
 import { BioSection } from "../components/forms/BioSection.tsx";
 import { ApiKeysSection } from "../components/forms/ApiKeysSection.tsx";
+import { BlockedUsersSection } from "../components/forms/BlockedUsersSection";
 import { useEffect, useMemo, useState } from "react";
 import { useModal } from "../providers/modalContext";
 import { useAuth } from "../hooks/useAuth";
@@ -178,6 +179,10 @@ export default function Profile() {
           {/*     /> */}
           {/*   </div> */}
           {/* </div> */}
+          <div className="space-y-1">
+            <h2 className="text-foreground text-lg font-bold">{t("blocks.listTitle")}</h2>
+            <BlockedUsersSection />
+          </div>
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">
               {t("pages.profile.accountManagement")}

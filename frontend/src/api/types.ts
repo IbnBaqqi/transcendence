@@ -78,6 +78,14 @@ export interface AvatarResponse {
   avatar_url: string;
 }
 
+// GET /me/blocks. Deliberately not a ChatUser: that carries presence, and
+// whether someone you blocked is online is exactly what stops being visible.
+export interface BlockedUser {
+  id: string;
+  username: string;
+  blocked_at: Timestamp | null;
+}
+
 export interface Presence {
   is_online: boolean;
   last_seen_at?: Timestamp; // absent when hidden AND when never seen

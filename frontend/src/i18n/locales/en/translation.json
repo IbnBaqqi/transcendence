@@ -109,6 +109,15 @@
     "followers_one": "{{count}} follower",
     "followers_other": "{{count}} followers"
   },
+  "blocks": {
+    "block": "Block",
+    "unblock": "Unblock",
+    "updating": "Updating…",
+    "blocked": "You have blocked this person. They cannot message you, and you cannot message them.",
+    "listTitle": "Blocked people",
+    "listEmpty": "You haven't blocked anyone.",
+    "listError": "Couldn't load who you've blocked."
+  },
   "orders": {
     "title": "Orders",
     "signedOut": "You're signed out. Log in to see your orders.",

@@ -109,6 +109,15 @@
     "followers_one": "{{count}} seuraaja",
     "followers_other": "{{count}} seuraajaa"
   },
+  "blocks": {
+    "block": "Estä",
+    "unblock": "Poista esto",
+    "updating": "Päivitetään…",
+    "blocked": "Olet estänyt tämän käyttäjän. Hän ei voi lähettää sinulle viestejä, etkä sinä hänelle.",
+    "listTitle": "Estetyt käyttäjät",
+    "listEmpty": "Et ole estänyt ketään.",
+    "listError": "Estettyjen lataaminen ei onnistunut."
+  },
   "orders": {
     "title": "Tilaukset",
     "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tilauksesi.",
