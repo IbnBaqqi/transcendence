@@ -136,6 +136,17 @@ type ModerationAction struct {
 	CreatedAt   time.Time
 }
 
+type Notification struct {
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Kind           string
+	ListingTitle   string
+	OrderID        uuid.NullUUID
+	ConversationID uuid.NullUUID
+	ReadAt         sql.NullTime
+	CreatedAt      sql.NullTime
+}
+
 type OauthIdentity struct {
 	Provider       string
 	ProviderUserID string
