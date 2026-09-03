@@ -41,6 +41,8 @@ const SELLER: User = {
   username: "seller",
   email: "s@example.test",
   role: "user",
+  has_password: true,
+  providers: [],
 };
 
 function renderDetail(

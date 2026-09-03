@@ -62,7 +62,11 @@ export function ContactDetailsSection() {
           <FormField label={t("forms.phone")} name="phone_number" type="tel" />
           <FormField label={t("forms.city")} name="location" validateOnChange />
         </div>
-        {errors.root?.message && <p className="text-berry-500 text-sm">{errors.root.message}</p>}
+        {errors.root?.message && (
+          <p role="alert" className="text-berry-500 text-sm">
+            {errors.root.message}
+          </p>
+        )}
         <div className="flex flex-row gap-2">
           {isEditing ? (
             <>

@@ -6,23 +6,37 @@ import { FormField } from "./FormField";
 import { changePasswordSchema, type ChangePasswordFormValues } from "../../schemas/changePassword";
 import Button from "../objects/Button.tsx";
 import { useState } from "react";
+import { useChangePassword } from "../../api/profile";
+import { isApiError } from "../../api/client";
 
 export function ChangePasswordSection() {
   const { t } = useTranslation();
   const [isEditing, setEditing] = useState(false);
+  const changePassword = useChangePassword();
 
   const form = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
     mode: "onBlur",
-    // TODO: blocked by #109 Add hooks to fetch data from backend (or maybe local frontend e.g. from Profile.tsx?)
   });
+  const {
+    formState: { errors, isValid, isSubmitting },
+  } = form;
 
-  const handleSubmit = (data: ChangePasswordFormValues) => {
-    console.log(data);
-    // TODO: blocked by #109 Save to API here
-    setEditing(false);
+  const handleSubmit = async (data: ChangePasswordFormValues) => {
+    form.clearErrors("root");
+    try {
+      await changePassword.mutateAsync({
+        current_password: data.currentPassword,
+        new_password: data.newPassword,
+      });
+      form.reset();
+      setEditing(false);
+    } catch (err) {
+      form.setError("root", {
+        message: isApiError(err) ? err.message : t("common.somethingWentWrong"),
+      });
+    }
   };
-  // TODO: blocked by #109 Add hooks to save data to backend
 
   return (
     <Form form={form} onSubmit={handleSubmit} className="max-w-64" isEditing={isEditing}>
@@ -49,12 +63,15 @@ export function ChangePasswordSection() {
                 validateOnChange
               />
             </div>
+            {errors.root?.message && (
+              <p role="alert" className="text-berry-500 text-sm">
+                {errors.root.message}
+              </p>
+            )}
             <div className="flex flex-row gap-2">
-              <Button variant="primary" type="submit" disabled={!form.formState.isValid}>
-                {/* TODO: blocked by #109 Insert API here */}
-                {t("common.save")}
+              <Button variant="primary" type="submit" disabled={!isValid || isSubmitting}>
+                {isSubmitting ? t("common.saving") : t("common.save")}
               </Button>
-              {/* TODO: blocked by #109 Using states, once forms are live we can make cancel only appear if user is in edit mode */}
               <Button
                 variant="secondary"
                 onClick={() => {

@@ -133,12 +133,17 @@ export interface UnreadCount {
   unread_count: number;
 }
 
-// Auth Foundation additions
+// Auth Foundation additions. Mirrors backend UserInfo.
 export interface User {
   id: string;
   username: string;
   email: string;
   role: string;
+  // Whether the account can sign in with a password (false for a
+  // provider-only account). Branch on this rather than providers being empty.
+  has_password: boolean;
+  // The OAuth providers linked to this account - empty for a password account.
+  providers: string[];
 }
 
 export interface SignupInput {
@@ -151,6 +156,14 @@ export interface SignupInput {
 export interface LoginInput {
   email: string;
   password: string;
+}
+
+// POST /me/password. Requires a browser session (not an API key) and the
+// current password. All other sessions are revoked; a fresh session is
+// returned as a new refresh cookie.
+export interface ChangePasswordInput {
+  current_password: string;
+  new_password: string;
 }
 
 // Returned by signup, login and refresh alike, so one code path can start a
