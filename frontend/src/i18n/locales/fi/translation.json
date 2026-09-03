@@ -188,7 +188,14 @@
       "active": "Aktiivinen",
       "suspended": "Jäädytetty",
       "deleted": "Poistettu"
-    }
+    },
+    "suspend": "Jäädytä",
+    "reinstate": "Palauta",
+    "confirm": "Vahvista",
+    "working": "Käsitellään…",
+    "reasonForUser": "Syy (näytetään käyttäjälle)",
+    "noteOptional": "Huomautus (valinnainen)",
+    "actionFailed": "Tallentaminen ei onnistunut."
   },
   "orders": {
     "title": "Tilaukset",

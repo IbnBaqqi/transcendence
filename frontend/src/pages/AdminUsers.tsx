@@ -2,6 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useAdminUsers } from "../api/adminUsers";
+import { AccountActions } from "../components/objects/AccountActions";
 import { isApiError } from "../api/client";
 import { Skeleton } from "../components/objects/Skeleton";
 import {
@@ -51,6 +52,7 @@ function UserRow({ user }: { user: AdminUser }) {
             ? t("adminUsers.lastSeen", { date: new Date(user.last_seen_at).toLocaleDateString() })
             : t("adminUsers.neverSeen")}
         </span>
+        <AccountActions account={user} />
       </div>
     </li>
   );

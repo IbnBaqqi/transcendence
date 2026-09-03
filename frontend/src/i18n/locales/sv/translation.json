@@ -188,7 +188,14 @@
       "active": "Aktiv",
       "suspended": "Avstängd",
       "deleted": "Raderad"
-    }
+    },
+    "suspend": "Stäng av",
+    "reinstate": "Återställ",
+    "confirm": "Bekräfta",
+    "working": "Behandlar…",
+    "reasonForUser": "Orsak (visas för dem)",
+    "noteOptional": "Anteckning (valfri)",
+    "actionFailed": "Kunde inte spara det."
   },
   "orders": {
     "title": "Beställningar",

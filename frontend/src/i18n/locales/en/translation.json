@@ -188,7 +188,14 @@
       "active": "Active",
       "suspended": "Suspended",
       "deleted": "Deleted"
-    }
+    },
+    "suspend": "Suspend",
+    "reinstate": "Reinstate",
+    "confirm": "Confirm",
+    "working": "Working…",
+    "reasonForUser": "Reason (shown to them)",
+    "noteOptional": "Note (optional)",
+    "actionFailed": "Couldn't record that."
   },
   "orders": {
     "title": "Orders",
