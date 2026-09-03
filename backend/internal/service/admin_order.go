@@ -254,6 +254,14 @@ func (s *AdminOrderService) Resolve(
 		return database.Order{}, err
 	}
 
+	// Both parties, same as the emails below: an admin resolving a dispute is
+	// news to whichever of them did not ask for it as much as to the one who did.
+	for _, recipient := range []uuid.UUID{order.BuyerID, order.SellerID} {
+		if err := recordOrderNotification(ctx, qtx, recipient, notifyKindOrderResolved, updated); err != nil {
+			return database.Order{}, err
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return database.Order{}, err
 	}

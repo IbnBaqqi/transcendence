@@ -200,6 +200,10 @@ func (s *ConversationService) StartConversation(
 		return database.Conversation{}, database.Message{}, err
 	}
 
+	if err := recordChatNotification(ctx, qtx, conv.SellerID, conv); err != nil {
+		return database.Conversation{}, database.Message{}, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return database.Conversation{}, database.Message{}, err
 	}

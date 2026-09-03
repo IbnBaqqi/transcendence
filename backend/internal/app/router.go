@@ -29,6 +29,7 @@ func newHandler(appService *api) *handler.Handler {
 		User:         appService.User,
 		Profile:      appService.Profile,
 		Follow:       appService.Follow,
+		Notification: appService.Notification,
 		Block:        appService.Block,
 		APIKey:       appService.APIKey,
 		ListingImage: appService.ListingImage,
@@ -147,6 +148,9 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Get("/me/settings", h.GetSettings)
 			r.Patch("/me/settings", h.UpdateSettings)
 			r.Get("/me/unread", h.GetUnreadCount)
+
+			r.Get("/me/notifications", h.GetNotifications)
+			r.Post("/me/notifications/read", h.MarkNotificationsRead)
 
 			r.Get("/me/profile", h.GetOwnProfile)
 			r.Patch("/me/profile", h.UpdateOwnProfile)

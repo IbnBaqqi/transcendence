@@ -21,6 +21,7 @@ type api struct {
 	User         *service.UserService
 	Profile      *service.ProfileService
 	Follow       *service.FollowService
+	Notification *service.NotificationService
 	Block        *service.BlockService
 	APIKey       *service.APIKeyService
 	ListingImage *service.ListingImageService
@@ -49,6 +50,7 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 	userService := service.NewUserService(db, files)
 	profileService := service.NewProfileService(db, files) // needs *DB for transaction
 	followService := service.NewFollowService(db.Queries)
+	notificationService := service.NewNotificationService(db.Queries)
 	blockService := service.NewBlockService(db.Queries)
 	apiKeyService := service.NewAPIKeyService(db.Queries)
 	listingImageService := service.NewListingImageService(db, files, cfg.Upload.MaxPerListing)
@@ -69,6 +71,7 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 		User:         userService,
 		Profile:      profileService,
 		Follow:       followService,
+		Notification: notificationService,
 		Block:        blockService,
 		APIKey:       apiKeyService,
 		ListingImage: listingImageService,

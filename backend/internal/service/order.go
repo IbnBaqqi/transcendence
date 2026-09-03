@@ -100,6 +100,10 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 		return database.Order{}, err
 	}
 
+	if err := recordOrderNotification(ctx, qtx, order.SellerID, notifyKindOrderPlaced, order); err != nil {
+		return database.Order{}, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return database.Order{}, err
 	}
@@ -272,6 +276,10 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 		}
 
 		if !bothSidesMarked(marked) {
+			if err := s.recordActionNotification(ctx, qtx, action, marked, userID); err != nil {
+				return database.Order{}, err
+			}
+
 			if err := tx.Commit(); err != nil {
 				return database.Order{}, err
 			}
@@ -293,6 +301,10 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 		return database.Order{}, err
 	}
 
+	if err := s.recordActionNotification(ctx, qtx, action, updated, userID); err != nil {
+		return database.Order{}, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return database.Order{}, err
 	}
@@ -302,32 +314,63 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 	return updated, nil
 }
 
+// Who hears about an action, and as what. The notification row and the email
+// both read this, so the two cannot disagree about who was told.
+func orderActionNotification(
+	action orderAction,
+	order database.Order,
+	actorID uuid.UUID,
+) (kind string, recipient uuid.UUID, ok bool) {
+	switch action.key {
+	case keyHandover:
+		// Both sides marked, so the order completed rather than merely being
+		// handed over - the completion is the news, not this.
+		if order.Status == actionHandover.to {
+			return "", uuid.Nil, false
+		}
+		return notifyKindOrderHandedOver, order.BuyerID, true
+
+	case keyCancel:
+		if actorID == order.BuyerID {
+			return notifyKindOrderCancelled, order.SellerID, true
+		}
+		return notifyKindOrderCancelled, order.BuyerID, true
+	}
+	return "", uuid.Nil, false
+}
+
+func (s *OrderService) recordActionNotification(
+	ctx context.Context,
+	qtx *database.Queries,
+	action orderAction,
+	order database.Order,
+	actorID uuid.UUID,
+) error {
+	kind, recipient, ok := orderActionNotification(action, order, actorID)
+	if !ok {
+		return nil
+	}
+	return recordOrderNotification(ctx, qtx, recipient, kind, order)
+}
+
 func (s *OrderService) notifyOrderAction(
 	ctx context.Context,
 	action orderAction,
 	order database.Order,
 	actorID uuid.UUID,
 ) {
-	switch action.key {
-	case keyHandover:
-		if order.Status == actionHandover.to {
-			return
-		}
-		notifyUser(ctx, s.db.Queries, s.notify, order.BuyerID,
-			func(email, _ string) notify.Message {
-				return notify.OrderHandedOver(email, order.ListingTitle)
-			})
-
-	case keyCancel:
-		recipient := order.BuyerID
-		if actorID == order.BuyerID {
-			recipient = order.SellerID
-		}
-		notifyUser(ctx, s.db.Queries, s.notify, recipient,
-			func(email, _ string) notify.Message {
-				return notify.OrderCancelled(email, order.ListingTitle)
-			})
+	kind, recipient, ok := orderActionNotification(action, order, actorID)
+	if !ok {
+		return
 	}
+
+	notifyUser(ctx, s.db.Queries, s.notify, recipient,
+		func(email, _ string) notify.Message {
+			if kind == notifyKindOrderHandedOver {
+				return notify.OrderHandedOver(email, order.ListingTitle)
+			}
+			return notify.OrderCancelled(email, order.ListingTitle)
+		})
 }
 
 func (s *OrderService) ListEvents(ctx context.Context, userID uuid.UUID, orderID uuid.UUID) ([]database.OrderEvent, error) {

@@ -8,6 +8,7 @@ import { Link, NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Avatar from "../objects/Avatar.tsx";
 import { LanguageSwitcher } from "../objects/LanguageSwitcher";
+import { NotificationBell } from "../objects/NotificationBell";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "text-foreground" : "text-muted hover:text-foreground";
@@ -57,15 +58,7 @@ export default function Header() {
               <use href="/icons.svg#chat-icon" />
             </svg>
           </button>
-          <Link
-            to="/notifications"
-            aria-label={t("nav.notifications")}
-            className="text-muted hover:text-foreground"
-          >
-            <svg className="h-6 w-5" aria-hidden="true">
-              <use href="/icons.svg#notifications-icon" />
-            </svg>
-          </Link>
+          <NotificationBell />
           <Link
             to="/addlisting"
             aria-label={t("nav.addListing")}

@@ -118,6 +118,21 @@
     "listEmpty": "Et ole estänyt ketään.",
     "listError": "Estettyjen lataaminen ei onnistunut."
   },
+  "notifications": {
+    "markAllRead": "Merkitse kaikki luetuiksi",
+    "markAllReadError": "Merkitseminen ei onnistunut. Yritä uudelleen.",
+    "empty": "Ei uutta.",
+    "seeAll": "Näytä kaikki",
+    "unread_one": "{{count}} lukematon",
+    "unread_other": "{{count}} lukematonta",
+    "kind": {
+      "order_placed": "Joku tilasi tuotteesi {{title}}",
+      "order_handed_over": "Tilauksesi {{title}} on luovutettu",
+      "order_cancelled": "Tilauksesi {{title}} peruttiin",
+      "order_resolved": "Tuki ratkaisi tilauksesi {{title}}",
+      "chat_request": "Joku lähetti sinulle viestin tuotteesta {{title}}"
+    }
+  },
   "orders": {
     "title": "Tilaukset",
     "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tilauksesi.",
@@ -234,7 +249,9 @@
       "stub": "Ilmoitussivu - ei vielä rakennettu (#21)."
     },
     "notifications": {
-      "title": "Ilmoitukset"
+      "title": "Ilmoitukset",
+      "signedOut": "Kirjaudu sisään nähdäksesi ilmoituksesi.",
+      "error": "Ilmoitusten lataaminen ei onnistunut."
     },
     "profile": {
       "title": "Profiili ja asetukset",
