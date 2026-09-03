@@ -1,42 +1,9 @@
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useReportQueue } from "../api/moderation";
 import { isApiError } from "../api/client";
+import { ReportedListingRow } from "../components/objects/ReportedListingRow";
 import { Skeleton } from "../components/objects/Skeleton";
-import type { ReportedListing } from "../api/types";
-
-function QueueRow({ row }: { row: ReportedListing }) {
-  const { t } = useTranslation();
-  const removed = row.removed_at !== null;
-
-  return (
-    <li className="border-line bg-surface flex items-start justify-between gap-4 rounded-lg border p-3">
-      <div className="min-w-0">
-        <Link
-          to={`/listings/${row.listing_id}`}
-          className={`font-medium hover:underline ${removed ? "text-muted line-through" : "text-foreground"}`}
-        >
-          {row.title}
-        </Link>
-        <p className="text-muted mt-1 text-sm">
-          {t("moderation.firstReported", {
-            date: new Date(row.first_reported_at).toLocaleDateString(),
-          })}
-        </p>
-      </div>
-
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        {/* The count leads: three complaints about one listing is one problem,
-            and it is what decides which row to open first. */}
-        <span className="bg-accent text-accent-contrast rounded-full px-2 py-0.5 text-xs font-medium">
-          {t("moderation.reportCount", { count: row.report_count })}
-        </span>
-        {removed && <span className="text-muted text-xs">{t("moderation.alreadyRemoved")}</span>}
-      </div>
-    </li>
-  );
-}
 
 export default function AdminListings() {
   const { t } = useTranslation();
@@ -78,7 +45,7 @@ export default function AdminListings() {
         // second opinion about the queue's priority.
         <ul className="mt-6 space-y-3">
           {queue.map((row) => (
-            <QueueRow key={row.listing_id} row={row} />
+            <ReportedListingRow key={row.listing_id} row={row} />
           ))}
         </ul>
       )}

@@ -125,7 +125,32 @@
     "reportCount_other": "{{count}} ilmoitusta",
     "alreadyRemoved": "Poistettu",
     "queueEmpty": "Ei jonossa mitään. Kaikki ilmoitukset on käsitelty.",
-    "queueError": "Moderointijonon lataaminen ei onnistunut."
+    "queueError": "Moderointijonon lataaminen ei onnistunut.",
+    "showDetail": "Näytä tiedot",
+    "hideDetail": "Piilota tiedot",
+    "reportsTitle": "Ilmoitukset",
+    "historyTitle": "Moderointihistoria",
+    "reportsEmpty": "Ei ilmoituksia.",
+    "historyEmpty": "Ei toimenpiteitä.",
+    "deletedReporter": "Ilmoittaja on poistanut tilinsä",
+    "deletedModerator": "Moderaattori on poistanut tilinsä",
+    "reason": {
+      "spam": "Roskaposti",
+      "prohibited": "Kielletty tuote",
+      "misleading": "Harhaanjohtava",
+      "offensive": "Loukkaava",
+      "other": "Muu"
+    },
+    "status": {
+      "open": "Avoin",
+      "upheld": "Hyväksytty",
+      "dismissed": "Hylätty"
+    },
+    "action": {
+      "removed": "Poistettu",
+      "restored": "Palautettu",
+      "dismissed": "Hylätty"
+    }
   },
   "orders": {
     "title": "Tilaukset",

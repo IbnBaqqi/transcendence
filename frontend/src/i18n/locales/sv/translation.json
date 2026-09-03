@@ -125,7 +125,32 @@
     "reportCount_other": "{{count}} rapporter",
     "alreadyRemoved": "Borttagen",
     "queueEmpty": "Inget i kön. Alla rapporter är avgjorda.",
-    "queueError": "Kunde inte ladda moderationskön."
+    "queueError": "Kunde inte ladda moderationskön.",
+    "showDetail": "Visa detaljer",
+    "hideDetail": "Dölj detaljer",
+    "reportsTitle": "Rapporter",
+    "historyTitle": "Moderationshistorik",
+    "reportsEmpty": "Inga rapporter.",
+    "historyEmpty": "Aldrig åtgärdad.",
+    "deletedReporter": "Rapportören har raderat sitt konto",
+    "deletedModerator": "Moderatorn har raderat sitt konto",
+    "reason": {
+      "spam": "Skräppost",
+      "prohibited": "Förbjuden vara",
+      "misleading": "Vilseledande",
+      "offensive": "Stötande",
+      "other": "Annat"
+    },
+    "status": {
+      "open": "Öppen",
+      "upheld": "Bifallen",
+      "dismissed": "Avvisad"
+    },
+    "action": {
+      "removed": "Borttagen",
+      "restored": "Återställd",
+      "dismissed": "Avvisad"
+    }
   },
   "orders": {
     "title": "Beställningar",

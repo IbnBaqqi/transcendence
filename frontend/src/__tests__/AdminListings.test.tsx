@@ -6,7 +6,13 @@ import AdminListings from "../pages/AdminListings";
 import { useReportQueue } from "../api/moderation";
 import type { ReportedListing } from "../api/types";
 
-vi.mock("../api/moderation", () => ({ useReportQueue: vi.fn() }));
+vi.mock("../api/moderation", () => ({
+  useReportQueue: vi.fn(),
+  // The page renders ReportedListingRow, which asks for a row's detail once
+  // opened. Nothing here opens one, so these only need to not be undefined.
+  useListingReports: vi.fn(() => ({ data: undefined })),
+  useModerationHistory: vi.fn(() => ({ data: undefined })),
+}));
 
 const LISTING_ID = "01a02305-b81c-7dcb-86a0-7f75e33e0af3";
 

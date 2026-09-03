@@ -125,7 +125,32 @@
     "reportCount_other": "{{count}} reports",
     "alreadyRemoved": "Removed",
     "queueEmpty": "Nothing waiting. Every report has been decided.",
-    "queueError": "Couldn't load the moderation queue."
+    "queueError": "Couldn't load the moderation queue.",
+    "showDetail": "Show detail",
+    "hideDetail": "Hide detail",
+    "reportsTitle": "Reports",
+    "historyTitle": "Moderation history",
+    "reportsEmpty": "No reports.",
+    "historyEmpty": "Never actioned.",
+    "deletedReporter": "Reporter has deleted their account",
+    "deletedModerator": "Moderator has deleted their account",
+    "reason": {
+      "spam": "Spam",
+      "prohibited": "Prohibited item",
+      "misleading": "Misleading",
+      "offensive": "Offensive",
+      "other": "Other"
+    },
+    "status": {
+      "open": "Open",
+      "upheld": "Upheld",
+      "dismissed": "Dismissed"
+    },
+    "action": {
+      "removed": "Removed",
+      "restored": "Restored",
+      "dismissed": "Dismissed"
+    }
   },
   "orders": {
     "title": "Orders",
