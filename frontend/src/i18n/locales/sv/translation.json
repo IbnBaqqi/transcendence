@@ -64,7 +64,12 @@
       "description": "Beskrivning",
       "category": "Kategori",
       "priceQuantity": "Pris och antal",
-      "save": "Spara"
+      "save": "Spara",
+      "createFailed": "Kunde inte skapa annonsen. Försök igen.",
+      "photosFailed_one": "Annonsen skapades, men {{count}} bild kunde inte laddas upp.",
+      "photosFailed_other": "Annonsen skapades, men {{count}} bilder kunde inte laddas upp.",
+      "viewListing": "Visa annonsen",
+      "signedOut": "Du är utloggad. Logga in för att lägga upp en annons."
     }
   },
   "dropzone": {
