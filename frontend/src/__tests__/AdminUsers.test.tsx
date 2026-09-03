@@ -30,8 +30,12 @@ function makeUser(overrides: Partial<AdminUser> = {}): AdminUser {
   };
 }
 
-function page(items: AdminUser[], total = items.length): PaginatedAdminUsers {
-  return { items, total, page: 1, limit: 20, total_pages: 1 };
+function page(
+  items: AdminUser[],
+  total = items.length,
+  overrides: Partial<PaginatedAdminUsers> = {},
+): PaginatedAdminUsers {
+  return { items, total, page: 1, limit: 20, total_pages: 1, ...overrides };
 }
 
 // Rendered rather than assigned to a module variable: writing during render is
@@ -65,8 +69,12 @@ function renderPage(query: Partial<ReturnType<typeof useAdminUsers>>, url = "/ad
 // The literal types matter: widened to `boolean` these stop matching any one
 // member of the UseQueryResult union and tsc rejects the object - while vitest
 // runs it happily, which is why this is a typecheck problem, not a test one.
-const loaded = (items: AdminUser[], total = items.length) => ({
-  data: page(items, total),
+const loaded = (
+  items: AdminUser[],
+  total = items.length,
+  overrides: Partial<PaginatedAdminUsers> = {},
+) => ({
+  data: page(items, total, overrides),
   isPending: false as const,
   isError: false as const,
 });
@@ -138,4 +146,43 @@ test("offers a retry when the list will not load", async () => {
   expect(screen.getByText("Couldn't load the accounts.")).toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(refetch).toHaveBeenCalled();
+});
+
+describe("paging", () => {
+  // The trap this page exists to avoid: usePageParam round-trips the search
+  // filter module, which knows nothing about role or status and would drop
+  // both. Filter to suspended admins, click Next, and you would be on page 2
+  // of everyone.
+  test("keeps the filters when the page changes", async () => {
+    renderPage(
+      loaded([makeUser()], 40, { page: 1, total_pages: 2 }),
+      "/admin/users?role=ADMIN&status=suspended",
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(url()).toBe("?role=ADMIN&status=suspended&page=2");
+  });
+
+  // The server echoes the page it actually served and clamps limit, so the
+  // controls read the response rather than what was asked for.
+  test("reports the page the server served, not the one requested", () => {
+    renderPage(loaded([makeUser()], 40, { page: 2, total_pages: 2 }), "/admin/users?page=9");
+    expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+  });
+
+  test("offers no pager when nothing matches", () => {
+    renderPage(loaded([], 0));
+    expect(screen.queryByRole("navigation", { name: "Pagination" })).not.toBeInTheDocument();
+  });
+
+  // Inherited from #212 rather than assumed: a stale link to a page past the
+  // end keeps its way back, instead of showing a result count and no controls.
+  test("a page past the end still offers the way back", async () => {
+    renderPage(loaded([], 3, { page: 9, total_pages: 1 }), "/admin/users?page=9");
+
+    await userEvent.click(screen.getByRole("button", { name: "Previous" }));
+
+    expect(url()).toBe("");
+  });
 });

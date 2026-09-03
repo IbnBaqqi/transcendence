@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAdminUsers } from "../api/adminUsers";
 import { AccountRow } from "../components/objects/AccountRow";
+import { Pagination } from "../components/objects/Pagination";
 import { isApiError } from "../api/client";
 import { Skeleton } from "../components/objects/Skeleton";
 import {
@@ -96,6 +97,22 @@ export default function AdminUsers() {
             <AccountRow key={user.id} account={user} />
           ))}
         </ul>
+      )}
+
+      {/* Off the response, not the request: the server echoes the page even
+          past the last one and clamps limit, so this is what it actually did.
+          total, not items.length - an empty page past the end still has a
+          result count and still needs its way back. */}
+      {data && data.total > 0 && (
+        <Pagination
+          page={data.page}
+          totalPages={data.total_pages}
+          total={data.total}
+          // Through the filters, never usePageParam: that one round-trips the
+          // search module, which does not know about role or status and would
+          // drop both on every page change.
+          onPageChange={(page) => update({ page })}
+        />
       )}
     </div>
   );
