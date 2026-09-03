@@ -193,7 +193,22 @@
     },
     "dashboard": {
       "title": "Myyjän hallintapaneeli",
-      "stub": "Myyjän hallintapaneeli - ei vielä rakennettu (#23)."
+      "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi hallintapaneelin.",
+      "myListings": "Omat ilmoitukset",
+      "needsYou": "Vaatii toimiasi ({{count}})",
+      "inProgress": "Käynnissä ({{count}})",
+      "finished": "Valmiit ({{count}})",
+      "noListings": "Et ole vielä lisännyt ilmoitusta.",
+      "addListing": "Lisää ensimmäinen ilmoituksesi",
+      "noOrders": "Kukaan ei ole vielä tilannut sinulta.",
+      "listingsError": "Ilmoitusten lataaminen epäonnistui.",
+      "ordersError": "Tilausten lataaminen epäonnistui.",
+      "listing": {
+        "allRemaining": "{{qty}} {{unit}} jäljellä",
+        "remaining": "{{left}} / {{original}} {{unit}} jäljellä",
+        "sold": "{{count}} myyty",
+        "soldOut": "Loppuunmyyty"
+      }
     },
     "following": {
       "title": "Seuratut",
