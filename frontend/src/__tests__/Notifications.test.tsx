@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
 import Notifications from "../pages/Notifications";
@@ -81,7 +82,7 @@ test("lists what there is", () => {
   expect(screen.getByText("Someone ordered your Chanterelles")).toBeInTheDocument();
 });
 
-test("offers a retry when the list will not load", () => {
+test("offers a retry when the list will not load", async () => {
   const refetch = vi.fn();
   renderPage(VIEWER, {
     data: undefined,
@@ -91,6 +92,9 @@ test("offers a retry when the list will not load", () => {
     refetch,
   });
   expect(screen.getByText("Couldn't load your notifications.")).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+  expect(refetch).toHaveBeenCalled();
 });
 
 test("offers mark-all-read only while something is unread", () => {

@@ -123,12 +123,13 @@
     "markAllReadError": "Couldn't mark them read. Try again.",
     "empty": "Nothing new.",
     "seeAll": "See all",
-    "unread": "{{count}} unread",
+    "unread_one": "{{count}} unread",
+    "unread_other": "{{count}} unread",
     "kind": {
       "order_placed": "Someone ordered your {{title}}",
       "order_handed_over": "Your {{title}} order was handed over",
       "order_cancelled": "Your {{title}} order was cancelled",
-      "order_resolved": "Your {{title}} order is complete",
+      "order_resolved": "Support resolved your {{title}} order",
       "chat_request": "Someone messaged you about {{title}}"
     }
   },

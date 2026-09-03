@@ -123,12 +123,13 @@
     "markAllReadError": "Merkitseminen ei onnistunut. Yritä uudelleen.",
     "empty": "Ei uutta.",
     "seeAll": "Näytä kaikki",
-    "unread": "{{count}} lukematonta",
+    "unread_one": "{{count}} lukematon",
+    "unread_other": "{{count}} lukematonta",
     "kind": {
       "order_placed": "Joku tilasi tuotteesi {{title}}",
       "order_handed_over": "Tilauksesi {{title}} on luovutettu",
       "order_cancelled": "Tilauksesi {{title}} peruttiin",
-      "order_resolved": "Tilauksesi {{title}} on valmis",
+      "order_resolved": "Tuki ratkaisi tilauksesi {{title}}",
       "chat_request": "Joku lähetti sinulle viestin tuotteesta {{title}}"
     }
   },

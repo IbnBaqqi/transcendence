@@ -76,13 +76,12 @@ export function NotificationBell() {
             <MarkAllReadButton unread={unread} className="text-xs" />
           </div>
 
-          {notifications?.length === 0 ? (
+          {!notifications ? (
+            <p className="text-muted px-3 py-4 text-sm">{t("common.loading")}</p>
+          ) : notifications.length === 0 ? (
             <p className="text-muted px-3 py-4 text-sm">{t("notifications.empty")}</p>
           ) : (
-            <NotificationList
-              notifications={notifications ?? []}
-              onNavigate={() => setOpen(false)}
-            />
+            <NotificationList notifications={notifications} onNavigate={() => setOpen(false)} />
           )}
 
           <Link

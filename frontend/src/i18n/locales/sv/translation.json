@@ -123,12 +123,13 @@
     "markAllReadError": "Kunde inte markera dem som lästa. Försök igen.",
     "empty": "Inget nytt.",
     "seeAll": "Visa alla",
-    "unread": "{{count}} olästa",
+    "unread_one": "{{count}} oläst",
+    "unread_other": "{{count}} olästa",
     "kind": {
       "order_placed": "Någon beställde din {{title}}",
       "order_handed_over": "Din beställning {{title}} har lämnats över",
       "order_cancelled": "Din beställning {{title}} avbröts",
-      "order_resolved": "Din beställning {{title}} är klar",
+      "order_resolved": "Supporten löste din beställning {{title}}",
       "chat_request": "Någon skickade ett meddelande om {{title}}"
     }
   },

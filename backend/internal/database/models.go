@@ -144,7 +144,7 @@ type Notification struct {
 	OrderID        uuid.NullUUID
 	ConversationID uuid.NullUUID
 	ReadAt         sql.NullTime
-	CreatedAt      sql.NullTime
+	CreatedAt      time.Time
 }
 
 type OauthIdentity struct {

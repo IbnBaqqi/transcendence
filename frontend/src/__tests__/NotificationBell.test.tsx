@@ -6,8 +6,7 @@ import { NotificationBell } from "../components/objects/NotificationBell";
 import { useMarkNotificationsRead, useNotifications } from "../api/notifications";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { useModal } from "../providers/modalContext";
-import { makeNotification } from "../test/factories";
-import { BUYER_ID } from "../test/factories";
+import { BUYER_ID, makeNotification } from "../test/factories";
 import type { Notification, User } from "../api/types";
 
 vi.mock("../api/notifications", async () => {
@@ -26,7 +25,7 @@ const VIEWER: User = {
   id: BUYER_ID,
   username: "tester",
   email: "t@example.com",
-  role: "user",
+  role: "USER",
   has_password: true,
   providers: [],
 };
@@ -43,7 +42,7 @@ beforeEach(() => {
   } as unknown as ReturnType<typeof useMarkNotificationsRead>);
 });
 
-function renderBell(user: User | null, notifications: Notification[] = []) {
+function renderBell(user: User | null, notifications: Notification[] | undefined) {
   vi.mocked(useNotifications).mockReturnValue({ data: notifications } as ReturnType<
     typeof useNotifications
   >);
@@ -103,6 +102,15 @@ test("lists the notifications once opened", async () => {
   renderBell(VIEWER, [makeNotification({ listing_title: "Chanterelles" })]);
   await userEvent.click(screen.getByLabelText("Notifications"));
   expect(screen.getByText("Someone ordered your Chanterelles")).toBeInTheDocument();
+});
+
+// undefined is not empty: before the first fetch lands the panel used to
+// render an empty <ul> between its header and "See all".
+test("says it is loading before the first fetch lands", async () => {
+  renderBell(VIEWER, undefined);
+  await userEvent.click(screen.getByLabelText("Notifications"));
+  expect(screen.getByText("Loading…")).toBeInTheDocument();
+  expect(screen.queryByText("Nothing new.")).not.toBeInTheDocument();
 });
 
 test("keeps the panel shut until it is asked for", () => {

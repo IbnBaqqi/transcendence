@@ -30,7 +30,7 @@ func ToNotificationResponses(rows []database.Notification) []NotificationRespons
 			OrderID:        nullUUIDPtr(r.OrderID),
 			ConversationID: nullUUIDPtr(r.ConversationID),
 			ReadAt:         nullTimePtr(r.ReadAt),
-			CreatedAt:      r.CreatedAt.Time,
+			CreatedAt:      r.CreatedAt,
 		})
 	}
 	return out

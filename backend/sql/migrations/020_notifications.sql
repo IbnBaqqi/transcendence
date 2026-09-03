@@ -10,7 +10,7 @@ CREATE TABLE notifications (
     order_id        uuid,
     conversation_id uuid,
     read_at         timestamptz,
-    created_at      timestamptz DEFAULT now(),
+    created_at      timestamptz NOT NULL DEFAULT now(),
 
     CONSTRAINT notifications_kind_check CHECK (kind IN (
         'order_placed',
@@ -36,7 +36,8 @@ CREATE TABLE notifications (
 
 -- Serves both the list and the unread count: the same user's rows, newest
 -- first, which is the only way this table is ever read.
-CREATE INDEX idx_notifications_user_created ON notifications (user_id, created_at DESC);
+CREATE INDEX idx_notifications_user_created
+    ON notifications (user_id, created_at DESC, id DESC);
 
 -- +goose Down
 
