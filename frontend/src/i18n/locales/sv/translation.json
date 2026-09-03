@@ -8,7 +8,8 @@
     "orders": "Beställningar",
     "following": "Följer",
     "profile": "Profil",
-    "admin": "Admin"
+    "admin": "Admin",
+    "adminUsers": "Konton"
   },
   "language": {
     "en": "English",
@@ -168,6 +169,27 @@
     "reportsError": "Kunde inte ladda rapporterna.",
     "historyError": "Kunde inte ladda historiken."
   },
+  "adminUsers": {
+    "filterRole": "Roll",
+    "filterStatus": "Status",
+    "anyRole": "Alla roller",
+    "anyStatus": "Alla statusar",
+    "deletedUser": "Raderad användare",
+    "suspendedFor": "Avstängd: {{reason}}",
+    "lastSeen": "Senast sedd {{date}}",
+    "neverSeen": "Aldrig sedd",
+    "listEmpty": "Inga konton matchar filtren.",
+    "listError": "Kunde inte ladda kontona.",
+    "role": {
+      "USER": "Användare",
+      "ADMIN": "Administratör"
+    },
+    "status": {
+      "active": "Aktiv",
+      "suspended": "Avstängd",
+      "deleted": "Raderad"
+    }
+  },
   "orders": {
     "title": "Beställningar",
     "signedOut": "Du är utloggad. Logga in för att se dina beställningar.",
@@ -319,6 +341,9 @@
     },
     "adminListings": {
       "title": "Moderationskö"
+    },
+    "adminUsers": {
+      "title": "Konton"
     }
   },
   "chat": {

@@ -8,7 +8,8 @@
     "orders": "Orders",
     "following": "Following",
     "profile": "Profile",
-    "admin": "Admin"
+    "admin": "Admin",
+    "adminUsers": "Accounts"
   },
   "language": {
     "en": "English",
@@ -168,6 +169,27 @@
     "reportsError": "Couldn't load the reports.",
     "historyError": "Couldn't load the history."
   },
+  "adminUsers": {
+    "filterRole": "Role",
+    "filterStatus": "Status",
+    "anyRole": "Any role",
+    "anyStatus": "Any status",
+    "deletedUser": "Deleted user",
+    "suspendedFor": "Suspended: {{reason}}",
+    "lastSeen": "Last seen {{date}}",
+    "neverSeen": "Never seen",
+    "listEmpty": "No accounts match those filters.",
+    "listError": "Couldn't load the accounts.",
+    "role": {
+      "USER": "User",
+      "ADMIN": "Admin"
+    },
+    "status": {
+      "active": "Active",
+      "suspended": "Suspended",
+      "deleted": "Deleted"
+    }
+  },
   "orders": {
     "title": "Orders",
     "signedOut": "You're signed out. Log in to see your orders.",
@@ -319,6 +341,9 @@
     },
     "adminListings": {
       "title": "Moderation queue"
+    },
+    "adminUsers": {
+      "title": "Accounts"
     }
   },
   "chat": {

@@ -8,7 +8,8 @@
     "orders": "Tilaukset",
     "following": "Seuratut",
     "profile": "Profiili",
-    "admin": "Ylläpito"
+    "admin": "Ylläpito",
+    "adminUsers": "Tilit"
   },
   "language": {
     "en": "English",
@@ -168,6 +169,27 @@
     "reportsError": "Ilmoitusten lataaminen ei onnistunut.",
     "historyError": "Historian lataaminen ei onnistunut."
   },
+  "adminUsers": {
+    "filterRole": "Rooli",
+    "filterStatus": "Tila",
+    "anyRole": "Mikä tahansa rooli",
+    "anyStatus": "Mikä tahansa tila",
+    "deletedUser": "Poistettu käyttäjä",
+    "suspendedFor": "Jäädytetty: {{reason}}",
+    "lastSeen": "Viimeksi nähty {{date}}",
+    "neverSeen": "Ei koskaan nähty",
+    "listEmpty": "Yksikään tili ei vastaa suodattimia.",
+    "listError": "Tilien lataaminen ei onnistunut.",
+    "role": {
+      "USER": "Käyttäjä",
+      "ADMIN": "Ylläpitäjä"
+    },
+    "status": {
+      "active": "Aktiivinen",
+      "suspended": "Jäädytetty",
+      "deleted": "Poistettu"
+    }
+  },
   "orders": {
     "title": "Tilaukset",
     "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tilauksesi.",
@@ -319,6 +341,9 @@
     },
     "adminListings": {
       "title": "Moderointijono"
+    },
+    "adminUsers": {
+      "title": "Tilit"
     }
   },
   "chat": {
