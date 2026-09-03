@@ -86,7 +86,18 @@ export function ApiKeysSection() {
         </ul>
       )}
 
-      {created && <ApiKeyCreatedDialog apiKey={created} onClose={() => setCreated(null)} />}
+      {created && (
+        <ApiKeyCreatedDialog
+          apiKey={created}
+          onClose={() => {
+            setCreated(null);
+            // mutateAsync's result also lives on create.data until reset() -
+            // clearing only our own copy would leave the key in the mutation
+            // cache for as long as this page stays mounted.
+            create.reset();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -103,6 +114,9 @@ function ApiKeyRow({ apiKey }: { apiKey: ApiKey }) {
     setError(null);
     try {
       await revoke.mutateAsync(apiKey.id);
+      // Only on success: a failed row stays in its confirming state so the
+      // error sits next to the button that produced it, ready to retry.
+      setConfirming(false);
     } catch (err) {
       // RevokeKey matches only revoked_at IS NULL, so revoking twice - two tabs,
       // or a stale list - answers 404 for a row that is plainly on screen.
@@ -111,8 +125,6 @@ function ApiKeyRow({ apiKey }: { apiKey: ApiKey }) {
       } else {
         setError(isApiError(err) ? err.message : t("apiKeys.revokeFailed"));
       }
-    } finally {
-      setConfirming(false);
     }
   }
 

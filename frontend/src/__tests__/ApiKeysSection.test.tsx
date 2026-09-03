@@ -11,9 +11,10 @@ vi.mock("../api/apiKeys", () => ({
   useRevokeApiKey: vi.fn(),
 }));
 
-const calls = { create: vi.fn(), revoke: vi.fn() };
+const calls = { create: vi.fn(), reset: vi.fn(), revoke: vi.fn() };
 
-const mutation = <T,>(fn: unknown) => ({ mutateAsync: fn, isPending: false }) as unknown as T;
+const mutation = <T,>(fn: unknown, reset = vi.fn()) =>
+  ({ mutateAsync: fn, isPending: false, reset }) as unknown as T;
 
 function makeKey(overrides: Partial<ApiKey> = {}): ApiKey {
   return {
@@ -31,8 +32,9 @@ const CREATED: CreatedApiKey = { ...makeKey(), key: "fk_live_a3f9c2e18b7d4f60" }
 
 beforeEach(() => {
   calls.create.mockReset().mockResolvedValue(CREATED);
+  calls.reset.mockReset();
   calls.revoke.mockReset().mockResolvedValue(undefined);
-  vi.mocked(useCreateApiKey).mockReturnValue(mutation(calls.create));
+  vi.mocked(useCreateApiKey).mockReturnValue(mutation(calls.create, calls.reset));
   vi.mocked(useRevokeApiKey).mockReturnValue(mutation(calls.revoke));
 });
 
@@ -47,7 +49,9 @@ function renderSection(keys: ApiKey[] = [], state = {}) {
 }
 
 describe("ApiKeysSection", () => {
-  test("creates a key with the trimmed name and shows it once", async () => {
+  // Closing must drop BOTH copies of the secret: our own state, and the one
+  // TanStack keeps on mutation.data until reset().
+  test("creates a key with the trimmed name, shows it once, and drops it on close", async () => {
     const user = userEvent.setup();
     renderSection();
 
@@ -56,6 +60,11 @@ describe("ApiKeysSection", () => {
 
     expect(calls.create).toHaveBeenCalledWith("ci pipeline");
     expect(await screen.findByLabelText("API key")).toHaveValue(CREATED.key);
+
+    await user.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(screen.queryByLabelText("API key")).not.toBeInTheDocument();
+    expect(calls.reset).toHaveBeenCalled();
   });
 
   test("won't create a key with no name", () => {
