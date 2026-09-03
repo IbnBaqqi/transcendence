@@ -203,6 +203,32 @@ describe("AddListingSection", () => {
     expect(createListing).toHaveBeenCalledTimes(1);
   });
 
+  // Position is MAX(position) + 1 at insert, so the gallery's order is only
+  // correct if the uploads go one at a time. Nothing else here would notice
+  // this becoming Promise.all.
+  test("uploads one photo at a time, so the server's positions match the gallery", async () => {
+    const started: string[] = [];
+    let releaseFirst: () => void = () => {};
+    uploadImage.mockImplementation(({ file }: { file: File }) => {
+      started.push(file.name);
+      if (started.length === 1) {
+        return new Promise((resolve) => {
+          releaseFirst = () => resolve({ id: "img-1" });
+        });
+      }
+      return Promise.resolve({ id: "img-2" });
+    });
+
+    await fillAndSubmit({ photos: 2 });
+
+    // Parallel would have started both before the first resolved.
+    expect(started).toEqual(["photo0.png"]);
+
+    releaseFirst();
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/listings/new-listing"));
+    expect(started).toEqual(["photo0.png", "photo1.png"]);
+  });
+
   test("removing a photo that reached the server deletes it there", async () => {
     uploadImage.mockRejectedValueOnce({ status: 413, message: "Image is too large" });
 
