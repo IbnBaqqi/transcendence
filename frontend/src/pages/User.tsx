@@ -11,6 +11,7 @@ import { ListingCard } from "../components/objects/ListingCard";
 import { BlockButton } from "../components/objects/BlockButton";
 import { FollowButton } from "../components/objects/FollowButton";
 import { PresenceIndicator } from "../components/objects/PresenceIndicator";
+import { Pagination } from "../components/objects/Pagination";
 import { useModal } from "../providers/modalContext";
 import { useAuth } from "../hooks/useAuth";
 import { usePublicProfile } from "../api/profile";
@@ -18,6 +19,8 @@ import { useFollowers } from "../api/follows";
 import { useBlocks } from "../api/blocks";
 import { useSearchListings } from "../api/listings";
 import { useLocalizedCategoryNames } from "../api/categories";
+import { usePageParam } from "../hooks/usePageParam";
+import { PAGE_SIZE } from "../lib/searchFilters";
 import { isApiError } from "../api/client";
 import { deriveInitials } from "../lib/initials";
 import NotFound from "./NotFound";
@@ -35,11 +38,12 @@ export default function User() {
   // The URL param rather than profile.id, so the query can start before the
   // profile resolves: the backend compares uuids, so the casing the API
   // canonicalises does not matter to it the way it did to a string filter here.
+  const [page, setPage] = usePageParam();
   const {
     data: sellerListings,
     isPending: listingsPending,
     isError: listingsError,
-  } = useSearchListings({ seller_id: id, limit: 20 });
+  } = useSearchListings({ seller_id: id, page, limit: PAGE_SIZE });
   const categoryName = useLocalizedCategoryNames();
 
   // profile.id, not the route param: query keys are compared as strings, and
@@ -149,14 +153,9 @@ export default function User() {
           {listingsError && t("pages.user.listingsError")}
           {!listingsPending &&
             !listingsError &&
-            listings.length === 0 &&
+            sellerListings?.total === 0 &&
             t("pages.user.noListings")}
         </p>
-        {sellerListings && sellerListings.total > listings.length && (
-          <p className="text-muted mt-2 text-sm">
-            {t("listings.showingOf", { shown: listings.length, total: sellerListings.total })}
-          </p>
-        )}
         {listings.length > 0 && (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {listings.map((listing) => (
@@ -167,6 +166,16 @@ export default function User() {
                 showSeller={false}
               />
             ))}
+          </div>
+        )}
+        {sellerListings && sellerListings.total > 0 && (
+          <div className="mt-6">
+            <Pagination
+              page={sellerListings.page}
+              totalPages={sellerListings.total_pages}
+              total={sellerListings.total}
+              onPageChange={setPage}
+            />
           </div>
         )}
       </div>
