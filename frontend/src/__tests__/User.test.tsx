@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import User from "../pages/User";
@@ -266,18 +267,15 @@ describe("User", () => {
     expect(screen.queryByText(/follower/)).not.toBeInTheDocument();
   });
 
-  // One page is all there is until #25 builds the browse surface, so a seller
-  // with more than fits must not have the rest silently vanish.
-  test("says how many were hidden when the page is not the whole set", () => {
-    renderPage({ listings: { data: { ...page([makeListing()]), total: 47 } } });
+  test("pages a prolific seller without losing the seller", async () => {
+    renderPage({ listings: { data: { ...page([makeListing()]), total: 47, total_pages: 3 } } });
 
-    expect(screen.getByText(/showing 1 of 47/i)).toBeInTheDocument();
-  });
+    expect(screen.getByText("47 results")).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Next" }));
 
-  test("says nothing when the page is the whole set", () => {
-    renderPage({ listings: { data: page([makeListing()]) } });
-
-    expect(screen.queryByText(/showing/i)).not.toBeInTheDocument();
+    expect(useSearchListings).toHaveBeenLastCalledWith(
+      expect.objectContaining({ seller_id: PROFILE.id, page: 2 }),
+    );
   });
 
   test("a blocked profile drops message but keeps follow, and says why", () => {

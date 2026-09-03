@@ -36,6 +36,9 @@ export default function Header() {
           <NavLink to="/" className={navLinkClass}>
             {t("nav.home")}
           </NavLink>
+          <NavLink to="/search" className={navLinkClass}>
+            {t("nav.search")}
+          </NavLink>
           {user && (
             <NavLink to="/orders" className={navLinkClass}>
               {t("nav.orders")}

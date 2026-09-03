@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
@@ -53,6 +53,9 @@ export function useSearchListings(
     // Without a seller_id this searches everything, so callers waiting on one
     // pass false rather than fetching the whole catalogue.
     enabled: options.enabled ?? true,
+    // A page change is a new query key, so the list and the pagination
+    // controls would unmount mid-click and take keyboard focus with them.
+    placeholderData: keepPreviousData,
   });
 }
 
