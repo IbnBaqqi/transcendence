@@ -452,17 +452,7 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		ids = append(ids, item.ID)
 	}
 
-	byListing, err := imagesByListing(ctx, s.db.Queries, ids)
-	if err != nil {
-		return dtos.PaginatedListings{}, err
-	}
-
-	tagsByListing, err := s.TagsByListing(ctx, ids)
-	if err != nil {
-		return dtos.PaginatedListings{}, err
-	}
-
-	bySeller, err := s.SellersFor(ctx, items)
+	responses, err := s.Responses(ctx, items)
 	if err != nil {
 		return dtos.PaginatedListings{}, err
 	}
@@ -470,15 +460,57 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
 	return dtos.PaginatedListings{
-		Items: dtos.WithSellerEach(
-			dtos.WithTagsEach(dtos.ToListingResponsesWithImages(items, byListing), tagsByListing),
-			bySeller,
-		),
+		Items:      responses,
 		Total:      total,
 		Page:       page,
 		Limit:      limit,
 		TotalPages: totalPages,
 	}, nil
+}
+
+// Responses turns listing rows into the shape the API answers with: images,
+// tags and the seller are separate tables, so every listing endpoint has to
+// attach all three. Doing it here rather than in each handler is what keeps a
+// fourth one from being added in five places.
+func (s *ListingService) Responses(
+	ctx context.Context,
+	rows []database.Listing,
+) ([]dtos.ListingResponse, error) {
+	ids := make([]uuid.UUID, 0, len(rows))
+	for _, row := range rows {
+		ids = append(ids, row.ID)
+	}
+
+	byListing, err := imagesByListing(ctx, s.db.Queries, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	tagsByListing, err := s.TagsByListing(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	bySeller, err := s.SellersFor(ctx, rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return dtos.WithSellerEach(
+		dtos.WithTagsEach(dtos.ToListingResponsesWithImages(rows, byListing), tagsByListing),
+		bySeller,
+	), nil
+}
+
+func (s *ListingService) Response(
+	ctx context.Context,
+	row database.Listing,
+) (dtos.ListingResponse, error) {
+	responses, err := s.Responses(ctx, []database.Listing{row})
+	if err != nil {
+		return dtos.ListingResponse{}, err
+	}
+	return responses[0], nil
 }
 
 func (s *ListingService) SellersFor(
@@ -509,18 +541,6 @@ func (s *ListingService) SellersFor(
 		out[row.ID] = dtos.ToListingSeller(row.ID, row.Username, row.AvatarFilename)
 	}
 	return out, nil
-}
-
-func (s *ListingService) SellerFor(ctx context.Context, sellerID uuid.UUID) (*dtos.ListingSeller, error) {
-	rows, err := s.db.ListSellersByIDs(ctx, []uuid.UUID{sellerID})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	seller := dtos.ToListingSeller(rows[0].ID, rows[0].Username, rows[0].AvatarFilename)
-	return &seller, nil
 }
 
 func (s *ListingService) TagsForListing(ctx context.Context, id uuid.UUID) ([]string, error) {
