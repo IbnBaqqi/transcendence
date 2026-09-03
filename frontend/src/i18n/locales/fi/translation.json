@@ -64,7 +64,12 @@
       "description": "Kuvaus",
       "category": "Luokka",
       "priceQuantity": "Hinta ja määrä",
-      "save": "Tallenna"
+      "save": "Tallenna",
+      "createFailed": "Ilmoituksen luonti ei onnistunut. Yritä uudelleen.",
+      "photosFailed_one": "Ilmoitus luotiin, mutta {{count}} kuvaa ei voitu ladata.",
+      "photosFailed_other": "Ilmoitus luotiin, mutta {{count}} kuvaa ei voitu ladata.",
+      "viewListing": "Näytä ilmoitus",
+      "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään lisätäksesi ilmoituksen."
     }
   },
   "dropzone": {
