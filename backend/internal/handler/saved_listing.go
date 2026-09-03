@@ -2,10 +2,6 @@ package handler
 
 import (
 	"net/http"
-
-	"github.com/google/uuid"
-
-	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
 
 func (h *Handler) SaveListing(w http.ResponseWriter, r *http.Request) {
@@ -63,31 +59,11 @@ func (h *Handler) GetSavedListings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ids := make([]uuid.UUID, 0, len(listings))
-	for _, l := range listings {
-		ids = append(ids, l.ID)
-	}
-
-	byListing, err := h.ListingImage.ImagesByListing(r.Context(), ids)
+	items, err := h.Listing.Responses(r.Context(), listings)
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return
 	}
 
-	tagsByListing, err := h.Listing.TagsByListing(r.Context(), ids)
-	if err != nil {
-		respondWithServiceError(w, r, err)
-		return
-	}
-
-	bySeller, err := h.Listing.SellersFor(r.Context(), listings)
-	if err != nil {
-		respondWithServiceError(w, r, err)
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK,
-		dtos.WithSellerEach(
-			dtos.WithTagsEach(dtos.ToListingResponsesWithImages(listings, byListing), tagsByListing),
-			bySeller))
+	respondWithJSON(w, http.StatusOK, items)
 }

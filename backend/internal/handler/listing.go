@@ -53,16 +53,6 @@ func (h *Handler) sellerIsHidden(r *http.Request, sellerID uuid.UUID) bool {
 	return !visible
 }
 
-func (h *Handler) withSeller(r *http.Request, item dtos.ListingResponse) dtos.ListingResponse {
-	seller, err := h.Listing.SellerFor(r.Context(), item.SellerID)
-	if err != nil {
-		slog.Error("could not load the listing's seller",
-			"seller_id", item.SellerID, "request_id", middleware.GetReqID(r.Context()), "error", err)
-		return item
-	}
-	return dtos.WithSeller(item, seller)
-}
-
 func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
@@ -82,13 +72,13 @@ func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tags, err := h.Listing.TagsForListing(r.Context(), listing.ID)
+	res, err := h.Listing.Response(r.Context(), listing)
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, h.withSeller(r, dtos.WithTags(dtos.ToListingResponse(listing), tags)))
+	respondWithJSON(w, http.StatusCreated, res)
 }
 
 func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
@@ -110,19 +100,13 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imgs, err := h.ListingImage.ListImages(r.Context(), id)
+	res, err := h.Listing.Response(r.Context(), listing)
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return
 	}
 
-	tags, err := h.Listing.TagsForListing(r.Context(), id)
-	if err != nil {
-		respondWithServiceError(w, r, err)
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK, h.withSeller(r, dtos.WithTags(dtos.ToListingResponseWithImages(listing, imgs), tags)))
+	respondWithJSON(w, http.StatusOK, res)
 }
 
 func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
@@ -150,19 +134,13 @@ func (h *Handler) UpdateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imgs, err := h.ListingImage.ListImages(r.Context(), id)
+	res, err := h.Listing.Response(r.Context(), updated)
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return
 	}
 
-	tags, err := h.Listing.TagsForListing(r.Context(), id)
-	if err != nil {
-		respondWithServiceError(w, r, err)
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK, h.withSeller(r, dtos.WithTags(dtos.ToListingResponseWithImages(updated, imgs), tags)))
+	respondWithJSON(w, http.StatusOK, res)
 }
 
 func (h *Handler) DeleteListing(w http.ResponseWriter, r *http.Request) {
