@@ -30,6 +30,11 @@ export function useConversation(id: string) {
     queryKey: keys.conversations.detail(id),
     queryFn: async () => (await api.get<Conversation>(apiPath`/conversations/${id}`)).data,
     enabled: id !== "",
+    // The status decides whether the send box is open and only the other party
+    // can change it, so without polling the buyer sees the seller's reply
+    // arrive while status is still "pending" and is told to wait for someone
+    // who already accepted.
+    refetchInterval: THREAD_POLL_MS,
   });
 }
 
