@@ -36,6 +36,14 @@ describe("Pagination", () => {
     expect(onPageChange).toHaveBeenCalledWith(3);
   });
 
+  test("a single page past its end still offers the way back", async () => {
+    const { onPageChange, user } = renderPagination(9, 1, 3);
+
+    await user.click(screen.getByRole("button", { name: "Previous" }));
+
+    expect(onPageChange).toHaveBeenCalledWith(1);
+  });
+
   test("a single page keeps the count but drops the controls", () => {
     renderPagination(1, 1, 3);
 

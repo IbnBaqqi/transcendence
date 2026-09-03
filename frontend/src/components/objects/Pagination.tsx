@@ -17,10 +17,10 @@ export function Pagination({
 
   return (
     <nav aria-label={t("pagination.label")} className="flex flex-wrap items-center gap-3">
-      {totalPages > 1 && (
+      {/* A stale link can ask for a page past the end: keep the controls, since
+          they are the only way back, and step to the last real page. */}
+      {(totalPages > 1 || page > totalPages) && (
         <>
-          {/* min: a stale link can ask for a page past the end, and the server
-              answers that with an empty page. Step back to the last real one. */}
           <Button
             variant="secondary"
             disabled={page <= 1}
