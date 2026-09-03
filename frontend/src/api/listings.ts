@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
@@ -97,6 +97,9 @@ export function useSearchListings(
     // Without a seller_id this searches everything, so callers waiting on one
     // pass false rather than fetching the whole catalogue.
     enabled: options.enabled ?? true,
+    // A filter edit or page change is a new query key - keep showing the old
+    // page while the new one loads instead of flashing back to a skeleton.
+    placeholderData: keepPreviousData,
   });
 }
 

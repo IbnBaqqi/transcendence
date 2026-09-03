@@ -1,21 +1,76 @@
-// stub for #25
-//
-// no useSearchParams() here yet - importing it without using it would fail
-// the build. whoever take #25 adds it: it's the hook that reads and writes
-// the query string (?category=berries&min_price=5), which is how filter
-// state gets shared in a URL instead of trapped in component state.
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+
+import { toSearchParams, useSearchListings } from "../api/listings";
+import { useLocalizedCategoryNames } from "../api/categories";
+import { FilterPanel } from "../components/objects/FilterPanel";
+import { ListingCard } from "../components/objects/ListingCard";
+import { Skeleton } from "../components/objects/Skeleton";
+
 export default function Search() {
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const handleFilterChange = (key: string, value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    next.delete("page");
+    setSearchParams(next);
+  };
+
+  const params = toSearchParams(searchParams);
+  const { data, isPending, isError, refetch } = useSearchListings(params);
+  const listings = data?.items;
+  const categoryName = useLocalizedCategoryNames();
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="text-foreground text-2xl font-bold">{t("pages.search.title")}</h1>
-      <p className="text-muted mt-2">
-        {/* TODO(#25): filter panel (category, price range, location, rating),
-					active filters as dismissible chips, state synced to URL params
-					via useSearchParams. rating filter needs #16. */}
-        {t("pages.search.stub")}
-      </p>
+
+      <div className="mt-4">
+        <FilterPanel params={searchParams} onChange={handleFilterChange} />
+      </div>
+
+      {isPending && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-56 w-full" />
+          ))}
+        </div>
+      )}
+      {isError && (
+        <Skeleton
+          variant="error"
+          className="mt-6 h-56 w-full"
+          message={t("pages.search.listingsError")}
+          onRetry={() => refetch()}
+        />
+      )}
+      {listings?.length === 0 && (
+        <Skeleton
+          variant="error"
+          className="mt-6 h-56 w-full"
+          message={t("pages.search.noResults")}
+          onRetry={() => refetch()}
+        />
+      )}
+      {data && listings && listings.length > 0 && (
+        <>
+          <p className="text-muted mt-4 text-sm">
+            {t("pages.search.resultCount", { count: data.total })}
+          </p>
+          <div className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {listings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                categoryName={categoryName(listing.category)}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

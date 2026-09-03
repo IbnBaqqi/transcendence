@@ -198,7 +198,6 @@
     },
     "search": {
       "title": "Haku",
-      "stub": "Haku ja suodattimet - ei vielä rakennettu (#25).",
       "keywordLabel": "Haku",
       "categoryLabel": "Kategoria",
       "allCategories": "Kaikki kategoriat",
@@ -208,6 +207,10 @@
       "locationPlaceholder": "esim. Helsinki",
       "clearAll": "Tyhjennä kaikki",
       "removeFilter": "Poista suodatin {{name}}",
+      "listingsError": "Ilmoituksia ei voitu ladata.",
+      "noResults": "Yksikään ilmoitus ei vastaa näitä suodattimia.",
+      "resultCount_one": "{{count}} tulos",
+      "resultCount_other": "{{count}} tulosta",
       "chips": {
         "minPrice": "Väh. {{value}} €",
         "maxPrice": "Enint. {{value}} €"

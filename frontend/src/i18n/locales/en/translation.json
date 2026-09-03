@@ -198,7 +198,6 @@
     },
     "search": {
       "title": "Search",
-      "stub": "Search & filters - not built yet (#25).",
       "keywordLabel": "Search",
       "categoryLabel": "Category",
       "allCategories": "All categories",
@@ -208,6 +207,10 @@
       "locationPlaceholder": "e.g. Helsinki",
       "clearAll": "Clear all",
       "removeFilter": "Remove {{name}} filter",
+      "listingsError": "Couldn't load listings.",
+      "noResults": "No listings match these filters.",
+      "resultCount_one": "{{count}} result",
+      "resultCount_other": "{{count}} results",
       "chips": {
         "minPrice": "Min €{{value}}",
         "maxPrice": "Max €{{value}}"
