@@ -47,7 +47,8 @@ export default function User() {
   // different casing would leave this count one behind, with nothing to show
   // that the invalidation missed.
   const { data: followers } = useFollowers(profile?.id, user?.id);
-  const { data: blocks, isPending: blocksPending } = useBlocks({ enabled: Boolean(user) });
+  const signedIn = Boolean(user);
+  const { data: blocks, isPending: blocksPending } = useBlocks({ enabled: signedIn });
 
   // 400 = the id isn't a UUID, 404 = no such user. Both mean "nothing here".
   if (isApiError(error) && (error.status === 404 || error.status === 400)) {
@@ -68,7 +69,10 @@ export default function User() {
   const isSelf = user?.id === profile.id;
   // Unknown until the list arrives, and false would mean "not blocked": the
   // message button would appear on a blocked profile and then be taken away.
-  const isBlocked = blocksPending || (blocks?.some((b) => b.id === profile.id) ?? false);
+  // signedIn first, because a disabled query reports pending forever - without
+  // it every logged-out visitor is told they blocked this person.
+  const isBlocked =
+    signedIn && (blocksPending || (blocks?.some((b) => b.id === profile.id) ?? false));
 
   const listings = sellerListings?.items ?? [];
 

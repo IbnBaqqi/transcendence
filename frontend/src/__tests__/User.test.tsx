@@ -325,4 +325,19 @@ describe("User", () => {
 
     expect(screen.queryByRole("button", { name: /message user/i })).not.toBeInTheDocument();
   });
+
+  // useBlocks is disabled without a session, and a disabled query reports
+  // isPending forever - so gating on it alone tells every logged-out visitor
+  // they blocked the person whose page they are reading.
+  test("a signed-out visitor is not told they blocked anyone", () => {
+    vi.mocked(useBlocks).mockReturnValue({
+      data: undefined,
+      isPending: true,
+    } as unknown as ReturnType<typeof useBlocks>);
+
+    renderPage({ currentUser: null });
+
+    expect(screen.queryByText(/you have blocked this person/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /message user/i })).toBeInTheDocument();
+  });
 });
