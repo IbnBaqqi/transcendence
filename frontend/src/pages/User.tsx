@@ -65,7 +65,6 @@ export default function User() {
   const isSelf = user?.id === profile.id;
 
   const listings = sellerListings?.items ?? [];
-  const hiddenListings = (sellerListings?.total ?? 0) - listings.length;
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
@@ -137,9 +136,9 @@ export default function User() {
             listings.length === 0 &&
             t("pages.user.noListings")}
         </p>
-        {hiddenListings > 0 && (
+        {sellerListings && sellerListings.total > listings.length && (
           <p className="text-muted mt-2 text-sm">
-            {t("listings.showingOf", { shown: listings.length, total: sellerListings!.total })}
+            {t("listings.showingOf", { shown: listings.length, total: sellerListings.total })}
           </p>
         )}
         {listings.length > 0 && (
