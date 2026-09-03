@@ -78,20 +78,14 @@ func (h *Handler) ModerateListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imgs, err := h.ListingImage.ListImages(r.Context(), listingID)
-	if err != nil {
-		respondWithServiceError(w, r, err)
-		return
-	}
-
-	tags, err := h.Listing.TagsForListing(r.Context(), listingID)
+	res, err := h.Listing.Response(r.Context(), listing)
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return
 	}
 
 	respondWithJSON(w, http.StatusOK, dtos.ModerateListingResponse{
-		Listing:         h.withSeller(r, dtos.WithTags(dtos.ToListingResponseWithImages(listing, imgs), tags)),
+		Listing:         res,
 		ReportsResolved: resolved,
 	})
 }
