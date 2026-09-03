@@ -245,4 +245,18 @@ describe("User", () => {
     renderPage();
     expect(screen.queryByText(/follower/)).not.toBeInTheDocument();
   });
+
+  // One page is all there is until #25 builds the browse surface, so a seller
+  // with more than fits must not have the rest silently vanish.
+  test("says how many were hidden when the page is not the whole set", () => {
+    renderPage({ listings: { data: { ...page([makeListing()]), total: 47 } } });
+
+    expect(screen.getByText(/showing 1 of 47/i)).toBeInTheDocument();
+  });
+
+  test("says nothing when the page is the whole set", () => {
+    renderPage({ listings: { data: page([makeListing()]) } });
+
+    expect(screen.queryByText(/showing/i)).not.toBeInTheDocument();
+  });
 });

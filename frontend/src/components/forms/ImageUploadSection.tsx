@@ -9,11 +9,9 @@ type ImageUploadSectionProps = {
   onClose: () => void;
 };
 
-// Single-image picker used inside the "imageUpload" modal (currently just
-// the avatar flow, see Avatar.tsx/Profile.tsx). There's no avatar upload
-// endpoint on the backend yet (#14), so this only manages the file locally
-// and hands it back to the caller via onComplete - nothing is sent over the
-// network here.
+// Single-image picker used inside the "imageUpload" modal (currently just the
+// avatar flow, see Avatar.tsx/Profile.tsx). It sends nothing itself: the file
+// goes back to the caller via onComplete, which decides where it is uploaded.
 export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionProps) {
   const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);

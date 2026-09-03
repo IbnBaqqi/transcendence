@@ -216,6 +216,7 @@ components:
           updated_at,
           images,
           tags,
+          seller,
         ]
       properties:
         id:
@@ -282,6 +283,25 @@ components:
             removed *and* you are its seller or an admin — for everyone else a
             removed listing is 404, so the field can never appear.
 
+        seller:
+          description: |
+            Who posted it, enough to render a card: a name and a face. Null only
+            when the lookup failed - a listing always has a seller - so a client
+            should degrade rather than treat it as meaningful.
+          oneOf:
+            - type: "null"
+            - type: object
+              required: [id, username, avatar_url]
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                username:
+                  type: string
+                avatar_url:
+                  type: [string, "null"]
+                  description: Null when none is set; the default is the client's decision.
+                  examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
     PaginatedReviews:
       type: object
       required: [items, total, page, limit, total_pages]
@@ -1187,13 +1207,23 @@ components:
 
     ChatUser:
       type: object
-      required: [id, username, presence]
+      required: [id, username, avatar_url, presence]
       properties:
         id:
           type: string
           format: uuid
         username:
           type: string
+        avatar_url:
+          type: [string, "null"]
+          description: |
+            Path served by the API, or `null` when none is set. The default
+            avatar is the client's decision, not a URL the API invents.
+
+            Also `null` for a deleted account, whose `username` is already
+            anonymised — an avatar left in place would identify the person the
+            anonymisation exists to hide.
+          examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
         presence:
           $ref: "#/components/schemas/Presence"
 

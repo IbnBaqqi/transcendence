@@ -21,6 +21,11 @@ export function makeListing(overrides: Partial<Listing> = {}): Listing {
     created_at: "1970-01-01T00:00:00Z",
     updated_at: "1970-01-01T00:00:00Z",
     images: [],
+    seller: {
+      id: "3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34",
+      username: "mushroom_matti",
+      avatar_url: null,
+    },
     ...overrides,
   };
 }

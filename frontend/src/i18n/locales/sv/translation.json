@@ -6,7 +6,8 @@
     "notifications": "Meddelanden",
     "addListing": "Lägg till annons",
     "orders": "Beställningar",
-    "following": "Följer"
+    "following": "Följer",
+    "profile": "Profil"
   },
   "language": {
     "en": "English",
@@ -299,7 +300,10 @@
   },
   "avatar": {
     "edit": "Redigera",
-    "editAria": "Redigera profilbild"
+    "editAria": "Redigera profilbild",
+    "remove": "Ta bort bilden",
+    "removing": "Tar bort…",
+    "uploading": "Laddar upp…"
   },
   "errorBoundary": {
     "somethingWentWrong": "Något gick fel",
