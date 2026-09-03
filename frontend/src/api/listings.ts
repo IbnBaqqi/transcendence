@@ -131,14 +131,14 @@ async function deleteListingImage(listingId: string, imageId: string): Promise<v
   await api.delete(apiPath`/listings/${listingId}/images/${imageId}`);
 }
 
-export function useDeleteListingImage(listingId: string | undefined) {
+export function useDeleteListingImage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (imageId: string) => deleteListingImage(listingId as string, imageId),
-    onSuccess: () => {
-      const id = listingId as string;
-      queryClient.invalidateQueries({ queryKey: keys.listings.images(id) });
-      queryClient.invalidateQueries({ queryKey: keys.listings.detail(id) });
+    mutationFn: ({ listingId, imageId }: { listingId: string; imageId: string }) =>
+      deleteListingImage(listingId, imageId),
+    onSuccess: (_result, { listingId }) => {
+      void queryClient.invalidateQueries({ queryKey: keys.listings.images(listingId) });
+      void queryClient.invalidateQueries({ queryKey: keys.listings.detail(listingId) });
     },
   });
 }

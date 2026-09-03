@@ -5,17 +5,19 @@ import userEvent from "@testing-library/user-event";
 
 import { AddListingSection } from "../components/forms/AddListingSection";
 import { useCategories, categoryNames, useLocalizedCategoryNames } from "../api/categories";
-import { useCreateListing, useUploadListingImage } from "../api/listings";
+import { useCreateListing, useDeleteListingImage, useUploadListingImage } from "../api/listings";
 import type { Category } from "../api/types";
 import { makeListing } from "../test/factories";
 
 vi.mock("../api/listings", () => ({
   useCreateListing: vi.fn(),
   useUploadListingImage: vi.fn(),
+  useDeleteListingImage: vi.fn(),
 }));
 
 const createListing = vi.fn();
 const uploadImage = vi.fn();
+const deleteImage = vi.fn();
 const navigate = vi.fn();
 
 vi.mock("react-router-dom", async () => {
@@ -50,6 +52,11 @@ beforeEach(() => {
     mutateAsync: uploadImage,
     isPending: false,
   } as unknown as ReturnType<typeof useUploadListingImage>);
+  deleteImage.mockReset().mockResolvedValue(undefined);
+  vi.mocked(useDeleteListingImage).mockReturnValue({
+    mutateAsync: deleteImage,
+    isPending: false,
+  } as unknown as ReturnType<typeof useDeleteListingImage>);
 });
 
 function mockCategories(data: Category[] | undefined) {
@@ -104,14 +111,19 @@ describe("AddListingSection", () => {
   });
 
   // Fills the form well enough for zod to allow submitting.
-  async function fillAndSubmit({ withPhoto = false } = {}) {
+  async function fillAndSubmit({ photos = 0 } = {}) {
     mockCategories(TREE);
     renderSection();
 
-    if (withPhoto) {
+    if (photos > 0) {
       const input = document.querySelector('input[type="file"]');
       fireEvent.change(input as HTMLInputElement, {
-        target: { files: [new File(["x"], "photo.png", { type: "image/png" })] },
+        target: {
+          files: Array.from(
+            { length: photos },
+            (_, i) => new File(["x"], `photo${i}.png`, { type: "image/png" }),
+          ),
+        },
       });
     }
 
@@ -158,7 +170,7 @@ describe("AddListingSection", () => {
   test("a listing that saved with a failed photo says so and does not navigate", async () => {
     uploadImage.mockRejectedValue({ status: 413, message: "Image is too large" });
 
-    await fillAndSubmit({ withPhoto: true });
+    await fillAndSubmit({ photos: 1 });
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Listing created, but 1 photo couldn't be uploaded.",
@@ -182,12 +194,30 @@ describe("AddListingSection", () => {
   test("a photo lost to the network can be retried, and the last one navigates", async () => {
     uploadImage.mockRejectedValueOnce({ status: 0, message: "Could not reach the server" });
 
-    await fillAndSubmit({ withPhoto: true });
+    await fillAndSubmit({ photos: 1 });
 
     await screen.findByText("Could not reach the server");
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/listings/new-listing"));
     expect(createListing).toHaveBeenCalledTimes(1);
+  });
+
+  test("removing a photo that reached the server deletes it there", async () => {
+    uploadImage.mockRejectedValueOnce({ status: 413, message: "Image is too large" });
+
+    await fillAndSubmit({ photos: 2 });
+    await screen.findByRole("alert");
+
+    const remove = () => screen.getAllByRole("button", { name: "Remove photo" });
+
+    // The first upload was refused, so that one exists only in the browser.
+    await userEvent.click(remove()[0]);
+    expect(deleteImage).not.toHaveBeenCalled();
+
+    await userEvent.click(remove()[0]);
+    await waitFor(() =>
+      expect(deleteImage).toHaveBeenCalledWith({ listingId: "new-listing", imageId: "img-1" }),
+    );
   });
 });

@@ -84,6 +84,8 @@
     "retry": "Retry",
     "removePhoto": "Remove photo",
     "addPhoto": "Add photo",
+    "moveEarlier": "Move earlier",
+    "moveLater": "Move later",
     "ariaUploadPhotos": "Upload photos"
   },
   "categories": {

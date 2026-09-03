@@ -104,6 +104,18 @@ export function useImageGallery({
     });
   }, []);
 
+  // Position is assigned by upload order, so the queue's order is the gallery's.
+  const moveImage = useCallback((id: string, offset: number) => {
+    setImages((prev) => {
+      const from = prev.findIndex((img) => img.id === id);
+      const to = from + offset;
+      if (from < 0 || to < 0 || to >= prev.length) return prev;
+      const next = [...prev];
+      [next[from], next[to]] = [next[to], next[from]];
+      return next;
+    });
+  }, []);
+
   const updateImage = useCallback((id: string, patch: Partial<GalleryImage>) => {
     setImages((prev) => prev.map((img) => (img.id === id ? { ...img, ...patch } : img)));
   }, []);
@@ -123,5 +135,5 @@ export function useImageGallery({
     };
   }, []);
 
-  return { images, addFiles, removeImage, updateImage, clear };
+  return { images, addFiles, removeImage, moveImage, updateImage, clear };
 }

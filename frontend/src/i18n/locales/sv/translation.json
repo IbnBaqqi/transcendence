@@ -84,6 +84,8 @@
     "retry": "Försök igen",
     "removePhoto": "Ta bort foto",
     "addPhoto": "Lägg till foto",
+    "moveEarlier": "Flytta tidigare",
+    "moveLater": "Flytta senare",
     "ariaUploadPhotos": "Ladda upp foton"
   },
   "categories": {

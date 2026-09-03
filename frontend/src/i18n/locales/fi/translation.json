@@ -84,6 +84,8 @@
     "retry": "Yritä uudelleen",
     "removePhoto": "Poista kuva",
     "addPhoto": "Lisää kuva",
+    "moveEarlier": "Siirrä aiemmaksi",
+    "moveLater": "Siirrä myöhemmäksi",
     "ariaUploadPhotos": "Lataa kuvia"
   },
   "categories": {

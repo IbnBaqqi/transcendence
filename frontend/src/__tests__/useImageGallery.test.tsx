@@ -101,3 +101,28 @@ describe("useImageGallery error messages", () => {
     );
   });
 });
+
+describe("useImageGallery ordering", () => {
+  beforeEach(() => {
+    urlCtor.createObjectURL = vi.fn(() => "blob:mock");
+    urlCtor.revokeObjectURL = vi.fn();
+  });
+
+  test("moves an image and clamps at the ends", () => {
+    const { result } = renderHook(() => useImageGallery());
+    act(() =>
+      result.current.addFiles([
+        makeFile("a.jpg", "image/jpeg"),
+        makeFile("b.jpg", "image/jpeg"),
+        makeFile("c.jpg", "image/jpeg"),
+      ]),
+    );
+
+    act(() => result.current.moveImage(result.current.images[2].id, -1));
+    expect(result.current.images.map((i) => i.file.name)).toEqual(["a.jpg", "c.jpg", "b.jpg"]);
+
+    // The first image has nowhere earlier to go.
+    act(() => result.current.moveImage(result.current.images[0].id, -1));
+    expect(result.current.images.map((i) => i.file.name)).toEqual(["a.jpg", "c.jpg", "b.jpg"]);
+  });
+});

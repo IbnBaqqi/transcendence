@@ -9,7 +9,7 @@ import { CategorySelect } from "./CategorySelect";
 import { FormTextArea } from "./FormTextArea";
 import { makeAddListingSchema, type AddListingFormValues } from "../../schemas/addListing";
 import { useCategories, flattenCategories } from "../../api/categories";
-import { useCreateListing, useUploadListingImage } from "../../api/listings";
+import { useCreateListing, useDeleteListingImage, useUploadListingImage } from "../../api/listings";
 import { isApiError } from "../../api/client";
 import Button from "../objects/Button.tsx";
 import { ImageDropzone } from "../objects/ImageDropzone";
@@ -38,6 +38,7 @@ export function AddListingSection() {
   const navigate = useNavigate();
   const createListing = useCreateListing();
   const uploadImage = useUploadListingImage();
+  const deleteImage = useDeleteListingImage();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [partial, setPartial] = useState<{ id: string; failed: number } | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -45,6 +46,7 @@ export function AddListingSection() {
     images: photos,
     addFiles: addPhotos,
     removeImage: removePhoto,
+    moveImage: movePhoto,
     updateImage: updatePhoto,
   } = useImageGallery({
     maxFiles: MAX_LISTING_IMAGES,
@@ -113,6 +115,23 @@ export function AddListingSection() {
     else setPartial({ ...partial, failed: partial.failed - 1 });
   };
 
+  const handleRemovePhoto = async (id: string) => {
+    const photo = photos.find((p) => p.id === id);
+    if (!photo?.serverId || !partial) {
+      removePhoto(id);
+      return;
+    }
+
+    setPhotoError(null);
+    try {
+      await deleteImage.mutateAsync({ listingId: partial.id, imageId: photo.serverId });
+      removePhoto(id);
+    } catch (err) {
+      // Dropping it locally anyway would hide a photo that is still on the listing.
+      setPhotoError(isApiError(err) ? err.message : t("common.somethingWentWrong"));
+    }
+  };
+
   return (
     <Form form={form} onSubmit={handleSubmit} isEditing={true}>
       <div className="space-y-4">
@@ -126,8 +145,9 @@ export function AddListingSection() {
             <ImageDropzone
               images={photos}
               onFilesSelected={addPhotos}
-              onRemove={removePhoto}
+              onRemove={handleRemovePhoto}
               onRetry={handleRetry}
+              onMove={partial ? undefined : movePhoto}
               multiple
               emptyMessage={t("dropzone.noPhotos")}
               helperText={t("dropzone.dragDropAddListing")}
