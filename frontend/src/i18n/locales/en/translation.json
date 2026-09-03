@@ -119,6 +119,14 @@
     "listEmpty": "You haven't blocked anyone.",
     "listError": "Couldn't load who you've blocked."
   },
+  "moderation": {
+    "firstReported": "First reported {{date}}",
+    "reportCount_one": "{{count}} report",
+    "reportCount_other": "{{count}} reports",
+    "alreadyRemoved": "Removed",
+    "queueEmpty": "Nothing waiting. Every report has been decided.",
+    "queueError": "Couldn't load the moderation queue."
+  },
   "orders": {
     "title": "Orders",
     "signedOut": "You're signed out. Log in to see your orders.",

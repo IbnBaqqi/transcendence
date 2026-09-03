@@ -119,6 +119,14 @@
     "listEmpty": "Et ole estänyt ketään.",
     "listError": "Estettyjen lataaminen ei onnistunut."
   },
+  "moderation": {
+    "firstReported": "Ensimmäinen ilmoitus {{date}}",
+    "reportCount_one": "{{count}} ilmoitus",
+    "reportCount_other": "{{count}} ilmoitusta",
+    "alreadyRemoved": "Poistettu",
+    "queueEmpty": "Ei jonossa mitään. Kaikki ilmoitukset on käsitelty.",
+    "queueError": "Moderointijonon lataaminen ei onnistunut."
+  },
   "orders": {
     "title": "Tilaukset",
     "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tilauksesi.",

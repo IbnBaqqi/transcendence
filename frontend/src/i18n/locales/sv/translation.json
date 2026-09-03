@@ -119,6 +119,14 @@
     "listEmpty": "Du har inte blockerat någon.",
     "listError": "Kunde inte ladda vilka du har blockerat."
   },
+  "moderation": {
+    "firstReported": "Först rapporterad {{date}}",
+    "reportCount_one": "{{count}} rapport",
+    "reportCount_other": "{{count}} rapporter",
+    "alreadyRemoved": "Borttagen",
+    "queueEmpty": "Inget i kön. Alla rapporter är avgjorda.",
+    "queueError": "Kunde inte ladda moderationskön."
+  },
   "orders": {
     "title": "Beställningar",
     "signedOut": "Du är utloggad. Logga in för att se dina beställningar.",
