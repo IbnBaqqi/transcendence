@@ -10,15 +10,18 @@ describe("deriveListingStats", () => {
     expect(stats).toEqual({ sold: 2, original: 4 });
   });
 
-  // Cancelling already returned the stock to listing.quantity, so counting it
-  // here would report a listing bigger than it ever was.
-  test("a cancelled order is not a sale", () => {
-    const stats = deriveListingStats(LISTING, [
-      makeOrder({ id: "o1", quantity: 2, status: "confirmed" }),
-      makeOrder({ id: "o2", quantity: 5, status: "cancelled" }),
-    ]);
-    expect(stats).toEqual({ sold: 2, original: 4 });
-  });
+  // Both of these already returned the stock to listing.quantity, so counting
+  // them would report a listing bigger than it ever was.
+  test.each(["cancelled", "refunded"] as const)(
+    "%s returned its stock, so it is not a sale",
+    (status) => {
+      const stats = deriveListingStats(LISTING, [
+        makeOrder({ id: "o1", quantity: 2, status: "confirmed" }),
+        makeOrder({ id: "o2", quantity: 5, status }),
+      ]);
+      expect(stats).toEqual({ sold: 2, original: 4 });
+    },
+  );
 
   test("only counts orders for this listing", () => {
     const stats = deriveListingStats(LISTING, [
@@ -32,7 +35,8 @@ describe("deriveListingStats", () => {
     expect(deriveListingStats(LISTING, [])).toEqual({ sold: 0, original: 2 });
   });
 
-  // pending/confirmed/completed all hold stock; only cancelled gives it back.
+  // The three that hold their stock. cancelled and refunded are covered above,
+  // so between them every status in the union is asserted.
   test.each(["pending", "confirmed", "completed"] as const)("%s counts as sold", (status) => {
     expect(deriveListingStats(LISTING, [makeOrder({ quantity: 1, status })]).sold).toBe(1);
   });

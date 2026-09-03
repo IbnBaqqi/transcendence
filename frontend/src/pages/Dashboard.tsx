@@ -78,15 +78,27 @@ export default function Dashboard() {
             </Link>
           </div>
         ) : (
-          listings.map((listing) => (
-            <SellerListingRow
-              key={listing.id}
-              listing={listing}
-              // Every order, not just sales: a listing's stock is spent by
-              // whoever ordered it.
-              stats={deriveListingStats(listing, allOrders)}
-            />
-          ))
+          <>
+            {listings.map((listing) => (
+              <SellerListingRow
+                key={listing.id}
+                listing={listing}
+                // Every order, not just sales: a listing's stock is spent by
+                // whoever ordered it.
+                stats={deriveListingStats(listing, allOrders)}
+              />
+            ))}
+            {/* limit is 50, so a bigger inventory is silently cut off without
+                this - same treatment as Home and the public profile. */}
+            {listingsQuery.data && listingsQuery.data.total > listings.length && (
+              <p className="text-muted text-sm">
+                {t("listings.showingOf", {
+                  shown: listings.length,
+                  total: listingsQuery.data.total,
+                })}
+              </p>
+            )}
+          </>
         )}
       </Section>
 

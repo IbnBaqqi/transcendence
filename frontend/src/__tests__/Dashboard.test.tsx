@@ -99,6 +99,22 @@ describe("Dashboard", () => {
     expect(screen.getByText("Finished (1)")).toBeInTheDocument();
   });
 
+  // limit is 50; without this a seller with more just sees the first page.
+  test("says so when the listing count is truncated", () => {
+    renderDashboard({
+      listings: [makeListing()],
+      listingsState: {
+        data: { items: [makeListing()], total: 51, page: 1, limit: 50, total_pages: 2 },
+      },
+    });
+    expect(screen.getByText("Showing 1 of 51")).toBeInTheDocument();
+  });
+
+  test("says nothing when everything fits", () => {
+    renderDashboard({ listings: [makeListing()] });
+    expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
+  });
+
   test("a signed-out visitor is offered the login and neither query fires", () => {
     renderDashboard({ user: null });
 
