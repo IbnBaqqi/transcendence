@@ -19,7 +19,13 @@ export function Pagination({
     <nav aria-label={t("pagination.label")} className="flex flex-wrap items-center gap-3">
       {totalPages > 1 && (
         <>
-          <Button variant="secondary" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+          {/* min: a stale link can ask for a page past the end, and the server
+              answers that with an empty page. Step back to the last real one. */}
+          <Button
+            variant="secondary"
+            disabled={page <= 1}
+            onClick={() => onPageChange(Math.min(page - 1, totalPages))}
+          >
             {t("pagination.previous")}
           </Button>
           <span className="text-muted text-sm">{t("pagination.pageOf", { page, totalPages })}</span>
@@ -32,7 +38,6 @@ export function Pagination({
           </Button>
         </>
       )}
-      {/* Outside the guard: a one-page result still says how many it found. */}
       <span className="text-muted text-sm">{t("pagination.results", { count: total })}</span>
     </nav>
   );

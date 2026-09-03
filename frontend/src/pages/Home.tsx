@@ -49,7 +49,7 @@ export default function Home() {
           onRetry={() => refetch()}
         />
       )}
-      {listings?.length === 0 && (
+      {data?.total === 0 && (
         <Skeleton
           variant="error"
           className="mt-6 h-56 w-full"

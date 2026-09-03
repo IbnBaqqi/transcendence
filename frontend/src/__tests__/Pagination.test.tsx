@@ -28,6 +28,14 @@ describe("Pagination", () => {
     expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
   });
 
+  test("a page past the end steps back to the last real one, not to page 8", async () => {
+    const { onPageChange, user } = renderPagination(9, 3);
+
+    await user.click(screen.getByRole("button", { name: "Previous" }));
+
+    expect(onPageChange).toHaveBeenCalledWith(3);
+  });
+
   test("a single page keeps the count but drops the controls", () => {
     renderPagination(1, 1, 3);
 

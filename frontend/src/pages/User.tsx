@@ -153,7 +153,7 @@ export default function User() {
           {listingsError && t("pages.user.listingsError")}
           {!listingsPending &&
             !listingsError &&
-            listings.length === 0 &&
+            sellerListings?.total === 0 &&
             t("pages.user.noListings")}
         </p>
         {listings.length > 0 && (
