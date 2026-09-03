@@ -29,12 +29,16 @@ const VIEWER: User = {
   providers: [],
 };
 
-function renderChat(query: Partial<Query>, user: User | null = VIEWER) {
+function renderChat(
+  query: Partial<Query>,
+  user: User | null = VIEWER,
+  auth_ = { isLoading: false },
+) {
   vi.mocked(useConversations).mockReturnValue(query as Query);
 
   const auth: AuthContextValue = {
     user,
-    isLoading: false,
+    isLoading: auth_.isLoading,
     login: vi.fn(),
     signup: vi.fn(),
     logout: vi.fn(),
@@ -69,6 +73,16 @@ describe("Chat", () => {
 
     expect(screen.getByRole("button", { name: "Log In" })).toBeInTheDocument();
     expect(useConversations).toHaveBeenCalledWith(false);
+  });
+
+  // AuthProvider reports user as null until the restore finishes; without
+  // gating on that a signed-in user who opens chat right after a page load is
+  // told they are signed out, and clicking gets them a login modal.
+  test("waits for the session rather than claiming the user is signed out", () => {
+    renderChat({ data: undefined, isPending: false, isError: false }, null, { isLoading: true });
+
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Log In" })).not.toBeInTheDocument();
   });
 
   test("a failed load offers a retry", async () => {

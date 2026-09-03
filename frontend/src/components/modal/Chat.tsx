@@ -14,7 +14,7 @@ import { Skeleton } from "../objects/Skeleton";
 export function Chat() {
   const { t } = useTranslation();
   const { closeChat, openModal, chatConversationId } = useModal();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   // ChatRoot unmounts this when the modal closes, so the initialiser runs on
   // every open - which is what makes "open straight into this thread" work.
@@ -32,7 +32,11 @@ export function Chat() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {!user ? (
+        {/* The modal opens on click, so mid-restore the alternative to this is
+            telling a signed-in user they are signed out. */}
+        {authLoading ? (
+          <p className="text-muted p-4 text-sm">{t("common.loading")}</p>
+        ) : !user ? (
           <div className="space-y-3 p-4">
             <p className="text-muted text-sm">{t("chat.signedOut")}</p>
             <Button variant="primary" onClick={() => openModal("login")}>

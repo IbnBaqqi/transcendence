@@ -11,14 +11,16 @@ import type { Listing } from "../../api/types";
 
 export function StartConversationSection({ listingId }: { listingId: string }) {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { openModal } = useModal();
 
   // Same shape as ReserveListingSection: fetches by id so it drops into the
   // #21 stub with one line, and React Query dedupes the two.
   const { data: listing, isPending } = useListing(listingId);
 
-  if (!listingId || isPending || !listing) return null;
+  // authLoading too: AuthProvider reports user as null for one render, so
+  // without it a signed-in visitor is briefly offered the login instead.
+  if (!listingId || authLoading || isPending || !listing) return null;
   if (user?.id === listing.seller_id) return null;
 
   if (!user) {
