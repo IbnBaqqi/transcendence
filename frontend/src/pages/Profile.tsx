@@ -14,6 +14,7 @@ import Button from "../components/objects/Button.tsx";
 import { ContactDetailsSection } from "../components/forms/ContactDetailsSection.tsx";
 import { ChangePasswordSection } from "../components/forms/ChangePasswordSection.tsx";
 import { BioSection } from "../components/forms/BioSection.tsx";
+import { ApiKeysSection } from "../components/forms/ApiKeysSection.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { useModal } from "../providers/modalContext";
 import { useAuth } from "../hooks/useAuth";
@@ -152,6 +153,11 @@ export default function Profile() {
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">{t("pages.profile.bio")}</h2>
             <BioSection />
+          </div>
+          {/* Not gated on has_password: an OAuth account needs keys too. */}
+          <div className="space-y-1">
+            <h2 className="text-foreground text-lg font-bold">{t("pages.profile.apiKeys")}</h2>
+            <ApiKeysSection />
           </div>
           {/* NOTE: No backend for these kind of preferences yet. Discussions were held about
               having a setting for showing personal details, but maybe now handled by the friend

@@ -233,7 +233,8 @@
       "contactDetails": "Yhteystiedot",
       "password": "Salasana",
       "bio": "Kuvaus",
-      "accountManagement": "Tilin hallinta"
+      "accountManagement": "Tilin hallinta",
+      "apiKeys": "API-avaimet"
     },
     "notFound": {
       "title": "404 - Sivua ei löydy",
@@ -402,6 +403,24 @@
       "copyFailed": "Automaattinen kopiointi ei onnistunut. Valitse avain yltä ja kopioi se itse.",
       "note": "Tallennettu nimellä ”{{name}}”. Voit kumota sen milloin tahansa.",
       "done": "Valmis"
+    },
+    "intro": "Avaimella ohjelma voi toimia sinun puolestasi ilman kirjautumista. Käsittele sitä kuin salasanaa.",
+    "nameLabel": "Nimi",
+    "namePlaceholder": "ci-putki",
+    "create": "Luo avain",
+    "createFailed": "Avaimen luominen epäonnistui.",
+    "listError": "API-avainten lataaminen epäonnistui.",
+    "empty": "Ei vielä API-avaimia.",
+    "revoke": "Kumoa",
+    "confirmRevoke": "Vahvista kumoaminen",
+    "revoking": "Kumotaan…",
+    "revoked": "Kumottu",
+    "revokeFailed": "Avaimen kumoaminen epäonnistui.",
+    "alreadyRevoked": "Tämä avain on jo kumottu.",
+    "fields": {
+      "created": "Luotu {{date}}",
+      "lastSeen": "viimeksi nähty {{date}}",
+      "neverUsed": "ei koskaan käytetty"
     }
   }
 }
