@@ -467,6 +467,12 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 // tags and the seller are separate tables, so every listing endpoint has to
 // attach all three. Doing it here rather than in each handler is what keeps a
 // fourth one from being added in five places.
+//
+// This is why listings differ from orders and conversations, whose services
+// return database rows and leave the handler to convert: a listing is the only
+// resource assembled from four tables, so the assembly is worth owning in one
+// place. Adding a Responses to another service is not the pattern to copy
+// unless that resource grows the same problem - #202 has the reasoning.
 func (s *ListingService) Responses(
 	ctx context.Context,
 	rows []database.Listing,
@@ -505,6 +511,8 @@ func (s *ListingService) Response(
 	if err != nil {
 		return dtos.ListingResponse{}, err
 	}
+	// One row in, one out: every decorator maps a listing to a listing rather
+	// than filtering, so this index is safe for as long as that stays true.
 	return responses[0], nil
 }
 
