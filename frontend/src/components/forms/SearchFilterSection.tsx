@@ -9,8 +9,7 @@ import Button from "../objects/Button";
 import { searchFiltersSchema, type SearchFiltersFormValues } from "../../schemas/searchFilters";
 import { SORTS, emptyFilters, type SearchFilters } from "../../lib/searchFilters";
 
-// The form works in numbers, the URL in strings; NaN and "" are the same idea
-// on each side, and these two are the only places that know it.
+// The form works in numbers, the URL in strings; NaN and "" are the same idea.
 function toFormValues(f: SearchFilters): SearchFiltersFormValues {
   return {
     keyword: f.keyword,
@@ -47,8 +46,7 @@ export function SearchFilterSection({ initial, onApply, onClear }: SearchFilterS
     defaultValues: toFormValues(initial),
   });
 
-  // The page reseeds this panel by remounting it when the URL changes, which
-  // clearing an already-empty URL doesn't do.
+  // Remounting is what reseeds this panel, and clearing an empty URL is no change.
   const handleClear = () => {
     form.reset(toFormValues(emptyFilters));
     onClear();

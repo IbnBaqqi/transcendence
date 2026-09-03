@@ -37,7 +37,7 @@ describe("parseFilters", () => {
     });
   });
 
-  test.each(["page=0", "page=-2", "page=abc", "page=1.5", ""])(
+  test.each(["page=0", "page=-2", "page=abc", "page=1.5", "page=1e30", ""])(
     "an unusable page (%s) falls back to 1",
     (query) => {
       expect(parseFilters(new URLSearchParams(query)).page).toBe(1);
@@ -52,6 +52,14 @@ describe("parseFilters", () => {
     const f = parseFilters(new URLSearchParams("min_price=abc&max_price=-5"));
     expect(f.min_price).toBe("");
     expect(f.max_price).toBe("");
+  });
+
+  // The chip renders this string while the API gets Number() of it, so the two
+  // have to agree: "5.50" and "0x10" would otherwise be shown as typed.
+  test("a price is normalised to what the API will be asked for", () => {
+    const f = parseFilters(new URLSearchParams("min_price=5.50&max_price=0x10"));
+    expect(f.min_price).toBe("5.5");
+    expect(f.max_price).toBe("16");
   });
 });
 

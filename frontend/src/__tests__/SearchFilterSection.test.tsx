@@ -44,6 +44,16 @@ describe("SearchFilterSection", () => {
     });
   });
 
+  test("an over-long keyword blocks the submit", async () => {
+    const { onApply, user } = renderPanel();
+
+    await user.type(screen.getByLabelText("Keyword"), "a".repeat(201));
+    await user.click(screen.getByRole("button", { name: "Apply filters" }));
+
+    expect(await screen.findByText("Search text is too long")).toBeInTheDocument();
+    expect(onApply).not.toHaveBeenCalled();
+  });
+
   // Mirrors the backend rule, so the request that would 400 is never sent.
   test("an inverted price range blocks the submit", async () => {
     const { onApply, user } = renderPanel();

@@ -9,11 +9,15 @@ const msg = (key: string) => ({ error: () => i18next.t(key) });
 // valueAsNumber) and z.number() rejects it, so NaN is this form's "unset".
 const optionalPrice = z.number().nonnegative(msg("validation.priceNegative")).or(z.nan());
 
+// The backend caps search text at 200 runes and answers a longer one with a
+// 400, which reads to the reader as "the server is down".
+const searchText = z.string().trim().max(200, msg("validation.searchTextTooLong"));
+
 export const searchFiltersSchema = z
   .object({
-    keyword: z.string().trim(),
+    keyword: searchText,
     category: z.string(),
-    location: z.string().trim(),
+    location: searchText,
     min_price: optionalPrice,
     max_price: optionalPrice,
     sort: z.enum(SORTS),
