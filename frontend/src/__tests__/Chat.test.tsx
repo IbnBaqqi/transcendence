@@ -72,7 +72,7 @@ describe("Chat", () => {
     renderChat({ data: undefined, isPending: false, isError: false }, null);
 
     expect(screen.getByRole("button", { name: "Log In" })).toBeInTheDocument();
-    expect(useConversations).toHaveBeenCalledWith(false);
+    expect(useConversations).toHaveBeenCalledWith({ enabled: false });
   });
 
   // AuthProvider reports user as null until the restore finishes; without

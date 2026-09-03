@@ -59,8 +59,9 @@ function ConversationRow({
     >
       <div className="relative shrink-0">
         <Avatar size="sm" initials={deriveInitials(other.username)} />
-        {/* The dot is decorative - the row already names the state in text
-            below when it matters, and presence is absent when hidden. */}
+        {/* Colour-only, unlike the profile page which pairs the dot with the
+            word: there is no room in a row this narrow. Tracked with the other
+            a11y items in #27. */}
         {other.presence.is_online && (
           <span
             aria-hidden="true"

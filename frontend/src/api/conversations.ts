@@ -16,12 +16,12 @@ export interface StartConversationInput {
 
 // --- Reads ---
 
-export function useConversations(enabled = true) {
+export function useConversations(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: keys.conversations.list(),
     queryFn: async () => (await api.get<ConversationListItem[]>("/conversations")).data ?? [],
     refetchInterval: LIST_POLL_MS,
-    enabled,
+    enabled: options.enabled ?? true,
   });
 }
 

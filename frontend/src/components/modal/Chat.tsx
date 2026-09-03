@@ -20,7 +20,13 @@ export function Chat() {
   // every open - which is what makes "open straight into this thread" work.
   const [selectedId, setSelectedId] = useState<string | null>(chatConversationId);
 
-  const { data: conversations, isPending, isError, error, refetch } = useConversations(!!user);
+  const {
+    data: conversations,
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = useConversations({ enabled: !!user });
 
   return (
     <div className="bg-surface-muted flex h-full flex-col">
@@ -59,7 +65,11 @@ export function Chat() {
             onRetry={() => refetch()}
           />
         ) : (
-          <ConversationList conversations={conversations ?? []} onSelect={setSelectedId} />
+          <ConversationList
+            conversations={conversations ?? []}
+            selectedId={selectedId ?? undefined}
+            onSelect={setSelectedId}
+          />
         )}
       </div>
     </div>
