@@ -8,7 +8,8 @@
     "addListing": "Lisää ilmoitus",
     "orders": "Tilaukset",
     "following": "Seuratut",
-    "profile": "Profiili"
+    "profile": "Profiili",
+    "admin": "Ylläpito"
   },
   "language": {
     "en": "English",
@@ -127,20 +128,54 @@
     "listEmpty": "Et ole estänyt ketään.",
     "listError": "Estettyjen lataaminen ei onnistunut."
   },
-  "notifications": {
-    "markAllRead": "Merkitse kaikki luetuiksi",
-    "markAllReadError": "Merkitseminen ei onnistunut. Yritä uudelleen.",
-    "empty": "Ei uutta.",
-    "seeAll": "Näytä kaikki",
-    "unread_one": "{{count}} lukematon",
-    "unread_other": "{{count}} lukematonta",
-    "kind": {
-      "order_placed": "Joku tilasi tuotteesi {{title}}",
-      "order_handed_over": "Tilauksesi {{title}} on luovutettu",
-      "order_cancelled": "Tilauksesi {{title}} peruttiin",
-      "order_resolved": "Tuki ratkaisi tilauksesi {{title}}",
-      "chat_request": "Joku lähetti sinulle viestin tuotteesta {{title}}"
-    }
+  "moderation": {
+    "firstReported": "Ensimmäinen ilmoitus {{date}}",
+    "reportCount_one": "{{count}} ilmoitus",
+    "reportCount_other": "{{count}} ilmoitusta",
+    "alreadyRemoved": "Poistettu",
+    "queueEmpty": "Ei jonossa mitään. Kaikki ilmoitukset on käsitelty.",
+    "queueError": "Moderointijonon lataaminen ei onnistunut.",
+    "showDetail": "Näytä tiedot",
+    "hideDetail": "Piilota tiedot",
+    "reportsTitle": "Ilmoitukset",
+    "historyTitle": "Moderointihistoria",
+    "reportsEmpty": "Ei ilmoituksia.",
+    "historyEmpty": "Ei toimenpiteitä.",
+    "deletedReporter": "Ilmoittaja on poistanut tilinsä",
+    "deletedModerator": "Moderaattori on poistanut tilinsä",
+    "reason": {
+      "spam": "Roskaposti",
+      "prohibited": "Kielletty tuote",
+      "misleading": "Harhaanjohtava",
+      "offensive": "Loukkaava",
+      "other": "Muu"
+    },
+    "status": {
+      "open": "Avoin",
+      "upheld": "Hyväksytty",
+      "dismissed": "Hylätty"
+    },
+    "action": {
+      "removed": "Poistettu",
+      "restored": "Palautettu",
+      "dismissed": "Hylätty"
+    },
+    "decide": {
+      "remove": "Poista",
+      "restore": "Palauta",
+      "dismiss": "Hylkää"
+    },
+    "noteRequired": "Syy (pakollinen)",
+    "noteOptional": "Huomautus (valinnainen)",
+    "noteRemaining_one": "{{count}} merkki jäljellä",
+    "noteRemaining_other": "{{count}} merkkiä jäljellä",
+    "confirm": "Vahvista",
+    "deciding": "Käsitellään…",
+    "decideFailed": "Päätöksen tallentaminen ei onnistunut.",
+    "resolvedCount_one": "Käsitelty {{count}} ilmoitus",
+    "resolvedCount_other": "Käsitelty {{count}} ilmoitusta",
+    "reportsError": "Ilmoitusten lataaminen ei onnistunut.",
+    "historyError": "Historian lataaminen ei onnistunut."
   },
   "orders": {
     "title": "Tilaukset",
@@ -312,6 +347,9 @@
       "listingsError": "Ilmoituksia ei voitu ladata. Yritä uudelleen.",
       "noListings": "Ei ilmoituksia vielä!",
       "profileError": "Profiilia ei voitu ladata."
+    },
+    "adminListings": {
+      "title": "Moderointijono"
     }
   },
   "chat": {
@@ -481,6 +519,21 @@
       "created": "Luotu {{date}}",
       "lastSeen": "viimeksi nähty {{date}}",
       "neverUsed": "ei koskaan käytetty"
+    }
+  },
+  "notifications": {
+    "markAllRead": "Merkitse kaikki luetuiksi",
+    "markAllReadError": "Merkitseminen ei onnistunut. Yritä uudelleen.",
+    "empty": "Ei uutta.",
+    "seeAll": "Näytä kaikki",
+    "unread_one": "{{count}} lukematon",
+    "unread_other": "{{count}} lukematonta",
+    "kind": {
+      "order_placed": "Joku tilasi tuotteesi {{title}}",
+      "order_handed_over": "Tilauksesi {{title}} on luovutettu",
+      "order_cancelled": "Tilauksesi {{title}} peruttiin",
+      "order_resolved": "Tuki ratkaisi tilauksesi {{title}}",
+      "chat_request": "Joku lähetti sinulle viestin tuotteesta {{title}}"
     }
   }
 }

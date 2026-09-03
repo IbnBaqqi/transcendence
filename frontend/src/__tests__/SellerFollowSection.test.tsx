@@ -20,7 +20,7 @@ const VIEWER: User = {
   id: BUYER_ID,
   username: "tester",
   email: "t@example.com",
-  role: "user",
+  role: "USER",
   has_password: true,
   providers: [],
 };

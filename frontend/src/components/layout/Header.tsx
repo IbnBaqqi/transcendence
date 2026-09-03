@@ -49,6 +49,11 @@ export default function Header() {
               {t("nav.following")}
             </NavLink>
           )}
+          {user?.role === "ADMIN" && (
+            <NavLink to="/admin/listings" className={navLinkClass}>
+              {t("nav.admin")}
+            </NavLink>
+          )}
           {/* openChat is wrapped, not passed straight to onClick: it takes an
               optional conversation id and would receive the click event. */}
           <button

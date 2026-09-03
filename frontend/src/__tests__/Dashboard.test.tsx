@@ -16,7 +16,7 @@ const SELLER: User = {
   id: SELLER_ID,
   username: "seller",
   email: "s@x.test",
-  role: "user",
+  role: "USER",
   has_password: true,
   providers: [],
 };

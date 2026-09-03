@@ -8,7 +8,8 @@
     "addListing": "Add listing",
     "orders": "Orders",
     "following": "Following",
-    "profile": "Profile"
+    "profile": "Profile",
+    "admin": "Admin"
   },
   "language": {
     "en": "English",
@@ -127,20 +128,54 @@
     "listEmpty": "You haven't blocked anyone.",
     "listError": "Couldn't load who you've blocked."
   },
-  "notifications": {
-    "markAllRead": "Mark all read",
-    "markAllReadError": "Couldn't mark them read. Try again.",
-    "empty": "Nothing new.",
-    "seeAll": "See all",
-    "unread_one": "{{count}} unread",
-    "unread_other": "{{count}} unread",
-    "kind": {
-      "order_placed": "Someone ordered your {{title}}",
-      "order_handed_over": "Your {{title}} order was handed over",
-      "order_cancelled": "Your {{title}} order was cancelled",
-      "order_resolved": "Support resolved your {{title}} order",
-      "chat_request": "Someone messaged you about {{title}}"
-    }
+  "moderation": {
+    "firstReported": "First reported {{date}}",
+    "reportCount_one": "{{count}} report",
+    "reportCount_other": "{{count}} reports",
+    "alreadyRemoved": "Removed",
+    "queueEmpty": "Nothing waiting. Every report has been decided.",
+    "queueError": "Couldn't load the moderation queue.",
+    "showDetail": "Show detail",
+    "hideDetail": "Hide detail",
+    "reportsTitle": "Reports",
+    "historyTitle": "Moderation history",
+    "reportsEmpty": "No reports.",
+    "historyEmpty": "Never actioned.",
+    "deletedReporter": "Reporter has deleted their account",
+    "deletedModerator": "Moderator has deleted their account",
+    "reason": {
+      "spam": "Spam",
+      "prohibited": "Prohibited item",
+      "misleading": "Misleading",
+      "offensive": "Offensive",
+      "other": "Other"
+    },
+    "status": {
+      "open": "Open",
+      "upheld": "Upheld",
+      "dismissed": "Dismissed"
+    },
+    "action": {
+      "removed": "Removed",
+      "restored": "Restored",
+      "dismissed": "Dismissed"
+    },
+    "decide": {
+      "remove": "Remove",
+      "restore": "Restore",
+      "dismiss": "Dismiss"
+    },
+    "noteRequired": "Reason (required)",
+    "noteOptional": "Note (optional)",
+    "noteRemaining_one": "{{count}} character left",
+    "noteRemaining_other": "{{count}} characters left",
+    "confirm": "Confirm",
+    "deciding": "Deciding…",
+    "decideFailed": "Couldn't record that decision.",
+    "resolvedCount_one": "Resolved {{count}} report",
+    "resolvedCount_other": "Resolved {{count}} reports",
+    "reportsError": "Couldn't load the reports.",
+    "historyError": "Couldn't load the history."
   },
   "orders": {
     "title": "Orders",
@@ -312,6 +347,9 @@
       "listingsError": "Couldn't load listings. Try again.",
       "noListings": "No listings yet!",
       "profileError": "Couldn't load this profile."
+    },
+    "adminListings": {
+      "title": "Moderation queue"
     }
   },
   "chat": {
@@ -481,6 +519,21 @@
       "created": "Created {{date}}",
       "lastSeen": "last seen {{date}}",
       "neverUsed": "never used"
+    }
+  },
+  "notifications": {
+    "markAllRead": "Mark all read",
+    "markAllReadError": "Couldn't mark them read. Try again.",
+    "empty": "Nothing new.",
+    "seeAll": "See all",
+    "unread_one": "{{count}} unread",
+    "unread_other": "{{count}} unread",
+    "kind": {
+      "order_placed": "Someone ordered your {{title}}",
+      "order_handed_over": "Your {{title}} order was handed over",
+      "order_cancelled": "Your {{title}} order was cancelled",
+      "order_resolved": "Support resolved your {{title}} order",
+      "chat_request": "Someone messaged you about {{title}}"
     }
   }
 }
