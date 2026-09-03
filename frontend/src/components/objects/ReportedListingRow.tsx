@@ -59,8 +59,8 @@ export function ReportedListingRow({ row }: { row: ReportedListing }) {
   // A collapsed row passes "", which leaves both queries disabled - so opening
   // one row is what costs two requests, not rendering the queue.
   const listingId = expanded ? row.listing_id : "";
-  const { data: reports } = useListingReports(listingId);
-  const { data: history } = useModerationHistory(listingId);
+  const { data: reports, isError: reportsFailed } = useListingReports(listingId);
+  const { data: history, isError: historyFailed } = useModerationHistory(listingId);
 
   return (
     <li className="border-line bg-surface rounded-lg border p-3">
@@ -111,7 +111,11 @@ export function ReportedListingRow({ row }: { row: ReportedListing }) {
               </ul>
             ) : (
               <p className="text-muted mt-1 text-sm">
-                {reports ? t("moderation.reportsEmpty") : t("common.loading")}
+                {reports
+                  ? t("moderation.reportsEmpty")
+                  : reportsFailed
+                    ? t("moderation.reportsError")
+                    : t("common.loading")}
               </p>
             )}
           </section>
@@ -126,7 +130,11 @@ export function ReportedListingRow({ row }: { row: ReportedListing }) {
               </ul>
             ) : (
               <p className="text-muted mt-1 text-sm">
-                {history ? t("moderation.historyEmpty") : t("common.loading")}
+                {history
+                  ? t("moderation.historyEmpty")
+                  : historyFailed
+                    ? t("moderation.historyError")
+                    : t("common.loading")}
               </p>
             )}
           </section>

@@ -49,9 +49,16 @@ test("moderating invalidates everything one decision changes", async () => {
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
   const invalidated = invalidate.mock.calls.map(([arg]) => JSON.stringify(arg?.queryKey));
-  for (const key of [keys.moderation.all, keys.listings.detail(LISTING_ID), keys.listings.all]) {
+  for (const key of [keys.moderation.all, keys.listings.all]) {
     expect(invalidated).toContain(JSON.stringify(key));
   }
+
+  // listings.all is enough for the detail entry too: keys match by prefix, and
+  // detail(id) is ["listings", "detail", id]. Asserting both would pin the
+  // implementation rather than the behaviour, which is "the listing is stale".
+  expect(keys.listings.detail(LISTING_ID).slice(0, keys.listings.all.length)).toEqual([
+    ...keys.listings.all,
+  ]);
 });
 
 // Prefix matching is the whole reason moderation.all is enough: it has to
@@ -67,11 +74,11 @@ test("the moderation prefix covers the per-listing keys", () => {
   }
 });
 
-// A failure here means this copy of the queue is out of date: a 409 is usually
-// another moderator getting there first, a 404 the listing being gone. The
-// refetch is the fix for both, so a decision that fails must still refresh the
-// queue rather than leaving a row that cannot be acted on.
-test("refetches the queue when a decision fails", async () => {
+// A failure means this copy of the moderation data is out of date: a 409 is
+// usually another moderator getting there first, a 404 the listing being gone.
+// Their decision also changed the reports and history sitting open on screen,
+// so a failure has to refresh all three, not just the queue.
+test("refetches everything moderation when a decision fails", async () => {
   post.mockRejectedValueOnce({ status: 409, message: "Already removed" });
 
   const client = new QueryClient();
@@ -84,5 +91,5 @@ test("refetches the queue when a decision fails", async () => {
   await waitFor(() => expect(result.current.isError).toBe(true));
 
   const invalidated = invalidate.mock.calls.map(([arg]) => JSON.stringify(arg?.queryKey));
-  expect(invalidated).toContain(JSON.stringify(keys.moderation.queue()));
+  expect(invalidated).toContain(JSON.stringify(keys.moderation.all));
 });

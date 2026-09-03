@@ -54,13 +54,19 @@ function makeAction(overrides: Partial<ModerationAction> = {}): ModerationAction
   };
 }
 
-function setData(reports: Report[] | undefined, history: ModerationAction[] | undefined) {
-  vi.mocked(useListingReports).mockReturnValue({ data: reports } as ReturnType<
-    typeof useListingReports
-  >);
-  vi.mocked(useModerationHistory).mockReturnValue({ data: history } as ReturnType<
-    typeof useModerationHistory
-  >);
+function setData(
+  reports: Report[] | undefined,
+  history: ModerationAction[] | undefined,
+  failed: { reports?: boolean; history?: boolean } = {},
+) {
+  vi.mocked(useListingReports).mockReturnValue({
+    data: reports,
+    isError: failed.reports ?? false,
+  } as ReturnType<typeof useListingReports>);
+  vi.mocked(useModerationHistory).mockReturnValue({
+    data: history,
+    isError: failed.history ?? false,
+  } as ReturnType<typeof useModerationHistory>);
 }
 
 function renderRow(row: ReportedListing = ROW) {
@@ -148,4 +154,34 @@ test("renders both lists in the order the server sent them", async () => {
   const details = screen.getAllByText(/complaint$/);
   expect(details[0]).toHaveTextContent("Newest complaint");
   expect(details[1]).toHaveTextContent("Older complaint");
+});
+
+// A query that has exhausted its retries still has data === undefined, so
+// "loading" is indistinguishable from "gave up" unless isError is read. It
+// matters more here than anywhere else on this screen: the decision buttons
+// sit right below, so a moderator could remove a listing while the complaints
+// it is accused of are invisible and nothing says the fetch failed.
+test("says the reports failed rather than loading forever", async () => {
+  setData(undefined, [], { reports: true });
+  renderRow();
+  await userEvent.click(screen.getByRole("button", { name: "Show detail" }));
+  expect(screen.getByText("Couldn't load the reports.")).toBeInTheDocument();
+  expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
+});
+
+test("says the history failed rather than loading forever", async () => {
+  setData([], undefined, { history: true });
+  renderRow();
+  await userEvent.click(screen.getByRole("button", { name: "Show detail" }));
+  expect(screen.getByText("Couldn't load the history.")).toBeInTheDocument();
+});
+
+// One panel failing must not speak for the other.
+test("reports a failure per panel, not across both", async () => {
+  setData(undefined, [], { reports: true });
+  renderRow();
+  await userEvent.click(screen.getByRole("button", { name: "Show detail" }));
+  expect(screen.getByText("Couldn't load the reports.")).toBeInTheDocument();
+  expect(screen.getByText("Never actioned.")).toBeInTheDocument();
+  expect(screen.queryByText("Couldn't load the history.")).not.toBeInTheDocument();
 });

@@ -164,7 +164,9 @@
     "deciding": "Deciding…",
     "decideFailed": "Couldn't record that decision.",
     "resolvedCount_one": "Resolved {{count}} report",
-    "resolvedCount_other": "Resolved {{count}} reports"
+    "resolvedCount_other": "Resolved {{count}} reports",
+    "reportsError": "Couldn't load the reports.",
+    "historyError": "Couldn't load the history."
   },
   "orders": {
     "title": "Orders",
