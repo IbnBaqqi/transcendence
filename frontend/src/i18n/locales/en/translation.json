@@ -7,7 +7,8 @@
     "addListing": "Add listing",
     "orders": "Orders",
     "following": "Following",
-    "profile": "Profile"
+    "profile": "Profile",
+    "admin": "Admin"
   },
   "language": {
     "en": "English",
@@ -264,6 +265,9 @@
       "listingsError": "Couldn't load listings. Try again.",
       "noListings": "No listings yet!",
       "profileError": "Couldn't load this profile."
+    },
+    "adminListings": {
+      "title": "Moderation queue"
     }
   },
   "chat": {

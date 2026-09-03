@@ -7,7 +7,8 @@
     "addListing": "Lisää ilmoitus",
     "orders": "Tilaukset",
     "following": "Seuratut",
-    "profile": "Profiili"
+    "profile": "Profiili",
+    "admin": "Ylläpito"
   },
   "language": {
     "en": "English",
@@ -264,6 +265,9 @@
       "listingsError": "Ilmoituksia ei voitu ladata. Yritä uudelleen.",
       "noListings": "Ei ilmoituksia vielä!",
       "profileError": "Profiilia ei voitu ladata."
+    },
+    "adminListings": {
+      "title": "Moderointijono"
     }
   },
   "chat": {

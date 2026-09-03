@@ -7,7 +7,8 @@
     "addListing": "Lägg till annons",
     "orders": "Beställningar",
     "following": "Följer",
-    "profile": "Profil"
+    "profile": "Profil",
+    "admin": "Admin"
   },
   "language": {
     "en": "English",
@@ -264,6 +265,9 @@
       "listingsError": "Kunde inte ladda annonserna. Försök igen.",
       "noListings": "Inga annonser ännu!",
       "profileError": "Kunde inte ladda denna profil."
+    },
+    "adminListings": {
+      "title": "Moderationskö"
     }
   },
   "chat": {

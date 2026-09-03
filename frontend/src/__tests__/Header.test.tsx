@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Header from "../components/layout/Header";
 import { useOwnProfile } from "../api/profile";
@@ -121,4 +121,21 @@ test("does not ask for a profile while signed out", () => {
   renderHeader({ user: null });
 
   expect(useOwnProfile).toHaveBeenLastCalledWith({ enabled: false });
+});
+
+// The link is UX, not a lock - /admin/listings is guarded by RequireAdmin and
+// every endpoint under it by RequireRole(ADMIN). This just stops the nav
+// advertising a section three quarters of users cannot open.
+test("offers the admin section to an admin", () => {
+  renderHeader({ user: { ...SIGNED_IN.user!, role: "ADMIN" } });
+  expect(screen.getByRole("link", { name: "Admin" })).toHaveAttribute("href", "/admin/listings");
+});
+
+test("hides it from an ordinary user and from a visitor", () => {
+  renderHeader(SIGNED_IN);
+  expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
+
+  cleanup();
+  renderHeader({ user: null });
+  expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
 });

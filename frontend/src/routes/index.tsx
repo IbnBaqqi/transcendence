@@ -16,6 +16,8 @@ import Privacy from "../pages/Privacy";
 import Terms from "../pages/Terms";
 import NotFound from "../pages/NotFound";
 import AuthCallback from "../pages/AuthCallback";
+import AdminListings from "../pages/AdminListings";
+import { RequireAdmin } from "../components/layout/RequireAdmin";
 
 export default function AppRouter() {
   return (
@@ -39,6 +41,11 @@ export default function AppRouter() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          {/* Everything below the guard, so a new admin page is one line and
+              cannot forget to check the role. */}
+          <Route element={<RequireAdmin />}>
+            <Route path="/admin/listings" element={<AdminListings />} />
+          </Route>
           {/* any unmatched URL renders the 404 inside the shell */}
           <Route path="*" element={<NotFound />} />
         </Route>
