@@ -1229,6 +1229,47 @@ components:
         presence:
           $ref: "#/components/schemas/Presence"
 
+    Notification:
+      type: object
+      description: |
+        Something that happened to you. `kind` and the ids say what and where;
+        the sentence is the client's to write.
+      required: [id, kind, listing_title, order_id, conversation_id, read_at, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            [
+              order_placed,
+              order_handed_over,
+              order_cancelled,
+              order_resolved,
+              chat_request,
+            ]
+        listing_title:
+          type: string
+          description: |
+            Snapshotted when the notification was written, like the one on an
+            order: the listing can be removed and this still has to read sensibly.
+        order_id:
+          type: [string, "null"]
+          format: uuid
+          description: Set for the four order kinds, null for `chat_request`.
+        conversation_id:
+          type: [string, "null"]
+          format: uuid
+          description: Set for `chat_request`, null for the order kinds.
+        read_at:
+          type: [string, "null"]
+          format: date-time
+          description: Null until you mark your notifications read.
+        created_at:
+          type: string
+          format: date-time
+
     BlockedUser:
       type: object
       description: |
@@ -3076,6 +3117,55 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /me/notifications:
+    get:
+      tags: [notifications, me]
+      summary: Your recent notifications
+      operationId: getNotifications
+      description: |
+        Newest first, capped at the most recent 30 and unpaginated: this is what
+        happened lately, not an archive.
+
+        A notification carries a `kind` and the ids to link with, never a
+        sentence. The wording is the client's, so it can be read in the reader's
+        language rather than the one the server was written in.
+
+        Exactly one of `order_id` and `conversation_id` is set — the four order
+        kinds point at an order, `chat_request` at a conversation.
+      responses:
+        "200":
+          description: Your recent notifications, newest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /me/notifications/read:
+    post:
+      tags: [notifications, me]
+      summary: Mark every notification read
+      operationId: markNotificationsRead
+      description: |
+        Marks all of your unread notifications read. Idempotent: a second call
+        matches nothing and still answers 204.
+      responses:
+        "204":
+          description: Marked read.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":

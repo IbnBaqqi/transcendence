@@ -141,6 +141,19 @@ export interface UnreadCount {
   unread_count: number;
 }
 
+export type NotificationKind =
+  "order_placed" | "order_handed_over" | "order_cancelled" | "order_resolved" | "chat_request";
+
+export interface Notification {
+  id: string;
+  kind: NotificationKind;
+  listing_title: string;
+  order_id: string | null;
+  conversation_id: string | null;
+  read_at: Timestamp | null;
+  created_at: Timestamp;
+}
+
 // Upper case, matching the backend's own values (auth/auth.go). A union rather
 // than string so a typo or a lower-cased fixture fails the build instead of
 // quietly failing an admin check.

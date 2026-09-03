@@ -25,6 +25,7 @@ type Handler struct {
 	AdminOrder     *service.AdminOrderService
 	AdminUser      *service.AdminUserService
 	Review         *service.ReviewService
+	Notification   *service.NotificationService
 	maxUploadBytes int64
 	cookieSecure   bool
 	oauth          *oauth.Registry
@@ -56,6 +57,7 @@ type Deps struct {
 	AdminOrder   *service.AdminOrderService
 	AdminUser    *service.AdminUserService
 	Review       *service.ReviewService
+	Notification *service.NotificationService
 
 	MaxUploadBytes int64
 	CookieSecure   bool
@@ -82,6 +84,7 @@ func New(d Deps) *Handler {
 		AdminOrder:     d.AdminOrder,
 		AdminUser:      d.AdminUser,
 		Review:         d.Review,
+		Notification:   d.Notification,
 		maxUploadBytes: d.MaxUploadBytes,
 		cookieSecure:   d.CookieSecure,
 		oauth:          d.OAuth,
