@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { Form } from "./Form";
@@ -8,6 +9,8 @@ import { CategorySelect } from "./CategorySelect";
 import { FormTextArea } from "./FormTextArea";
 import { makeAddListingSchema, type AddListingFormValues } from "../../schemas/addListing";
 import { useCategories, flattenCategories } from "../../api/categories";
+import { useCreateListing, useUploadListingImage } from "../../api/listings";
+import { isApiError } from "../../api/client";
 import Button from "../objects/Button.tsx";
 import { ImageDropzone } from "../objects/ImageDropzone";
 import { useImageGallery } from "../../hooks/useImageGallery";
@@ -29,15 +32,13 @@ export function AddListingSection() {
   const form = useForm<AddListingFormValues>({
     resolver: zodResolver(schema),
     mode: "onBlur",
-    // TODO: blocked by #109 Add hooks to fetch data from backend (or maybe local frontend e.g. from Profile.tsx?)
-    // defaultValues: {
-    //   firstname: user.firstname ?? "",
-    //   lastname: user.lastname ?? "",
-    //   phone_number: user.phone_number ?? "",
-    //   location: user.location ?? "",
-    // },
   });
 
+  const navigate = useNavigate();
+  const createListing = useCreateListing();
+  const uploadImage = useUploadListingImage();
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [partial, setPartial] = useState<{ id: string; failed: number } | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const {
     images: photos,
@@ -48,19 +49,35 @@ export function AddListingSection() {
     onError: setPhotoError,
   });
 
-  const handleSubmit = (data: AddListingFormValues) => {
-    console.log(data, photos);
-    // TODO: blocked by #109 Save to API here. A listing has to exist before
-    // images can be uploaded (POST /listings/{id}/images needs the new
-    // listing's id), so once CreateListing is wired up: create the listing
-    // first, then call useUploadListingImage(listing.id) once per file in
-    // `photos` (see src/api/listings.ts).
+  const handleSubmit = async (data: AddListingFormValues) => {
+    setSubmitError(null);
+    setPartial(null);
+
+    let listing;
+    try {
+      listing = await createListing.mutateAsync(data);
+    } catch (err) {
+      setSubmitError(isApiError(err) ? err.message : t("forms.addListing.createFailed"));
+      return;
+    }
+
+    // POST /listings/{id}/images needs an id, so the photos can only go once
+    // the listing exists. allSettled rather than all: the listing is already
+    // created, so one refused file must not look like a failed submission.
+    const results = await Promise.allSettled(
+      photos.map((photo) => uploadImage.mutateAsync({ listingId: listing.id, file: photo.file })),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    if (failed > 0) {
+      // Nothing to roll back - the listing exists. Saying "failed" here would
+      // send someone back to the form to create a duplicate.
+      setPartial({ id: listing.id, failed });
+      return;
+    }
+
+    void navigate(`/listings/${listing.id}`);
   };
-  // TODO: blocked by #109 Add hooks to save data to backend
-  // const { handleSubmit: handleSave, isSubmitting, submitError } = useFormSubmit<AddListingFormValues>(
-  // async (data) => {
-  //   await api.updateAddListing(data); // whatever your API call looks like
-  // }
 
   return (
     <Form form={form} onSubmit={handleSubmit} isEditing={true}>
@@ -126,10 +143,30 @@ export function AddListingSection() {
             />
           </div>
         </div>
-        <Button variant="primary" type="submit" disabled={!form.formState.isValid}>
-          {/* TODO: blocked by #109 Insert API here */}
-          {t("forms.addListing.save")}
+        <Button
+          variant="primary"
+          type="submit"
+          disabled={!form.formState.isValid || createListing.isPending || uploadImage.isPending}
+        >
+          {createListing.isPending || uploadImage.isPending
+            ? t("common.saving")
+            : t("forms.addListing.save")}
         </Button>
+
+        {submitError && (
+          <p role="alert" className="text-berry-500 text-sm">
+            {submitError}
+          </p>
+        )}
+
+        {partial && (
+          <p role="alert" className="text-berry-500 space-x-2 text-sm">
+            <span>{t("forms.addListing.photosFailed", { count: partial.failed })}</span>
+            <Link to={`/listings/${partial.id}`} className="text-accent underline">
+              {t("forms.addListing.viewListing")}
+            </Link>
+          </p>
+        )}
       </div>
     </Form>
   );

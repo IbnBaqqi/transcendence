@@ -52,6 +52,29 @@ export function useSearchListings(params: ListingSearchParams) {
 
 // Listings already carry their images, so this is only for the cases that
 // need them on their own - the upload UI in #90.
+export interface CreateListingInput {
+  title: string;
+  description: string;
+  category: string;
+  price: number;
+  quantity: number;
+  unit: string;
+}
+
+export function useCreateListing() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: CreateListingInput) =>
+      (await api.post<Listing>("/listings", input)).data,
+
+    onSuccess: (listing) => {
+      queryClient.setQueryData(keys.listings.detail(listing.id), listing);
+      return queryClient.invalidateQueries({ queryKey: keys.listings.all });
+    },
+  });
+}
+
 export function useListingImages(id: string) {
   return useQuery({
     queryKey: keys.listings.images(id),
@@ -68,14 +91,16 @@ async function uploadListingImage(listingId: string, file: File): Promise<Listin
   return res.data;
 }
 
-export function useUploadListingImage(listingId: string | undefined) {
+// The id comes per call, not per hook: a listing being created has none until
+// POST /listings answers, and that is the only caller today.
+export function useUploadListingImage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (file: File) => uploadListingImage(listingId as string, file),
-    onSuccess: () => {
-      const id = listingId as string;
-      queryClient.invalidateQueries({ queryKey: keys.listings.images(id) });
-      queryClient.invalidateQueries({ queryKey: keys.listings.detail(id) });
+    mutationFn: ({ listingId, file }: { listingId: string; file: File }) =>
+      uploadListingImage(listingId, file),
+    onSuccess: (_image, { listingId }) => {
+      void queryClient.invalidateQueries({ queryKey: keys.listings.images(listingId) });
+      void queryClient.invalidateQueries({ queryKey: keys.listings.detail(listingId) });
     },
   });
 }
