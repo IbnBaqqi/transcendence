@@ -2,7 +2,13 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tansta
 
 import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
-import type { AvatarResponse, OwnProfile, ProfileUpdateInput, PublicProfile } from "./types";
+import type {
+  AvatarResponse,
+  ChangePasswordInput,
+  OwnProfile,
+  ProfileUpdateInput,
+  PublicProfile,
+} from "./types";
 
 // Defaults to enabled: the profile page reads the 401 from this to decide it is
 // signed out. Callers that already know there is no session pass false, so they
@@ -35,6 +41,14 @@ export function usePublicProfile(id: string | undefined) {
     // The default is retry: 1 (lib/queryClient.ts). A 404 here is a real
     // answer - no point asking twice.
     retry: false,
+  });
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async (input: ChangePasswordInput) => {
+      await api.post("/me/password", input, { withCredentials: true });
+    },
   });
 }
 

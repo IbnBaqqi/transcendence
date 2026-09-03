@@ -16,7 +16,14 @@ vi.mock("../api/profile");
 vi.mock("../api/follows");
 vi.mock("../providers/modalContext", () => ({ useModal: vi.fn() }));
 
-const VIEWER: User = { id: BUYER_ID, username: "tester", email: "t@example.com", role: "user" };
+const VIEWER: User = {
+  id: BUYER_ID,
+  username: "tester",
+  email: "t@example.com",
+  role: "user",
+  has_password: true,
+  providers: [],
+};
 const SELLER = makePublicProfile({ id: SELLER_ID, username: "mushroom_matti" });
 
 beforeEach(() => {

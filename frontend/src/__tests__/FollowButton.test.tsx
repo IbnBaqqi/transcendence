@@ -24,7 +24,14 @@ type Mutation = ReturnType<typeof useFollow>;
 const stub = (mutateAsync: unknown, isPending = false) =>
   ({ mutateAsync, isPending }) as unknown as Mutation;
 
-const VIEWER: User = { id: BUYER_ID, username: "tester", email: "t@example.com", role: "user" };
+const VIEWER: User = {
+  id: BUYER_ID,
+  username: "tester",
+  email: "t@example.com",
+  role: "user",
+  has_password: true,
+  providers: [],
+};
 
 const SELLER_ROW: ChatUser = {
   id: SELLER_ID,

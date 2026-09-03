@@ -21,6 +21,8 @@ const VIEWER: User = {
   username: "tester",
   email: "t@example.com",
   role: "user",
+  has_password: true,
+  providers: [],
 };
 
 beforeEach(() => {
