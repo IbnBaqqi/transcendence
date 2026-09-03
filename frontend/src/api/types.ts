@@ -141,6 +141,19 @@ export interface UnreadCount {
   unread_count: number;
 }
 
+export type NotificationKind =
+  "order_placed" | "order_handed_over" | "order_cancelled" | "order_resolved" | "chat_request";
+
+export interface Notification {
+  id: string;
+  kind: NotificationKind;
+  listing_title: string;
+  order_id: string | null;
+  conversation_id: string | null;
+  read_at: Timestamp | null;
+  created_at: Timestamp;
+}
+
 // Auth Foundation additions. Mirrors backend UserInfo.
 export interface User {
   id: string;
