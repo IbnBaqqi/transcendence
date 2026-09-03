@@ -23,4 +23,20 @@ describe("query keys", () => {
     expect(keys.listings.detail("a")).not.toEqual(keys.listings.detail("b"));
     expect(keys.orders.detail("a")).not.toEqual(keys.orders.detail("b"));
   });
+
+  // The admin order list is filtered and paged, so the query string has to be
+  // part of the key. Without it, page 2 overwrites page 1 in the cache and
+  // switching a filter shows the previous filter's rows.
+  test("two filtered admin order views get different list keys", () => {
+    expect(keys.adminOrders.list("stuck=true")).not.toEqual(
+      keys.adminOrders.list("status=pending"),
+    );
+    expect(keys.adminOrders.list("page=1")).not.toEqual(keys.adminOrders.list("page=2"));
+  });
+
+  test("an admin order list key sits under its namespace", () => {
+    expect(keys.adminOrders.list("stuck=true").slice(0, keys.adminOrders.all.length)).toEqual([
+      ...keys.adminOrders.all,
+    ]);
+  });
 });
