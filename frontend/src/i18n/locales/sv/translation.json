@@ -198,7 +198,20 @@
     },
     "search": {
       "title": "Sök",
-      "stub": "Sök och filter - inte byggt ännu (#25)."
+      "stub": "Sök och filter - inte byggt ännu (#25).",
+      "keywordLabel": "Sök",
+      "categoryLabel": "Kategori",
+      "allCategories": "Alla kategorier",
+      "minPriceLabel": "Min pris",
+      "maxPriceLabel": "Max pris",
+      "locationLabel": "Plats",
+      "locationPlaceholder": "t.ex. Helsingfors",
+      "clearAll": "Rensa alla",
+      "removeFilter": "Ta bort filtret {{name}}",
+      "chips": {
+        "minPrice": "Min {{value}} €",
+        "maxPrice": "Max {{value}} €"
+      }
     },
     "dashboard": {
       "title": "Säljarens panel",

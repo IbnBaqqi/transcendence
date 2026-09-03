@@ -198,7 +198,20 @@
     },
     "search": {
       "title": "Search",
-      "stub": "Search & filters - not built yet (#25)."
+      "stub": "Search & filters - not built yet (#25).",
+      "keywordLabel": "Search",
+      "categoryLabel": "Category",
+      "allCategories": "All categories",
+      "minPriceLabel": "Min price",
+      "maxPriceLabel": "Max price",
+      "locationLabel": "Location",
+      "locationPlaceholder": "e.g. Helsinki",
+      "clearAll": "Clear all",
+      "removeFilter": "Remove {{name}} filter",
+      "chips": {
+        "minPrice": "Min €{{value}}",
+        "maxPrice": "Max €{{value}}"
+      }
     },
     "dashboard": {
       "title": "Seller Dashboard",

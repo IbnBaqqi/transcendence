@@ -198,7 +198,20 @@
     },
     "search": {
       "title": "Haku",
-      "stub": "Haku ja suodattimet - ei vielä rakennettu (#25)."
+      "stub": "Haku ja suodattimet - ei vielä rakennettu (#25).",
+      "keywordLabel": "Haku",
+      "categoryLabel": "Kategoria",
+      "allCategories": "Kaikki kategoriat",
+      "minPriceLabel": "Vähimmäishinta",
+      "maxPriceLabel": "Enimmäishinta",
+      "locationLabel": "Sijainti",
+      "locationPlaceholder": "esim. Helsinki",
+      "clearAll": "Tyhjennä kaikki",
+      "removeFilter": "Poista suodatin {{name}}",
+      "chips": {
+        "minPrice": "Väh. {{value}} €",
+        "maxPrice": "Enint. {{value}} €"
+      }
     },
     "dashboard": {
       "title": "Myyjän hallintapaneeli",
