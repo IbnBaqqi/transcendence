@@ -44,6 +44,7 @@ export function AddListingSection() {
     images: photos,
     addFiles: addPhotos,
     removeImage: removePhoto,
+    updateImage: updatePhoto,
   } = useImageGallery({
     maxFiles: MAX_LISTING_IMAGES,
     onError: setPhotoError,
@@ -61,13 +62,26 @@ export function AddListingSection() {
       return;
     }
 
-    // POST /listings/{id}/images needs an id, so the photos can only go once
-    // the listing exists. allSettled rather than all: the listing is already
-    // created, so one refused file must not look like a failed submission.
-    const results = await Promise.allSettled(
-      photos.map((photo) => uploadImage.mutateAsync({ listingId: listing.id, file: photo.file })),
-    );
-    const failed = results.filter((r) => r.status === "rejected").length;
+    // Sequential: the server assigns position by arrival order
+    // (backend/sql/queries/listing_images.sql), so parallel uploads scramble the gallery.
+    let failed = 0;
+    for (const photo of photos) {
+      updatePhoto(photo.id, { status: "uploading" });
+      try {
+        const image = await uploadImage.mutateAsync({
+          listingId: listing.id,
+          file: photo.file,
+          onProgress: (progress) => updatePhoto(photo.id, { progress }),
+        });
+        updatePhoto(photo.id, { status: "uploaded", serverId: image.id });
+      } catch (err) {
+        failed += 1;
+        updatePhoto(photo.id, {
+          status: "error",
+          error: isApiError(err) ? err.message : t("dropzone.uploadFailed"),
+        });
+      }
+    }
 
     if (failed > 0) {
       // Nothing to roll back - the listing exists. Saying "failed" here would

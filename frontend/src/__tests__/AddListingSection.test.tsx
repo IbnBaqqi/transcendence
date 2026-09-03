@@ -38,7 +38,9 @@ const TREE: Category[] = [
 
 beforeEach(() => {
   createListing.mockReset().mockResolvedValue(makeListing({ id: "new-listing" }));
-  uploadImage.mockReset().mockResolvedValue(undefined);
+  uploadImage
+    .mockReset()
+    .mockResolvedValue({ id: "img-1", url: "/uploads/img-1.jpg", position: 0 });
   navigate.mockReset();
   vi.mocked(useCreateListing).mockReturnValue({
     mutateAsync: createListing,

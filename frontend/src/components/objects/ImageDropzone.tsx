@@ -155,8 +155,29 @@ export function ImageDropzone({
               <img src={image.previewUrl} alt="" className="h-full w-full object-cover" />
 
               {image.status === "uploading" && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                  <span className="text-xs font-medium text-white">{t("dropzone.uploading")}</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/40 px-2">
+                  {image.progress === undefined ? (
+                    <span className="text-xs font-medium text-white">
+                      {t("dropzone.uploading")}
+                    </span>
+                  ) : (
+                    <>
+                      <div
+                        role="progressbar"
+                        aria-label={t("dropzone.uploading")}
+                        aria-valuenow={image.progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        className="h-1 w-full overflow-hidden rounded-full bg-white/30"
+                      >
+                        <div
+                          className="bg-accent h-full transition-[width] duration-150"
+                          style={{ width: `${image.progress}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-medium text-white">{image.progress}%</span>
+                    </>
+                  )}
                 </div>
               )}
 

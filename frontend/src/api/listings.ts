@@ -90,10 +90,19 @@ export function useListingImages(id: string) {
   });
 }
 
-async function uploadListingImage(listingId: string, file: File): Promise<ListingImage> {
+async function uploadListingImage(
+  listingId: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<ListingImage> {
   const body = new FormData();
   body.append("image", file);
-  const res = await api.post<ListingImage>(apiPath`/listings/${listingId}/images`, body);
+  const res = await api.post<ListingImage>(apiPath`/listings/${listingId}/images`, body, {
+    // e.total is undefined when the body length is unknown - nothing to report then.
+    onUploadProgress: (e) => {
+      if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
+    },
+  });
   return res.data;
 }
 
@@ -102,8 +111,15 @@ async function uploadListingImage(listingId: string, file: File): Promise<Listin
 export function useUploadListingImage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ listingId, file }: { listingId: string; file: File }) =>
-      uploadListingImage(listingId, file),
+    mutationFn: ({
+      listingId,
+      file,
+      onProgress,
+    }: {
+      listingId: string;
+      file: File;
+      onProgress?: (percent: number) => void;
+    }) => uploadListingImage(listingId, file, onProgress),
     onSuccess: (_image, { listingId }) => {
       void queryClient.invalidateQueries({ queryKey: keys.listings.images(listingId) });
       void queryClient.invalidateQueries({ queryKey: keys.listings.detail(listingId) });

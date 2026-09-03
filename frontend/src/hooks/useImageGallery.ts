@@ -12,9 +12,10 @@ export interface GalleryImage {
   previewUrl: string;
   status: GalleryImageStatus;
   error?: string;
-  /** Populated once a real upload succeeds against the backend. */
-  serverId?: number;
-  serverUrl?: string;
+  /** 0-100 while uploading; absent when the total size is unknown. */
+  progress?: number;
+  /** The row's UUID once the upload succeeds - what DELETE needs. */
+  serverId?: string;
 }
 
 export const DEFAULT_ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
