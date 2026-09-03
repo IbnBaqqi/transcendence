@@ -248,7 +248,9 @@
       "stub": "Listing detail page - not built yet (#21)."
     },
     "notifications": {
-      "title": "Notifications"
+      "title": "Notifications",
+      "signedOut": "Sign in to see your notifications.",
+      "error": "Couldn't load your notifications."
     },
     "profile": {
       "title": "Profile & Settings",

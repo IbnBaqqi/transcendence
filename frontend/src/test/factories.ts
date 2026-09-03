@@ -2,6 +2,7 @@ import type {
   Conversation,
   ConversationListItem,
   Listing,
+  Notification,
   Order,
   PublicProfile,
 } from "../api/types";
@@ -102,6 +103,19 @@ export function makeConversationListItem(
     ...base,
     last_message: null,
     unread_count: 0,
+    ...overrides,
+  };
+}
+
+export function makeNotification(overrides: Partial<Notification> = {}): Notification {
+  return {
+    id: "01a02305-b81c-7dcb-86a0-7f75e33e0af4",
+    kind: "order_placed",
+    listing_title: "Golden Chanterelles",
+    order_id: "01a02305-b81c-7dcb-86a0-7f75e33e0af3",
+    conversation_id: null,
+    read_at: null,
+    created_at: "1970-01-01T00:00:00Z",
     ...overrides,
   };
 }

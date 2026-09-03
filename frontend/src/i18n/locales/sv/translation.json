@@ -248,7 +248,9 @@
       "stub": "Annonssida - inte byggt ännu (#21)."
     },
     "notifications": {
-      "title": "Meddelanden"
+      "title": "Meddelanden",
+      "signedOut": "Logga in för att se dina notiser.",
+      "error": "Kunde inte ladda dina notiser."
     },
     "profile": {
       "title": "Profil och inställningar",

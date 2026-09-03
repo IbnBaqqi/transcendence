@@ -248,7 +248,9 @@
       "stub": "Ilmoitussivu - ei vielä rakennettu (#21)."
     },
     "notifications": {
-      "title": "Ilmoitukset"
+      "title": "Ilmoitukset",
+      "signedOut": "Kirjaudu sisään nähdäksesi ilmoituksesi.",
+      "error": "Ilmoitusten lataaminen ei onnistunut."
     },
     "profile": {
       "title": "Profiili ja asetukset",
