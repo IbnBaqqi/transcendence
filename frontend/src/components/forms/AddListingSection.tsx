@@ -146,11 +146,12 @@ export function AddListingSection() {
         <Button
           variant="primary"
           type="submit"
-          disabled={!form.formState.isValid || createListing.isPending || uploadImage.isPending}
+          // partial means the listing was created and only its photos failed.
+          // Leaving submit live would let a second click create the duplicate
+          // this whole branch exists to avoid.
+          disabled={!form.formState.isValid || form.formState.isSubmitting || partial !== null}
         >
-          {createListing.isPending || uploadImage.isPending
-            ? t("common.saving")
-            : t("forms.addListing.save")}
+          {form.formState.isSubmitting ? t("common.saving") : t("forms.addListing.save")}
         </Button>
 
         {submitError && (

@@ -177,5 +177,11 @@ describe("AddListingSection", () => {
       "/listings/new-listing",
     );
     expect(navigate).not.toHaveBeenCalled();
+
+    // The listing exists, so the form must stop offering to create another -
+    // the message explains what happened, but a live button still invites the
+    // duplicate this branch is here to avoid.
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    expect(createListing).toHaveBeenCalledTimes(1);
   });
 });
