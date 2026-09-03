@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
 import Home from "../pages/Home";
 import { useSearchListings } from "../api/listings";
@@ -47,22 +48,31 @@ beforeEach(() => {
   );
 });
 
+// The cards are links now, so every render needs a router in scope.
+function renderHome() {
+  return render(
+    <MemoryRouter>
+      <Home />
+    </MemoryRouter>,
+  );
+}
+
 describe("Home", () => {
   test("shows skeleton placeholders while the query is pending", () => {
     mockListings({ data: undefined, isPending: true, isError: false });
-    const { container } = render(<Home />);
+    const { container } = renderHome();
     expect(container.querySelectorAll(".skeleton")).toHaveLength(3);
   });
 
   test("shows an error message when the query fails", () => {
     mockListings({ data: undefined, isPending: false, isError: true });
-    render(<Home />);
+    renderHome();
     expect(screen.getByText(/couldn't load listings/i)).toBeInTheDocument();
   });
 
   test("shows an empty message when there are no listings", () => {
     mockListings({ data: page([]), isPending: false, isError: false });
-    render(<Home />);
+    renderHome();
     expect(screen.getByText("No listings yet.")).toBeInTheDocument();
   });
 
@@ -72,20 +82,20 @@ describe("Home", () => {
       isPending: false,
       isError: false,
     });
-    render(<Home />);
+    renderHome();
     // Truncation was invisible before: one page is all there is until #25.
     expect(screen.getByText(/showing 1 of 47/i)).toBeInTheDocument();
   });
 
   test("says nothing when the page is the whole set", () => {
     mockListings({ data: page([sample]), isPending: false, isError: false });
-    render(<Home />);
+    renderHome();
     expect(screen.queryByText(/showing/i)).not.toBeInTheDocument();
   });
 
   test("renders a card for each listing", () => {
     mockListings({ data: page([sample, secondSample]), isPending: false, isError: false });
-    render(<Home />);
+    renderHome();
 
     // both titles present -> we mapped the list, not just listings[0]
     expect(screen.getByText("Golden Chanterelles")).toBeInTheDocument();
