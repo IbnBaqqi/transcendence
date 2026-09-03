@@ -1,7 +1,7 @@
 import { AxiosError, AxiosHeaders } from "axios";
 
 import { isApiError, toApiError } from "../api/client";
-import { toQueryString } from "../api/listings";
+import { PAGE_SIZE, toQueryString, toSearchParams } from "../api/listings";
 import i18next from "../i18n";
 
 // Whatever toApiError accepts, without exporting the wire type just for a test.
@@ -119,3 +119,33 @@ describe("toQueryString", () => {
     expect(toQueryString({})).toBe("");
   });
 });
+
+describe("toSearchParams", () => {
+  // The pair has to survive a round trip: this is what makes a shared or
+  // reloaded URL reproduce the search it came from.
+  test("round-trips the params toQueryString wrote", () => {
+    const params = { keyword: "chanterelle", category: "mushrooms", min_price: 5, page: 2 };
+
+    expect(toSearchParams(new URLSearchParams(toQueryString(params)))).toEqual({
+      ...params,
+      limit: PAGE_SIZE,
+    });
+  });
+
+  // A hand-edited URL is the reason this function exists.
+  test("drops values the backend would reject", () => {
+    const search = new URLSearchParams("min_price=abc&max_price=-3&sort=cheapest");
+    const params = toSearchParams(search);
+
+    expect(params.min_price).toBeUndefined();
+    expect(params.max_price).toBeUndefined();
+    expect(params.sort).toBeUndefined();
+  });
+
+  test("falls back to page 1 when the page is missing or nonsense", () => {
+    expect(toSearchParams(new URLSearchParams("")).page).toBe(1);
+    expect(toSearchParams(new URLSearchParams("page=0")).page).toBe(1);
+    expect(toSearchParams(new URLSearchParams("page=banana")).page).toBe(1);
+  });
+});
+

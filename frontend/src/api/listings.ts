@@ -4,13 +4,23 @@ import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
 import type { Listing, ListingImage, Paginated } from "./types";
 
+// The runtime list is the source of truth and the type is derived from it, so
+// validating an unknown string and typing a known one can't disagree.
+// `as const` freezes it to the literal strings instead of widening to string[].
+export const LISTING_SORTS = ["newest", "oldest", "price_asc", "price_desc"] as const;
+
 // Mirrors the backend's sort allow-list, so a typo is a compile error rather
 // than a 400 at runtime.
-export type ListingSort = "newest" | "oldest" | "price_asc" | "price_desc";
+export type ListingSort = (typeof LISTING_SORTS)[number];
+
+// One page of results. Home and User currently hardcode this; they adopt the
+// constant when they get pagination controls.
+export const PAGE_SIZE = 20;
 
 export interface ListingSearchParams {
   keyword?: string;
   category?: string;
+  tag?: string;
   seller_id?: string;
   min_price?: number;
   max_price?: number;
@@ -31,6 +41,40 @@ export function toQueryString(params: ListingSearchParams): string {
   search.sort();
 
   return search.toString();
+}
+
+// The other direction: a URL's query string back into typed params.
+//
+// This is the trust boundary. Anything in `?...` was typed, pasted or edited by
+// a person, so a value the backend would reject is dropped here rather than
+// forwarded for a 400 - a bad ?sort= should show unsorted results, not an error.
+export function toSearchParams(search: URLSearchParams): ListingSearchParams {
+  // Number("") and Number(null) are both 0, so the empty cases go first.
+  const positive = (key: string): number | undefined => {
+    const raw = search.get(key);
+    if (raw === null || raw.trim() === "") return undefined;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= 0 ? value : undefined;
+  };
+
+  const text = (key: string) => search.get(key) || undefined;
+
+  const sort = search.get("sort");
+  const page = positive("page");
+
+  return {
+    keyword: text("keyword"),
+    category: text("category"),
+    tag: text("tag"),
+    location: text("location"),
+    min_price: positive("min_price"),
+    max_price: positive("max_price"),
+    // .includes on a readonly tuple won't accept a plain string, so the cast
+    // asks the question; the result of the check is what makes it true.
+    sort: LISTING_SORTS.includes(sort as ListingSort) ? (sort as ListingSort) : undefined,
+    page: page && page >= 1 ? Math.floor(page) : 1,
+    limit: PAGE_SIZE,
+  };
 }
 
 export function useListing(id: string) {
