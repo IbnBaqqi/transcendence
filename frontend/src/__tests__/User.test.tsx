@@ -300,7 +300,9 @@ describe("User", () => {
     });
 
     expect(screen.queryByRole("button", { name: /message user/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Follow" })).not.toBeInTheDocument();
     expect(screen.getByText(/you have blocked this person/i)).toBeInTheDocument();
+    // Follow stays: the backend permits it on a blocked user, and the friends
+    // list offers it for the same person, so hiding it here only disagreed.
+    expect(screen.getByRole("button", { name: "Follow" })).toBeInTheDocument();
   });
 });

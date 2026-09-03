@@ -97,15 +97,17 @@ export default function User() {
         </div>
       </div>
 
-      {/* Messaging a blocked person is a 403 and following one is incoherent,
-          so blocking removes both rather than leaving dead affordances. */}
       <div className="flex flex-wrap items-start gap-3">
+        {/* openChat() can't target a user yet - that arrives with #88 - so this
+            opens the inbox. Hidden once blocked because sending would 403.
+            Following is not hidden: the backend has no block check on it, and
+            the friends list keeps offering it for the same person. */}
         {!isSelf && !isBlocked && (
           <Button variant="secondary" onClick={() => openChat()}>
             {t("pages.user.messageUser")}
           </Button>
         )}
-        {!isBlocked && <FollowButton userId={profile.id} />}
+        <FollowButton userId={profile.id} />
         <BlockButton userId={profile.id} />
       </div>
 
