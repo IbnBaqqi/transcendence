@@ -14,7 +14,14 @@ vi.mock("../api/conversations", () => ({ useStartConversation: vi.fn() }));
 
 const mutateAsync = vi.fn();
 
-const VIEWER: User = { id: BUYER_ID, username: "buyer", email: "b@x.test", role: "user" };
+const VIEWER: User = {
+  id: BUYER_ID,
+  username: "buyer",
+  email: "b@x.test",
+  role: "user",
+  has_password: true,
+  providers: [],
+};
 
 beforeEach(() => {
   mutateAsync.mockReset().mockResolvedValue(makeConversation({ id: "c-new" }));

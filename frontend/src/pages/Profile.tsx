@@ -2,9 +2,10 @@
 //
 // Username and email are identity - the API offers no way to change them, so
 // they render read-only. Contact details and bio are editable in their
-// sections below (PATCH /me/profile). Password change has no backend endpoint
-// yet (#32/#33) and the preference toggles have no matching settings fields,
-// so they stay commented out below until then.
+// sections below (PATCH /me/profile). Password change is handled via
+// POST /me/password (requires the current password). The preference toggles
+// have no matching settings fields, so they stay commented out below until
+// then.
 //
 // This page is only viewable for the logged-in user of the same profile.
 // To view another user's profile we have User.tsx
@@ -24,7 +25,7 @@ import { useTranslation } from "react-i18next";
 export default function Profile() {
   const { t } = useTranslation();
   const { openModal } = useModal();
-  const { logout } = useAuth();
+  const { logout, user, isLoading: authLoading } = useAuth();
 
   const { data: profile, isLoading, error } = useOwnProfile();
 
@@ -92,7 +93,10 @@ export default function Profile() {
         <p className="text-berry-500 text-sm">
           {isApiError(error) ? error.message : t("common.somethingWentWrong")}
         </p>
-      ) : isLoading || !profile ? (
+      ) : authLoading || isLoading || !profile ? (
+        // authLoading too: has_password decides whether the password section
+        // renders, and AuthProvider reports user as null until the session is
+        // restored - so without this a password account is told it has none.
         <p className="text-muted text-sm">{t("common.loading")}</p>
       ) : (
         <>
@@ -137,10 +141,14 @@ export default function Profile() {
             </h2>
             <ContactDetailsSection />
           </div>
-          <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">{t("pages.profile.password")}</h2>
-            <ChangePasswordSection />
-          </div>
+          {/* Password section only makes sense for accounts that sign in with
+            a password - a provider-only (OAuth) account has nothing to change. */}
+          {user?.has_password && (
+            <div className="space-y-1">
+              <h2 className="text-foreground text-lg font-bold">{t("pages.profile.password")}</h2>
+              <ChangePasswordSection />
+            </div>
+          )}
           <div className="space-y-1">
             <h2 className="text-foreground text-lg font-bold">{t("pages.profile.bio")}</h2>
             <BioSection />

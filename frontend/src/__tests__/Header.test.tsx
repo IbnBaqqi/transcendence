@@ -62,7 +62,14 @@ test("offers login when signed out", () => {
 
 test("shows who is signed in", () => {
   renderHeader({
-    user: { id: "u1", username: "forager", email: "f@example.com", role: "USER" },
+    user: {
+      id: "u1",
+      username: "forager",
+      email: "f@example.com",
+      role: "USER",
+      has_password: true,
+      providers: [],
+    },
   });
   // Single initial from the username - names live on the profile.
   expect(screen.getByText("F")).toBeInTheDocument();
@@ -78,7 +85,16 @@ test("places the language switcher at the far left of the nav", () => {
   expect(switcher.compareDocumentPosition(home) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
-const SIGNED_IN = { user: { id: "u1", username: "or99", email: "o@example.com", role: "user" } };
+const SIGNED_IN = {
+  user: {
+    id: "u1",
+    username: "or99",
+    email: "o@example.com",
+    role: "user",
+    has_password: true,
+    providers: [],
+  },
+};
 
 test("wears the signed-in user's picture when they have one", () => {
   vi.mocked(useOwnProfile).mockReturnValue({

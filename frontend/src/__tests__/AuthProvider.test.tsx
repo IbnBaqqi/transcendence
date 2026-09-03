@@ -12,7 +12,14 @@ const mockedAuthApi = vi.mocked(authApi);
 
 const session = {
   access_token: "tok",
-  user: { id: "u1", username: "forager", email: "f@example.com", role: "USER" as const },
+  user: {
+    id: "u1",
+    username: "forager",
+    email: "f@example.com",
+    role: "USER" as const,
+    has_password: true,
+    providers: [] as string[],
+  },
 };
 
 // Stands in for a page's own query (e.g. Profile's useOwnProfile) that was

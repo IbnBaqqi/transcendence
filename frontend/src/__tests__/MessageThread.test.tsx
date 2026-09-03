@@ -54,7 +54,14 @@ function makeMessage(overrides: Partial<Message> = {}): Message {
   };
 }
 
-const VIEWER: User = { id: BUYER_ID, username: "buyer", email: "b@x.test", role: "user" };
+const VIEWER: User = {
+  id: BUYER_ID,
+  username: "buyer",
+  email: "b@x.test",
+  role: "user",
+  has_password: true,
+  providers: [],
+};
 
 function renderThread(conversation: Conversation, messages: Message[] = [], viewer = VIEWER) {
   vi.mocked(useConversation).mockReturnValue({

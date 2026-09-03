@@ -20,7 +20,14 @@ vi.mock("../components/chat/MessageThread", () => ({
 
 type Query = ReturnType<typeof useConversations>;
 
-const VIEWER: User = { id: BUYER_ID, username: "buyer", email: "b@x.test", role: "user" };
+const VIEWER: User = {
+  id: BUYER_ID,
+  username: "buyer",
+  email: "b@x.test",
+  role: "user",
+  has_password: true,
+  providers: [],
+};
 
 function renderChat(query: Partial<Query>, user: User | null = VIEWER) {
   vi.mocked(useConversations).mockReturnValue(query as Query);

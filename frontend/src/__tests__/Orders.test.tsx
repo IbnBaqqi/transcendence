@@ -41,6 +41,8 @@ const VIEWER_USER: User = {
   username: "tester",
   email: "t@example.com",
   role: "user",
+  has_password: true,
+  providers: [],
 };
 
 function authStub(user: User | null): AuthContextValue {
