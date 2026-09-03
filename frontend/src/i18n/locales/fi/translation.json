@@ -195,7 +195,11 @@
     "working": "Käsitellään…",
     "reasonForUser": "Syy (näytetään käyttäjälle)",
     "noteOptional": "Huomautus (valinnainen)",
-    "actionFailed": "Tallentaminen ei onnistunut."
+    "actionFailed": "Tallentaminen ei onnistunut.",
+    "delete": "Poista",
+    "deleteWarning": "Tili anonymisoidaan, ei poisteta. Tilaukset säilyvät molemmilla puolilla ja toinen osapuoli säilyttää oman kopionsa keskusteluista.",
+    "confirmUsername": "Kirjoita {{username}} vahvistaaksesi",
+    "deleteReason": "Syy (jää lokiin)"
   },
   "orders": {
     "title": "Tilaukset",

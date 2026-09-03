@@ -2,13 +2,14 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { AccountActions } from "../components/objects/AccountActions";
-import { useReinstateUser, useSuspendUser } from "../api/adminUsers";
+import { useDeleteUser, useReinstateUser, useSuspendUser } from "../api/adminUsers";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import type { AdminUser, User } from "../api/types";
 
 vi.mock("../api/adminUsers", () => ({
   useSuspendUser: vi.fn(),
   useReinstateUser: vi.fn(),
+  useDeleteUser: vi.fn(),
 }));
 
 const TARGET_ID = "9c4e1b7a-2d63-4f80-8e15-77b2a4c9d0e6";
@@ -16,6 +17,7 @@ const ADMIN_ID = "3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34";
 
 const suspendMutate = vi.fn();
 const reinstateMutate = vi.fn();
+const deleteMutate = vi.fn();
 
 function stub(overrides: Record<string, unknown> = {}) {
   return {
@@ -32,6 +34,9 @@ function setMutations(overrides: Record<string, unknown> = {}) {
   );
   vi.mocked(useReinstateUser).mockReturnValue(
     stub({ mutate: reinstateMutate }) as unknown as ReturnType<typeof useReinstateUser>,
+  );
+  vi.mocked(useDeleteUser).mockReturnValue(
+    stub({ mutate: deleteMutate }) as unknown as ReturnType<typeof useDeleteUser>,
   );
 }
 
@@ -79,13 +84,14 @@ function renderActions(account: AdminUser, viewer: User | null = VIEWER) {
 // error would be too late.
 test("offers nothing on your own row", () => {
   renderActions(makeAccount({ id: ADMIN_ID }));
-  expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  // Every button, not just the first: delete is the one that cannot be undone.
+  expect(screen.queryAllByRole("button")).toHaveLength(0);
 });
 
 // Deletion is the one state with no way back.
 test("offers nothing on a deleted account", () => {
   renderActions(makeAccount({ status: "deleted" }));
-  expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  expect(screen.queryAllByRole("button")).toHaveLength(0);
 });
 
 test("offers suspend for an active account, and not reinstate", () => {
@@ -152,4 +158,93 @@ test("surfaces the server's own message on a conflict", () => {
   setMutations({ isError: true, error: { status: 409, message: "That is the last active admin" } });
   renderActions(makeAccount());
   expect(screen.getByRole("alert")).toHaveTextContent("That is the last active admin");
+});
+
+describe("deleting", () => {
+  async function openDelete(account = makeAccount()) {
+    renderActions(account);
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+  }
+
+  // In a list of adjacent rows a yes/no dialog confirms the act, never the
+  // target. Naming the account is what makes the admin look at which row it is.
+  test("names the account it is about", async () => {
+    await openDelete();
+    expect(screen.getByLabelText("Type forager to confirm")).toBeInTheDocument();
+  });
+
+  test("says the account is anonymised rather than erased", async () => {
+    await openDelete();
+    expect(screen.getByText(/anonymised, not erased/)).toBeInTheDocument();
+  });
+
+  test("stays disabled until the username is typed", async () => {
+    await openDelete();
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Reason (kept in the audit trail)" }),
+      "spam",
+    );
+    expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
+  });
+
+  test("a case-only mismatch is not a match", async () => {
+    await openDelete();
+    await userEvent.type(screen.getByLabelText("Type forager to confirm"), "Forager");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Reason (kept in the audit trail)" }),
+      "spam",
+    );
+    expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
+  });
+
+  test("a matching name still needs a reason", async () => {
+    await openDelete();
+    await userEvent.type(screen.getByLabelText("Type forager to confirm"), "forager");
+    expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
+  });
+
+  test("deletes once the name matches and a reason is given", async () => {
+    await openDelete();
+    await userEvent.type(screen.getByLabelText("Type forager to confirm"), "forager");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Reason (kept in the audit trail)" }),
+      "Repeatedly listing items they do not have",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(deleteMutate).toHaveBeenCalledWith(
+      {
+        userId: TARGET_ID,
+        username: "forager",
+        reason: "Repeatedly listing items they do not have",
+      },
+      expect.anything(),
+    );
+  });
+
+  // The point of trimming is that a copy-pasted name with surrounding space
+  // still matches - and then the request must carry the value that matched,
+  // not the raw one, or the server answers 400 for a name typed correctly.
+  test("sends the name it compared, not the raw input", async () => {
+    await openDelete();
+    await userEvent.type(screen.getByLabelText("Type forager to confirm"), "  forager  ");
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Reason (kept in the audit trail)" }),
+      "spam",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(deleteMutate).toHaveBeenCalledWith(
+      { userId: TARGET_ID, username: "forager", reason: "spam" },
+      expect.anything(),
+    );
+  });
+
+  // A suspended account can still be deleted - suspension is not a terminal
+  // state, so both actions stay on offer.
+  test("is offered for a suspended account too", () => {
+    renderActions(makeAccount({ status: "suspended" }));
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reinstate" })).toBeInTheDocument();
+  });
 });

@@ -195,7 +195,11 @@
     "working": "Behandlar…",
     "reasonForUser": "Orsak (visas för dem)",
     "noteOptional": "Anteckning (valfri)",
-    "actionFailed": "Kunde inte spara det."
+    "actionFailed": "Kunde inte spara det.",
+    "delete": "Radera",
+    "deleteWarning": "Kontot anonymiseras, inte raderas. Beställningar finns kvar på båda sidor och motparten behåller sin kopia av konversationer.",
+    "confirmUsername": "Skriv {{username}} för att bekräfta",
+    "deleteReason": "Orsak (sparas i loggen)"
   },
   "orders": {
     "title": "Beställningar",

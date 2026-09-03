@@ -3,22 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import AdminUsers from "../pages/AdminUsers";
-import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { useAdminUsers } from "../api/adminUsers";
 import type { AdminUser, PaginatedAdminUsers } from "../api/types";
 
-vi.mock("../api/adminUsers", () => ({
-  useAdminUsers: vi.fn(),
-  // The rows render AccountActions. Mocking by listing exports means a hook
-  // added to that module silently un-mocks itself, which is how this broke.
-  useSuspendUser: vi.fn(() => ({ mutate: vi.fn(), isPending: false, isError: false, error: null })),
-  useReinstateUser: vi.fn(() => ({
-    mutate: vi.fn(),
-    isPending: false,
-    isError: false,
-    error: null,
-  })),
-}));
+vi.mock("../api/adminUsers", () => ({ useAdminUsers: vi.fn() }));
+
+// The whole component, not the hooks behind it. These tests are about the list;
+// stubbing AccountActions' hooks one at a time meant every hook added to it
+// broke this file. AccountActions has its own tests.
+vi.mock("../components/objects/AccountActions", () => ({ AccountActions: () => null }));
 
 function makeUser(overrides: Partial<AdminUser> = {}): AdminUser {
   return {
@@ -46,41 +39,21 @@ const url = () => screen.getByTestId("url").textContent;
 
 function renderPage(query: Partial<ReturnType<typeof useAdminUsers>>, url = "/admin/users") {
   vi.mocked(useAdminUsers).mockReturnValue(query as ReturnType<typeof useAdminUsers>);
-  // AccountActions reads the signed-in admin to hide the buttons on their own
-  // row, so the page needs a session even though these tests are about the list.
-  const auth: AuthContextValue = {
-    user: {
-      id: "3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34",
-      username: "moderator",
-      email: "m@example.com",
-      role: "ADMIN",
-      has_password: true,
-      providers: [],
-    },
-    isLoading: false,
-    login: vi.fn(),
-    signup: vi.fn(),
-    logout: vi.fn(),
-    restoreSession: vi.fn(),
-  };
-
   render(
-    <AuthContext.Provider value={auth}>
-      <MemoryRouter initialEntries={[url]}>
-        <Routes>
-          <Route
-            path="/admin/users"
-            element={
-              <>
-                <AdminUsers />
-                <ShowUrl />
-              </>
-            }
-          />
-        </Routes>
-        ,
-      </MemoryRouter>
-    </AuthContext.Provider>,
+    <MemoryRouter initialEntries={[url]}>
+      <Routes>
+        <Route
+          path="/admin/users"
+          element={
+            <>
+              <AdminUsers />
+              <ShowUrl />
+            </>
+          }
+        />
+      </Routes>
+      ,
+    </MemoryRouter>,
   );
 }
 
