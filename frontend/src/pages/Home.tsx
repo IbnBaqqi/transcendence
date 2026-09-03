@@ -1,15 +1,18 @@
-import { useSearchListings } from "../api/listings";
+import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+
+import { PAGE_SIZE, useSearchListings } from "../api/listings";
 import { useLocalizedCategoryNames } from "../api/categories";
 import { ListingCard } from "../components/objects/ListingCard";
+import { Pagination } from "../components/objects/Pagination";
 import { Skeleton } from "../components/objects/Skeleton";
-import { useTranslation } from "react-i18next";
 
 export default function Home() {
   const { t } = useTranslation();
-  // /listings/search with no filters is the same set as the old unpaginated
-  // /listings, one page at a time. The query state is the data plus the
-  // loading/error flags.
-  const { data, isPending, isError, refetch } = useSearchListings({ page: 1, limit: 20 });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Number(searchParams.get("page")) || 1;
+
+  const { data, isPending, isError, refetch } = useSearchListings({ page, limit: PAGE_SIZE });
   const listings = data?.items;
   const categoryName = useLocalizedCategoryNames();
 
@@ -53,13 +56,6 @@ export default function Home() {
           onRetry={() => refetch()}
         />
       )}
-      {/* One page is all there is until #25 builds the browse surface, so say
-          so rather than letting the 21st listing be invisible. */}
-      {data && data.total > data.items.length && (
-        <p className="text-muted mt-2 text-sm">
-          {t("listings.showingOf", { shown: data.items.length, total: data.total })}
-        </p>
-      )}
       {listings && listings.length > 0 && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((listing) => (
@@ -70,6 +66,13 @@ export default function Home() {
             />
           ))}
         </div>
+      )}
+      {data && (
+        <Pagination
+          page={data.page}
+          totalPages={data.total_pages}
+          onChange={(next) => setSearchParams({ page: String(next) }, { replace: true })}
+        />
       )}
     </div>
   );

@@ -31,7 +31,13 @@
     "tryAgain": "Yritä uudelleen",
     "somethingWentWrong": "Jokin meni pieleen. Yritä uudelleen.",
     "couldNotReachServer": "Palvelimeen ei saada yhteyttä",
-    "deleteAccount": "Poista tili"
+    "deleteAccount": "Poista tili",
+    "pagination": {
+      "nav": "Sivutus",
+      "previous": "Edellinen",
+      "next": "Seuraava",
+      "pageOf": "Sivu {{page}} / {{total}}"
+    }
   },
   "forms": {
     "email": "Sähköposti",

@@ -5,6 +5,7 @@ import { toSearchParams, useSearchListings } from "../api/listings";
 import { useLocalizedCategoryNames } from "../api/categories";
 import { FilterPanel } from "../components/objects/FilterPanel";
 import { ListingCard } from "../components/objects/ListingCard";
+import { Pagination } from "../components/objects/Pagination";
 import { Skeleton } from "../components/objects/Skeleton";
 
 export default function Search() {
@@ -17,6 +18,12 @@ export default function Search() {
     else next.delete(key);
     next.delete("page");
     setSearchParams(next);
+  };
+
+  const setPage = (next: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", String(next));
+    setSearchParams(nextParams);
   };
 
   const params = toSearchParams(searchParams);
@@ -69,6 +76,7 @@ export default function Search() {
               />
             ))}
           </div>
+          <Pagination page={data.page} totalPages={data.total_pages} onChange={setPage} />
         </>
       )}
     </div>

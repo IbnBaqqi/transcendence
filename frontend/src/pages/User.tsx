@@ -3,20 +3,21 @@
 // Reads GET /users/{id}, which returns less than /me/profile does: no email,
 // no phone number, no date of birth. Those aren't hidden here, the backend
 // never sends them - so don't try to render them.
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import Avatar from "../components/objects/Avatar.tsx";
 import Button from "../components/objects/Button.tsx";
 import { ListingCard } from "../components/objects/ListingCard";
 import { BlockButton } from "../components/objects/BlockButton";
 import { FollowButton } from "../components/objects/FollowButton";
+import { Pagination } from "../components/objects/Pagination";
 import { PresenceIndicator } from "../components/objects/PresenceIndicator";
 import { useModal } from "../providers/modalContext";
 import { useAuth } from "../hooks/useAuth";
 import { usePublicProfile } from "../api/profile";
 import { useFollowers } from "../api/follows";
 import { useBlocks } from "../api/blocks";
-import { useSearchListings } from "../api/listings";
+import { PAGE_SIZE, useSearchListings } from "../api/listings";
 import { useLocalizedCategoryNames } from "../api/categories";
 import { isApiError } from "../api/client";
 import { deriveInitials } from "../lib/initials";
@@ -29,6 +30,8 @@ export default function User() {
   const { id } = useParams();
   const { user } = useAuth();
   const { openChat } = useModal();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Number(searchParams.get("page")) || 1;
 
   const { data: profile, isLoading, error } = usePublicProfile(id);
 
@@ -39,7 +42,7 @@ export default function User() {
     data: sellerListings,
     isPending: listingsPending,
     isError: listingsError,
-  } = useSearchListings({ seller_id: id, limit: 20 });
+  } = useSearchListings({ seller_id: id, page, limit: PAGE_SIZE });
   const categoryName = useLocalizedCategoryNames();
 
   // profile.id, not the route param: query keys are compared as strings, and
@@ -152,11 +155,6 @@ export default function User() {
             listings.length === 0 &&
             t("pages.user.noListings")}
         </p>
-        {sellerListings && sellerListings.total > listings.length && (
-          <p className="text-muted mt-2 text-sm">
-            {t("listings.showingOf", { shown: listings.length, total: sellerListings.total })}
-          </p>
-        )}
         {listings.length > 0 && (
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {listings.map((listing) => (
@@ -168,6 +166,13 @@ export default function User() {
               />
             ))}
           </div>
+        )}
+        {sellerListings && (
+          <Pagination
+            page={sellerListings.page}
+            totalPages={sellerListings.total_pages}
+            onChange={(next) => setSearchParams({ page: String(next) }, { replace: true })}
+          />
         )}
       </div>
     </div>

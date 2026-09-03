@@ -31,7 +31,13 @@
     "tryAgain": "Försök igen",
     "somethingWentWrong": "Något gick fel. Försök igen.",
     "couldNotReachServer": "Det gick inte att nå servern",
-    "deleteAccount": "Radera konto"
+    "deleteAccount": "Radera konto",
+    "pagination": {
+      "nav": "Sidnumrering",
+      "previous": "Föregående",
+      "next": "Nästa",
+      "pageOf": "Sida {{page}} av {{total}}"
+    }
   },
   "forms": {
     "email": "E-post",

@@ -31,7 +31,13 @@
     "tryAgain": "Try again",
     "somethingWentWrong": "Something went wrong. Please try again.",
     "couldNotReachServer": "Could not reach the server",
-    "deleteAccount": "Delete Account"
+    "deleteAccount": "Delete Account",
+    "pagination": {
+      "nav": "Pagination",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {{page}} of {{total}}"
+    }
   },
   "forms": {
     "email": "Email",
