@@ -29,21 +29,32 @@ export function BlockedUsersSection() {
   }
 
   return (
-    <ul className="divide-line divide-y">
-      {blocks.map((blocked) => (
-        <li key={blocked.id} className="flex items-center justify-between gap-3 py-2">
-          <Link to={`/users/${blocked.id}`} className="text-foreground hover:underline">
-            {blocked.username}
-          </Link>
-          <Button
-            variant="secondary"
-            disabled={unblock.isPending}
-            onClick={() => void unblock.mutateAsync(blocked.id).catch(() => undefined)}
-          >
-            {unblock.isPending ? t("blocks.updating") : t("blocks.unblock")}
-          </Button>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="divide-line divide-y">
+        {blocks.map((blocked) => (
+          <li key={blocked.id} className="flex items-center justify-between gap-3 py-2">
+            <Link to={`/users/${blocked.id}`} className="text-foreground hover:underline">
+              {blocked.username}
+            </Link>
+            <Button
+              variant="secondary"
+              // One mutation instance serves the whole list, so isPending alone
+              // would disable and relabel every row while one is in flight.
+              disabled={unblock.isPending && unblock.variables === blocked.id}
+              onClick={() => unblock.mutate(blocked.id)}
+            >
+              {unblock.isPending && unblock.variables === blocked.id
+                ? t("blocks.updating")
+                : t("blocks.unblock")}
+            </Button>
+          </li>
+        ))}
+      </ul>
+      {unblock.isError && (
+        <p role="alert" className="text-berry-500 text-sm">
+          {isApiError(unblock.error) ? unblock.error.message : t("common.somethingWentWrong")}
+        </p>
+      )}
+    </>
   );
 }

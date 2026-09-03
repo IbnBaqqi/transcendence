@@ -27,12 +27,14 @@ function useBlockMutation(method: "post" | "delete") {
 export const useBlock = () => useBlockMutation("post");
 export const useUnblock = () => useBlockMutation("delete");
 
-// A block hides presence in either direction and closes the thread (#146), so
-// the profile and the inbox are both stale afterwards, not just the list.
+// A block hides presence in either direction (#146), so everything that renders
+// presence is stale afterwards, not just the list: the profile, the inbox, and
+// the follow lists, which fold a block into show_online_status in SQL.
 function invalidateBlock(qc: QueryClient, userId: string) {
   return Promise.all([
     qc.invalidateQueries({ queryKey: keys.me.blocks() }),
     qc.invalidateQueries({ queryKey: keys.users.detail(userId) }),
     qc.invalidateQueries({ queryKey: keys.conversations.all }),
+    qc.invalidateQueries({ queryKey: keys.follows.all }),
   ]);
 }

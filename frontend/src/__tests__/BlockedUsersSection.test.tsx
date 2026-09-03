@@ -17,12 +17,20 @@ const BLOCKED: BlockedUser = {
   blocked_at: "1970-01-01T00:00:00Z",
 };
 
-beforeEach(() => {
-  unblockCall.mockReset().mockResolvedValue(SELLER_ID);
+function mockUnblock(state: { isError?: boolean; error?: unknown } = {}) {
   vi.mocked(useUnblock).mockReturnValue({
-    mutateAsync: unblockCall,
+    mutate: unblockCall,
     isPending: false,
+    isError: false,
+    error: null,
+    variables: undefined,
+    ...state,
   } as unknown as ReturnType<typeof useUnblock>);
+}
+
+beforeEach(() => {
+  unblockCall.mockReset();
+  mockUnblock();
 });
 
 function renderSection(query: { data?: BlockedUser[]; isPending?: boolean; isError?: boolean }) {
@@ -67,5 +75,15 @@ describe("BlockedUsersSection", () => {
 
     expect(screen.getByText("You haven't blocked anyone.")).toBeInTheDocument();
     expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
+  });
+
+  // The query's error state is not the mutation's: a failed unblock used to
+  // leave the row sitting there with nothing said, because the promise was
+  // caught and discarded.
+  test("a failed unblock says so", () => {
+    mockUnblock({ isError: true, error: { status: 500, message: "Something broke" } });
+    renderSection({ data: [BLOCKED] });
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Something broke");
   });
 });
