@@ -4,7 +4,9 @@ import { FormContext } from "./FormContext";
 
 type FormProps<T extends FieldValues> = {
   form: UseFormReturn<T>;
-  onSubmit: (data: T) => void;
+  // Awaited by react-hook-form, which is what keeps formState.isSubmitting
+  // true for the whole handler rather than just its first await.
+  onSubmit: (data: T) => void | Promise<void>;
   children: ReactNode;
   className?: string;
   isEditing?: boolean;
