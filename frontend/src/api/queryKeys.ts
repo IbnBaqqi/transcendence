@@ -56,6 +56,11 @@ export const keys = {
     saved: () => [...keys.me.all, "saved"] as const,
   },
 
+  apiKeys: {
+    all: ["apiKeys"] as const,
+    list: () => [...keys.apiKeys.all, "list"] as const,
+  },
+
   categories: {
     all: ["categories"] as const,
     list: () => [...keys.categories.all, "list"] as const,

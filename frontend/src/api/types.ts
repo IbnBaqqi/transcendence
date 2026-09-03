@@ -231,3 +231,24 @@ export interface PublicProfile {
 // NOTE: there is no response envelope. endpoints return the payload directly
 // and signal success/failure through the HTTP status code. errors come back as
 // { error, details } - the interceptor is where this will be normalised
+
+// --- API keys ---
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  // "fk_live_a3f9" - the only fragment of the key the server can return, since
+  // it stores a SHA-256 hash of the rest.
+  key_prefix: string;
+  // Null until first use, and only written once a minute - "last seen", not a
+  // request log. Neither field has omitempty, so both always arrive.
+  last_used_at: Timestamp | null;
+  revoked_at: Timestamp | null;
+  created_at: Timestamp;
+}
+
+// Only ever returned by POST /me/api-keys. There is no endpoint that can show
+// `key` again.
+export interface CreatedApiKey extends ApiKey {
+  key: string;
+}
