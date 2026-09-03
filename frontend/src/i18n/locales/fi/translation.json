@@ -391,5 +391,17 @@
       "retry": "Jotain meni pieleen. Yritä uudelleen.",
       "serverError": "Palvelussamme tapahtui virhe. Yritä uudelleen."
     }
+  },
+  "apiKeys": {
+    "created": {
+      "title": "Uusi API-avaimesi",
+      "warning": "Kopioi se nyt. Tämä on ainoa kerta, kun avain näytetään — ikkunan sulkeminen hävittää sen lopullisesti.",
+      "keyLabel": "API-avain",
+      "copy": "Kopioi",
+      "copied": "Kopioitu",
+      "copyFailed": "Automaattinen kopiointi ei onnistunut. Valitse avain yltä ja kopioi se itse.",
+      "note": "Tallennettu nimellä ”{{name}}”. Voit kumota sen milloin tahansa.",
+      "done": "Valmis"
+    }
   }
 }

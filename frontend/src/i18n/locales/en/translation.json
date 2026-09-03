@@ -391,5 +391,17 @@
       "retry": "Something went wrong. Please try again.",
       "serverError": "Something went wrong on our end. Please try again."
     }
+  },
+  "apiKeys": {
+    "created": {
+      "title": "Your new API key",
+      "warning": "Copy it now. This is the only time it will be shown — closing this dialog loses it for good.",
+      "keyLabel": "API key",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyFailed": "Couldn't copy automatically. Select the key above and copy it manually.",
+      "note": "Saved as \"{{name}}\". You can revoke it at any time.",
+      "done": "Done"
+    }
   }
 }

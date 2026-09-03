@@ -391,5 +391,17 @@
       "retry": "Något gick fel. Försök igen.",
       "serverError": "Något gick fel hos oss. Försök igen."
     }
+  },
+  "apiKeys": {
+    "created": {
+      "title": "Din nya API-nyckel",
+      "warning": "Kopiera den nu. Det här är enda gången nyckeln visas — stänger du rutan är den borta för gott.",
+      "keyLabel": "API-nyckel",
+      "copy": "Kopiera",
+      "copied": "Kopierad",
+      "copyFailed": "Kunde inte kopiera automatiskt. Markera nyckeln ovan och kopiera den manuellt.",
+      "note": "Sparad som ”{{name}}”. Du kan återkalla den när som helst.",
+      "done": "Klar"
+    }
   }
 }
