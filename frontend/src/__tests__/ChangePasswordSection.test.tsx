@@ -78,7 +78,7 @@ test("a server error shows inline and keeps edit mode open", async () => {
   await user.type(screen.getByLabelText("Confirm password"), "newSecret123");
   await user.click(screen.getByRole("button", { name: "Save" }));
 
-  expect(await screen.findByText("Current password is incorrect")).toBeInTheDocument();
+  expect(await screen.findByRole("alert")).toHaveTextContent("Current password is incorrect");
   expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
 });
 

@@ -75,11 +75,12 @@ beforeEach(() => {
 function renderPage(
   query: { data?: OwnProfile; isLoading?: boolean; error?: unknown },
   userOverride: User | null = AUTH_STUB.user,
+  authLoading = false,
 ) {
   mockedProfile.mockReturnValue(query as ReturnType<typeof useOwnProfile>);
   return render(
     <QueryClientProvider client={new QueryClient()}>
-      <AuthContext.Provider value={{ ...AUTH_STUB, user: userOverride }}>
+      <AuthContext.Provider value={{ ...AUTH_STUB, user: userOverride, isLoading: authLoading }}>
         <ModalProvider>
           <Profile />
           <ModalRoot />
@@ -263,4 +264,14 @@ test("the stored picture takes over from the preview once the upload lands", asy
   await waitFor(() => {
     expect(container.querySelector("img")).toHaveAttribute("src", "/uploads/stored.png");
   });
+});
+
+// has_password decides whether the password section renders, and AuthProvider
+// reports user as null until the session is restored - so rendering early
+// tells a password account it has none, then corrects itself.
+test("waits out the session restore before deciding about the password section", () => {
+  renderPage({ data: PROFILE, isLoading: false }, null, true);
+
+  expect(screen.getByText("Loading…")).toBeInTheDocument();
+  expect(screen.queryByText("Password")).not.toBeInTheDocument();
 });

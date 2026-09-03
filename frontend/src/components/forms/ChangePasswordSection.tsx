@@ -64,7 +64,9 @@ export function ChangePasswordSection() {
               />
             </div>
             {errors.root?.message && (
-              <p className="text-berry-500 text-sm">{errors.root.message}</p>
+              <p role="alert" className="text-berry-500 text-sm">
+                {errors.root.message}
+              </p>
             )}
             <div className="flex flex-row gap-2">
               <Button variant="primary" type="submit" disabled={!isValid || isSubmitting}>

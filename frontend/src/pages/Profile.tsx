@@ -25,7 +25,7 @@ import { useTranslation } from "react-i18next";
 export default function Profile() {
   const { t } = useTranslation();
   const { openModal } = useModal();
-  const { logout, user } = useAuth();
+  const { logout, user, isLoading: authLoading } = useAuth();
 
   const { data: profile, isLoading, error } = useOwnProfile();
 
@@ -93,7 +93,10 @@ export default function Profile() {
         <p className="text-berry-500 text-sm">
           {isApiError(error) ? error.message : t("common.somethingWentWrong")}
         </p>
-      ) : isLoading || !profile ? (
+      ) : authLoading || isLoading || !profile ? (
+        // authLoading too: has_password decides whether the password section
+        // renders, and AuthProvider reports user as null until the session is
+        // restored - so without this a password account is told it has none.
         <p className="text-muted text-sm">{t("common.loading")}</p>
       ) : (
         <>

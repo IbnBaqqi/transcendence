@@ -50,7 +50,11 @@ export function BioSection() {
         <div className="flex flex-row gap-4">
           <FormTextArea name="bio" validateOnChange />
         </div>
-        {errors.root?.message && <p className="text-berry-500 text-sm">{errors.root.message}</p>}
+        {errors.root?.message && (
+          <p role="alert" className="text-berry-500 text-sm">
+            {errors.root.message}
+          </p>
+        )}
         <div className="flex flex-row gap-2">
           {isEditing ? (
             <>
