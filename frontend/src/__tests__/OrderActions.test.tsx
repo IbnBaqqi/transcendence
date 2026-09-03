@@ -40,7 +40,7 @@ function authStub(id: string): AuthContextValue {
     id,
     username: "tester",
     email: "t@example.com",
-    role: "user",
+    role: "USER",
     has_password: true,
     providers: [],
   };

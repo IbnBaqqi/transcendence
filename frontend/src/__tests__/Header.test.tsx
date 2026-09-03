@@ -85,12 +85,12 @@ test("places the language switcher at the far left of the nav", () => {
   expect(switcher.compareDocumentPosition(home) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
-const SIGNED_IN = {
+const SIGNED_IN: Partial<AuthContextValue> = {
   user: {
     id: "u1",
     username: "or99",
     email: "o@example.com",
-    role: "user",
+    role: "USER",
     has_password: true,
     providers: [],
   },

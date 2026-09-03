@@ -141,12 +141,17 @@ export interface UnreadCount {
   unread_count: number;
 }
 
+// Upper case, matching the backend's own values (auth/auth.go). A union rather
+// than string so a typo or a lower-cased fixture fails the build instead of
+// quietly failing an admin check.
+export type UserRole = "USER" | "ADMIN";
+
 // Auth Foundation additions. Mirrors backend UserInfo.
 export interface User {
   id: string;
   username: string;
   email: string;
-  role: string;
+  role: UserRole;
   // Whether the account can sign in with a password (false for a
   // provider-only account). Branch on this rather than providers being empty.
   has_password: boolean;

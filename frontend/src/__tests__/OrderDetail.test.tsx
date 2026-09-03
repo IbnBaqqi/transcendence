@@ -40,7 +40,7 @@ const SELLER: User = {
   id: SELLER_ID,
   username: "seller",
   email: "s@example.test",
-  role: "user",
+  role: "USER",
   has_password: true,
   providers: [],
 };
