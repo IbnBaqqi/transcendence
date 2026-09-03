@@ -13,7 +13,8 @@ import { useCreateListing, useUploadListingImage } from "../../api/listings";
 import { isApiError } from "../../api/client";
 import Button from "../objects/Button.tsx";
 import { ImageDropzone } from "../objects/ImageDropzone";
-import { useImageGallery } from "../../hooks/useImageGallery";
+import { useImageGallery, type GalleryImage } from "../../hooks/useImageGallery";
+import { describeUploadError } from "../../lib/uploadErrors";
 
 // Mirrors the backend's default MAX_IMAGES_PER_LISTING (see
 // backend/internal/config/config.go). The server enforces the real cap on
@@ -50,6 +51,28 @@ export function AddListingSection() {
     onError: setPhotoError,
   });
 
+  const uploadPhoto = async (listingId: string, photo: GalleryImage) => {
+    updatePhoto(photo.id, {
+      status: "uploading",
+      progress: undefined,
+      error: undefined,
+      retryable: undefined,
+    });
+    try {
+      const image = await uploadImage.mutateAsync({
+        listingId,
+        file: photo.file,
+        onProgress: (progress) => updatePhoto(photo.id, { progress }),
+      });
+      updatePhoto(photo.id, { status: "uploaded", serverId: image.id });
+      return true;
+    } catch (err) {
+      const { message, retryable } = describeUploadError(err, photo.file.name);
+      updatePhoto(photo.id, { status: "error", error: message, retryable });
+      return false;
+    }
+  };
+
   const handleSubmit = async (data: AddListingFormValues) => {
     setSubmitError(null);
     setPartial(null);
@@ -66,21 +89,7 @@ export function AddListingSection() {
     // (backend/sql/queries/listing_images.sql), so parallel uploads scramble the gallery.
     let failed = 0;
     for (const photo of photos) {
-      updatePhoto(photo.id, { status: "uploading" });
-      try {
-        const image = await uploadImage.mutateAsync({
-          listingId: listing.id,
-          file: photo.file,
-          onProgress: (progress) => updatePhoto(photo.id, { progress }),
-        });
-        updatePhoto(photo.id, { status: "uploaded", serverId: image.id });
-      } catch (err) {
-        failed += 1;
-        updatePhoto(photo.id, {
-          status: "error",
-          error: isApiError(err) ? err.message : t("dropzone.uploadFailed"),
-        });
-      }
+      if (!(await uploadPhoto(listing.id, photo))) failed += 1;
     }
 
     if (failed > 0) {
@@ -91,6 +100,17 @@ export function AddListingSection() {
     }
 
     void navigate(`/listings/${listing.id}`);
+  };
+
+  const handleRetry = async (id: string) => {
+    const photo = photos.find((p) => p.id === id);
+    if (!partial || !photo) return;
+    if (!(await uploadPhoto(partial.id, photo))) return;
+
+    // Clearing `partial` instead would re-enable submit and let a second click
+    // create the duplicate listing that whole branch exists to prevent.
+    if (partial.failed <= 1) void navigate(`/listings/${partial.id}`);
+    else setPartial({ ...partial, failed: partial.failed - 1 });
   };
 
   return (
@@ -107,6 +127,7 @@ export function AddListingSection() {
               images={photos}
               onFilesSelected={addPhotos}
               onRemove={removePhoto}
+              onRetry={handleRetry}
               multiple
               emptyMessage={t("dropzone.noPhotos")}
               helperText={t("dropzone.dragDropAddListing")}

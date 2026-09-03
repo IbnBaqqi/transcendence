@@ -186,7 +186,7 @@ export function ImageDropzone({
                   <span className="text-xs font-medium text-white">
                     {image.error ?? t("dropzone.uploadFailed")}
                   </span>
-                  {onRetry && (
+                  {onRetry && image.retryable && (
                     <button
                       type="button"
                       onClick={() => onRetry(image.id)}

@@ -16,6 +16,8 @@ export interface GalleryImage {
   progress?: number;
   /** The row's UUID once the upload succeeds - what DELETE needs. */
   serverId?: string;
+  /** Set alongside `error`: whether offering a retry would be honest. */
+  retryable?: boolean;
 }
 
 export const DEFAULT_ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
