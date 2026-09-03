@@ -164,7 +164,9 @@
     "deciding": "Behandlar…",
     "decideFailed": "Kunde inte spara beslutet.",
     "resolvedCount_one": "Löste {{count}} rapport",
-    "resolvedCount_other": "Löste {{count}} rapporter"
+    "resolvedCount_other": "Löste {{count}} rapporter",
+    "reportsError": "Kunde inte ladda rapporterna.",
+    "historyError": "Kunde inte ladda historiken."
   },
   "orders": {
     "title": "Beställningar",

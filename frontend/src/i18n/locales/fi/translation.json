@@ -164,7 +164,9 @@
     "deciding": "Käsitellään…",
     "decideFailed": "Päätöksen tallentaminen ei onnistunut.",
     "resolvedCount_one": "Käsitelty {{count}} ilmoitus",
-    "resolvedCount_other": "Käsitelty {{count}} ilmoitusta"
+    "resolvedCount_other": "Käsitelty {{count}} ilmoitusta",
+    "reportsError": "Ilmoitusten lataaminen ei onnistunut.",
+    "historyError": "Historian lataaminen ei onnistunut."
   },
   "orders": {
     "title": "Tilaukset",
