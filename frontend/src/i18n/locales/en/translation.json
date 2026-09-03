@@ -193,7 +193,22 @@
     },
     "dashboard": {
       "title": "Seller Dashboard",
-      "stub": "Seller dashboard - not built yet (#23)."
+      "signedOut": "You're signed out. Log in to see your dashboard.",
+      "myListings": "My listings",
+      "needsYou": "Needs you ({{count}})",
+      "inProgress": "In progress ({{count}})",
+      "finished": "Finished ({{count}})",
+      "noListings": "You haven't posted a listing yet.",
+      "addListing": "Post your first listing",
+      "noOrders": "No one has ordered from you yet.",
+      "listingsError": "Couldn't load your listings.",
+      "ordersError": "Couldn't load your orders.",
+      "listing": {
+        "allRemaining": "{{qty}} {{unit}} left",
+        "remaining": "{{left}} of {{original}} {{unit}} left",
+        "sold": "{{count}} sold",
+        "soldOut": "Sold out"
+      }
     },
     "following": {
       "title": "Following",

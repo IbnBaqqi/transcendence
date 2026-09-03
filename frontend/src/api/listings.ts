@@ -41,12 +41,18 @@ export function useListing(id: string) {
   });
 }
 
-export function useSearchListings(params: ListingSearchParams) {
+export function useSearchListings(
+  params: ListingSearchParams,
+  options: { enabled?: boolean } = {},
+) {
   const query = toQueryString(params);
 
   return useQuery({
     queryKey: keys.listings.search(query),
     queryFn: async () => (await api.get<Paginated<Listing>>(`/listings/search?${query}`)).data,
+    // Without a seller_id this searches everything, so callers waiting on one
+    // pass false rather than fetching the whole catalogue.
+    enabled: options.enabled ?? true,
   });
 }
 
