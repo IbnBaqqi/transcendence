@@ -48,6 +48,7 @@ desktop.ini
 *.swp
 *.swo
 *~
+*.bak
 
 # Self-signed TLS material for the local production stack (make certs).
 # Generated, never committed - a private key in a repository is a leaked key.

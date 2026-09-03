@@ -242,7 +242,8 @@
       "contactDetails": "Kontaktuppgifter",
       "password": "Lösenord",
       "bio": "Bio",
-      "accountManagement": "Kontohantering"
+      "accountManagement": "Kontohantering",
+      "apiKeys": "API-nycklar"
     },
     "notFound": {
       "title": "404 - Sidan hittades inte",
@@ -399,6 +400,36 @@
       "alreadyLinked": "Det här kontot är redan kopplat till en annan användare.",
       "retry": "Något gick fel. Försök igen.",
       "serverError": "Något gick fel hos oss. Försök igen."
+    }
+  },
+  "apiKeys": {
+    "created": {
+      "title": "Din nya API-nyckel",
+      "warning": "Kopiera den nu. Det här är enda gången nyckeln visas — stänger du rutan är den borta för gott.",
+      "keyLabel": "API-nyckel",
+      "copy": "Kopiera",
+      "copied": "Kopierad",
+      "copyFailed": "Kunde inte kopiera automatiskt. Markera nyckeln ovan och kopiera den manuellt.",
+      "note": "Sparad som ”{{name}}”. Du kan återkalla den när som helst.",
+      "done": "Klar"
+    },
+    "intro": "En nyckel låter ett program agera som du, utan inloggning. Behandla den som ett lösenord.",
+    "nameLabel": "Namn",
+    "namePlaceholder": "ci-pipeline",
+    "create": "Skapa nyckel",
+    "createFailed": "Kunde inte skapa nyckeln.",
+    "listError": "Kunde inte ladda dina API-nycklar.",
+    "empty": "Inga API-nycklar än.",
+    "revoke": "Återkalla",
+    "confirmRevoke": "Bekräfta återkallande",
+    "revoking": "Återkallar…",
+    "revoked": "Återkallad",
+    "revokeFailed": "Kunde inte återkalla nyckeln.",
+    "alreadyRevoked": "Nyckeln var redan återkallad.",
+    "fields": {
+      "created": "Skapad {{date}}",
+      "lastSeen": "senast sedd {{date}}",
+      "neverUsed": "aldrig använd"
     }
   }
 }
