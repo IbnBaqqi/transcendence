@@ -447,11 +447,6 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, err
 	}
 
-	ids := make([]uuid.UUID, 0, len(items))
-	for _, item := range items {
-		ids = append(ids, item.ID)
-	}
-
 	responses, err := s.Responses(ctx, items)
 	if err != nil {
 		return dtos.PaginatedListings{}, err
