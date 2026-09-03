@@ -7,11 +7,9 @@ import type { ConversationListItem } from "../../api/types";
 
 export function ConversationList({
   conversations,
-  selectedId,
   onSelect,
 }: {
   conversations: ConversationListItem[];
-  selectedId?: string;
   onSelect: (id: string) => void;
 }) {
   const { t } = useTranslation();
@@ -24,11 +22,7 @@ export function ConversationList({
     <ul className="divide-line divide-y">
       {conversations.map((conversation) => (
         <li key={conversation.id}>
-          <ConversationRow
-            conversation={conversation}
-            selected={conversation.id === selectedId}
-            onSelect={() => onSelect(conversation.id)}
-          />
+          <ConversationRow conversation={conversation} onSelect={() => onSelect(conversation.id)} />
         </li>
       ))}
     </ul>
@@ -37,11 +31,9 @@ export function ConversationList({
 
 function ConversationRow({
   conversation,
-  selected,
   onSelect,
 }: {
   conversation: ConversationListItem;
-  selected: boolean;
   onSelect: () => void;
 }) {
   const { t } = useTranslation();
@@ -52,10 +44,7 @@ function ConversationRow({
     <button
       type="button"
       onClick={onSelect}
-      aria-current={selected}
-      className={`hover:bg-surface-muted flex w-full gap-3 p-3 text-left transition-colors ${
-        selected ? "bg-surface-muted" : ""
-      }`}
+      className="hover:bg-surface-muted flex w-full gap-3 p-3 text-left transition-colors"
     >
       <div className="relative shrink-0">
         <Avatar size="sm" initials={deriveInitials(other.username)} />

@@ -65,11 +65,7 @@ export function Chat() {
             onRetry={() => refetch()}
           />
         ) : (
-          <ConversationList
-            conversations={conversations ?? []}
-            selectedId={selectedId ?? undefined}
-            onSelect={setSelectedId}
-          />
+          <ConversationList conversations={conversations ?? []} onSelect={setSelectedId} />
         )}
       </div>
     </div>

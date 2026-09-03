@@ -31,7 +31,7 @@ beforeEach(() => {
   } as unknown as ReturnType<typeof useStartConversation>);
 });
 
-function renderSection(listing: Listing, user: User | null = VIEWER) {
+function renderSection(listing: Listing, user: User | null = VIEWER, authLoading = false) {
   vi.mocked(useListing).mockReturnValue({
     data: listing,
     isPending: false,
@@ -39,7 +39,7 @@ function renderSection(listing: Listing, user: User | null = VIEWER) {
 
   const auth: AuthContextValue = {
     user,
-    isLoading: false,
+    isLoading: authLoading,
     login: vi.fn(),
     signup: vi.fn(),
     logout: vi.fn(),
@@ -91,6 +91,15 @@ describe("StartConversationSection", () => {
     expect(
       screen.getByRole("button", { name: "Log in to message the seller" }),
     ).toBeInTheDocument();
+  });
+
+  // AuthProvider reports user as null until the restore finishes, so without
+  // gating on that a signed-in visitor is offered the login for a moment.
+  test("waits for the session rather than offering the login", () => {
+    renderSection(makeListing(), null, true);
+    expect(
+      screen.queryByRole("button", { name: "Log in to message the seller" }),
+    ).not.toBeInTheDocument();
   });
 
   // A duplicate 409 doesn't hand back the existing thread, so the only useful
