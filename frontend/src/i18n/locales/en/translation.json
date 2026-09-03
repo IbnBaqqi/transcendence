@@ -65,7 +65,12 @@
       "description": "Description",
       "category": "Category",
       "priceQuantity": "Price & Quantity",
-      "save": "Save"
+      "save": "Save",
+      "createFailed": "Couldn't create this listing. Please try again.",
+      "photosFailed_one": "Listing created, but {{count}} photo couldn't be uploaded.",
+      "photosFailed_other": "Listing created, but {{count}} photos couldn't be uploaded.",
+      "viewListing": "View the listing",
+      "signedOut": "You're signed out. Log in to post a listing."
     }
   },
   "dropzone": {

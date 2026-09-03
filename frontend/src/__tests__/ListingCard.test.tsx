@@ -1,11 +1,16 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
 import { ListingCard } from "../components/objects/ListingCard";
 import { makeListing } from "../test/factories";
 import type { Listing } from "../api/types";
 
 function renderCard(listing: Listing, showSeller?: boolean) {
-  return render(<ListingCard listing={listing} categoryName="Mushrooms" showSeller={showSeller} />);
+  return render(
+    <MemoryRouter>
+      <ListingCard listing={listing} categoryName="Mushrooms" showSeller={showSeller} />
+    </MemoryRouter>,
+  );
 }
 
 describe("ListingCard", () => {
@@ -48,5 +53,22 @@ describe("ListingCard", () => {
     renderCard(makeListing(), false);
 
     expect(screen.queryByText("mushroom_matti")).not.toBeInTheDocument();
+  });
+
+  // Home is the only browse surface (#25 is still a stub), so without this the
+  // only way to reach a listing is to paste its id into the URL bar.
+  test("the whole card is a link to the listing", () => {
+    const listing = makeListing();
+    renderCard(listing);
+
+    expect(screen.getByRole("link")).toHaveAttribute("href", `/listings/${listing.id}`);
+  });
+
+  // The card is an anchor now, so anything added inside it must not be one:
+  // a nested anchor is invalid HTML, and the browser's recovery activates
+  // both on a single click.
+  test("contains exactly one link", () => {
+    const { container } = renderCard(makeListing());
+    expect(container.querySelectorAll("a")).toHaveLength(1);
   });
 });
