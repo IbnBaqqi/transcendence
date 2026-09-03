@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+
 import { useModal } from "../../providers/modalContext";
 
 type AvatarProps = {
@@ -34,7 +35,6 @@ export default function Avatar({
   const { t } = useTranslation();
   const { circle, label } = sizeStyles[size];
   const isInteractive = editable || interactive;
-  const { openModal } = useModal();
 
   const content = (
     <>
@@ -57,14 +57,12 @@ export default function Avatar({
 
   if (editable) {
     return (
-      <button
-        type="button"
-        onClick={() => openModal("imageUpload", { onComplete: onImageSelected })}
-        aria-label={t("avatar.editAria")}
+      <EditableAvatar
         className={`relative ${circle} overflow-hidden rounded-full ring-2 select-none ${interactiveClasses}`}
+        onImageSelected={onImageSelected}
       >
         {content}
-      </button>
+      </EditableAvatar>
     );
   }
 
@@ -77,5 +75,32 @@ export default function Avatar({
     >
       {content}
     </div>
+  );
+}
+
+// The modal context lives here rather than in Avatar so that a plain avatar -
+// a listing card, a follow row - does not drag a ModalProvider into every tree
+// that renders one.
+function EditableAvatar({
+  className,
+  onImageSelected,
+  children,
+}: {
+  className: string;
+  onImageSelected?: (file: File) => void;
+  children: React.ReactNode;
+}) {
+  const { t } = useTranslation();
+  const { openModal } = useModal();
+
+  return (
+    <button
+      type="button"
+      onClick={() => openModal("imageUpload", { onComplete: onImageSelected })}
+      aria-label={t("avatar.editAria")}
+      className={className}
+    >
+      {children}
+    </button>
   );
 }

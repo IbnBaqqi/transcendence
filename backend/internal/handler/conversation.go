@@ -193,7 +193,9 @@ func (h *Handler) respondWithConversation(
 		return
 	}
 
-	h.hidePresenceIfBlocked(r, userID, &other)
+	if h.presenceHidden(r, userID, other.ID) {
+		other.ShowOnlineStatus = false
+	}
 
 	respondWithJSON(w, status, dtos.ToConversationResponse(conv, other, userID))
 }

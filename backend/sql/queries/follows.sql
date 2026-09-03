@@ -12,6 +12,7 @@ SELECT
     users.id,
     users.username,
     users.last_seen_at,
+    profiles.avatar_filename,
     -- Same rule as the inbox: a block in either direction hides presence.
     COALESCE(users.show_online_status AND NOT EXISTS (
         SELECT 1 FROM blocks b
@@ -20,6 +21,8 @@ SELECT
     ), false)::boolean AS show_online_status
 FROM follows
 JOIN users ON users.id = follows.followee_id
+-- LEFT: an inner join would silently drop anyone without a profile row.
+LEFT JOIN profiles ON profiles.id = users.id
 WHERE follows.follower_id = sqlc.arg(subject_id)
   AND users.is_visible
 ORDER BY users.username;
@@ -29,6 +32,7 @@ SELECT
     users.id,
     users.username,
     users.last_seen_at,
+    profiles.avatar_filename,
     -- Same rule as the inbox: a block in either direction hides presence.
     COALESCE(users.show_online_status AND NOT EXISTS (
         SELECT 1 FROM blocks b
@@ -37,6 +41,8 @@ SELECT
     ), false)::boolean AS show_online_status
 FROM follows
 JOIN users ON users.id = follows.follower_id
+-- LEFT: an inner join would silently drop anyone without a profile row.
+LEFT JOIN profiles ON profiles.id = users.id
 WHERE follows.followee_id = sqlc.arg(subject_id)
   AND users.is_visible
 ORDER BY users.username;

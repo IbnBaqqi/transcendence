@@ -36,6 +36,7 @@ const VIEWER: User = {
 const SELLER_ROW: ChatUser = {
   id: SELLER_ID,
   username: "seller",
+  avatar_url: null,
   presence: { is_online: true },
 };
 

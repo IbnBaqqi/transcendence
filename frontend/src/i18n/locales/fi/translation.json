@@ -6,7 +6,8 @@
     "notifications": "Ilmoitukset",
     "addListing": "Lisää ilmoitus",
     "orders": "Tilaukset",
-    "following": "Seuratut"
+    "following": "Seuratut",
+    "profile": "Profiili"
   },
   "language": {
     "en": "English",
@@ -262,7 +263,10 @@
   },
   "avatar": {
     "edit": "Muokkaa",
-    "editAria": "Muokkaa profiilikuvaa"
+    "editAria": "Muokkaa profiilikuvaa",
+    "remove": "Poista kuva",
+    "removing": "Poistetaan…",
+    "uploading": "Ladataan…"
   },
   "errorBoundary": {
     "somethingWentWrong": "Jokin meni pieleen",

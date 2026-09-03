@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func userWithPresence(lastSeen sql.NullTime, show bool) database.User {
-	return database.User{
+func userWithPresence(lastSeen sql.NullTime, show bool) database.GetChatUserRow {
+	return database.GetChatUserRow{
 		ID:               uuid.New(),
 		Username:         "seller",
 		LastSeenAt:       lastSeen,
@@ -281,5 +281,81 @@ func TestPresenceFreshnessUsesTheUntruncatedTime(t *testing.T) {
 
 	if !res.OtherUser.Presence.IsOnline {
 		t.Error("is_online = false, want true - freshness was judged on the truncated value")
+	}
+}
+
+func TestChatUserAvatarURLIsAPathOrNull(t *testing.T) {
+	buyer, seller := uuid.New(), uuid.New()
+	other := userWithPresence(sql.NullTime{}, true)
+	other.AvatarFilename = sql.NullString{String: "abc.png", Valid: true}
+
+	got := ToConversationResponse(conversationFor(buyer, seller), other, buyer).OtherUser.AvatarURL
+	if got == nil || *got != UploadURLPrefix+"abc.png" {
+		t.Errorf("avatar_url = %v, want %q", got, UploadURLPrefix+"abc.png")
+	}
+
+	other.AvatarFilename = sql.NullString{}
+	if got := ToConversationResponse(conversationFor(buyer, seller), other, buyer).OtherUser.AvatarURL; got != nil {
+		t.Errorf("avatar_url with none set = %q, want nil", *got)
+	}
+}
+
+// The username is anonymised for a deleted account; leaving the photo would
+// identify exactly the person that anonymisation exists to hide.
+func TestDeletedAccountKeepsNeitherNameNorAvatar(t *testing.T) {
+	buyer, seller := uuid.New(), uuid.New()
+	other := userWithPresence(sql.NullTime{}, true)
+	other.AvatarFilename = sql.NullString{String: "abc.png", Valid: true}
+	other.DeletedAt = sql.NullTime{Time: time.Now(), Valid: true}
+
+	chat := ToConversationResponse(conversationFor(buyer, seller), other, buyer).OtherUser
+	if chat.Username != DeletedUserName {
+		t.Errorf("username = %q, want %q", chat.Username, DeletedUserName)
+	}
+	if chat.AvatarURL != nil {
+		t.Errorf("avatar_url = %q, want nil for a deleted account", *chat.AvatarURL)
+	}
+}
+
+// avatar_url is in the schema's required list, so it has to be present and
+// null rather than omitted - a client reading `"avatar_url" in user` must not
+// see the key disappear when nobody has set a picture.
+func TestChatUserAlwaysCarriesTheAvatarKey(t *testing.T) {
+	buyer, seller := uuid.New(), uuid.New()
+	res := ToConversationResponse(conversationFor(buyer, seller), userWithPresence(sql.NullTime{}, true), buyer)
+
+	encoded, err := json.Marshal(res.OtherUser)
+	if err != nil {
+		t.Fatalf("marshalling: %v", err)
+	}
+	if !strings.Contains(string(encoded), `"avatar_url":null`) {
+		t.Errorf("other_user = %s, want an explicit null avatar_url", encoded)
+	}
+}
+
+// The inbox list is a separate construction site from the detail response, so
+// each needs its own check: fixing one and forgetting the other is invisible
+// until the list renders every row with a blank face.
+func TestListItemCarriesTheAvatarAndDropsItWhenDeleted(t *testing.T) {
+	buyer := uuid.New()
+	row := database.ListConversationsForUserRow{
+		ID:                  uuid.New(),
+		BuyerID:             buyer,
+		SellerID:            uuid.New(),
+		Status:              "accepted",
+		ListingTitle:        "Chanterelles",
+		OtherUserID:         uuid.New(),
+		OtherUsername:       "seller",
+		OtherAvatarFilename: sql.NullString{String: "c.png", Valid: true},
+	}
+
+	got := ToConversationListItem(row, buyer).OtherUser.AvatarURL
+	if got == nil || *got != UploadURLPrefix+"c.png" {
+		t.Errorf("avatar_url = %v, want %q", got, UploadURLPrefix+"c.png")
+	}
+
+	row.OtherDeletedAt = sql.NullTime{Time: time.Now(), Valid: true}
+	if got := ToConversationListItem(row, buyer).OtherUser.AvatarURL; got != nil {
+		t.Errorf("avatar_url for a deleted account = %q, want nil", *got)
 	}
 }

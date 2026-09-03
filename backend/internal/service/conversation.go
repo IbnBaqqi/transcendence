@@ -420,10 +420,10 @@ func (s *ConversationService) GetConversationDetail(
 	ctx context.Context,
 	userID uuid.UUID,
 	conversationID uuid.UUID,
-) (database.Conversation, database.User, error) {
+) (database.Conversation, database.GetChatUserRow, error) {
 	conv, err := s.GetConversation(ctx, userID, conversationID)
 	if err != nil {
-		return database.Conversation{}, database.User{}, err
+		return database.Conversation{}, database.GetChatUserRow{}, err
 	}
 
 	otherID := conv.SellerID
@@ -431,9 +431,9 @@ func (s *ConversationService) GetConversationDetail(
 		otherID = conv.BuyerID
 	}
 
-	other, err := s.db.GetUser(ctx, otherID)
+	other, err := s.db.GetChatUser(ctx, otherID)
 	if err != nil {
-		return database.Conversation{}, database.User{}, err
+		return database.Conversation{}, database.GetChatUserRow{}, err
 	}
 
 	return conv, other, nil

@@ -24,6 +24,12 @@ export interface ListingImage {
   position: number;
 }
 
+export interface ListingSeller {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+}
+
 export interface Listing {
   id: string;
   seller_id: string;
@@ -36,6 +42,7 @@ export interface Listing {
   created_at: Timestamp;
   updated_at: Timestamp;
   images: ListingImage[]; // always an array, never null
+  seller: ListingSeller | null;
 }
 
 export interface Category {
@@ -67,6 +74,10 @@ export interface Order {
 
 // --- Chat ---
 
+export interface AvatarResponse {
+  avatar_url: string;
+}
+
 export interface Presence {
   is_online: boolean;
   last_seen_at?: Timestamp; // absent when hidden AND when never seen
@@ -75,6 +86,7 @@ export interface Presence {
 export interface ChatUser {
   id: string;
   username: string;
+  avatar_url: string | null;
   presence: Presence;
 }
 

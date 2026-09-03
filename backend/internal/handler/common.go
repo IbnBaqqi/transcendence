@@ -106,9 +106,15 @@ func viewerID(r *http.Request) uuid.UUID {
 	return user.ID
 }
 
-// hidePresenceIfBlocked blanks a user's online status when the viewer must not
-// see it. The list endpoints do this in SQL; these are the paths that fetch one
-// user at a time.
+func (h *Handler) hidePresenceIfBlocked(r *http.Request, viewer uuid.UUID, other *database.User) {
+	if h.presenceHidden(r, viewer, other.ID) {
+		other.ShowOnlineStatus = false
+	}
+}
+
+// presenceHidden decides whether a viewer may see someone's online status. The
+// list endpoints do this in SQL; these are the paths that fetch one user at a
+// time.
 //
 // Anonymous viewers get no presence at all. GET /users/{id} is public, so
 // leaving them alone would let a blocked user read the blocker's status simply
@@ -116,27 +122,23 @@ func viewerID(r *http.Request) uuid.UUID {
 //
 // Fails closed on a lookup error: a wrong "hidden" is cosmetic, a wrong
 // "online" means someone keeps watching a person who blocked them.
-func (h *Handler) hidePresenceIfBlocked(r *http.Request, viewer uuid.UUID, other *database.User) {
-	if viewer == other.ID {
-		return
+func (h *Handler) presenceHidden(r *http.Request, viewer, otherID uuid.UUID) bool {
+	if viewer == otherID {
+		return false
 	}
 
 	if viewer == uuid.Nil {
-		other.ShowOnlineStatus = false
-		return
+		return true
 	}
 
-	blocked, err := h.Block.ExistsBetween(r.Context(), viewer, other.ID)
+	blocked, err := h.Block.ExistsBetween(r.Context(), viewer, otherID)
 	if err != nil {
 		slog.Warn("presence block check failed, hiding presence",
 			"error", err, "request_id", middleware.GetReqID(r.Context()))
-		other.ShowOnlineStatus = false
-		return
+		return true
 	}
 
-	if blocked {
-		other.ShowOnlineStatus = false
-	}
+	return blocked
 }
 
 // viewerName is the authenticated caller's username, for a response that
