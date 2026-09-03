@@ -97,6 +97,14 @@
     "showingOf": "Näytetään {{shown}} / {{total}}",
     "seller": "Myyjä"
   },
+  "pagination": {
+    "label": "Sivutus",
+    "previous": "Edellinen",
+    "next": "Seuraava",
+    "pageOf": "Sivu {{page}} / {{totalPages}}",
+    "results_one": "{{count}} tulos",
+    "results_other": "{{count}} tulosta"
+  },
   "presence": {
     "online": "Paikalla",
     "offline": "Poissa"

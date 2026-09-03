@@ -97,6 +97,14 @@
     "showingOf": "Showing {{shown}} of {{total}}",
     "seller": "Seller"
   },
+  "pagination": {
+    "label": "Pagination",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {{page}} of {{totalPages}}",
+    "results_one": "{{count}} result",
+    "results_other": "{{count}} results"
+  },
   "presence": {
     "online": "Online",
     "offline": "Offline"

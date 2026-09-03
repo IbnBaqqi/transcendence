@@ -97,6 +97,14 @@
     "showingOf": "Visar {{shown}} av {{total}}",
     "seller": "Säljare"
   },
+  "pagination": {
+    "label": "Paginering",
+    "previous": "Föregående",
+    "next": "Nästa",
+    "pageOf": "Sida {{page}} av {{totalPages}}",
+    "results_one": "{{count}} resultat",
+    "results_other": "{{count}} resultat"
+  },
   "presence": {
     "online": "Online",
     "offline": "Offline"

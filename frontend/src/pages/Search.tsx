@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { SearchFilterSection } from "../components/forms/SearchFilterSection";
 import { FilterChips } from "../components/objects/FilterChips";
 import { ListingCard } from "../components/objects/ListingCard";
+import { Pagination } from "../components/objects/Pagination";
 import { Skeleton } from "../components/objects/Skeleton";
 import { useSearchListings } from "../api/listings";
 import { useLocalizedCategoryNames } from "../api/categories";
@@ -67,13 +68,6 @@ export default function Search() {
         </p>
       )}
 
-      {/* Interim honesty line; #25's pagination controls replace it next. */}
-      {data && data.total > data.items.length && (
-        <p className="text-muted text-sm">
-          {t("listings.showingOf", { shown: data.items.length, total: data.total })}
-        </p>
-      )}
-
       {listings && listings.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((listing) => (
@@ -84,6 +78,17 @@ export default function Search() {
             />
           ))}
         </div>
+      )}
+
+      {/* page/total_pages come off the response, not the request: the server
+          caps limit, so what it says is what actually happened. */}
+      {data && data.total > 0 && (
+        <Pagination
+          page={data.page}
+          totalPages={data.total_pages}
+          total={data.total}
+          onPageChange={(page) => update({ page })}
+        />
       )}
     </div>
   );

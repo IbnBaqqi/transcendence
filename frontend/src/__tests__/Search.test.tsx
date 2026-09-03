@@ -76,6 +76,16 @@ describe("Search", () => {
     expect(screen.getByTestId("query").textContent).toBe("?keyword=bolete");
   });
 
+  test("paging keeps the filters and writes the page into the URL", async () => {
+    const user = renderSearch("?category=mushrooms", {
+      data: { items: [makeListing()], total: 47, page: 1, limit: 20, total_pages: 3 },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(screen.getByTestId("query").textContent).toBe("?category=mushrooms&page=2");
+  });
+
   test("no results is a normal answer, not an error", () => {
     renderSearch("?keyword=nothing", { data: page([]) });
 
