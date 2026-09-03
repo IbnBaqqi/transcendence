@@ -213,7 +213,22 @@
     },
     "search": {
       "title": "Sök",
-      "stub": "Sök och filter - inte byggt ännu (#25)."
+      "stub": "Sök och filter - inte byggt ännu (#25).",
+      "filters": "Filter",
+      "keyword": "Sökord",
+      "category": "Kategori",
+      "location": "Plats",
+      "minPrice": "Lägsta pris",
+      "maxPrice": "Högsta pris",
+      "sort": "Sortera efter",
+      "sortOptions": {
+        "newest": "Nyast först",
+        "oldest": "Äldst först",
+        "price_asc": "Billigast först",
+        "price_desc": "Dyrast först"
+      },
+      "apply": "Använd filter",
+      "clearAll": "Rensa alla"
     },
     "dashboard": {
       "title": "Säljarens panel",
@@ -396,7 +411,9 @@
     "unitTooLong": "Enheten är för lång",
     "locationRequired": "Plats krävs",
     "locationInvalidChars": "Platsen innehåller tecken som inte är bokstäver",
-    "bioTooLong": "Presentationen är för lång"
+    "bioTooLong": "Presentationen är för lång",
+    "priceNegative": "Priset kan inte vara negativt",
+    "priceRangeInvalid": "Högsta pris får inte vara lägre än lägsta pris"
   },
   "auth": {
     "continueWithGoogle": "Fortsätt med Google",

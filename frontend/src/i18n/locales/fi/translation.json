@@ -213,7 +213,22 @@
     },
     "search": {
       "title": "Haku",
-      "stub": "Haku ja suodattimet - ei vielä rakennettu (#25)."
+      "stub": "Haku ja suodattimet - ei vielä rakennettu (#25).",
+      "filters": "Suodattimet",
+      "keyword": "Hakusana",
+      "category": "Luokka",
+      "location": "Sijainti",
+      "minPrice": "Vähimmäishinta",
+      "maxPrice": "Enimmäishinta",
+      "sort": "Järjestys",
+      "sortOptions": {
+        "newest": "Uusimmat ensin",
+        "oldest": "Vanhimmat ensin",
+        "price_asc": "Halvimmat ensin",
+        "price_desc": "Kalleimmat ensin"
+      },
+      "apply": "Käytä suodattimia",
+      "clearAll": "Tyhjennä kaikki"
     },
     "dashboard": {
       "title": "Myyjän hallintapaneeli",
@@ -396,7 +411,9 @@
     "unitTooLong": "Yksikkö on liian pitkä",
     "locationRequired": "Sijainti vaaditaan",
     "locationInvalidChars": "Sijainti sisältää merkkejä jotka eivät ole kirjaimia",
-    "bioTooLong": "Esittely on liian pitkä"
+    "bioTooLong": "Esittely on liian pitkä",
+    "priceNegative": "Hinta ei voi olla negatiivinen",
+    "priceRangeInvalid": "Enimmäishinta ei voi olla vähimmäishintaa pienempi"
   },
   "auth": {
     "continueWithGoogle": "Jatka Googlella",

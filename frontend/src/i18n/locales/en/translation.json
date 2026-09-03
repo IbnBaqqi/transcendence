@@ -213,7 +213,22 @@
     },
     "search": {
       "title": "Search",
-      "stub": "Search & filters - not built yet (#25)."
+      "stub": "Search & filters - not built yet (#25).",
+      "filters": "Filters",
+      "keyword": "Keyword",
+      "category": "Category",
+      "location": "Location",
+      "minPrice": "Min price",
+      "maxPrice": "Max price",
+      "sort": "Sort by",
+      "sortOptions": {
+        "newest": "Newest first",
+        "oldest": "Oldest first",
+        "price_asc": "Cheapest first",
+        "price_desc": "Most expensive first"
+      },
+      "apply": "Apply filters",
+      "clearAll": "Clear all"
     },
     "dashboard": {
       "title": "Seller Dashboard",
@@ -396,7 +411,9 @@
     "unitTooLong": "Unit is too long",
     "locationRequired": "Location is required",
     "locationInvalidChars": "Location contains characters that are not letters",
-    "bioTooLong": "Bio is too long"
+    "bioTooLong": "Bio is too long",
+    "priceNegative": "Price cannot be negative",
+    "priceRangeInvalid": "Max price must not be lower than min price"
   },
   "auth": {
     "continueWithGoogle": "Continue with Google",
