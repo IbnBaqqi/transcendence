@@ -53,3 +53,28 @@ func recordChatNotification(
 		ConversationID: uuid.NullUUID{UUID: conv.ID, Valid: true},
 	})
 }
+
+// The centre shows what happened lately, not an archive: a cap here means the
+// endpoint never has to explain itself, and there is no paging to design until
+// somebody asks for one.
+const recentNotifications = 30
+
+type NotificationService struct {
+	db *database.Queries
+}
+
+func NewNotificationService(db *database.Queries) *NotificationService {
+	return &NotificationService{db: db}
+}
+
+func (s *NotificationService) List(ctx context.Context, userID uuid.UUID) ([]database.Notification, error) {
+	return s.db.ListNotifications(ctx, database.ListNotificationsParams{
+		UserID: userID,
+		Limit:  recentNotifications,
+	})
+}
+
+// Returns how many were still unread, which is what the caller just cleared.
+func (s *NotificationService) MarkAllRead(ctx context.Context, userID uuid.UUID) (int64, error) {
+	return s.db.MarkNotificationsRead(ctx, userID)
+}
