@@ -258,7 +258,44 @@
   },
   "chat": {
     "title": "Chatt",
-    "close": "Stäng"
+    "close": "Stäng",
+    "signedOut": "Du är utloggad. Logga in för att se dina meddelanden.",
+    "empty": "Inga konversationer än. Skicka ett meddelande till en säljare från deras annons.",
+    "listError": "Kunde inte ladda dina konversationer.",
+    "threadError": "Kunde inte ladda den här konversationen.",
+    "noMessagePreview": "Inga meddelanden än",
+    "noMessages": "Inga meddelanden än.",
+    "back": "← Tillbaka",
+    "online": "Online",
+    "wantsToChat": "{{username}} vill chatta om {{listing}}.",
+    "accept": "Acceptera",
+    "decline": "Avböj",
+    "messageLabel": "Meddelande",
+    "placeholder": "Skriv ett meddelande…",
+    "send": "Skicka",
+    "sendFailed": "Kunde inte skicka meddelandet.",
+    "decideFailed": "Kunde inte svara på förfrågan.",
+    "status": {
+      "pending": "Förfrågan väntar",
+      "accepted": "Accepterad",
+      "declined": "Avböjd"
+    },
+    "disabled": {
+      "sellerAccept": "Acceptera förfrågan för att svara.",
+      "waitingSeller": "Väntar på att säljaren accepterar din förfrågan.",
+      "youDeclined": "Du avböjde den här förfrågan.",
+      "sellerDeclined": "Säljaren avböjde den här förfrågan."
+    },
+    "start": {
+      "button": "Skicka meddelande till säljaren",
+      "signedOut": "Logga in för att skicka meddelande till säljaren",
+      "label": "Ditt meddelande om {{title}}",
+      "placeholder": "Finns den här kvar?",
+      "send": "Skicka förfrågan",
+      "note": "Säljaren måste acceptera innan ni kan utbyta fler meddelanden.",
+      "failed": "Kunde inte starta konversationen.",
+      "openMessages": "Öppna dina meddelanden"
+    }
   },
   "modal": {
     "login": {

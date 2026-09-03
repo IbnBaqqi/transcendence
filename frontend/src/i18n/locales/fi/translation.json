@@ -257,8 +257,45 @@
     }
   },
   "chat": {
-    "title": "Keskustelu",
-    "close": "Sulje"
+    "title": "Chat",
+    "close": "Sulje",
+    "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi viestisi.",
+    "empty": "Ei vielä keskusteluja. Aloita lähettämällä viesti myyjälle ilmoituksen kautta.",
+    "listError": "Keskustelujen lataaminen epäonnistui.",
+    "threadError": "Keskustelun lataaminen epäonnistui.",
+    "noMessagePreview": "Ei vielä viestejä",
+    "noMessages": "Ei vielä viestejä.",
+    "back": "← Takaisin",
+    "online": "Paikalla",
+    "wantsToChat": "{{username}} haluaa keskustella ilmoituksesta {{listing}}.",
+    "accept": "Hyväksy",
+    "decline": "Hylkää",
+    "messageLabel": "Viesti",
+    "placeholder": "Kirjoita viesti…",
+    "send": "Lähetä",
+    "sendFailed": "Viestin lähettäminen epäonnistui.",
+    "decideFailed": "Pyyntöön vastaaminen epäonnistui.",
+    "status": {
+      "pending": "Pyyntö odottaa",
+      "accepted": "Hyväksytty",
+      "declined": "Hylätty"
+    },
+    "disabled": {
+      "sellerAccept": "Hyväksy pyyntö vastataksesi.",
+      "waitingSeller": "Odotetaan, että myyjä hyväksyy pyyntösi.",
+      "youDeclined": "Hylkäsit tämän pyynnön.",
+      "sellerDeclined": "Myyjä hylkäsi tämän pyynnön."
+    },
+    "start": {
+      "button": "Lähetä viesti myyjälle",
+      "signedOut": "Kirjaudu sisään lähettääksesi viestin myyjälle",
+      "label": "Viestisi ilmoituksesta {{title}}",
+      "placeholder": "Onko tämä vielä saatavilla?",
+      "send": "Lähetä pyyntö",
+      "note": "Myyjän on hyväksyttävä pyyntö, ennen kuin voitte vaihtaa lisää viestejä.",
+      "failed": "Keskustelun aloittaminen epäonnistui.",
+      "openMessages": "Avaa viestisi"
+    }
   },
   "modal": {
     "login": {

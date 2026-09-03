@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { ReserveListingSection } from "../components/forms/ReserveListingSection";
+import { StartConversationSection } from "../components/forms/StartConversationSection";
 import { SellerFollowSection } from "../components/objects/SellerFollowSection";
 
 // Still the #21 stub. The reserve box is self-contained, so whoever builds the
@@ -22,6 +23,7 @@ export default function ListingDetail() {
       <div className="mt-6 space-y-4">
         <SellerFollowSection listingId={id ?? ""} />
         <ReserveListingSection listingId={id ?? ""} />
+        <StartConversationSection listingId={id ?? ""} />
       </div>
     </div>
   );
