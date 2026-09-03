@@ -20,7 +20,11 @@ export function SellerFollowSection({ listingId }: { listingId: string }) {
 
   return (
     <div className="border-line bg-surface flex items-center gap-3 rounded-lg border p-3">
-      <Avatar size="sm" initials={deriveInitials(seller.username)} />
+      <Avatar
+        size="sm"
+        initials={deriveInitials(seller.username)}
+        imageUrl={seller.avatar_url ?? undefined}
+      />
       <div className="min-w-0 flex-1">
         <p className="text-muted text-xs">{t("listings.seller")}</p>
         <Link to={`/users/${seller.id}`} className="text-foreground font-medium hover:underline">

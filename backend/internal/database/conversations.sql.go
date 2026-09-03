@@ -48,6 +48,42 @@ func (q *Queries) CreateConversation(ctx context.Context, arg CreateConversation
 	return i, err
 }
 
+const getChatUser = `-- name: GetChatUser :one
+SELECT
+    users.id,
+    users.username,
+    users.deleted_at,
+    users.last_seen_at,
+    users.show_online_status,
+    profiles.avatar_filename
+FROM users
+LEFT JOIN profiles ON profiles.id = users.id
+WHERE users.id = $1
+`
+
+type GetChatUserRow struct {
+	ID               uuid.UUID
+	Username         string
+	DeletedAt        sql.NullTime
+	LastSeenAt       sql.NullTime
+	ShowOnlineStatus bool
+	AvatarFilename   sql.NullString
+}
+
+func (q *Queries) GetChatUser(ctx context.Context, id uuid.UUID) (GetChatUserRow, error) {
+	row := q.db.QueryRowContext(ctx, getChatUser, id)
+	var i GetChatUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.DeletedAt,
+		&i.LastSeenAt,
+		&i.ShowOnlineStatus,
+		&i.AvatarFilename,
+	)
+	return i, err
+}
+
 const getConversation = `-- name: GetConversation :one
 SELECT id, listing_id, listing_title, buyer_id, seller_id, status, created_at, updated_at FROM conversations
 WHERE id = $1
@@ -98,6 +134,7 @@ SELECT
     u.username              AS other_username,
     u.deleted_at            AS other_deleted_at,
     u.last_seen_at          AS other_last_seen_at,
+    p.avatar_filename       AS other_avatar_filename,
     -- A block in EITHER direction hides presence. The blocker never sees the
     -- thread at all (see the WHERE below), so the direction that matters here
     -- is the blocked party still watching the blocker go online.
@@ -117,6 +154,7 @@ FROM conversations c
 JOIN users u ON u.id = CASE WHEN c.buyer_id = $1
                             THEN c.seller_id
                             ELSE c.buyer_id END
+LEFT JOIN profiles p ON p.id = u.id
 LEFT JOIN LATERAL (
     SELECT body, created_at
       FROM messages
@@ -146,12 +184,14 @@ type ListConversationsForUserRow struct {
 	OtherUsername         string
 	OtherDeletedAt        sql.NullTime
 	OtherLastSeenAt       sql.NullTime
+	OtherAvatarFilename   sql.NullString
 	OtherShowOnlineStatus bool
 	LastMessageBody       string
 	LastMessageAt         sql.NullTime
 	UnreadCount           int64
 }
 
+// LEFT: an inner join would silently drop the thread, not just the avatar.
 func (q *Queries) ListConversationsForUser(ctx context.Context, userID uuid.UUID) ([]ListConversationsForUserRow, error) {
 	rows, err := q.db.QueryContext(ctx, listConversationsForUser, userID)
 	if err != nil {
@@ -174,6 +214,7 @@ func (q *Queries) ListConversationsForUser(ctx context.Context, userID uuid.UUID
 			&i.OtherUsername,
 			&i.OtherDeletedAt,
 			&i.OtherLastSeenAt,
+			&i.OtherAvatarFilename,
 			&i.OtherShowOnlineStatus,
 			&i.LastMessageBody,
 			&i.LastMessageAt,

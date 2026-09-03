@@ -1,10 +1,20 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import Avatar from "./Avatar";
+import { deriveInitials } from "../../lib/initials";
 import type { Listing } from "../../api/types";
 
 // presentation only: takes one Listing and renders it, no data fetching here
-export function ListingCard({ listing, categoryName }: { listing: Listing; categoryName: string }) {
+export function ListingCard({
+  listing,
+  categoryName,
+  showSeller = true,
+}: {
+  listing: Listing;
+  categoryName: string;
+  showSeller?: boolean;
+}) {
   const { t } = useTranslation();
   return (
     <Link
@@ -20,6 +30,22 @@ export function ListingCard({ listing, categoryName }: { listing: Listing; categ
         <p className="text-muted text-sm">
           {t("listings.available", { qty: listing.quantity, unit: listing.unit })}
         </p>
+
+        {/* Plain text, not a link: the card is an anchor now, and an anchor
+            inside an anchor fires both on one click. */}
+        {showSeller && listing.seller && (
+          <div className="border-line mt-3 flex items-center gap-2 border-t pt-3">
+            <Avatar
+              size="sm"
+              initials={deriveInitials(listing.seller.username)}
+              imageUrl={listing.seller.avatar_url ?? undefined}
+            />
+            <span className="text-muted truncate text-sm">
+              <span className="sr-only">{t("listings.seller")}: </span>
+              {listing.seller.username}
+            </span>
+          </div>
+        )}
       </article>
     </Link>
   );

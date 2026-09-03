@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -32,20 +33,22 @@ function MaybeThrows() {
 
 function renderWithPage(element: React.ReactNode) {
   return render(
-    <AuthContext.Provider value={AUTH_STUB}>
-      <ModalProvider>
-        <MemoryRouter initialEntries={["/boom"]}>
-          <Routes>
-            <Route element={<Layout />}>
-              {/* Home is what the header's link points at, so the recovery
+    <QueryClientProvider client={new QueryClient()}>
+      <AuthContext.Provider value={AUTH_STUB}>
+        <ModalProvider>
+          <MemoryRouter initialEntries={["/boom"]}>
+            <Routes>
+              <Route element={<Layout />}>
+                {/* Home is what the header's link points at, so the recovery
                   test can navigate the way a real user would. */}
-              <Route path="/" element={<p>home page content</p>} />
-              <Route path="/boom" element={element} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </ModalProvider>
-    </AuthContext.Provider>,
+                <Route path="/" element={<p>home page content</p>} />
+                <Route path="/boom" element={element} />
+              </Route>
+            </Routes>
+          </MemoryRouter>
+        </ModalProvider>
+      </AuthContext.Provider>
+    </QueryClientProvider>,
   );
 }
 
@@ -77,17 +80,19 @@ describe("Layout", () => {
   test("recovers when the user re-navigates to the page they are already on", async () => {
     const user = userEvent.setup();
     render(
-      <AuthContext.Provider value={AUTH_STUB}>
-        <ModalProvider>
-          <MemoryRouter initialEntries={["/"]}>
-            <Routes>
-              <Route element={<Layout />}>
-                <Route path="/" element={<MaybeThrows />} />
-              </Route>
-            </Routes>
-          </MemoryRouter>
-        </ModalProvider>
-      </AuthContext.Provider>,
+      <QueryClientProvider client={new QueryClient()}>
+        <AuthContext.Provider value={AUTH_STUB}>
+          <ModalProvider>
+            <MemoryRouter initialEntries={["/"]}>
+              <Routes>
+                <Route element={<Layout />}>
+                  <Route path="/" element={<MaybeThrows />} />
+                </Route>
+              </Routes>
+            </MemoryRouter>
+          </ModalProvider>
+        </AuthContext.Provider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();

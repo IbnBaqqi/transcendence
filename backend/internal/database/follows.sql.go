@@ -42,6 +42,7 @@ SELECT
     users.id,
     users.username,
     users.last_seen_at,
+    profiles.avatar_filename,
     -- Same rule as the inbox: a block in either direction hides presence.
     COALESCE(users.show_online_status AND NOT EXISTS (
         SELECT 1 FROM blocks b
@@ -50,6 +51,7 @@ SELECT
     ), false)::boolean AS show_online_status
 FROM follows
 JOIN users ON users.id = follows.follower_id
+LEFT JOIN profiles ON profiles.id = users.id
 WHERE follows.followee_id = $2
   AND users.is_visible
 ORDER BY users.username
@@ -64,9 +66,11 @@ type ListFollowersRow struct {
 	ID               uuid.UUID
 	Username         string
 	LastSeenAt       sql.NullTime
+	AvatarFilename   sql.NullString
 	ShowOnlineStatus bool
 }
 
+// LEFT: an inner join would silently drop anyone without a profile row.
 func (q *Queries) ListFollowers(ctx context.Context, arg ListFollowersParams) ([]ListFollowersRow, error) {
 	rows, err := q.db.QueryContext(ctx, listFollowers, arg.ViewerID, arg.SubjectID)
 	if err != nil {
@@ -80,6 +84,7 @@ func (q *Queries) ListFollowers(ctx context.Context, arg ListFollowersParams) ([
 			&i.ID,
 			&i.Username,
 			&i.LastSeenAt,
+			&i.AvatarFilename,
 			&i.ShowOnlineStatus,
 		); err != nil {
 			return nil, err
@@ -100,6 +105,7 @@ SELECT
     users.id,
     users.username,
     users.last_seen_at,
+    profiles.avatar_filename,
     -- Same rule as the inbox: a block in either direction hides presence.
     COALESCE(users.show_online_status AND NOT EXISTS (
         SELECT 1 FROM blocks b
@@ -108,6 +114,7 @@ SELECT
     ), false)::boolean AS show_online_status
 FROM follows
 JOIN users ON users.id = follows.followee_id
+LEFT JOIN profiles ON profiles.id = users.id
 WHERE follows.follower_id = $2
   AND users.is_visible
 ORDER BY users.username
@@ -122,9 +129,11 @@ type ListFollowingRow struct {
 	ID               uuid.UUID
 	Username         string
 	LastSeenAt       sql.NullTime
+	AvatarFilename   sql.NullString
 	ShowOnlineStatus bool
 }
 
+// LEFT: an inner join would silently drop anyone without a profile row.
 func (q *Queries) ListFollowing(ctx context.Context, arg ListFollowingParams) ([]ListFollowingRow, error) {
 	rows, err := q.db.QueryContext(ctx, listFollowing, arg.ViewerID, arg.SubjectID)
 	if err != nil {
@@ -138,6 +147,7 @@ func (q *Queries) ListFollowing(ctx context.Context, arg ListFollowingParams) ([
 			&i.ID,
 			&i.Username,
 			&i.LastSeenAt,
+			&i.AvatarFilename,
 			&i.ShowOnlineStatus,
 		); err != nil {
 			return nil, err

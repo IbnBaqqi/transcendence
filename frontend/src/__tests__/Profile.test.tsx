@@ -1,16 +1,18 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Profile from "../pages/Profile";
 import { ModalProvider } from "../providers/ModalProvider";
 import { ModalRoot } from "../components/modal/ModalRoot";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
-import { useOwnProfile } from "../api/profile";
+import { useDeleteAvatar, useOwnProfile, useUploadAvatar } from "../api/profile";
 import type { OwnProfile } from "../api/types";
 
 vi.mock("../api/profile", () => ({
   useOwnProfile: vi.fn(),
   useUpdateOwnProfile: vi.fn(),
+  useUploadAvatar: vi.fn(),
+  useDeleteAvatar: vi.fn(),
 }));
 
 const mockedProfile = vi.mocked(useOwnProfile);
@@ -40,8 +42,21 @@ const AUTH_STUB: AuthContextValue = {
   restoreSession: vi.fn(),
 };
 
+const uploadAvatar = vi.fn();
+const deleteAvatar = vi.fn();
+
 beforeEach(() => {
   vi.mocked(AUTH_STUB.logout).mockClear();
+  uploadAvatar.mockReset().mockResolvedValue({ avatar_url: "/uploads/new.png" });
+  deleteAvatar.mockReset().mockResolvedValue(undefined);
+  vi.mocked(useUploadAvatar).mockReturnValue({
+    mutateAsync: uploadAvatar,
+    isPending: false,
+  } as unknown as ReturnType<typeof useUploadAvatar>);
+  vi.mocked(useDeleteAvatar).mockReturnValue({
+    mutateAsync: deleteAvatar,
+    isPending: false,
+  } as unknown as ReturnType<typeof useDeleteAvatar>);
 });
 
 // Only the three fields the page actually reads; the real query result type
@@ -122,4 +137,100 @@ test("disables the Log Out button while the request is in flight", async () => {
 
   resolveLogout();
   expect(await screen.findByRole("button", { name: "Log Out" })).toBeInTheDocument();
+});
+
+const WITH_AVATAR: OwnProfile = { ...PROFILE, avatar_url: "/uploads/stored.png" };
+
+// alt="" on purpose - the picture is decorative beside the username - so it
+// has no img role to query by.
+test("renders the stored avatar rather than the initials fallback", () => {
+  const { container } = renderPage({ data: WITH_AVATAR });
+  expect(container.querySelector("img")).toHaveAttribute("src", "/uploads/stored.png");
+});
+
+// The whole path: the avatar button opens the picker, the picked file reaches
+// the upload. Nothing below the modal is stubbed, so a broken onImageSelected
+// wiring fails here rather than in review.
+test("uploads the picture the user picks", async () => {
+  const user = userEvent.setup();
+  renderPage({ data: PROFILE });
+
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
+
+  const file = new File(["x"], "me.png", { type: "image/png" });
+  // document, not container: the modal renders through a portal. And fireEvent,
+  // because the dropzone's input is display:none and userEvent won't click it.
+  const input = document.querySelector('input[type="file"]');
+  fireEvent.change(input as HTMLInputElement, { target: { files: [file] } });
+
+  await user.click(await screen.findByRole("button", { name: "Save" }));
+
+  expect(uploadAvatar).toHaveBeenCalledWith(file);
+});
+
+test("offers removal only once a picture is stored", () => {
+  renderPage({ data: PROFILE });
+  expect(screen.queryByRole("button", { name: "Remove photo" })).not.toBeInTheDocument();
+
+  renderPage({ data: WITH_AVATAR });
+  expect(screen.getByRole("button", { name: "Remove photo" })).toBeInTheDocument();
+});
+
+test("removing a picture calls the delete endpoint", async () => {
+  const user = userEvent.setup();
+  renderPage({ data: WITH_AVATAR });
+
+  await user.click(screen.getByRole("button", { name: "Remove photo" }));
+
+  expect(deleteAvatar).toHaveBeenCalled();
+});
+
+// The backend's own message is more useful than anything written here - 413
+// says the image is too large, 415 says the type is wrong.
+test("a rejected upload surfaces the reason and keeps no preview", async () => {
+  uploadAvatar.mockRejectedValue({ status: 413, message: "Image is too large" });
+  const user = userEvent.setup();
+  const { container } = renderPage({ data: WITH_AVATAR });
+
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
+  const input = document.querySelector('input[type="file"]');
+  fireEvent.change(input as HTMLInputElement, {
+    target: { files: [new File(["x"], "big.png", { type: "image/png" })] },
+  });
+  await user.click(await screen.findByRole("button", { name: "Save" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Image is too large");
+  // The picture was never stored, so the screen must fall back to what is.
+  await waitFor(() => {
+    expect(container.querySelector("img")).toHaveAttribute("src", "/uploads/stored.png");
+  });
+});
+
+test("a rejected removal surfaces the reason", async () => {
+  deleteAvatar.mockRejectedValue({ status: 500, message: "Something broke" });
+  const user = userEvent.setup();
+  renderPage({ data: WITH_AVATAR });
+
+  await user.click(screen.getByRole("button", { name: "Remove photo" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("Something broke");
+});
+
+// The preview is a blob: URL that exists only in this tab. Leaving it in place
+// after the upload looks correct on this screen and nowhere else - including
+// after a reload - so the stored URL has to take over.
+test("the stored picture takes over from the preview once the upload lands", async () => {
+  const user = userEvent.setup();
+  const { container } = renderPage({ data: WITH_AVATAR });
+
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
+  const input = document.querySelector('input[type="file"]');
+  fireEvent.change(input as HTMLInputElement, {
+    target: { files: [new File(["x"], "me.png", { type: "image/png" })] },
+  });
+  await user.click(await screen.findByRole("button", { name: "Save" }));
+
+  await waitFor(() => {
+    expect(container.querySelector("img")).toHaveAttribute("src", "/uploads/stored.png");
+  });
 });

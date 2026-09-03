@@ -462,15 +462,65 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		return dtos.PaginatedListings{}, err
 	}
 
+	bySeller, err := s.SellersFor(ctx, items)
+	if err != nil {
+		return dtos.PaginatedListings{}, err
+	}
+
 	totalPages := int((total + int64(limit) - 1) / int64(limit))
 
 	return dtos.PaginatedListings{
-		Items:      dtos.WithTagsEach(dtos.ToListingResponsesWithImages(items, byListing), tagsByListing),
+		Items: dtos.WithSellerEach(
+			dtos.WithTagsEach(dtos.ToListingResponsesWithImages(items, byListing), tagsByListing),
+			bySeller,
+		),
 		Total:      total,
 		Page:       page,
 		Limit:      limit,
 		TotalPages: totalPages,
 	}, nil
+}
+
+func (s *ListingService) SellersFor(
+	ctx context.Context,
+	items []database.Listing,
+) (map[uuid.UUID]dtos.ListingSeller, error) {
+	out := make(map[uuid.UUID]dtos.ListingSeller, len(items))
+	if len(items) == 0 {
+		return out, nil
+	}
+
+	seen := make(map[uuid.UUID]struct{}, len(items))
+	ids := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		if _, ok := seen[item.SellerID]; ok {
+			continue
+		}
+		seen[item.SellerID] = struct{}{}
+		ids = append(ids, item.SellerID)
+	}
+
+	rows, err := s.db.ListSellersByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		out[row.ID] = dtos.ToListingSeller(row.ID, row.Username, row.AvatarFilename)
+	}
+	return out, nil
+}
+
+func (s *ListingService) SellerFor(ctx context.Context, sellerID uuid.UUID) (*dtos.ListingSeller, error) {
+	rows, err := s.db.ListSellersByIDs(ctx, []uuid.UUID{sellerID})
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	seller := dtos.ToListingSeller(rows[0].ID, rows[0].Username, rows[0].AvatarFilename)
+	return &seller, nil
 }
 
 func (s *ListingService) TagsForListing(ctx context.Context, id uuid.UUID) ([]string, error) {

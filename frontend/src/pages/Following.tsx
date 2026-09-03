@@ -74,7 +74,11 @@ export default function Following() {
               key={followee.id}
               className="border-line bg-surface flex items-center gap-3 rounded-lg border p-3"
             >
-              <Avatar size="sm" initials={deriveInitials(followee.username)} />
+              <Avatar
+                size="sm"
+                initials={deriveInitials(followee.username)}
+                imageUrl={followee.avatar_url ?? undefined}
+              />
               <div className="min-w-0 flex-1">
                 <Link
                   to={`/users/${followee.id}`}

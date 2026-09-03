@@ -6,7 +6,8 @@
     "notifications": "Notifications",
     "addListing": "Add listing",
     "orders": "Orders",
-    "following": "Following"
+    "following": "Following",
+    "profile": "Profile"
   },
   "language": {
     "en": "English",
@@ -277,7 +278,10 @@
   },
   "avatar": {
     "edit": "Edit",
-    "editAria": "Edit profile picture"
+    "editAria": "Edit profile picture",
+    "remove": "Remove photo",
+    "removing": "Removing…",
+    "uploading": "Uploading…"
   },
   "errorBoundary": {
     "somethingWentWrong": "Something went wrong",

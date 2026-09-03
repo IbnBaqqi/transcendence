@@ -19,10 +19,16 @@ vi.mock("../providers/modalContext", () => ({ useModal: vi.fn() }));
 const VIEWER: User = { id: BUYER_ID, username: "tester", email: "t@example.com", role: "user" };
 
 const ROWS: ChatUser[] = [
-  { id: SELLER_ID, username: "mushroom_matti", presence: { is_online: true } },
+  {
+    id: SELLER_ID,
+    username: "mushroom_matti",
+    avatar_url: "/uploads/matti.png",
+    presence: { is_online: true },
+  },
   {
     id: "44444444-4444-4444-4444-444444444444",
     username: "berry_bea",
+    avatar_url: null,
     presence: { is_online: false },
   },
 ];
@@ -94,5 +100,15 @@ describe("Following", () => {
 
     expect(screen.getByText("You're not following anyone yet.")).toBeInTheDocument();
     expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
+  });
+  // The fallback is the default avatar, so a row for someone who never
+  // uploaded must still show something rather than an empty circle.
+  test("wears each follow's picture, falling back to initials", () => {
+    const { container } = renderPage({ data: ROWS }, VIEWER);
+
+    const images = container.querySelectorAll("img");
+    expect(images).toHaveLength(1);
+    expect(images[0]).toHaveAttribute("src", "/uploads/matti.png");
+    expect(screen.getByText("B")).toBeInTheDocument();
   });
 });

@@ -29,6 +29,7 @@ const VIEWER: User = { id: BUYER_ID, username: "tester", email: "t@example.com",
 const SELLER_ROW: ChatUser = {
   id: SELLER_ID,
   username: "seller",
+  avatar_url: null,
   presence: { is_online: true },
 };
 
