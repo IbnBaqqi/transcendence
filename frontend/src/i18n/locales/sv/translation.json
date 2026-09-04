@@ -86,6 +86,8 @@
     "retry": "Försök igen",
     "removePhoto": "Ta bort foto",
     "addPhoto": "Lägg till foto",
+    "moveEarlier": "Flytta tidigare",
+    "moveLater": "Flytta senare",
     "ariaUploadPhotos": "Ladda upp foton"
   },
   "categories": {
@@ -489,6 +491,7 @@
     "maxImages_other": "Du kan bara lägga till högst {{max}} bilder.",
     "unsupportedImageType": "\"{{name}}\" är inte en stödd bildtyp (använd JPEG, PNG eller WebP).",
     "fileTooLarge": "\"{{name}}\" är större än {{mb}} MB.",
+    "uploadTooLarge": "Den här bilden är för stor för att ladda upp.",
     "usernameRequired": "Användarnamn krävs",
     "usernameTooLong": "Användarnamnet får vara högst 50 tecken",
     "usernameNoSpaces": "Användarnamnet får inte innehålla mellanslag",
