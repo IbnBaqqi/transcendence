@@ -40,7 +40,11 @@ export default function Header() {
             {t("brand")}
           </Link>
         </div>
-        <nav className="xs:gap-4 flex items-center gap-2 text-sm">
+        {/* wrap, not hide: an admin gets three text links appended here, and at
+            320px that is 400px of nav in a 320px viewport. Hiding them below sm
+            would leave those sections reachable only by typing the URL - these
+            links are the only navigation into them anywhere in the app. */}
+        <nav className="xs:gap-4 flex flex-wrap items-center justify-end gap-2 text-sm">
           <LanguageSwitcher />
           {/* {navLinkClass} passes the function itself and React Router calls it and supplies { isActive } */}
           {/* <NavLink to="/" className={navLinkClass}> */}
