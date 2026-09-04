@@ -163,10 +163,33 @@ WHERE (sqlc.narg(role)::text IS NULL OR role = sqlc.narg(role)::text)
 SELECT COALESCE((SELECT is_visible FROM users WHERE id = sqlc.arg(user_id)), false)::boolean;
 
 -- name: ListSellersByIDs :many
+-- The rating rides along with the seller rather than in a second query: this
+-- already batches one page of listings' sellers, so the aggregate costs no
+-- extra round trip.
+--
+-- Aggregated once and joined, never per listing. A correlated subquery here is
+-- O(listings x reviews) and measurably catastrophic - the planner reads the
+-- whole reviews table once per row and never touches idx_reviews_seller_id.
+--
+-- count, not just the average: 0 reviews and a genuine 0 are different states,
+-- and only the count tells them apart.
+--
+-- The WHERE inside the aggregate is for cost, not correctness: the join filters
+-- to these sellers either way, so removing it changes no result and no test can
+-- catch it - it just makes every listing page aggregate every review in the
+-- table instead of the twenty sellers it asked for.
 SELECT
     users.id,
     users.username,
-    profiles.avatar_filename
+    profiles.avatar_filename,
+    COALESCE(r.average, 0)::float8 AS rating_average,
+    COALESCE(r.total, 0)::bigint   AS rating_count
 FROM users
 LEFT JOIN profiles ON profiles.id = users.id
+LEFT JOIN (
+    SELECT seller_id, AVG(rating) AS average, COUNT(*) AS total
+    FROM reviews
+    WHERE seller_id = ANY(sqlc.arg(user_ids)::uuid[])
+    GROUP BY seller_id
+) r ON r.seller_id = users.id
 WHERE users.id = ANY(sqlc.arg(user_ids)::uuid[]);
