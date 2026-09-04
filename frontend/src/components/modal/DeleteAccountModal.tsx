@@ -8,7 +8,7 @@ export function DeleteAccountModal() {
 
   return (
     <div className="p-6">
-      <h2 className="mb-4 text-lg font-semibold">{t("modal.deleteAccount.title")}</h2>
+      <h2 className="text-section mb-4 font-semibold">{t("modal.deleteAccount.title")}</h2>
       <DeleteAccountSection onClose={closeModal} />
     </div>
   );

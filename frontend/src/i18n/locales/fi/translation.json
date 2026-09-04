@@ -102,7 +102,9 @@
   "listings": {
     "available": "{{qty}} {{unit}} saatavilla",
     "showingOf": "Näytetään {{shown}} / {{total}}",
-    "seller": "Myyjä"
+    "seller": "Myyjä",
+    "newSeller": "Uusi myyjä",
+    "rating": "{{average}} ★ ({{count}})"
   },
   "pagination": {
     "label": "Sivutus",
@@ -319,7 +321,8 @@
         "newest": "Uusimmat ensin",
         "oldest": "Vanhimmat ensin",
         "price_asc": "Halvimmat ensin",
-        "price_desc": "Kalleimmat ensin"
+        "price_desc": "Kalleimmat ensin",
+        "rating_desc": "Parhaat arviot ensin"
       },
       "apply": "Käytä suodattimia",
       "clearAll": "Tyhjennä kaikki",

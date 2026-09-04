@@ -25,7 +25,7 @@ export default function Dashboard() {
   if (!user) {
     return (
       <div className="mx-auto max-w-4xl space-y-3 px-4 py-8">
-        <h1 className="text-foreground text-2xl font-bold">{t("pages.dashboard.title")}</h1>
+        <h1 className="text-foreground text-page-title font-bold">{t("pages.dashboard.title")}</h1>
         <p className="text-muted text-sm">{t("pages.dashboard.signedOut")}</p>
         <Button variant="primary" onClick={() => openModal("login")}>
           {t("common.logIn")}
@@ -43,7 +43,7 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">{t("pages.dashboard.title")}</h1>
+      <h1 className="text-foreground text-page-title font-bold">{t("pages.dashboard.title")}</h1>
 
       {groups.needsYou.length > 0 && (
         <Section title={t("pages.dashboard.needsYou", { count: groups.needsYou.length })}>
@@ -137,7 +137,7 @@ export default function Dashboard() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-foreground text-lg font-semibold">{title}</h2>
+      <h2 className="text-foreground text-section font-semibold">{title}</h2>
       {children}
     </section>
   );

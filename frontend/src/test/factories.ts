@@ -26,6 +26,9 @@ export function makeListing(overrides: Partial<Listing> = {}): Listing {
       id: "3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34",
       username: "mushroom_matti",
       avatar_url: null,
+      // Enough reviews to be rated, so a test that wants the new-seller state
+      // has to ask for it rather than getting it by default.
+      rating: { average: 4.5, count: 12 },
     },
     ...overrides,
   };

@@ -12,7 +12,7 @@ export default function AddListing() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
-      <h1 className="text-foreground text-3xl font-bold">{t("pages.addListing.title")}</h1>
+      <h1 className="text-foreground text-page-title font-bold">{t("pages.addListing.title")}</h1>
       {isLoading ? (
         <p className="text-muted text-sm">{t("common.loading")}</p>
       ) : user ? (

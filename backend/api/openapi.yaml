@@ -283,17 +283,23 @@ components:
             removed *and* you are its seller or an admin — for everyone else a
             removed listing is 404, so the field can never appear.
 
+            `ReportedListing.removed_at` uses the opposite convention on
+            purpose: always present, `null` while the listing is visible. Here
+            absence is itself the answer — you are not entitled to know — and
+            there it could not be, since only admins read that queue.
+
         seller:
           description: |
-            Who posted it, enough to render a card: a name and a face. Always
-            sent - a listing always has a seller, and a failure to load one
-            fails the request rather than answering without it, the same as the
-            images and tags beside it. Nullable in the schema because the Go
-            field is a pointer; a client that meets null has met a bug.
+            Who posted it, enough to render a card: a name, a face and a
+            rating. Always sent - a listing always has a seller, and a failure
+            to load one fails the request rather than answering without it, the
+            same as the images and tags beside it. Nullable in the schema
+            because the Go field is a pointer; a client that meets null has met
+            a bug.
           oneOf:
             - type: "null"
             - type: object
-              required: [id, username, avatar_url]
+              required: [id, username, avatar_url, rating]
               properties:
                 id:
                   type: string
@@ -304,6 +310,16 @@ components:
                   type: [string, "null"]
                   description: Null when none is set; the default is the client's decision.
                   examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
+                rating:
+                  $ref: "#/components/schemas/Rating"
+                  description: |
+                    The seller's rating, the same shape the profile publishes.
+
+                    **Read `count`, not just `average`.** An unrated seller has
+                    `{average: 0, count: 0}`, which is indistinguishable from a
+                    genuinely bad one if you only look at the average. A client
+                    showing a rating should show something else below a
+                    threshold of its own choosing rather than rendering 0.
     PaginatedReviews:
       type: object
       required: [items, total, page, limit, total_pages]
@@ -977,7 +993,7 @@ components:
 
     ReportedListing:
       type: object
-      required: [listing_id, title, seller_id, report_count, first_reported_at]
+      required: [listing_id, title, seller_id, removed_at, report_count, first_reported_at]
       description: |
         One row of the queue: a listing with at least one open report, oldest
         complaint first.
@@ -994,7 +1010,15 @@ components:
           type: string
           format: date-time
           nullable: true
-          description: Null when the listing is still visible.
+          description: |
+            When a moderator removed this listing. Always present — `null` while
+            it is still visible.
+
+            `Listing.removed_at` uses the opposite convention on purpose: absent
+            rather than `null` when there is nothing to report, because there the
+            field's absence means the reader may not be told. This queue is
+            admin-only, so there is nothing to withhold and the field always
+            carries a value.
         report_count:
           type: integer
           format: int64
@@ -1004,7 +1028,7 @@ components:
 
     Report:
       type: object
-      required: [id, reason, detail, status, created_at]
+      required: [id, reporter_id, reason, detail, status, created_at]
       properties:
         id:
           type: string
@@ -1037,7 +1061,7 @@ components:
 
     ModerationAction:
       type: object
-      required: [id, listing_id, action, note, created_at]
+      required: [id, listing_id, moderator_id, action, note, created_at]
       description: One entry in the audit trail. Nothing here is ever edited.
       properties:
         id:
@@ -1141,7 +1165,7 @@ components:
 
     UserAction:
       type: object
-      required: [id, action, note, created_at]
+      required: [id, action, note, moderator_id, created_at]
       description: One entry in an account's audit trail. Append-only.
       properties:
         id:
@@ -2347,8 +2371,17 @@ paths:
           schema:
             type: string
             # Mirrors the sortOptions map in database/listings_search.go.
-            enum: [newest, oldest, price_asc, price_desc]
+            enum: [newest, oldest, price_asc, price_desc, rating_desc]
             default: newest
+            description: |
+              `rating_desc` orders by the seller's average review score, highest
+              first. A seller with no reviews sorts last rather than being
+              hidden — the listing still appears, and its `seller.rating.count`
+              is what tells a client to show something other than a score.
+
+              The average is raw, so a seller with one five-star review outranks
+              one with forty at 4.8. That is what an average is; a client that
+              wants to say otherwise has the count to say it with.
         - name: page
           in: query
           description: 1-based. A page past the end returns an empty `items`.

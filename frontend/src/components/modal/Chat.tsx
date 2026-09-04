@@ -31,7 +31,7 @@ export function Chat() {
   return (
     <div className="bg-surface-muted flex h-full flex-col">
       <div className="border-line flex items-center justify-between border-b px-4 py-3">
-        <h2 className="text-foreground text-lg font-semibold">{t("chat.title")}</h2>
+        <h2 className="text-foreground text-section font-semibold">{t("chat.title")}</h2>
         <Button variant="secondary" type="button" onClick={closeChat}>
           {t("chat.close")}
         </Button>

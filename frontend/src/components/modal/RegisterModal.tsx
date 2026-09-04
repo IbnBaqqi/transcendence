@@ -9,7 +9,7 @@ export function RegisterModal() {
 
   return (
     <div className="space-y-2 p-6">
-      <h2 className="mb-4 text-lg font-semibold">{t("modal.register.title")}</h2>
+      <h2 className="text-section mb-4 font-semibold">{t("modal.register.title")}</h2>
       <RegisterSection onClose={closeModal} />
       <div>
         <span>{t("modal.register.alreadyHaveAccount")}</span>

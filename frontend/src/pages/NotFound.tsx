@@ -6,7 +6,7 @@ export default function NotFound() {
   const { t } = useTranslation();
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-      <h1 className="text-foreground text-3xl font-bold">{t("pages.notFound.title")}</h1>
+      <h1 className="text-foreground text-page-title font-bold">{t("pages.notFound.title")}</h1>
       <p className="text-muted mt-2">{t("pages.notFound.subtitle")}</p>
       <Link to="/" className="text-accent mt-4 inline-block hover:underline">
         {t("pages.notFound.backHome")}

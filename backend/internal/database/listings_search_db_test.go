@@ -224,3 +224,71 @@ func TestTheSellerFilterComposesWithCategory(t *testing.T) {
 		t.Errorf("titles = %v, want [Chanterelles] - the two filters did not compose", got)
 	}
 }
+
+// Ordering, which the query-shape tests deliberately cannot see: they pin
+// where the join goes, this pins what it produces.
+func TestRatingDescOrdersSellersByTheirAverage(t *testing.T) {
+	db := testdb.New(t)
+	ctx := context.Background()
+
+	// A listing per seller, so the listing order is the seller order.
+	seller := func(name string, ratings ...int) uuid.UUID {
+		t.Helper()
+		id := makeSeller(t, db, name)
+		addListing(t, db, id, name+"'s listing", "mushrooms")
+
+		var listingID uuid.UUID
+		if err := db.QueryRow(
+			`SELECT id FROM listings WHERE seller_id = $1`, id).Scan(&listingID); err != nil {
+			t.Fatalf("reading %s's listing: %v", name, err)
+		}
+
+		// Indexed, not keyed on the rating: two reviews of the same score would
+		// otherwise ask for the same buyer twice.
+		for i, rating := range ratings {
+			buyer := makeSeller(t, db, name+"buyer"+string(rune('a'+i)))
+			orderID := uuid.New()
+			if _, err := db.Exec(
+				`INSERT INTO orders (id, listing_id, listing_title, buyer_id, seller_id, quantity, unit_price, total_price)
+				 VALUES ($1, $2, 'snapshot', $3, $4, 1, '1.00', '1.00')`,
+				orderID, listingID, buyer, id); err != nil {
+				t.Fatalf("creating an order: %v", err)
+			}
+			if _, err := db.Exec(
+				`INSERT INTO reviews (id, order_id, seller_id, reviewer_id, rating)
+				 VALUES ($1, $2, $3, $4, $5)`,
+				uuid.New(), orderID, id, buyer, rating); err != nil {
+				t.Fatalf("creating a review: %v", err)
+			}
+		}
+		return id
+	}
+
+	seller("best", 5, 5)  // 5.0
+	seller("middling", 3) // 3.0
+	seller("unrated")     // no reviews at all
+
+	rows, err := db.Queries.SearchListingsDynamic(ctx, database.SearchListingsParams{
+		Sort: database.SortRatingDesc, Limit: 50,
+	})
+	if err != nil {
+		t.Fatalf("searching: %v", err)
+	}
+
+	got := make([]string, 0, len(rows))
+	for _, row := range rows {
+		got = append(got, row.Title)
+	}
+
+	// Unrated last, and still present: the decision was that a new seller is
+	// shown rather than hidden, with the client saying so from the count.
+	want := []string{"best's listing", "middling's listing", "unrated's listing"}
+	if len(got) != len(want) {
+		t.Fatalf("titles = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("position %d = %q, want %q (full order %v)", i, got[i], want[i], got)
+		}
+	}
+}

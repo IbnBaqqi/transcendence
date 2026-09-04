@@ -102,7 +102,9 @@
   "listings": {
     "available": "{{qty}} {{unit}} available",
     "showingOf": "Showing {{shown}} of {{total}}",
-    "seller": "Seller"
+    "seller": "Seller",
+    "newSeller": "New seller",
+    "rating": "{{average}} ★ ({{count}})"
   },
   "pagination": {
     "label": "Pagination",
@@ -319,7 +321,8 @@
         "newest": "Newest first",
         "oldest": "Oldest first",
         "price_asc": "Cheapest first",
-        "price_desc": "Most expensive first"
+        "price_desc": "Most expensive first",
+        "rating_desc": "Best rated first"
       },
       "apply": "Apply filters",
       "clearAll": "Clear all",

@@ -91,7 +91,9 @@ export function AccountRow({ account }: { account: AdminUser }) {
 
       {expanded && (
         <div className="border-line mt-3 border-t pt-3">
-          <h3 className="text-foreground text-sm font-bold">{t("adminUsers.historyTitle")}</h3>
+          <h3 className="text-foreground text-secondary font-bold">
+            {t("adminUsers.historyTitle")}
+          </h3>
           {history && history.length > 0 ? (
             // Server order, newest first. Nothing here is edited or deleted, so
             // an account suspended and reinstated twice shows all four rows.

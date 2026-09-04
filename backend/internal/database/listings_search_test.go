@@ -18,6 +18,7 @@ func TestSortKeysProduceExpectedOrdering(t *testing.T) {
 		{"price descending", "price_desc", "listings.price DESC"},
 		{"unknown key falls back", "cheapest", "listings.created_at DESC"},
 		{"keys are case sensitive", "PRICE_ASC", "listings.created_at DESC"},
+		{"rating descending", "rating_desc", "COALESCE(sr.average, 0) DESC"},
 	}
 
 	for _, tt := range tests {
@@ -115,5 +116,56 @@ func TestIsValidSort(t *testing.T) {
 	}
 	if !IsValidSort(DefaultSort) {
 		t.Error("DefaultSort is not itself a valid key")
+	}
+}
+
+// The join is the expensive half and it exists for one sort. These pin where
+// it appears, which no result can show: a query that joins when it need not
+// returns exactly the same rows, only slower.
+func TestTheRatingJoinAppearsOnlyWhereItIsRead(t *testing.T) {
+	const join = "JOIN (SELECT seller_id, AVG(rating)"
+
+	tests := []struct {
+		name      string
+		sort      string
+		countOnly bool
+		want      bool
+	}{
+		{"the rating sort joins", SortRatingDesc, false, true},
+		// Sorting cannot change how many rows match, so the count has no
+		// reason to pay for the aggregate.
+		{"its count query does not", SortRatingDesc, true, false},
+		{"another sort does not", "price_asc", false, false},
+		{"the default does not", "", false, false},
+		// An unknown sort falls back to newest, and the fallback must not drag
+		// the join along with it.
+		{"an unknown sort does not", "cheapest", false, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			query, _ := buildSearchListingsQuery(
+				SearchListingsParams{Sort: tt.sort, Limit: 20}, tt.countOnly)
+
+			if got := strings.Contains(query, join); got != tt.want {
+				t.Errorf("join present = %v, want %v\ngot: %s", got, tt.want, query)
+			}
+		})
+	}
+}
+
+// The aggregate is joined once, not evaluated per row. The per-row form takes
+// 55.9s against 14ms on 20k listings because the planner reads every review
+// once per listing - and both forms return identical rows, so only the shape
+// of the SQL can say which one this is.
+func TestTheRatingIsAggregatedNotCorrelated(t *testing.T) {
+	query, _ := buildSearchListingsQuery(
+		SearchListingsParams{Sort: SortRatingDesc, Limit: 20}, false)
+
+	if !strings.Contains(query, "GROUP BY seller_id) sr ON sr.seller_id = listings.seller_id") {
+		t.Errorf("the rating is not a joined aggregate\ngot: %s", query)
+	}
+	if strings.Contains(query, "ORDER BY (SELECT") {
+		t.Errorf("the rating is correlated in ORDER BY, which is quadratic\ngot: %s", query)
 	}
 }

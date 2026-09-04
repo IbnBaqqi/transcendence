@@ -32,7 +32,7 @@ export default function Search() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">{t("pages.search.title")}</h1>
+      <h1 className="text-foreground text-page-title font-bold">{t("pages.search.title")}</h1>
 
       {/* Remounting reseeds the draft inputs when the filters change from
           outside. page is out of the key: paging must not discard a draft. */}
