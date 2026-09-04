@@ -119,7 +119,10 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 func (s *OrderService) GetOrder(ctx context.Context, userID uuid.UUID, orderID uuid.UUID) (database.Order, error) {
 	order, err := s.db.GetOrder(ctx, orderID)
 	if err != nil {
-		return database.Order{}, &NotFoundError{Message: "Order not found"}
+		if errors.Is(err, sql.ErrNoRows) {
+			return database.Order{}, &NotFoundError{Message: "Order not found"}
+		}
+		return database.Order{}, err
 	}
 	if order.BuyerID != userID && order.SellerID != userID {
 		return database.Order{}, &ForbiddenError{Message: "You are not part of this order"}
