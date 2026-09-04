@@ -3499,7 +3499,8 @@ paths:
         The two handshake entries share a `created_at`, because they are
         written in one transaction; they are ordered by `id` behind it.
 
-        Buyer and seller only.
+        Buyer and seller only. An admin reads the same timeline through
+        `GET /admin/orders/{id}/events`.
       responses:
         "200":
           description: The timeline, oldest first.
@@ -4383,6 +4384,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /admin/orders/{id}/events:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [admin, orders]
+      summary: An order's history, for an admin
+      operationId: getOrderEventsForAdmin
+      description: |
+        The same timeline `GET /orders/{id}/events` returns, for an admin who
+        is not a party to the order — which is every admin judging one, since
+        that endpoint is buyer-and-seller only.
+
+        Without this an admin can see where a stuck order ended but not how it
+        got there, and cannot read back the `reason` another admin wrote when
+        resolving it: `POST /admin/orders/{id}/resolve` records that reason
+        into this history, and until now the only people who could read it
+        were the two it was written for.
+
+        Same query, same `OrderEvent` schema and the same order as the parties
+        get. An admin reading a different history from the people it is about
+        would be worse than reading none.
+      responses:
+        "200":
+          description: The timeline, oldest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderEvent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/ServerError"
 
