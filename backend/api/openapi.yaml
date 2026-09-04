@@ -291,11 +291,11 @@ components:
         seller:
           description: |
             Who posted it, enough to render a card: a name, a face and a
-            rating. Always
-            sent - a listing always has a seller, and a failure to load one
-            fails the request rather than answering without it, the same as the
-            images and tags beside it. Nullable in the schema because the Go
-            field is a pointer; a client that meets null has met a bug.
+            rating. Always sent - a listing always has a seller, and a failure
+            to load one fails the request rather than answering without it, the
+            same as the images and tags beside it. Nullable in the schema
+            because the Go field is a pointer; a client that meets null has met
+            a bug.
           oneOf:
             - type: "null"
             - type: object
