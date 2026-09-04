@@ -407,3 +407,37 @@ export interface DeleteUserInput {
   username: string;
   reason: string;
 }
+
+// --- Admin orders ---
+
+// Order plus the one thing only an admin is told. Derived server-side and
+// never stored, so it cannot drift from the columns and accounts it
+// summarises - which is why the UI reads it rather than re-deriving it from
+// the timestamps beside it.
+export interface AdminOrder extends Order {
+  // True when no party can move this order, which is exactly what /resolve
+  // accepts. Two shapes qualify: confirmed with one handshake mark older than
+  // seven days, or pending/confirmed with neither mark and both parties gone.
+  stuck: boolean;
+}
+
+export interface PaginatedAdminOrders {
+  items: AdminOrder[];
+  total: number;
+  // Echoes the requested page, even past the last one.
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
+// completed says the trade happened after all; cancelled says it did not;
+// refunded says it did and was undone. The two that end without a trade return
+// the quantity to the listing's stock.
+export type ResolveOutcome = "completed" | "cancelled" | "refunded";
+
+export interface ResolveOrderInput {
+  outcome: ResolveOutcome;
+  // Required, max 500. It lands in the order's event history as the note and
+  // both parties can read it, so it is written for them.
+  reason: string;
+}
