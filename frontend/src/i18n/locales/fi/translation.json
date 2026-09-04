@@ -35,7 +35,8 @@
     "tryAgain": "Yritä uudelleen",
     "somethingWentWrong": "Jokin meni pieleen. Yritä uudelleen.",
     "couldNotReachServer": "Palvelimeen ei saada yhteyttä",
-    "deleteAccount": "Poista tili"
+    "deleteAccount": "Poista tili",
+    "deleting": "Poistetaan…"
   },
   "forms": {
     "email": "Sähköposti",
@@ -448,7 +449,10 @@
       "alreadyHaveAccount": "Onko sinulla jo tili? "
     },
     "deleteAccount": {
-      "title": "Poista tili"
+      "title": "Poista tili",
+      "warning": "Tilisi anonymisoidaan, ei poisteta. Tilaukset säilyvät molemmilla puolilla ja toinen osapuoli säilyttää oman kopionsa keskusteluista.",
+      "confirmLabel": "Kirjoita {{username}} vahvistaaksesi",
+      "failed": "Tilin poistaminen ei onnistunut."
     },
     "imageUpload": {
       "title": "Lataa kuva"
@@ -514,7 +518,8 @@
     "bioTooLong": "Esittely on liian pitkä",
     "priceNegative": "Hinta ei voi olla negatiivinen",
     "priceRangeInvalid": "Enimmäishinta ei voi olla vähimmäishintaa pienempi",
-    "searchTextTooLong": "Hakuteksti on liian pitkä"
+    "searchTextTooLong": "Hakuteksti on liian pitkä",
+    "confirmUsernameMismatch": "Tämä ei vastaa käyttäjänimeäsi."
   },
   "auth": {
     "continueWithGoogle": "Jatka Googlella",

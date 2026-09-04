@@ -35,7 +35,8 @@
     "tryAgain": "Försök igen",
     "somethingWentWrong": "Något gick fel. Försök igen.",
     "couldNotReachServer": "Det gick inte att nå servern",
-    "deleteAccount": "Radera konto"
+    "deleteAccount": "Radera konto",
+    "deleting": "Raderar…"
   },
   "forms": {
     "email": "E-post",
@@ -448,7 +449,10 @@
       "alreadyHaveAccount": "Har du redan ett konto? "
     },
     "deleteAccount": {
-      "title": "Radera konto"
+      "title": "Radera konto",
+      "warning": "Ditt konto anonymiseras, inte raderas. Beställningar finns kvar på båda sidor och motparten behåller sin kopia av konversationer.",
+      "confirmLabel": "Skriv {{username}} för att bekräfta",
+      "failed": "Kunde inte radera ditt konto."
     },
     "imageUpload": {
       "title": "Ladda upp bild"
@@ -514,7 +518,8 @@
     "bioTooLong": "Presentationen är för lång",
     "priceNegative": "Priset kan inte vara negativt",
     "priceRangeInvalid": "Högsta pris får inte vara lägre än lägsta pris",
-    "searchTextTooLong": "Söktexten är för lång"
+    "searchTextTooLong": "Söktexten är för lång",
+    "confirmUsernameMismatch": "Det matchar inte ditt användarnamn."
   },
   "auth": {
     "continueWithGoogle": "Fortsätt med Google",

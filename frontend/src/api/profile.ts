@@ -85,6 +85,20 @@ export function useUploadAvatar(userId: string | undefined) {
   });
 }
 
+// axios sends a DELETE body only under `data`; passing the object directly is
+// read as request config and silently sends nothing, so the server sees no
+// username and answers 400 for a name typed correctly.
+//
+// No invalidation: the session is over. AuthProvider.logout clears the whole
+// cache, which is more than any key here could.
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: async (username: string) => {
+      await api.delete("/me", { data: { username } });
+    },
+  });
+}
+
 export function useDeleteAvatar(userId: string | undefined) {
   const queryClient = useQueryClient();
 
