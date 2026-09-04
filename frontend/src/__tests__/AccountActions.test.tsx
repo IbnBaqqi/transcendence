@@ -24,6 +24,7 @@ function stub(overrides: Record<string, unknown> = {}) {
     isPending: false,
     isError: false,
     error: null,
+    reset: vi.fn(),
     ...overrides,
   };
 }
@@ -247,4 +248,26 @@ describe("deleting", () => {
     expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reinstate" })).toBeInTheDocument();
   });
+});
+
+// The error is derived from the mutation, not from component state, so
+// cancelling has to clear it too. Otherwise the row collapses to its buttons
+// with a red 409 underneath and nothing to say what it refers to - and since
+// onError refetches, the row can redraw as Suspended while the line beneath
+// still claims the suspend failed.
+test("cancelling clears a failure rather than leaving it under the row", async () => {
+  const reset = vi.fn();
+  setMutations({
+    isError: true,
+    error: { status: 409, message: "Already suspended" },
+    reset,
+  });
+  renderActions(makeAccount());
+
+  expect(screen.getByRole("alert")).toHaveTextContent("Already suspended");
+
+  await userEvent.click(screen.getByRole("button", { name: "Suspend" }));
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+  expect(reset).toHaveBeenCalled();
 });

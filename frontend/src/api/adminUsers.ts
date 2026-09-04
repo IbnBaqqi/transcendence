@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 
 import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
@@ -18,6 +24,11 @@ export function useAdminUsers(query: string) {
     queryKey: keys.adminUsers.list(query),
     queryFn: async () =>
       (await api.get<PaginatedAdminUsers>(`/admin/users${query ? `?${query}` : ""}`)).data,
+    // A page change is a new query key, so without this the list and the pager
+    // unmount mid-click and take keyboard focus to <body> with them. The
+    // placeholder is dropped on error, so isError && !data still surfaces a
+    // failed page rather than stranding the reader on the previous one.
+    placeholderData: keepPreviousData,
   });
 }
 

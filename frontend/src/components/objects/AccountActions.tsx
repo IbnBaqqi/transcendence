@@ -45,6 +45,13 @@ export function AccountActions({ account }: { account: AdminUser }) {
     setMode(null);
     setReason("");
     setTypedName("");
+    // The error is derived from the mutations, so clearing only the form
+    // leaves a red 409 under a collapsed row with nothing to explain it - and
+    // onError refetches, so the row can redraw as Suspended while the line
+    // beneath still says the suspend failed.
+    suspend.reset();
+    reinstate.reset();
+    remove.reset();
   };
 
   function submit() {
