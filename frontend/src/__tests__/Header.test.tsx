@@ -146,9 +146,14 @@ test("does not ask for a profile while signed out", () => {
 // The link is UX, not a lock - /admin/listings is guarded by RequireAdmin and
 // every endpoint under it by RequireRole(ADMIN). This just stops the nav
 // advertising a section three quarters of users cannot open.
+// Each link is the only navigation into its screen anywhere in app code, so
+// this asserts they exist as well as who sees them. Without it a refactor can
+// delete one and leave a whole admin section reachable only by typing the URL,
+// with the suite still green.
 test("offers the admin section to an admin", () => {
   renderHeader({ user: { ...SIGNED_IN.user!, role: "ADMIN" } });
   expect(screen.getByRole("link", { name: "Admin" })).toHaveAttribute("href", "/admin/listings");
+  expect(screen.getByRole("link", { name: "Accounts" })).toHaveAttribute("href", "/admin/users");
 });
 
 test("hides it from an ordinary user and from a visitor", () => {
