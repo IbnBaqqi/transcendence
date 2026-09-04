@@ -101,7 +101,6 @@
   },
   "listings": {
     "available": "{{qty}} {{unit}} saatavilla",
-    "showingOf": "Näytetään {{shown}} / {{total}}",
     "seller": "Myyjä",
     "newSeller": "Uusi myyjä",
     "rating": "{{average}} ★ ({{count}})"
