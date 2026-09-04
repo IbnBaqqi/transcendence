@@ -51,6 +51,27 @@
   --color-soft-active: #5aab77; /* brand-400 */
 
   --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+
+  /*
+   * Type scale. Same two layers as the colors above: Tailwind ships the raw
+   * sizes, these name the ROLES — so "how big is a page title" is answered
+   * here rather than per page, which is how 16 pages ended up answering it
+   * two different ways.
+   *
+   * Values are what the app already uses most, so adopting them is a
+   * consistency change and not a redesign: page-title is today's text-3xl
+   * (9 of 16 pages), section is text-lg (23 of 27 h2s), secondary is text-sm.
+   */
+  --text-page-title: 1.875rem;
+  --text-page-title--line-height: 2.25rem;
+  --text-section: 1.125rem;
+  --text-section--line-height: 1.75rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-secondary: 0.875rem;
+  --text-secondary--line-height: 1.25rem;
+  --text-meta: 0.75rem;
+  --text-meta--line-height: 1rem;
 }
 
 /* Dark mode: swap semantic token VALUES based on the OS setting.
