@@ -6,7 +6,7 @@ import type { Listing, ListingImage, Paginated, ReportReason } from "./types";
 
 // Mirrors the backend's sort allow-list, so a typo is a compile error rather
 // than a 400 at runtime.
-export type ListingSort = "newest" | "oldest" | "price_asc" | "price_desc";
+export type ListingSort = "newest" | "oldest" | "price_asc" | "price_desc" | "rating_desc";
 
 export interface ListingSearchParams {
   keyword?: string;
