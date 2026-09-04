@@ -31,3 +31,16 @@ RETURNING filename;
 SELECT * FROM listing_images
 WHERE listing_id = ANY(sqlc.arg(listing_ids)::uuid[])
 ORDER BY listing_id, position, id;
+
+-- name: SetListingImagePositions :execrows
+-- One statement for the whole gallery. WITH ORDINALITY numbers the array as it
+-- arrives, so the caller sends the ids in the wanted order and the positions
+-- are derived here rather than passed alongside - two parallel arrays could
+-- disagree, one cannot.
+--
+-- The listing_id in the WHERE is what stops an id from another listing being
+-- renumbered; :execrows is how the caller checks every id it sent matched a row.
+UPDATE listing_images AS li
+SET position = v.ord - 1
+FROM unnest(sqlc.arg(image_ids)::uuid[]) WITH ORDINALITY AS v(id, ord)
+WHERE li.id = v.id AND li.listing_id = sqlc.arg(listing_id);

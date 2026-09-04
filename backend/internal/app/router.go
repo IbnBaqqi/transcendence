@@ -104,6 +104,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 			r.Get("/me/saved", h.GetSavedListings)
 			r.Post("/listings/{id}/images", h.UploadListingImage)
 			r.Delete("/listings/{id}/images/{imageID}", h.DeleteListingImage)
+			r.Put("/listings/{id}/images/order", h.ReorderListingImages)
 			r.Post("/listings/{id}/report", h.ReportListing)
 
 			r.Group(func(r chi.Router) {
