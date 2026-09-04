@@ -236,6 +236,26 @@ func TestAnAdminCanReadBackTheReasonAnAdminWrote(t *testing.T) {
 	}
 }
 
+// A 404 test cannot tell "no such order" from "the database is down" - both
+// come back as NotFound if the lookup collapses its error. This one exercises
+// a real order with a failing call, so only the distinction can pass it.
+func TestADatabaseFailureIsNotReportedAsAMissingOrder(t *testing.T) {
+	f := newAdminOrderFixture(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := f.admins.ListEvents(ctx, f.order.ID)
+
+	var notFound *NotFoundError
+	if errors.As(err, &notFound) {
+		t.Fatalf("err = %v, want the underlying failure rather than a 404", err)
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("err = %v, want the context cancellation to survive", err)
+	}
+}
+
 // A mistyped id would otherwise answer 200 with an empty list, which reads as
 // "nothing ever happened to this order" rather than "no such order".
 func TestAnAdminGetsNotFoundForAnOrderThatDoesNotExist(t *testing.T) {
