@@ -10,12 +10,25 @@ import { useAuth } from "../../hooks/useAuth";
 import { makeDeleteAccountSchema, type DeleteAccountFormValues } from "../../schemas/deleteAccount";
 import Button from "../objects/Button.tsx";
 
+// The modal is mounted at app root, so it outlives Profile's own auth guard -
+// and the session can end underneath it, when a background token refresh fails
+// and AuthProvider sets the user to null. Without a name to confirm there is
+// nothing to confirm against: the schema's rule is value === username, so an
+// absent user would make an empty box satisfy the one control this form exists
+// to provide.
 export function DeleteAccountSection({ onClose }: { onClose: () => void }) {
+  const { user } = useAuth();
+
+  if (!user) return null;
+
+  return <DeleteAccountForm username={user.username} onClose={onClose} />;
+}
+
+function DeleteAccountForm({ username, onClose }: { username: string; onClose: () => void }) {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const deleteAccount = useDeleteAccount();
 
-  const username = user?.username ?? "";
   const form = useForm<DeleteAccountFormValues>({
     resolver: zodResolver(makeDeleteAccountSchema(username)),
     mode: "onChange",

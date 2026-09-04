@@ -105,6 +105,25 @@ test("surfaces a failure rather than swallowing it", async () => {
   expect(screen.getByRole("alert")).toHaveTextContent("Type your username exactly to confirm");
 });
 
+// The modal is mounted at app root, so it outlives Profile's auth guard and the
+// session can end underneath it - a background token refresh failing sets the
+// user to null. The confirmation rule is value === username, so with no name to
+// confirm against an empty box would satisfy the one control this form is for.
+// Typing and clearing is what runs the validation; an untouched form is
+// disabled either way, so a test that never types proves nothing.
+test("offers no form at all once the session has ended", async () => {
+  renderSection(null);
+
+  expect(screen.queryByRole("button", { name: "Delete Account" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+});
+
+// The same root cause with a visible symptom: the label interpolates the name.
+test("never renders the label with an empty name", () => {
+  renderSection(null);
+  expect(screen.queryByText(/Type\s+to confirm/)).not.toBeInTheDocument();
+});
+
 // Deletion anonymises; it does not erase. The copy must not promise otherwise.
 test("says the account is anonymised, not erased", () => {
   renderSection();
