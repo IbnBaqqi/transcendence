@@ -21,10 +21,39 @@ describe("ListingCard", () => {
     expect(screen.queryByText("mushrooms")).not.toBeInTheDocument();
   });
 
+  // The card is where the rating was asked for, so this pins that it arrives
+  // there rather than only that SellerRating can render one.
+  test("shows the seller's rating beside their name", () => {
+    renderCard(makeListing());
+
+    expect(screen.getByText("mushroom_matti")).toBeInTheDocument();
+    expect(screen.getByText("4.5 ★ (12)")).toBeInTheDocument();
+  });
+
+  test("marks a seller with too few reviews as new", () => {
+    renderCard(
+      makeListing({
+        seller: {
+          id: "s1",
+          username: "new_nelli",
+          avatar_url: null,
+          rating: { average: 0, count: 0 },
+        },
+      }),
+    );
+
+    expect(screen.getByText("New seller")).toBeInTheDocument();
+  });
+
   test("names the seller and wears their picture", () => {
     const { container } = renderCard(
       makeListing({
-        seller: { id: "s1", username: "mushroom_matti", avatar_url: "/uploads/matti.png" },
+        seller: {
+          id: "s1",
+          username: "mushroom_matti",
+          avatar_url: "/uploads/matti.png",
+          rating: { average: 4.5, count: 12 },
+        },
       }),
     );
 
