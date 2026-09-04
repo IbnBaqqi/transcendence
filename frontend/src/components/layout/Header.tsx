@@ -30,22 +30,24 @@ export default function Header() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <div className="flex flex-row items-center gap-2">
           <Link to="/">
-            <svg className="h-8 w-6" aria-hidden="true">
+            <svg className="xs:h-8 xs:w-6 h-6 w-5" aria-hidden="true">
               <use href="/favicon.svg" />
             </svg>
           </Link>
-          <Link to="/" className="text-accent text-lg font-bold">
+          {/* Mark only when narrow: mobile-first, so the wordmark is hidden by
+              default and appears once there is room for it. */}
+          <Link to="/" className="text-accent hidden text-lg font-bold sm:inline">
             {t("brand")}
           </Link>
         </div>
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="xs:gap-4 flex items-center gap-2 text-sm">
           <LanguageSwitcher />
           {/* {navLinkClass} passes the function itself and React Router calls it and supplies { isActive } */}
           {/* <NavLink to="/" className={navLinkClass}> */}
           {/*   {t("nav.home")} */}
           {/* </NavLink> */}
           <Link to="/" aria-label={t("nav.home")} className="text-muted hover:text-foreground">
-            <svg className="h-6 w-5" aria-hidden="true">
+            <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
               <use href="/icons.svg#home-icon" />
             </svg>
           </Link>
@@ -54,7 +56,7 @@ export default function Header() {
             aria-label={t("nav.search")}
             className="text-muted hover:text-foreground"
           >
-            <svg className="h-6 w-5" aria-hidden="true">
+            <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
               <use href="/icons.svg#search-icon" />
             </svg>
           </Link>
@@ -63,7 +65,7 @@ export default function Header() {
             aria-label={t("nav.addListing")}
             className="text-muted hover:text-foreground"
           >
-            <svg className="h-6 w-5" aria-hidden="true">
+            <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
               <use href="/icons.svg#add-icon" />
             </svg>
           </Link>
@@ -82,7 +84,7 @@ export default function Header() {
                 aria-label={t("nav.openChat")}
                 className="text-muted hover:text-foreground"
               >
-                <svg className="h-6 w-5" aria-hidden="true">
+                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
                   <use href="/icons.svg#chat-icon" />
                 </svg>
               </button>
@@ -92,7 +94,7 @@ export default function Header() {
                 aria-label={t("nav.orders")}
                 className="text-muted hover:text-foreground"
               >
-                <svg className="h-6 w-5" aria-hidden="true">
+                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
                   <use href="/icons.svg#orders-icon" />
                 </svg>
               </Link>
@@ -101,7 +103,7 @@ export default function Header() {
                 aria-label={t("nav.following")}
                 className="text-muted hover:text-foreground"
               >
-                <svg className="h-6 w-5" aria-hidden="true">
+                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
                   <use href="/icons.svg#following-icon" />
                 </svg>
               </Link>

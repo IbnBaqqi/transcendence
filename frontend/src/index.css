@@ -50,6 +50,10 @@
   --color-soft-hover: #8fc9a3; /* brand-300 */
   --color-soft-active: #5aab77; /* brand-400 */
 
+  /* 426px rather than 425: xs: starts one pixel above the 425px "Mobile L"
+     width, so max-xs and the unprefixed defaults cover it inclusively. */
+  --breakpoint-xs: 26.625rem;
+
   --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
 
   /*
