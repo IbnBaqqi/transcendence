@@ -23,24 +23,24 @@ func RequireRole(store roleStore, role string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, ok := auth.UserFromContext(r.Context())
 			if !ok {
-				writeAuthzError(w, http.StatusUnauthorized, "Authentication required")
+				writeError(w, http.StatusUnauthorized, "Authentication required")
 				return
 			}
 
 			current, err := store.GetUserRole(r.Context(), user.ID)
 			if err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
-					writeAuthzError(w, http.StatusForbidden, "Forbidden")
+					writeError(w, http.StatusForbidden, "Forbidden")
 					return
 				}
 				slog.Error("could not read role", "user_id", user.ID, "error", err)
-				writeAuthzError(w, http.StatusInternalServerError, "Internal server error")
+				writeError(w, http.StatusInternalServerError, "Internal server error")
 				return
 			}
 
 			if current != role {
 				slog.Info("role check failed", "user_id", user.ID, "have", current, "want", role)
-				writeAuthzError(w, http.StatusForbidden, "Forbidden")
+				writeError(w, http.StatusForbidden, "Forbidden")
 				return
 			}
 
@@ -49,7 +49,7 @@ func RequireRole(store roleStore, role string) func(http.Handler) http.Handler {
 	}
 }
 
-func writeAuthzError(w http.ResponseWriter, status int, msg string) {
+func writeError(w http.ResponseWriter, status int, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
@@ -89,7 +89,7 @@ func RequireActiveUser(store activeUserStore) func(http.Handler) http.Handler {
 			if err != nil {
 				slog.Error("could not check whether the account is active",
 					"user_id", user.ID, "error", err)
-				writeAuthzError(w, http.StatusInternalServerError, "Something went wrong")
+				writeError(w, http.StatusInternalServerError, "Something went wrong")
 				return
 			}
 
@@ -98,18 +98,18 @@ func RequireActiveUser(store activeUserStore) func(http.Handler) http.Handler {
 				if err != nil {
 					slog.Error("could not read the suspension",
 						"user_id", user.ID, "error", err)
-					writeAuthzError(w, http.StatusUnauthorized, "Authentication required")
+					writeError(w, http.StatusUnauthorized, "Authentication required")
 					return
 				}
 
 				// Deletion first: a deleted account can still carry the
 				// suspension that preceded it, and it must not learn that.
 				if !suspension.DeletedAt.Valid && suspension.SuspendedAt.Valid {
-					writeAuthzError(w, http.StatusForbidden, suspendedMessage(suspension.SuspensionReason))
+					writeError(w, http.StatusForbidden, suspendedMessage(suspension.SuspensionReason))
 					return
 				}
 
-				writeAuthzError(w, http.StatusUnauthorized, "Authentication required")
+				writeError(w, http.StatusUnauthorized, "Authentication required")
 				return
 			}
 

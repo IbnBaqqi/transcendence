@@ -68,6 +68,19 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 	mountDocs(r)
 
 	r.Route("/api/v1", func(r chi.Router) {
+		// Derived from the upload cap, never a literal: this wraps r.Body
+		// first, so it is the ceiling for uploads too, and a hardcoded number
+		// would break them the day MAX_UPLOAD_BYTES is raised past it. The
+		// headroom keeps upload.go's own cap the one that fires for uploads,
+		// so their 413 still says which image was too large.
+		//
+		// First on purpose, ahead of the three below: TouchLastSeen writes to
+		// the database, and an oversize request has no business reaching a
+		// write. The trade is that such requests never reach the rate limiter
+		// and so are not counted against it - acceptable, because refusing one
+		// is a header parse and an integer comparison, which costs about what
+		// an unrouted path costs.
+		r.Use(mw.MaxBody(appService.Upload.MaxBytes + uploadHeadroom))
 		r.Use(authenticate)
 		r.Use(mw.TouchLastSeen(appService.DB.Queries, presence.Interval))
 		r.Use(mw.RateLimitByKey(appService.AuthConfig.RateLimitPerMinute))
@@ -186,6 +199,10 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 	return r
 }
+
+// Room above the upload cap for the multipart envelope around a file, so a
+// legal upload meets upload.go's limit rather than this one.
+const uploadHeadroom = 1 << 20
 
 func uploadFileServer(dir string) http.Handler {
 	fs := http.StripPrefix(dtos.UploadURLPrefix, http.FileServer(http.Dir(dir)))

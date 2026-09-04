@@ -1738,6 +1738,23 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    PayloadTooLarge:
+      description: |
+        The request body was larger than the server accepts. Enforced by
+        middleware on the whole API rather than by each endpoint, so any
+        request with a body can answer this — the cap is `MAX_UPLOAD_BYTES`
+        plus a megabyte of headroom, which no ordinary request approaches.
+
+        A declared `Content-Length` over the cap is refused before the body is
+        read at all. A body sent without one is stopped mid-read instead, and
+        the endpoint reports that as a 400.
+
+        The upload endpoints have their own, smaller cap and their own message
+        naming the image; theirs is the limit a real client meets.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     RateLimited:
       description: |
         Too many requests on this API key. Only key-authenticated requests are
@@ -1818,6 +1835,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -1870,6 +1889,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -1926,6 +1947,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -1983,6 +2006,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -2263,6 +2288,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -2504,6 +2531,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -2588,6 +2617,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -2675,7 +2706,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "413":
-          description: The upload exceeded `MAX_UPLOAD_BYTES`.
+          description: |
+            The upload exceeded `MAX_UPLOAD_BYTES`, and says which image was
+            too large. A body over the API-wide cap is refused earlier, by the
+            middleware, with the generic message instead.
           content:
             application/json:
               schema:
@@ -2830,6 +2864,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -3173,7 +3209,10 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "413":
-          description: The upload exceeded `MAX_UPLOAD_BYTES`.
+          description: |
+            The upload exceeded `MAX_UPLOAD_BYTES`, and says which image was
+            too large. A body over the API-wide cap is refused earlier, by the
+            middleware, with the generic message instead.
           content:
             application/json:
               schema:
@@ -3266,6 +3305,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -3483,6 +3524,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -3809,6 +3852,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -4068,6 +4113,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -4140,6 +4187,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "500":
           $ref: "#/components/responses/ServerError"
     get:
@@ -4264,6 +4313,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -4445,6 +4496,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -4653,6 +4706,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -4809,6 +4864,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -4860,6 +4917,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -4921,6 +4980,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -4994,6 +5055,8 @@ paths:
                 $ref: "#/components/schemas/Error"
         "404":
           $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -5073,6 +5136,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -5166,6 +5231,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "500":
           $ref: "#/components/responses/ServerError"
 
@@ -5213,6 +5280,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
         "500":
           $ref: "#/components/responses/ServerError"
 
