@@ -44,8 +44,6 @@ function ReportForm({ listingId }: { listingId: string }) {
 
   function submit() {
     if (!canSubmit || reason === null) return;
-    // Omitted rather than "" when blank: the API calls detail optional, and an
-    // empty string is a value a moderator would have to read as one.
     report.mutate({ listingId, reason, ...(trimmed === "" ? {} : { detail: trimmed }) });
   }
 

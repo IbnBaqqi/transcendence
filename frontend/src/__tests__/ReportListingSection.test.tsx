@@ -64,10 +64,15 @@ function renderSection(user: User | null = VIEWER) {
   );
 }
 
-// The API refuses a report on your own listing with a 400, so offering the
-// control would be a guaranteed error rather than a choice.
-test("offers nothing to the listing's own seller", () => {
-  renderSection({ ...VIEWER, id: SELLER_ID });
+// Both are guaranteed errors, so neither is offered: the API refuses a report
+// on your own listing with a 400 and an anonymous one with a 401.
+const NO_CONTROL: [string, User | null][] = [
+  ["the listing's own seller", { ...VIEWER, id: SELLER_ID }],
+  ["a signed-out visitor", null],
+];
+
+test.each(NO_CONTROL)("offers nothing to %s", (_label, user) => {
+  renderSection(user);
   expect(screen.queryByRole("button", { name: "Report this listing" })).not.toBeInTheDocument();
 });
 
