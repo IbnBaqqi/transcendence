@@ -142,11 +142,17 @@ func (s *ListingImageService) ReorderImages(
 	if err != nil {
 		return err
 	}
-	// The two checks catch different things and both are needed. The count
-	// above rejects a list of the wrong length, including one that repeats an
-	// id - a repeat updates its row once, so fewer rows change than ids sent.
-	// This one rejects a list of the right length whose ids are not all on
-	// this listing, which the count cannot see.
+	// The two checks catch different things and both are needed.
+	//
+	// The count above rejects a list of the wrong length - missing an image,
+	// carrying an extra id, or empty. It cannot see a list of the right length
+	// that names the wrong images: [A, A, B] against three images is length
+	// three against count three, and passes.
+	//
+	// This one rejects exactly those. Every updated row belongs to this
+	// listing, so if as many rows changed as ids were sent, the ids were n
+	// distinct images of this listing - a repeat updates its row once and a
+	// foreign id updates none, so either leaves fewer rows changed than sent.
 	if updated != int64(len(imageIDs)) {
 		return &ValidationError{Message: "The image list must name every image on the listing, once each"}
 	}

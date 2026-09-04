@@ -137,21 +137,42 @@ func TestSwappingTwoAdjacentImagesIsAllowed(t *testing.T) {
 
 // A gallery half in the old order and half in the new is worse than one that
 // did not change, so an inexact list is refused rather than partly applied.
+// A gallery half in the old order and half in the new is worse than one that
+// did not change, so an inexact list is refused rather than partly applied.
+//
+// A fixture per subtest, not one shared above the loop. Sharing is invisible
+// while everything is refused - but the moment a check is disabled, the case
+// it guarded commits and every later subtest compares against a `before` that
+// no longer holds. That turns two real failures into five and makes the
+// mutation evidence say the wrong thing.
 func TestAnInexactListIsRefusedAndChangesNothing(t *testing.T) {
-	f := newReorderFixture(t)
-	before := f.order(t)
-
-	cases := map[string][]uuid.UUID{
-		"missing an image":     {f.images[1], f.images[0]},
-		"an extra id":          {f.images[2], f.images[1], f.images[0], database.NewID()},
-		"the same id twice":    {f.images[0], f.images[0], f.images[1]},
-		"an id from elsewhere": {f.images[0], f.images[1], database.NewID()},
-		"an empty list":        {},
+	cases := map[string]func(reorderFixture) []uuid.UUID{
+		// Caught by the count check: three images, two ids.
+		"missing an image": func(f reorderFixture) []uuid.UUID {
+			return []uuid.UUID{f.images[1], f.images[0]}
+		},
+		"an empty list": func(reorderFixture) []uuid.UUID { return nil },
+		// Caught by rows-affected: length matches, but a repeat updates its
+		// row once, so fewer rows change than ids sent.
+		"the same id twice": func(f reorderFixture) []uuid.UUID {
+			return []uuid.UUID{f.images[0], f.images[0], f.images[1]}
+		},
+		// Also rows-affected: right length, but one id is on no listing here.
+		"an id from elsewhere": func(f reorderFixture) []uuid.UUID {
+			return []uuid.UUID{f.images[0], f.images[1], database.NewID()}
+		},
+		// Either check catches this one - four ids, three images.
+		"an extra id": func(f reorderFixture) []uuid.UUID {
+			return []uuid.UUID{f.images[2], f.images[1], f.images[0], database.NewID()}
+		},
 	}
 
 	for name, ids := range cases {
 		t.Run(name, func(t *testing.T) {
-			err := f.svc.ReorderImages(context.Background(), f.seller, f.listing, ids)
+			f := newReorderFixture(t)
+			before := f.order(t)
+
+			err := f.svc.ReorderImages(context.Background(), f.seller, f.listing, ids(f))
 
 			var invalid *ValidationError
 			if !errors.As(err, &invalid) {
