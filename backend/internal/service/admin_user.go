@@ -269,5 +269,15 @@ func (s *AdminUserService) List(ctx context.Context, q dtos.AdminUserQuery) (dto
 }
 
 func (s *AdminUserService) History(ctx context.Context, subjectID uuid.UUID) ([]database.UserAction, error) {
+	// Deliberately not the DeletedAt check the transitions make: deletion here
+	// anonymises, and the trail contains the deletion itself. 404ing a deleted
+	// account would hide the record of its own deletion.
+	if _, err := s.db.GetUser(ctx, subjectID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, &NotFoundError{Message: "User not found"}
+		}
+		return nil, err
+	}
+
 	return s.db.ListUserActions(ctx, subjectID)
 }
