@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { SearchFilterSection } from "../components/forms/SearchFilterSection";
@@ -47,7 +47,11 @@ describe("SearchFilterSection", () => {
   test("an over-long keyword blocks the submit", async () => {
     const { onApply, user } = renderPanel();
 
-    await user.type(screen.getByLabelText("Keyword"), "a".repeat(201));
+    // Set in one event rather than typed: user.type dispatches per character,
+    // so 201 of them means 201 re-renders and 201 validations for a test about
+    // the length rule. That cost is what made this file the first to time out
+    // when the suite's workers compete for CPU.
+    fireEvent.change(screen.getByLabelText("Keyword"), { target: { value: "a".repeat(201) } });
     await user.click(screen.getByRole("button", { name: "Apply filters" }));
 
     expect(await screen.findByText("Search text is too long")).toBeInTheDocument();
