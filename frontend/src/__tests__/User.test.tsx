@@ -36,10 +36,10 @@ function page(items: Listing[]): Paginated<Listing> {
 // React Query's error type has to be overridden here.
 const NOT_FOUND: ApiError = { status: 404, message: "User not found" };
 
-function authStub(user: AuthUser | null): AuthContextValue {
+function authStub(user: AuthUser | null, isLoading = false): AuthContextValue {
   return {
     user,
-    isLoading: false,
+    isLoading,
     login: vi.fn(),
     signup: vi.fn(),
     logout: vi.fn(),
@@ -53,6 +53,7 @@ function renderPage(
     profile?: Partial<ProfileQuery>;
     listings?: Partial<ListingsQuery>;
     currentUser?: AuthUser | null;
+    authLoading?: boolean;
     // Defaults to the profile's own id; a test overrides it to visit the
     // same user under a different spelling of the id.
     urlId?: string;
@@ -75,7 +76,7 @@ function renderPage(
   return render(
     // A real route, so useParams() reads the id out of the URL like in the app.
     <MemoryRouter initialEntries={[`/users/${opts.urlId ?? PROFILE.id}`]}>
-      <AuthContext.Provider value={authStub(opts.currentUser ?? null)}>
+      <AuthContext.Provider value={authStub(opts.currentUser ?? null, opts.authLoading ?? false)}>
         <ModalProvider>
           <Routes>
             <Route path="/users/:id" element={<User />} />
@@ -338,4 +339,11 @@ describe("User", () => {
     expect(screen.queryByText(/you have blocked this person/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /message user/i })).toBeInTheDocument();
   });
+});
+
+// isSelf is false while the viewer is unknown, and isBlocked is false because
+// signedIn is - so the page offers to message someone it cannot identify.
+test("does not offer to message while the session restores", () => {
+  renderPage({ authLoading: true });
+  expect(screen.queryByRole("button", { name: "Message User" })).not.toBeInTheDocument();
 });

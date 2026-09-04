@@ -30,7 +30,7 @@ export default function User() {
   const { t } = useTranslation();
   // string | undefined: TypeScript can't know this route has an ":id".
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { openChat } = useModal();
 
   const { data: profile, isLoading, error } = usePublicProfile(id);
@@ -59,7 +59,10 @@ export default function User() {
     return <NotFound />;
   }
 
-  if (isLoading) return <p className="text-muted p-8 text-sm">{t("common.loading")}</p>;
+  // authLoading too: isSelf below is false while the viewer is unknown, so
+  // your own profile offers you a button to message yourself.
+  if (authLoading || isLoading)
+    return <p className="text-muted p-8 text-sm">{t("common.loading")}</p>;
 
   if (error || !profile) {
     return (

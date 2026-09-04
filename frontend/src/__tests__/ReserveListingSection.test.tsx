@@ -33,10 +33,10 @@ beforeEach(() => {
   } as unknown as ReturnType<typeof useCreateOrder>);
 });
 
-function authStub(user: User | null): AuthContextValue {
+function authStub(user: User | null, isLoading = false): AuthContextValue {
   return {
     user,
-    isLoading: false,
+    isLoading,
     login: vi.fn(),
     signup: vi.fn(),
     logout: vi.fn(),
@@ -44,7 +44,7 @@ function authStub(user: User | null): AuthContextValue {
   };
 }
 
-function renderSection(listing: Listing, user: User | null) {
+function renderSection(listing: Listing, user: User | null, authLoading = false) {
   vi.mocked(useListing).mockReturnValue({
     data: listing,
     isPending: false,
@@ -52,7 +52,7 @@ function renderSection(listing: Listing, user: User | null) {
 
   return render(
     <QueryClientProvider client={new QueryClient()}>
-      <AuthContext.Provider value={authStub(user)}>
+      <AuthContext.Provider value={authStub(user, authLoading)}>
         <ModalProvider>
           <MemoryRouter initialEntries={["/listings/l1"]}>
             <Routes>
@@ -194,4 +194,12 @@ describe("ReserveListingSection", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Not enough stock available");
   });
+});
+
+// AuthProvider reports user as null for one render, so this is what a
+// signed-in buyer sees on every page load until /auth/me answers.
+test("states nothing about the viewer while the session restores", () => {
+  renderSection(makeListing(), null, true);
+  expect(screen.queryByText("Log in to reserve from this seller.")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Log In" })).not.toBeInTheDocument();
 });

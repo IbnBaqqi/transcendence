@@ -55,8 +55,11 @@ test("renders the brand name", () => {
   expect(screen.getByText("Metsätori")).toBeInTheDocument();
 });
 
+// { user: null } rather than no argument: a bare renderHeader() uses the real
+// AuthProvider, which starts mid-restore - so this asserted the restoring state
+// while claiming to test the signed-out one.
 test("offers login when signed out", () => {
-  renderHeader();
+  renderHeader({ user: null });
   expect(screen.getByText("?")).toBeInTheDocument();
 });
 
@@ -167,4 +170,14 @@ test("hides it from an ordinary user and from a visitor", () => {
   cleanup();
   renderHeader({ user: null });
   expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
+});
+
+// The header is on every page, so it cannot early-return like a section can -
+// only the slot that names the viewer holds. The brand assertion is what makes
+// that difference the subject of the test rather than a side effect.
+test("holds the identity slot but keeps the header while the session restores", () => {
+  renderHeader({ isLoading: true });
+  expect(screen.queryByLabelText("Log In")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Profile")).not.toBeInTheDocument();
+  expect(screen.getByText("Metsätori")).toBeInTheDocument();
 });
