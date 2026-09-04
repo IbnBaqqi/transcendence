@@ -283,6 +283,11 @@ components:
             removed *and* you are its seller or an admin — for everyone else a
             removed listing is 404, so the field can never appear.
 
+            `ReportedListing.removed_at` uses the opposite convention on
+            purpose: always present, `null` while the listing is visible. Here
+            absence is itself the answer — you are not entitled to know — and
+            there it could not be, since only admins read that queue.
+
         seller:
           description: |
             Who posted it, enough to render a card: a name and a face. Always
@@ -994,7 +999,15 @@ components:
           type: string
           format: date-time
           nullable: true
-          description: Null when the listing is still visible.
+          description: |
+            When a moderator removed this listing. Always present — `null` while
+            it is still visible.
+
+            `Listing.removed_at` uses the opposite convention on purpose: absent
+            rather than `null` when there is nothing to report, because there the
+            field's absence means the reader may not be told. This queue is
+            admin-only, so there is nothing to withhold and the field always
+            carries a value.
         report_count:
           type: integer
           format: int64
