@@ -54,6 +54,8 @@ type ListingSearchQuery struct {
 	Sort     string
 	Page     string
 	Limit    string
+	// Raw like the rest; the service decides whether the caller may have it.
+	IncludeSoldOut string
 }
 
 type PaginatedListings struct {

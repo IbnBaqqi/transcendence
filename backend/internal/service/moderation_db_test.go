@@ -227,7 +227,7 @@ func TestARemovedListingLeavesEveryReadPath(t *testing.T) {
 
 	f.remove(t)
 
-	browse, err := f.listings.SearchListings(ctx, dtos.ListingSearchQuery{})
+	browse, err := f.listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{})
 	if err != nil {
 		t.Fatalf("browsing: %v", err)
 	}
@@ -237,7 +237,7 @@ func TestARemovedListingLeavesEveryReadPath(t *testing.T) {
 		}
 	}
 
-	found, err := f.listings.SearchListings(ctx, dtos.ListingSearchQuery{Keyword: "Chanterelles"})
+	found, err := f.listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{Keyword: "Chanterelles"})
 	if err != nil {
 		t.Fatalf("searching: %v", err)
 	}
@@ -429,7 +429,7 @@ func TestRestoreBringsTheListingBack(t *testing.T) {
 		t.Fatal("the listing is still marked removed")
 	}
 
-	browse, err := f.listings.SearchListings(ctx, dtos.ListingSearchQuery{})
+	browse, err := f.listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{})
 	if err != nil {
 		t.Fatalf("browsing: %v", err)
 	}

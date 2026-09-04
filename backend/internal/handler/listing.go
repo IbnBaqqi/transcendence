@@ -177,9 +177,18 @@ func (h *Handler) SearchListings(w http.ResponseWriter, r *http.Request) {
 		Sort:     q.Get("sort"),
 		Page:     q.Get("page"),
 		Limit:    q.Get("limit"),
+
+		IncludeSoldOut: q.Get("include_sold_out"),
 	}
 
-	result, err := h.Listing.SearchListings(r.Context(), query)
+	// uuid.Nil when nobody is signed in, which can never equal a real
+	// seller_id, so the anonymous case needs no branch of its own.
+	var viewerID uuid.UUID
+	if viewer, ok := auth.UserFromContext(r.Context()); ok {
+		viewerID = viewer.ID
+	}
+
+	result, err := h.Listing.SearchListings(r.Context(), viewerID, query)
 	if err != nil {
 		respondWithServiceError(w, r, err)
 		return
