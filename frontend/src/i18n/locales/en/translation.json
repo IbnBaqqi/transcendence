@@ -9,7 +9,8 @@
     "orders": "Orders",
     "following": "Following",
     "profile": "Profile",
-    "admin": "Admin"
+    "admin": "Admin",
+    "adminOrders": "Order admin"
   },
   "language": {
     "en": "English",
@@ -176,6 +177,30 @@
     "resolvedCount_other": "Resolved {{count}} reports",
     "reportsError": "Couldn't load the reports.",
     "historyError": "Couldn't load the history."
+  },
+  "adminOrders": {
+    "filterStatus": "Status",
+    "anyStatus": "Any status",
+    "filterStuck": "Stuck",
+    "anyStuck": "Any",
+    "onlyStuck": "Only stuck",
+    "notStuck": "Not stuck",
+    "from": "From",
+    "to": "To",
+    "rangeBackwards": "The date range ends before it starts.",
+    "stuck": "Nobody can move this",
+    "placed": "Placed {{date}}",
+    "buyer": "Buyer",
+    "seller": "Seller",
+    "quantityAndTotal": "{{quantity}} × — {{total}} total",
+    "listEmpty": "No orders match those filters.",
+    "listError": "Couldn't load the orders.",
+    "handshake": {
+      "both": "Both sides acted",
+      "seller": "Seller handed over",
+      "buyer": "Buyer received",
+      "neither": "Neither side has acted"
+    }
   },
   "orders": {
     "title": "Orders",
@@ -350,6 +375,9 @@
     },
     "adminListings": {
       "title": "Moderation queue"
+    },
+    "adminOrders": {
+      "title": "All orders"
     }
   },
   "chat": {

@@ -9,7 +9,8 @@
     "orders": "Tilaukset",
     "following": "Seuratut",
     "profile": "Profiili",
-    "admin": "Ylläpito"
+    "admin": "Ylläpito",
+    "adminOrders": "Tilausten hallinta"
   },
   "language": {
     "en": "English",
@@ -176,6 +177,30 @@
     "resolvedCount_other": "Käsitelty {{count}} ilmoitusta",
     "reportsError": "Ilmoitusten lataaminen ei onnistunut.",
     "historyError": "Historian lataaminen ei onnistunut."
+  },
+  "adminOrders": {
+    "filterStatus": "Tila",
+    "anyStatus": "Mikä tahansa tila",
+    "filterStuck": "Jumissa",
+    "anyStuck": "Kaikki",
+    "onlyStuck": "Vain jumissa",
+    "notStuck": "Ei jumissa",
+    "from": "Alkaen",
+    "to": "Asti",
+    "rangeBackwards": "Aikaväli päättyy ennen alkuaan.",
+    "stuck": "Kukaan ei voi edetä",
+    "placed": "Tehty {{date}}",
+    "buyer": "Ostaja",
+    "seller": "Myyjä",
+    "quantityAndTotal": "{{quantity}} × — {{total}} yhteensä",
+    "listEmpty": "Yksikään tilaus ei vastaa suodattimia.",
+    "listError": "Tilausten lataaminen ei onnistunut.",
+    "handshake": {
+      "both": "Molemmat osapuolet toimivat",
+      "seller": "Myyjä luovutti",
+      "buyer": "Ostaja vastaanotti",
+      "neither": "Kumpikaan ei ole toiminut"
+    }
   },
   "orders": {
     "title": "Tilaukset",
@@ -350,6 +375,9 @@
     },
     "adminListings": {
       "title": "Moderointijono"
+    },
+    "adminOrders": {
+      "title": "Kaikki tilaukset"
     }
   },
   "chat": {

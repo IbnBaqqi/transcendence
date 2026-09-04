@@ -9,7 +9,8 @@
     "orders": "Beställningar",
     "following": "Följer",
     "profile": "Profil",
-    "admin": "Admin"
+    "admin": "Admin",
+    "adminOrders": "Orderadmin"
   },
   "language": {
     "en": "English",
@@ -176,6 +177,30 @@
     "resolvedCount_other": "Löste {{count}} rapporter",
     "reportsError": "Kunde inte ladda rapporterna.",
     "historyError": "Kunde inte ladda historiken."
+  },
+  "adminOrders": {
+    "filterStatus": "Status",
+    "anyStatus": "Alla statusar",
+    "filterStuck": "Fast",
+    "anyStuck": "Alla",
+    "onlyStuck": "Endast fastnade",
+    "notStuck": "Inte fastnade",
+    "from": "Från",
+    "to": "Till",
+    "rangeBackwards": "Datumintervallet slutar före det börjar.",
+    "stuck": "Ingen kan gå vidare",
+    "placed": "Lagd {{date}}",
+    "buyer": "Köpare",
+    "seller": "Säljare",
+    "quantityAndTotal": "{{quantity}} × — {{total}} totalt",
+    "listEmpty": "Inga beställningar matchar filtren.",
+    "listError": "Kunde inte ladda beställningarna.",
+    "handshake": {
+      "both": "Båda parter agerade",
+      "seller": "Säljaren lämnade över",
+      "buyer": "Köparen tog emot",
+      "neither": "Ingen part har agerat"
+    }
   },
   "orders": {
     "title": "Beställningar",
@@ -350,6 +375,9 @@
     },
     "adminListings": {
       "title": "Moderationskö"
+    },
+    "adminOrders": {
+      "title": "Alla beställningar"
     }
   },
   "chat": {
