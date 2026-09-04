@@ -73,6 +73,13 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		// would break them the day MAX_UPLOAD_BYTES is raised past it. The
 		// headroom keeps upload.go's own cap the one that fires for uploads,
 		// so their 413 still says which image was too large.
+		//
+		// First on purpose, ahead of the three below: TouchLastSeen writes to
+		// the database, and an oversize request has no business reaching a
+		// write. The trade is that such requests never reach the rate limiter
+		// and so are not counted against it - acceptable, because refusing one
+		// is a header parse and an integer comparison, which costs about what
+		// an unrouted path costs.
 		r.Use(mw.MaxBody(appService.Upload.MaxBytes + uploadHeadroom))
 		r.Use(authenticate)
 		r.Use(mw.TouchLastSeen(appService.DB.Queries, presence.Interval))
