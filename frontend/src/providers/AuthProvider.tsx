@@ -42,6 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // login) was fetched signed-out or as somebody else - drop it so pages
       // already on screen, like Profile after its "Log In" button, refetch
       // under the new session instead of continuing to show that stale result.
+      //
+      // Unconditional, unlike the identity guard on setOnSessionChange below.
+      // Not an oversight: login, signup and the cookie exchange all arrive at
+      // mount or after the old token is gone, so there is no warm cache to
+      // protect and nothing an identity comparison would save.
       queryClient.clear();
     },
     [queryClient],
@@ -69,6 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Token still around: /auth/me answers identity without rotating a
           // perfectly good session. If it already expired, the interceptor
           // silently refreshes first and this call just succeeds.
+          //
+          // The third path that sets a viewer, and the only one that never
+          // clears the cache. It does not need to: restoreSession's callers are
+          // restoreOnMount below, where nothing is cached yet, and
+          // AuthCallback.tsx:42, which passes force and so takes the branch
+          // above. Give it a caller that runs with a warm cache and it needs
+          // the same identity guard setOnSessionChange has.
           if (!mountedRef.current) return false;
           setUser(await getCurrentUser());
         } else {
