@@ -86,6 +86,74 @@ func (s *ListingImageService) AddImage(
 	return img, nil
 }
 
+// ReorderImages rewrites a listing's gallery order to the order of the ids it
+// is given. Positions become 0..n-1, derived from the array rather than sent
+// alongside it.
+//
+// The list must be exactly the listing's current images: a missing, extra or
+// duplicated id is a 400 rather than a partial reorder, because a gallery half
+// in the old order and half in the new is worse than an unchanged one.
+//
+// One transaction, and it needs to be: the unique constraint on
+// (listing_id, position) is DEFERRABLE INITIALLY DEFERRED, so a swap is
+// momentarily a duplicate and is only legal if the check waits for the commit.
+// Under autocommit it fires per statement and the swap fails.
+func (s *ListingImageService) ReorderImages(
+	ctx context.Context,
+	userID uuid.UUID,
+	listingID uuid.UUID,
+	imageIDs []uuid.UUID,
+) error {
+	if err := s.ownedListing(ctx, userID, listingID); err != nil {
+		return err
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			slog.Error("reorder images transaction rollback failed", "error", err)
+		}
+	}()
+
+	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	if _, err := qtx.GetListingForUpdate(ctx, listingID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &NotFoundError{Message: "Listing not found"}
+		}
+		return err
+	}
+
+	total, err := qtx.CountListingImages(ctx, listingID)
+	if err != nil {
+		return err
+	}
+	if total != int64(len(imageIDs)) {
+		return &ValidationError{Message: "The image list must name every image on the listing, once each"}
+	}
+
+	updated, err := qtx.SetListingImagePositions(ctx, database.SetListingImagePositionsParams{
+		ImageIds:  imageIDs,
+		ListingID: listingID,
+	})
+	if err != nil {
+		return err
+	}
+	// The two checks catch different things and both are needed. The count
+	// above rejects a list of the wrong length, including one that repeats an
+	// id - a repeat updates its row once, so fewer rows change than ids sent.
+	// This one rejects a list of the right length whose ids are not all on
+	// this listing, which the count cannot see.
+	if updated != int64(len(imageIDs)) {
+		return &ValidationError{Message: "The image list must name every image on the listing, once each"}
+	}
+
+	return tx.Commit()
+}
+
 // createImageRow locks the listing so concurrent uploads can't read the same
 // position or slip past the per-listing cap.
 func (s *ListingImageService) createImageRow(
