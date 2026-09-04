@@ -23,6 +23,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // the effect closure; it has to reach inside restoreSession now, so it moves
   // to a ref.
   const mountedRef = useRef(true);
+  // Whose answers the cache currently holds. A ref rather than reading `user`,
+  // because the session-change callback below is registered once and would
+  // otherwise close over the value from that first render. One effect keeps it
+  // true whichever path set the user, so login and logout need no bookkeeping.
+  const viewerIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    viewerIdRef.current = user?.id ?? null;
+  }, [user]);
 
   const storeSession = useCallback(
     (res: AuthResponse) => {
@@ -33,6 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // login) was fetched signed-out or as somebody else - drop it so pages
       // already on screen, like Profile after its "Log In" button, refetch
       // under the new session instead of continuing to show that stale result.
+      //
+      // Unconditional, unlike the identity guard on setOnSessionChange below.
+      // Not an oversight: login, signup and the cookie exchange all arrive at
+      // mount or after the old token is gone, so there is no warm cache to
+      // protect and nothing an identity comparison would save.
       queryClient.clear();
     },
     [queryClient],
@@ -60,6 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Token still around: /auth/me answers identity without rotating a
           // perfectly good session. If it already expired, the interceptor
           // silently refreshes first and this call just succeeds.
+          //
+          // The third path that sets a viewer, and the only one that never
+          // clears the cache. It does not need to: restoreSession's callers are
+          // restoreOnMount below, where nothing is cached yet, and
+          // AuthCallback.tsx:42, which passes force and so takes the branch
+          // above. Give it a caller that runs with a warm cache and it needs
+          // the same identity guard setOnSessionChange has.
           if (!mountedRef.current) return false;
           setUser(await getCurrentUser());
         } else {
@@ -79,7 +100,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mountedRef.current = true;
     // Background refreshes (see the 401 interceptor) funnel through here so
     // React state and localStorage never disagree about who is signed in.
-    setOnSessionChange((auth) => setUser(auth?.user ?? null));
+    setOnSessionChange((auth) => {
+      const next = auth?.user ?? null;
+      // A refresh normally returns the same person, and clearing then would
+      // throw away a warm cache on a routine token rotation. Only an identity
+      // change means the cached answers were written for somebody else: keys
+      // name the resource, never who asked, and GET /users/{id} carries
+      // presence for a signed-in caller while omitting it for an anonymous one.
+      //
+      // Not folded into a setUser updater: those must be pure, and StrictMode
+      // double-invokes them.
+      if (viewerIdRef.current !== (next?.id ?? null)) queryClient.clear();
+      setUser(next);
+    });
 
     async function restoreOnMount() {
       await restoreSession();
@@ -91,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mountedRef.current = false;
       setOnSessionChange(null);
     };
-  }, [restoreSession]);
+  }, [restoreSession, queryClient]);
 
   async function login(email: string, password: string) {
     storeSession(await loginApi({ email, password }));
