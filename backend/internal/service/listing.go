@@ -169,7 +169,10 @@ func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, 
 func (s *ListingService) GetListing(ctx context.Context, id uuid.UUID) (database.Listing, error) {
 	listing, err := s.db.GetListing(ctx, id)
 	if err != nil {
-		return database.Listing{}, &NotFoundError{Message: "Listing not found"}
+		if errors.Is(err, sql.ErrNoRows) {
+			return database.Listing{}, &NotFoundError{Message: "Listing not found"}
+		}
+		return database.Listing{}, err
 	}
 	return listing, nil
 }
