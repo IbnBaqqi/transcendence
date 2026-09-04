@@ -22,7 +22,7 @@ function ReportLine({ report }: { report: Report }) {
         </span>
       </div>
       {/* Attacker-controlled text. React escapes it; never render it as markup. */}
-      {report.detail && <p className="text-muted mt-0.5 text-sm">{report.detail}</p>}
+      {report.detail !== "" && <p className="text-muted mt-0.5 text-sm">{report.detail}</p>}
       {report.reporter_id === null && (
         <p className="text-muted mt-0.5 text-xs italic">{t("moderation.deletedReporter")}</p>
       )}
@@ -43,7 +43,7 @@ function HistoryLine({ entry }: { entry: ModerationAction }) {
           {new Date(entry.created_at).toLocaleDateString()}
         </span>
       </div>
-      {entry.note && <p className="text-muted mt-0.5 text-sm">{entry.note}</p>}
+      {entry.note !== "" && <p className="text-muted mt-0.5 text-sm">{entry.note}</p>}
       {entry.moderator_id === null && (
         <p className="text-muted mt-0.5 text-xs italic">{t("moderation.deletedModerator")}</p>
       )}

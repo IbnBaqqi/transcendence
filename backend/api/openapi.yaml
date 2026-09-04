@@ -990,7 +990,7 @@ components:
 
     Report:
       type: object
-      required: [id, reason, status, created_at]
+      required: [id, reason, detail, status, created_at]
       properties:
         id:
           type: string
@@ -1010,6 +1010,10 @@ components:
           description: |
             Attacker-controlled text, stripped of control characters at write
             time. Render it as plain text.
+
+            Always present, empty when the reporter gave no detail - the field
+            is serialised unconditionally, so a client must not test for its
+            absence.
         status:
           type: string
           enum: [open, upheld, dismissed]
@@ -1019,7 +1023,7 @@ components:
 
     ModerationAction:
       type: object
-      required: [id, listing_id, action, created_at]
+      required: [id, listing_id, action, note, created_at]
       description: One entry in the audit trail. Nothing here is ever edited.
       properties:
         id:
@@ -1042,6 +1046,10 @@ components:
           description: Past tense, because the log records what was done.
         note:
           type: string
+          description: |
+            Why. Always present, empty where the action carried no note - the
+            field is serialised unconditionally, so a client must not test for
+            its absence.
         created_at:
           type: string
           format: date-time
