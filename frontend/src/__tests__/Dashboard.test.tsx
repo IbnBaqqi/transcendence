@@ -63,6 +63,19 @@ function renderDashboard({
 }
 
 describe("Dashboard", () => {
+  // The dashboard is the one caller entitled to sold-out rows, and without
+  // asking for them a listing vanishes from its owner's inventory the moment it
+  // sells out - which is the row they most need, since it is the one to restock
+  // or delist. SellerListingRow's "Sold out" state is unreachable without this.
+  test("asks for the seller's sold-out listings, not just the sellable ones", () => {
+    renderDashboard();
+
+    expect(vi.mocked(useSearchListings)).toHaveBeenCalledWith(
+      expect.objectContaining({ seller_id: SELLER_ID, include_sold_out: true }),
+      expect.anything(),
+    );
+  });
+
   test("leads with the orders waiting on the seller", () => {
     renderDashboard({ orders: [makeOrder({ status: "pending" })] });
     expect(screen.getByText("Needs you (1)")).toBeInTheDocument();
@@ -128,7 +141,7 @@ describe("Dashboard", () => {
     expect(screen.getByRole("button", { name: "Log In" })).toBeInTheDocument();
     expect(useOrders).toHaveBeenCalledWith({ enabled: false });
     expect(useSearchListings).toHaveBeenCalledWith(
-      { seller_id: undefined, limit: 50 },
+      { seller_id: undefined, limit: 50, include_sold_out: true },
       { enabled: false },
     );
   });

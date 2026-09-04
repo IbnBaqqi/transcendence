@@ -18,6 +18,9 @@ export interface ListingSearchParams {
   sort?: ListingSort;
   page?: number;
   limit?: number;
+  // Only honoured when seller_id is the signed-in caller; the server ignores
+  // it otherwise rather than erroring, so sending it is never a failure.
+  include_sold_out?: boolean;
 }
 
 // Sorted, so the same filters always produce the same cache key regardless of
