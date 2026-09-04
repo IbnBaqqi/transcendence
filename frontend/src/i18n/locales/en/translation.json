@@ -85,6 +85,8 @@
     "retry": "Retry",
     "removePhoto": "Remove photo",
     "addPhoto": "Add photo",
+    "moveEarlier": "Move earlier",
+    "moveLater": "Move later",
     "ariaUploadPhotos": "Upload photos"
   },
   "categories": {
@@ -442,6 +444,7 @@
     "maxImages_other": "You can only add up to {{max}} images.",
     "unsupportedImageType": "\"{{name}}\" isn't a supported image type (use JPEG, PNG or WebP).",
     "fileTooLarge": "\"{{name}}\" is larger than {{mb}}MB.",
+    "uploadTooLarge": "This photo is too large to upload.",
     "usernameRequired": "Username is required",
     "usernameTooLong": "Username must be less than 50 characters",
     "usernameNoSpaces": "Username cannot contain spaces",

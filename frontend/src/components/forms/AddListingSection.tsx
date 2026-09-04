@@ -9,11 +9,12 @@ import { CategorySelect } from "./CategorySelect";
 import { FormTextArea } from "./FormTextArea";
 import { makeAddListingSchema, type AddListingFormValues } from "../../schemas/addListing";
 import { useCategories, flattenCategories } from "../../api/categories";
-import { useCreateListing, useUploadListingImage } from "../../api/listings";
+import { useCreateListing, useDeleteListingImage, useUploadListingImage } from "../../api/listings";
 import { isApiError } from "../../api/client";
 import Button from "../objects/Button.tsx";
 import { ImageDropzone } from "../objects/ImageDropzone";
-import { useImageGallery } from "../../hooks/useImageGallery";
+import { useImageGallery, type GalleryImage } from "../../hooks/useImageGallery";
+import { describeUploadError } from "../../lib/uploadErrors";
 
 // Mirrors the backend's default MAX_IMAGES_PER_LISTING (see
 // backend/internal/config/config.go). The server enforces the real cap on
@@ -37,6 +38,7 @@ export function AddListingSection() {
   const navigate = useNavigate();
   const createListing = useCreateListing();
   const uploadImage = useUploadListingImage();
+  const deleteImage = useDeleteListingImage();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [partial, setPartial] = useState<{ id: string; failed: number } | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -44,10 +46,34 @@ export function AddListingSection() {
     images: photos,
     addFiles: addPhotos,
     removeImage: removePhoto,
+    moveImage: movePhoto,
+    updateImage: updatePhoto,
   } = useImageGallery({
     maxFiles: MAX_LISTING_IMAGES,
     onError: setPhotoError,
   });
+
+  const uploadPhoto = async (listingId: string, photo: GalleryImage) => {
+    updatePhoto(photo.id, {
+      status: "uploading",
+      progress: undefined,
+      error: undefined,
+      retryable: undefined,
+    });
+    try {
+      const image = await uploadImage.mutateAsync({
+        listingId,
+        file: photo.file,
+        onProgress: (progress) => updatePhoto(photo.id, { progress }),
+      });
+      updatePhoto(photo.id, { status: "uploaded", serverId: image.id });
+      return true;
+    } catch (err) {
+      const { message, retryable } = describeUploadError(err, photo.file.name);
+      updatePhoto(photo.id, { status: "error", error: message, retryable });
+      return false;
+    }
+  };
 
   const handleSubmit = async (data: AddListingFormValues) => {
     setSubmitError(null);
@@ -61,13 +87,12 @@ export function AddListingSection() {
       return;
     }
 
-    // POST /listings/{id}/images needs an id, so the photos can only go once
-    // the listing exists. allSettled rather than all: the listing is already
-    // created, so one refused file must not look like a failed submission.
-    const results = await Promise.allSettled(
-      photos.map((photo) => uploadImage.mutateAsync({ listingId: listing.id, file: photo.file })),
-    );
-    const failed = results.filter((r) => r.status === "rejected").length;
+    // Sequential: the server assigns position by arrival order
+    // (backend/sql/queries/listing_images.sql), so parallel uploads scramble the gallery.
+    let failed = 0;
+    for (const photo of photos) {
+      if (!(await uploadPhoto(listing.id, photo))) failed += 1;
+    }
 
     if (failed > 0) {
       // Nothing to roll back - the listing exists. Saying "failed" here would
@@ -77,6 +102,34 @@ export function AddListingSection() {
     }
 
     void navigate(`/listings/${listing.id}`);
+  };
+
+  const handleRetry = async (id: string) => {
+    const photo = photos.find((p) => p.id === id);
+    if (!partial || !photo) return;
+    if (!(await uploadPhoto(partial.id, photo))) return;
+
+    // Clearing `partial` instead would re-enable submit and let a second click
+    // create the duplicate listing that whole branch exists to prevent.
+    if (partial.failed <= 1) void navigate(`/listings/${partial.id}`);
+    else setPartial({ ...partial, failed: partial.failed - 1 });
+  };
+
+  const handleRemovePhoto = async (id: string) => {
+    const photo = photos.find((p) => p.id === id);
+    if (!photo?.serverId || !partial) {
+      removePhoto(id);
+      return;
+    }
+
+    setPhotoError(null);
+    try {
+      await deleteImage.mutateAsync({ listingId: partial.id, imageId: photo.serverId });
+      removePhoto(id);
+    } catch (err) {
+      // Dropping it locally anyway would hide a photo that is still on the listing.
+      setPhotoError(isApiError(err) ? err.message : t("common.somethingWentWrong"));
+    }
   };
 
   return (
@@ -92,7 +145,9 @@ export function AddListingSection() {
             <ImageDropzone
               images={photos}
               onFilesSelected={addPhotos}
-              onRemove={removePhoto}
+              onRemove={handleRemovePhoto}
+              onRetry={handleRetry}
+              onMove={partial ? undefined : movePhoto}
               multiple
               emptyMessage={t("dropzone.noPhotos")}
               helperText={t("dropzone.dragDropAddListing")}
