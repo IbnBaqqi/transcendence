@@ -1,10 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
 import type { AdminOrder, PaginatedAdminOrders, ResolveOrderInput } from "./types";
 
-export function useAdminOrders(query: string) {
+export function useAdminOrders(query: string, options: { enabled?: boolean } = {}) {
   return useQuery({
     // The query string is the key, so paging back to a view already fetched is
     // instant and two filters cannot overwrite each other's rows.
@@ -15,6 +15,13 @@ export function useAdminOrders(query: string) {
     // that no longer exists.
     queryFn: async () =>
       (await api.get<PaginatedAdminOrders>(`/admin/orders${query ? `?${query}` : ""}`)).data,
+    // The page passes false for a range the API would answer with a 400, so a
+    // request certain to fail is never sent.
+    enabled: options.enabled ?? true,
+    // A page change is a new query key, so without this the list and the pager
+    // unmount mid-click and take keyboard focus to <body> with them. The
+    // placeholder is dropped on error, so a failed page still surfaces.
+    placeholderData: keepPreviousData,
   });
 }
 

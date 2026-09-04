@@ -40,6 +40,11 @@ export function ResolveOrderDialog({ order }: { order: AdminOrder }) {
     setOpen(false);
     setOutcome(null);
     setReason("");
+    // The alert is derived from the mutation and rendered outside the open
+    // branch, so clearing only the form leaves a 409 under a collapsed row
+    // with nothing to explain it. Reachable on "that shape only takes
+    // cancelled", where the order stays stuck and the row stays mounted.
+    resolve.reset();
   };
 
   function submit() {

@@ -36,6 +36,7 @@ export default function AdminOrders() {
   // API means. See lib/adminOrderFilters.ts.
   const { data, isPending, isError, error, refetch } = useAdminOrders(
     adminOrderFiltersToQuery(filters),
+    { enabled: !backwards },
   );
 
   return (
@@ -107,7 +108,10 @@ export default function AdminOrders() {
         </p>
       )}
 
-      {isPending && (
+      {/* Not isPending alone: a disabled query reports isPending forever, so a
+          backwards range would sit under its own alert with skeletons
+          spinning at it. */}
+      {isPending && !backwards && (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-20 w-full" />

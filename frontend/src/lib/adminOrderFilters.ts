@@ -95,9 +95,10 @@ function localStartOfDay(day: string, addDays = 0): Date {
   return new Date(y, m - 1, d + addDays);
 }
 
-// RFC 3339 with this browser's offset, which parseDayBound tries before the
-// bare-date form. Sending YYYY-MM-DD instead would be read as UTC midnight,
-// so from a zone ahead of UTC the range would end early.
+// The same instant, as UTC - toISOString emits a Z, not a local offset. What
+// matters is that it is an instant at all: parseDayBound tries RFC 3339 before
+// the bare-date form, and sending YYYY-MM-DD would be read as UTC midnight, so
+// from a zone ahead of UTC the range would end early.
 function toInstant(day: string, addDays = 0): string {
   return localStartOfDay(day, addDays).toISOString();
 }

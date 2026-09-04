@@ -16,6 +16,7 @@ function setMutation(over: Record<string, unknown> = {}) {
     isPending: false,
     isError: false,
     error: null,
+    reset: vi.fn(),
     ...over,
   } as unknown as ReturnType<typeof useResolveOrder>);
 }
@@ -158,4 +159,28 @@ test("surfaces the server's own message on a conflict", () => {
   });
   renderDialog();
   expect(screen.getByRole("alert")).toHaveTextContent("can only be resolved as cancelled");
+});
+
+// The alert is derived from the mutation and rendered outside the open branch,
+// so cancelling has to clear it too. Reachable on the 409 that says the shape
+// only takes cancelled: the order stays stuck, the row stays mounted, and the
+// dialog collapses to its button with a red error underneath and no context.
+test("cancelling clears a failure rather than leaving it under the row", async () => {
+  const reset = vi.fn();
+  setMutation({
+    isError: true,
+    error: {
+      status: 409,
+      message: "An order neither party ever acted on can only be resolved as cancelled",
+    },
+    reset,
+  });
+  renderDialog();
+
+  expect(screen.getByRole("alert")).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole("button", { name: "Resolve" }));
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+  expect(reset).toHaveBeenCalled();
 });
