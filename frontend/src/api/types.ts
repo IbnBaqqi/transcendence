@@ -311,8 +311,9 @@ export interface Report {
   // listing, not the person, so it outlives them.
   reporter_id: string | null;
   reason: ReportReason;
-  // Attacker-controlled text. Render as plain text, never as markup.
-  detail?: string;
+  // Always present, empty when no detail was given - so branch on "" rather
+  // than on absence. Attacker-controlled: render as plain text, never markup.
+  detail: string;
   status: ReportStatus;
   created_at: Timestamp;
 }
@@ -324,7 +325,8 @@ export interface ModerationAction {
   // with its author is not an audit row.
   moderator_id: string | null;
   action: ModerationLogAction;
-  note?: string;
+  // Always present, empty where the action carried no note.
+  note: string;
   created_at: Timestamp;
 }
 
