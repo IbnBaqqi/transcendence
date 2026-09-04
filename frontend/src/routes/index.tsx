@@ -17,6 +17,7 @@ import Terms from "../pages/Terms";
 import NotFound from "../pages/NotFound";
 import AuthCallback from "../pages/AuthCallback";
 import AdminListings from "../pages/AdminListings";
+import AdminOrders from "../pages/AdminOrders";
 import AdminUsers from "../pages/AdminUsers";
 import { RequireAdmin } from "../components/layout/RequireAdmin";
 
@@ -47,6 +48,7 @@ export default function AppRouter() {
           <Route element={<RequireAdmin />}>
             <Route path="/admin/listings" element={<AdminListings />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/orders" element={<AdminOrders />} />
           </Route>
           {/* any unmatched URL renders the 404 inside the shell */}
           <Route path="*" element={<NotFound />} />

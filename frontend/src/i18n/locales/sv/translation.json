@@ -10,6 +10,7 @@
     "following": "Följer",
     "profile": "Profil",
     "admin": "Admin",
+    "adminOrders": "Orderadmin",
     "adminUsers": "Konton"
   },
   "language": {
@@ -180,47 +181,39 @@
     "reportsError": "Kunde inte ladda rapporterna.",
     "historyError": "Kunde inte ladda historiken."
   },
-  "adminUsers": {
-    "filterRole": "Roll",
+  "adminOrders": {
     "filterStatus": "Status",
-    "anyRole": "Alla roller",
     "anyStatus": "Alla statusar",
-    "deletedUser": "Raderad användare",
-    "suspendedFor": "Avstängd: {{reason}}",
-    "lastSeen": "Senast sedd {{date}}",
-    "neverSeen": "Aldrig sedd",
-    "listEmpty": "Inga konton matchar filtren.",
-    "listError": "Kunde inte ladda kontona.",
-    "role": {
-      "USER": "Användare",
-      "ADMIN": "Administratör"
+    "filterStuck": "Fast",
+    "anyStuck": "Alla",
+    "onlyStuck": "Endast fastnade",
+    "notStuck": "Inte fastnade",
+    "from": "Från",
+    "to": "Till",
+    "rangeBackwards": "Datumintervallet slutar före det börjar.",
+    "stuck": "Ingen kan gå vidare",
+    "placed": "Lagd {{date}}",
+    "buyer": "Köpare",
+    "seller": "Säljare",
+    "quantityAndTotal": "{{quantity}} × — {{total}} totalt",
+    "listEmpty": "Inga beställningar matchar filtren.",
+    "listError": "Kunde inte ladda beställningarna.",
+    "handshake": {
+      "both": "Båda parter agerade",
+      "seller": "Säljaren lämnade över",
+      "buyer": "Köparen tog emot",
+      "neither": "Ingen part har agerat"
     },
-    "status": {
-      "active": "Aktiv",
-      "suspended": "Avstängd",
-      "deleted": "Raderad"
-    },
-    "suspend": "Stäng av",
-    "reinstate": "Återställ",
-    "confirm": "Bekräfta",
-    "working": "Behandlar…",
-    "reasonForUser": "Orsak (visas för dem)",
-    "noteOptional": "Anteckning (valfri)",
-    "actionFailed": "Kunde inte spara det.",
-    "delete": "Radera",
-    "deleteWarning": "Kontot anonymiseras, inte raderas. Beställningar finns kvar på båda sidor och motparten behåller sin kopia av konversationer.",
-    "confirmUsername": "Skriv {{username}} för att bekräfta",
-    "deleteReason": "Orsak (sparas i loggen)",
-    "showHistory": "Visa historik",
-    "hideHistory": "Dölj historik",
-    "historyTitle": "Kontohistorik",
-    "historyEmpty": "Aldrig åtgärdad.",
-    "historyError": "Kunde inte ladda historiken.",
-    "deletedModerator": "Moderatorn har raderat sitt konto",
-    "action": {
-      "suspended": "Avstängd",
-      "reinstated": "Återställd",
-      "deleted": "Raderad"
+    "resolve": "Lös",
+    "resolving": "Löser…",
+    "confirmResolve": "Lös beställning",
+    "reasonForParties": "Orsak (båda parter kan läsa detta)",
+    "onlyCancellable": "Ingen part agerade, så denna kan bara avbrytas.",
+    "resolveFailed": "Kunde inte lösa beställningen.",
+    "outcome": {
+      "completed": "Slutförd",
+      "cancelled": "Avbruten",
+      "refunded": "Återbetald"
     }
   },
   "orders": {
@@ -396,6 +389,9 @@
     },
     "adminListings": {
       "title": "Moderationskö"
+    },
+    "adminOrders": {
+      "title": "Alla beställningar"
     },
     "adminUsers": {
       "title": "Konton"
@@ -584,6 +580,49 @@
       "order_cancelled": "Din beställning {{title}} avbröts",
       "order_resolved": "Supporten löste din beställning {{title}}",
       "chat_request": "Någon skickade ett meddelande om {{title}}"
+    }
+  },
+  "adminUsers": {
+    "filterRole": "Roll",
+    "filterStatus": "Status",
+    "anyRole": "Alla roller",
+    "anyStatus": "Alla statusar",
+    "deletedUser": "Raderad användare",
+    "suspendedFor": "Avstängd: {{reason}}",
+    "lastSeen": "Senast sedd {{date}}",
+    "neverSeen": "Aldrig sedd",
+    "listEmpty": "Inga konton matchar filtren.",
+    "listError": "Kunde inte ladda kontona.",
+    "role": {
+      "USER": "Användare",
+      "ADMIN": "Administratör"
+    },
+    "status": {
+      "active": "Aktiv",
+      "suspended": "Avstängd",
+      "deleted": "Raderad"
+    },
+    "suspend": "Stäng av",
+    "reinstate": "Återställ",
+    "confirm": "Bekräfta",
+    "working": "Behandlar…",
+    "reasonForUser": "Orsak (visas för dem)",
+    "noteOptional": "Anteckning (valfri)",
+    "actionFailed": "Kunde inte spara det.",
+    "delete": "Radera",
+    "deleteWarning": "Kontot anonymiseras, inte raderas. Beställningar finns kvar på båda sidor och motparten behåller sin kopia av konversationer.",
+    "confirmUsername": "Skriv {{username}} för att bekräfta",
+    "deleteReason": "Orsak (sparas i loggen)",
+    "showHistory": "Visa historik",
+    "hideHistory": "Dölj historik",
+    "historyTitle": "Kontohistorik",
+    "historyEmpty": "Aldrig åtgärdad.",
+    "historyError": "Kunde inte ladda historiken.",
+    "deletedModerator": "Moderatorn har raderat sitt konto",
+    "action": {
+      "suspended": "Avstängd",
+      "reinstated": "Återställd",
+      "deleted": "Raderad"
     }
   }
 }
