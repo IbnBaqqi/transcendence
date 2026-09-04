@@ -8,6 +8,11 @@ import type { AdminOrder, PaginatedAdminOrders } from "../api/types";
 
 vi.mock("../api/adminOrders", () => ({ useAdminOrders: vi.fn() }));
 
+// The whole component, not the hook behind it. These tests are about the list;
+// stubbing the dialog's hooks one at a time would mean every hook added to it
+// breaks this file. ResolveOrderDialog has its own tests.
+vi.mock("../components/objects/ResolveOrderDialog", () => ({ ResolveOrderDialog: () => null }));
+
 const ORDER_ID = "01a02305-b81c-7dcb-86a0-7f75e33e0af3";
 
 function makeOrder(overrides: Partial<AdminOrder> = {}): AdminOrder {

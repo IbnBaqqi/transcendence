@@ -200,6 +200,17 @@
       "seller": "Seller handed over",
       "buyer": "Buyer received",
       "neither": "Neither side has acted"
+    },
+    "resolve": "Resolve",
+    "resolving": "Resolving…",
+    "confirmResolve": "Resolve order",
+    "reasonForParties": "Reason (both parties can read this)",
+    "onlyCancellable": "Neither side ever acted, so this can only be cancelled.",
+    "resolveFailed": "Couldn't resolve that order.",
+    "outcome": {
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
     }
   },
   "orders": {

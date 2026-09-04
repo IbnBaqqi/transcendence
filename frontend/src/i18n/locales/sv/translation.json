@@ -200,6 +200,17 @@
       "seller": "Säljaren lämnade över",
       "buyer": "Köparen tog emot",
       "neither": "Ingen part har agerat"
+    },
+    "resolve": "Lös",
+    "resolving": "Löser…",
+    "confirmResolve": "Lös beställning",
+    "reasonForParties": "Orsak (båda parter kan läsa detta)",
+    "onlyCancellable": "Ingen part agerade, så denna kan bara avbrytas.",
+    "resolveFailed": "Kunde inte lösa beställningen.",
+    "outcome": {
+      "completed": "Slutförd",
+      "cancelled": "Avbruten",
+      "refunded": "Återbetald"
     }
   },
   "orders": {

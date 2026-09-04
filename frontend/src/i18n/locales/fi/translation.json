@@ -200,6 +200,17 @@
       "seller": "Myyjä luovutti",
       "buyer": "Ostaja vastaanotti",
       "neither": "Kumpikaan ei ole toiminut"
+    },
+    "resolve": "Ratkaise",
+    "resolving": "Ratkaistaan…",
+    "confirmResolve": "Ratkaise tilaus",
+    "reasonForParties": "Syy (molemmat osapuolet näkevät tämän)",
+    "onlyCancellable": "Kumpikaan ei toiminut, joten tämän voi vain perua.",
+    "resolveFailed": "Tilauksen ratkaiseminen ei onnistunut.",
+    "outcome": {
+      "completed": "Valmis",
+      "cancelled": "Peruttu",
+      "refunded": "Hyvitetty"
     }
   },
   "orders": {

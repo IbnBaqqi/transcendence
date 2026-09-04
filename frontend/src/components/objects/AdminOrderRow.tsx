@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { OrderStatusPill } from "./OrderStatusPill";
+import { ResolveOrderDialog } from "./ResolveOrderDialog";
 import type { AdminOrder } from "../../api/types";
 
 // Exactly one mark set is what "trapped mid-handover" looks like, so saying
@@ -64,6 +65,8 @@ export function AdminOrderRow({ order }: { order: AdminOrder }) {
           </span>
         </div>
       </div>
+
+      <ResolveOrderDialog order={order} />
     </li>
   );
 }
