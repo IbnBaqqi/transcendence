@@ -100,7 +100,9 @@ export function ReportedListingRow({ row }: { row: ReportedListing }) {
       {expanded && (
         <div className="border-line mt-3 grid gap-4 border-t pt-3 sm:grid-cols-2">
           <section>
-            <h3 className="text-foreground text-sm font-bold">{t("moderation.reportsTitle")}</h3>
+            <h3 className="text-foreground text-secondary font-bold">
+              {t("moderation.reportsTitle")}
+            </h3>
             {/* Resolved reports stay: a listing reported before and cleared is
                 context for deciding again. Server order, newest first. */}
             {reports && reports.length > 0 ? (
@@ -121,7 +123,9 @@ export function ReportedListingRow({ row }: { row: ReportedListing }) {
           </section>
 
           <section>
-            <h3 className="text-foreground text-sm font-bold">{t("moderation.historyTitle")}</h3>
+            <h3 className="text-foreground text-secondary font-bold">
+              {t("moderation.historyTitle")}
+            </h3>
             {history && history.length > 0 ? (
               <ul className="divide-line divide-y">
                 {history.map((entry) => (
