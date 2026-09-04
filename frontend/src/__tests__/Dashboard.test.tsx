@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
 import Dashboard from "../pages/Dashboard";
@@ -29,7 +30,7 @@ function renderDashboard({
   ordersState = {},
 } = {}) {
   vi.mocked(useSearchListings).mockReturnValue({
-    data: { items: listings, total: listings.length, page: 1, limit: 50, total_pages: 1 },
+    data: { items: listings, total: listings.length, page: 1, limit: 20, total_pages: 1 },
     isPending: false,
     isError: false,
     ...listingsState,
@@ -119,20 +120,59 @@ describe("Dashboard", () => {
     expect(screen.getByText("Finished (1)")).toBeInTheDocument();
   });
 
-  // limit is 50; without this a seller with more just sees the first page.
-  test("says so when the listing count is truncated", () => {
+  // A seller with more than one page's worth used to see the first 50 and a
+  // line saying so. The rest are reachable now.
+  test("offers a pager when the inventory is longer than a page", () => {
     renderDashboard({
       listings: [makeListing()],
       listingsState: {
-        data: { items: [makeListing()], total: 51, page: 1, limit: 50, total_pages: 2 },
+        data: { items: [makeListing()], total: 65, page: 1, limit: 20, total_pages: 4 },
       },
     });
-    expect(screen.getByText("Showing 1 of 51")).toBeInTheDocument();
+
+    expect(screen.getByText("Page 1 of 4")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
   });
 
-  test("says nothing when everything fits", () => {
+  test("asks for the next page when the pager is used", async () => {
+    const user = userEvent.setup();
+    renderDashboard({
+      listings: [makeListing()],
+      listingsState: {
+        data: { items: [makeListing()], total: 65, page: 1, limit: 20, total_pages: 4 },
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(vi.mocked(useSearchListings)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 2, include_sold_out: true }),
+      expect.anything(),
+    );
+  });
+
+  // A stale or shared ?page=N link outlives the listings it pointed at, and a
+  // moderator removing enough of them shrinks the set underneath the seller.
+  // Keying the empty state on this page's length rather than on the total told
+  // a seller with 30 listings they had none, and removed the pager that is the
+  // only way back.
+  test("keeps the pager on a page past the end instead of claiming there is nothing", () => {
+    renderDashboard({
+      listings: [],
+      listingsState: {
+        data: { items: [], total: 30, page: 9, limit: 20, total_pages: 2 },
+      },
+    });
+
+    expect(screen.queryByText("You haven't posted a listing yet.")).not.toBeInTheDocument();
+    expect(screen.getByText("30 results")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
+  });
+
+  test("shows no page controls when everything fits on one", () => {
     renderDashboard({ listings: [makeListing()] });
-    expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Page 1 of/)).not.toBeInTheDocument();
   });
 
   test("a signed-out visitor is offered the login and neither query fires", () => {
@@ -141,7 +181,7 @@ describe("Dashboard", () => {
     expect(screen.getByRole("button", { name: "Log In" })).toBeInTheDocument();
     expect(useOrders).toHaveBeenCalledWith({ enabled: false });
     expect(useSearchListings).toHaveBeenCalledWith(
-      { seller_id: undefined, limit: 50, include_sold_out: true },
+      { seller_id: undefined, page: 1, limit: 20, include_sold_out: true },
       { enabled: false },
     );
   });

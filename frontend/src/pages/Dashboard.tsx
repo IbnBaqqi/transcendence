@@ -11,14 +11,18 @@ import { OrderCard } from "../components/objects/OrderCard";
 import { SellerListingRow } from "../components/objects/SellerListingRow";
 import Button from "../components/objects/Button";
 import { Skeleton } from "../components/objects/Skeleton";
+import { Pagination } from "../components/objects/Pagination";
+import { usePageParam } from "../hooks/usePageParam";
+import { PAGE_SIZE } from "../lib/searchFilters";
 
 export default function Dashboard() {
   const { t } = useTranslation();
   const { user, isLoading: authLoading } = useAuth();
   const { openModal } = useModal();
 
+  const [page, setPage] = usePageParam();
   const listingsQuery = useSearchListings(
-    { seller_id: user?.id, limit: 50, include_sold_out: true },
+    { seller_id: user?.id, page, limit: PAGE_SIZE, include_sold_out: true },
     { enabled: !!user },
   );
   const ordersQuery = useOrders({ enabled: !!user });
@@ -70,7 +74,7 @@ export default function Dashboard() {
             }
             onRetry={() => listingsQuery.refetch()}
           />
-        ) : listings.length === 0 ? (
+        ) : listingsQuery.data?.total === 0 ? (
           <div className="border-line rounded-lg border border-dashed p-8 text-center">
             <p className="text-muted text-sm">{t("pages.dashboard.noListings")}</p>
             <Link
@@ -91,15 +95,15 @@ export default function Dashboard() {
                 stats={deriveListingStats(listing, allOrders)}
               />
             ))}
-            {/* limit is 50, so a bigger inventory is silently cut off without
-                this - same treatment as Home and the public profile. */}
-            {listingsQuery.data && listingsQuery.data.total > listings.length && (
-              <p className="text-muted text-sm">
-                {t("listings.showingOf", {
-                  shown: listings.length,
-                  total: listingsQuery.data.total,
-                })}
-              </p>
+            {listingsQuery.data && (
+              <div className="mt-4">
+                <Pagination
+                  page={listingsQuery.data.page}
+                  totalPages={listingsQuery.data.total_pages}
+                  total={listingsQuery.data.total}
+                  onPageChange={setPage}
+                />
+              </div>
             )}
           </>
         )}
