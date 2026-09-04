@@ -69,7 +69,10 @@ export function NotificationBell() {
         <div
           role="group"
           aria-label={t("nav.notifications")}
-          className="border-line bg-surface absolute top-full right-0 z-20 mt-2 w-80 rounded border shadow-lg"
+          // Anchored to the bell from sm up, but the bell sits ~100px from the
+          // right edge, so a 320px panel hung off it starts off-screen on a
+          // phone. Below sm it leaves the anchor and spans the viewport.
+          className="border-line bg-surface fixed inset-x-2 top-14 z-20 rounded border shadow-lg sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-80"
         >
           <div className="border-line flex items-center justify-between border-b px-3 py-2">
             <h2 className="text-foreground text-secondary font-bold">{t("nav.notifications")}</h2>
