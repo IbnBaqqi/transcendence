@@ -101,7 +101,6 @@
   },
   "listings": {
     "available": "{{qty}} {{unit}} available",
-    "showingOf": "Showing {{shown}} of {{total}}",
     "seller": "Seller",
     "newSeller": "New seller",
     "rating": "{{average}} ★ ({{count}})"

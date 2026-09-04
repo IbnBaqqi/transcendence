@@ -7,7 +7,7 @@ export function ChatRoot() {
   if (!chatOpen) return null;
 
   return (
-    <Modal onClose={closeChat} variant="floating" className="w-96">
+    <Modal onClose={closeChat} variant="floating" className="sm:w-96">
       <Chat />
     </Modal>
   );

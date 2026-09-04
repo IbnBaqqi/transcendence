@@ -178,7 +178,7 @@ export function AddListingSection() {
             <h2 className="text-foreground text-section font-bold">
               {t("forms.addListing.priceQuantity")}
             </h2>
-            <div className="flex flex-row gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row">
               <FormField
                 name="price"
                 label={t("forms.price")}
