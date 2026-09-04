@@ -33,7 +33,7 @@ export function ApiKeyCreatedDialog({
   return (
     <Modal onClose={onClose} variant="floating" className="max-w-lg">
       <div className="space-y-4 p-6">
-        <h2 className="text-foreground text-lg font-semibold">{t("apiKeys.created.title")}</h2>
+        <h2 className="text-foreground text-section font-semibold">{t("apiKeys.created.title")}</h2>
 
         <p className="text-berry-500 text-sm font-medium">{t("apiKeys.created.warning")}</p>
 

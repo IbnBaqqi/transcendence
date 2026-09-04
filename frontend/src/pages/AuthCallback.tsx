@@ -55,7 +55,7 @@ export default function AuthCallback() {
     <div className="mx-auto flex max-w-md flex-col items-center justify-center px-4 py-24 text-center">
       {message ? (
         <>
-          <h1 className="text-foreground text-2xl font-bold">
+          <h1 className="text-foreground text-page-title font-bold">
             {errorSlug === "access_denied"
               ? t("auth.callback.cancelledTitle")
               : t("auth.callback.failedTitle")}
@@ -69,7 +69,9 @@ export default function AuthCallback() {
         <p className="text-muted">{t("auth.callback.completing")}</p>
       ) : (
         <>
-          <h1 className="text-foreground text-2xl font-bold">{t("auth.callback.failedTitle")}</h1>
+          <h1 className="text-foreground text-page-title font-bold">
+            {t("auth.callback.failedTitle")}
+          </h1>
           <p className="text-muted mt-2">{t("auth.callback.noSession")}</p>
           <a href="/" className="text-accent mt-6 inline-block hover:underline">
             {t("auth.callback.backHome")}

@@ -85,7 +85,7 @@ export default function User() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
-      <h1 className="text-foreground text-3xl font-bold">{t("pages.user.title")}</h1>
+      <h1 className="text-foreground text-page-title font-bold">{t("pages.user.title")}</h1>
 
       <div className="flex flex-row gap-4">
         <div>
@@ -127,7 +127,7 @@ export default function User() {
       {isBlocked && <p className="text-muted text-sm">{t("blocks.blocked")}</p>}
 
       <div className="space-y-1">
-        <h2 className="text-foreground text-lg font-bold">{t("pages.user.details")}</h2>
+        <h2 className="text-foreground text-section font-bold">{t("pages.user.details")}</h2>
         <div className="grid max-w-fit grid-cols-2 gap-4">
           <div className="flex flex-col">
             <div className="text-muted">{t("pages.user.firstName")}</div>
@@ -145,12 +145,12 @@ export default function User() {
       </div>
 
       <div className="space-y-1">
-        <h2 className="text-foreground text-lg font-bold">{t("pages.user.bio")}</h2>
+        <h2 className="text-foreground text-section font-bold">{t("pages.user.bio")}</h2>
         <div>{profile.bio ?? <span className="text-muted">{t("pages.user.noBio")}</span>}</div>
       </div>
 
       <div className="space-y-1">
-        <h2 className="text-foreground text-lg font-bold">{t("pages.user.listings")}</h2>
+        <h2 className="text-foreground text-section font-bold">{t("pages.user.listings")}</h2>
         <p role="status" aria-live="polite" className="text-muted mt-4">
           {listingsPending && t("pages.user.loadingListings")}
           {listingsError && t("pages.user.listingsError")}

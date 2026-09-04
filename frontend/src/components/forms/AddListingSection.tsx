@@ -137,11 +137,15 @@ export function AddListingSection() {
       <div className="space-y-4">
         <div className="space-y-2">
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">{t("forms.addListing.title")}</h2>
+            <h2 className="text-foreground text-section font-bold">
+              {t("forms.addListing.title")}
+            </h2>
             <FormField name="title" width="max-w-md" validateOnChange />
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">{t("forms.addListing.photos")}</h2>
+            <h2 className="text-foreground text-section font-bold">
+              {t("forms.addListing.photos")}
+            </h2>
             <ImageDropzone
               images={photos}
               onFilesSelected={addPhotos}
@@ -155,13 +159,15 @@ export function AddListingSection() {
             {photoError && <p className="text-berry-500 text-sm">{photoError}</p>}
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">
+            <h2 className="text-foreground text-section font-bold">
               {t("forms.addListing.description")}
             </h2>
             <FormTextArea name="description" />
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">{t("forms.addListing.category")}</h2>
+            <h2 className="text-foreground text-section font-bold">
+              {t("forms.addListing.category")}
+            </h2>
             <CategorySelect
               name="category"
               ariaLabel={t("forms.addListing.category")}
@@ -169,7 +175,7 @@ export function AddListingSection() {
             />
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">
+            <h2 className="text-foreground text-section font-bold">
               {t("forms.addListing.priceQuantity")}
             </h2>
             <div className="flex flex-row gap-4">

@@ -31,7 +31,7 @@ export default function Orders() {
   if (!user) {
     return (
       <div className="mx-auto max-w-4xl space-y-3 px-4 py-8">
-        <h1 className="text-foreground text-2xl font-bold">{t("orders.title")}</h1>
+        <h1 className="text-foreground text-page-title font-bold">{t("orders.title")}</h1>
         <p className="text-muted text-sm">{t("orders.signedOut")}</p>
         <Button variant="primary" onClick={() => openModal("login")}>
           {t("common.logIn")}
@@ -46,7 +46,7 @@ export default function Orders() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">{t("orders.title")}</h1>
+      <h1 className="text-foreground text-page-title font-bold">{t("orders.title")}</h1>
 
       <div className="border-line mt-4 flex gap-2 border-b">
         <TabButton active={tab === "purchases"} onClick={() => setTab("purchases")}>

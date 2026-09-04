@@ -9,7 +9,7 @@ export function LoginModal() {
 
   return (
     <div className="space-y-2 p-6">
-      <h2 className="mb-4 text-lg font-semibold">{t("modal.login.title")}</h2>
+      <h2 className="text-section mb-4 font-semibold">{t("modal.login.title")}</h2>
       <LoginSection onClose={closeModal} />
       <div className="">
         <span>{t("modal.login.notRegistered")}</span>

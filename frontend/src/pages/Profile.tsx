@@ -83,7 +83,7 @@ export default function Profile() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
-      <h1 className="text-foreground text-3xl font-bold">{t("pages.profile.title")}</h1>
+      <h1 className="text-foreground text-page-title font-bold">{t("pages.profile.title")}</h1>
       {signedOut ? (
         <div className="space-y-3">
           <p className="text-muted text-sm">{t("pages.profile.signedOut")}</p>
@@ -138,7 +138,7 @@ export default function Profile() {
             </p>
           )}
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">
+            <h2 className="text-foreground text-section font-bold">
               {t("pages.profile.contactDetails")}
             </h2>
             <ContactDetailsSection />
@@ -147,17 +147,19 @@ export default function Profile() {
             a password - a provider-only (OAuth) account has nothing to change. */}
           {user?.has_password && (
             <div className="space-y-1">
-              <h2 className="text-foreground text-lg font-bold">{t("pages.profile.password")}</h2>
+              <h2 className="text-foreground text-section font-bold">
+                {t("pages.profile.password")}
+              </h2>
               <ChangePasswordSection />
             </div>
           )}
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">{t("pages.profile.bio")}</h2>
+            <h2 className="text-foreground text-section font-bold">{t("pages.profile.bio")}</h2>
             <BioSection />
           </div>
           {/* Not gated on has_password: an OAuth account needs keys too. */}
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">{t("pages.profile.apiKeys")}</h2>
+            <h2 className="text-foreground text-section font-bold">{t("pages.profile.apiKeys")}</h2>
             <ApiKeysSection />
           </div>
           {/* NOTE: No backend for these kind of preferences yet. Discussions were held about
@@ -180,11 +182,11 @@ export default function Profile() {
           {/*   </div> */}
           {/* </div> */}
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">{t("blocks.listTitle")}</h2>
+            <h2 className="text-foreground text-section font-bold">{t("blocks.listTitle")}</h2>
             <BlockedUsersSection />
           </div>
           <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-bold">
+            <h2 className="text-foreground text-section font-bold">
               {t("pages.profile.accountManagement")}
             </h2>
             <div className="flex flex-row gap-4">

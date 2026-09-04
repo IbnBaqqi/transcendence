@@ -27,7 +27,9 @@ export default function Notifications() {
   if (!user) {
     return (
       <div className="mx-auto max-w-3xl space-y-3 px-4 py-8">
-        <h1 className="text-foreground text-3xl font-bold">{t("pages.notifications.title")}</h1>
+        <h1 className="text-foreground text-page-title font-bold">
+          {t("pages.notifications.title")}
+        </h1>
         <p className="text-muted text-sm">{t("pages.notifications.signedOut")}</p>
         <Button variant="primary" onClick={() => openModal("login")}>
           {t("common.logIn")}
@@ -39,7 +41,9 @@ export default function Notifications() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-foreground text-3xl font-bold">{t("pages.notifications.title")}</h1>
+        <h1 className="text-foreground text-page-title font-bold">
+          {t("pages.notifications.title")}
+        </h1>
         <MarkAllReadButton unread={unreadCount(notifications)} className="text-sm" />
       </div>
 

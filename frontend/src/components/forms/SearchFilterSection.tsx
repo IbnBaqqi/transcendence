@@ -59,7 +59,7 @@ export function SearchFilterSection({ initial, onApply, onClear }: SearchFilterS
       isEditing
       className="border-line bg-surface space-y-4 rounded-lg border p-4"
     >
-      <h2 className="text-foreground text-lg font-bold">{t("pages.search.filters")}</h2>
+      <h2 className="text-foreground text-section font-bold">{t("pages.search.filters")}</h2>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <FormField name="keyword" label={t("pages.search.keyword")} />
