@@ -9,7 +9,8 @@
     "orders": "Beställningar",
     "following": "Följer",
     "profile": "Profil",
-    "admin": "Admin"
+    "admin": "Admin",
+    "adminUsers": "Konton"
   },
   "language": {
     "en": "English",
@@ -178,6 +179,49 @@
     "resolvedCount_other": "Löste {{count}} rapporter",
     "reportsError": "Kunde inte ladda rapporterna.",
     "historyError": "Kunde inte ladda historiken."
+  },
+  "adminUsers": {
+    "filterRole": "Roll",
+    "filterStatus": "Status",
+    "anyRole": "Alla roller",
+    "anyStatus": "Alla statusar",
+    "deletedUser": "Raderad användare",
+    "suspendedFor": "Avstängd: {{reason}}",
+    "lastSeen": "Senast sedd {{date}}",
+    "neverSeen": "Aldrig sedd",
+    "listEmpty": "Inga konton matchar filtren.",
+    "listError": "Kunde inte ladda kontona.",
+    "role": {
+      "USER": "Användare",
+      "ADMIN": "Administratör"
+    },
+    "status": {
+      "active": "Aktiv",
+      "suspended": "Avstängd",
+      "deleted": "Raderad"
+    },
+    "suspend": "Stäng av",
+    "reinstate": "Återställ",
+    "confirm": "Bekräfta",
+    "working": "Behandlar…",
+    "reasonForUser": "Orsak (visas för dem)",
+    "noteOptional": "Anteckning (valfri)",
+    "actionFailed": "Kunde inte spara det.",
+    "delete": "Radera",
+    "deleteWarning": "Kontot anonymiseras, inte raderas. Beställningar finns kvar på båda sidor och motparten behåller sin kopia av konversationer.",
+    "confirmUsername": "Skriv {{username}} för att bekräfta",
+    "deleteReason": "Orsak (sparas i loggen)",
+    "showHistory": "Visa historik",
+    "hideHistory": "Dölj historik",
+    "historyTitle": "Kontohistorik",
+    "historyEmpty": "Aldrig åtgärdad.",
+    "historyError": "Kunde inte ladda historiken.",
+    "deletedModerator": "Moderatorn har raderat sitt konto",
+    "action": {
+      "suspended": "Avstängd",
+      "reinstated": "Återställd",
+      "deleted": "Raderad"
+    }
   },
   "orders": {
     "title": "Beställningar",
@@ -352,6 +396,9 @@
     },
     "adminListings": {
       "title": "Moderationskö"
+    },
+    "adminUsers": {
+      "title": "Konton"
     }
   },
   "chat": {

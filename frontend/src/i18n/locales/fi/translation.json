@@ -9,7 +9,8 @@
     "orders": "Tilaukset",
     "following": "Seuratut",
     "profile": "Profiili",
-    "admin": "Ylläpito"
+    "admin": "Ylläpito",
+    "adminUsers": "Tilit"
   },
   "language": {
     "en": "English",
@@ -178,6 +179,49 @@
     "resolvedCount_other": "Käsitelty {{count}} ilmoitusta",
     "reportsError": "Ilmoitusten lataaminen ei onnistunut.",
     "historyError": "Historian lataaminen ei onnistunut."
+  },
+  "adminUsers": {
+    "filterRole": "Rooli",
+    "filterStatus": "Tila",
+    "anyRole": "Mikä tahansa rooli",
+    "anyStatus": "Mikä tahansa tila",
+    "deletedUser": "Poistettu käyttäjä",
+    "suspendedFor": "Jäädytetty: {{reason}}",
+    "lastSeen": "Viimeksi nähty {{date}}",
+    "neverSeen": "Ei koskaan nähty",
+    "listEmpty": "Yksikään tili ei vastaa suodattimia.",
+    "listError": "Tilien lataaminen ei onnistunut.",
+    "role": {
+      "USER": "Käyttäjä",
+      "ADMIN": "Ylläpitäjä"
+    },
+    "status": {
+      "active": "Aktiivinen",
+      "suspended": "Jäädytetty",
+      "deleted": "Poistettu"
+    },
+    "suspend": "Jäädytä",
+    "reinstate": "Palauta",
+    "confirm": "Vahvista",
+    "working": "Käsitellään…",
+    "reasonForUser": "Syy (näytetään käyttäjälle)",
+    "noteOptional": "Huomautus (valinnainen)",
+    "actionFailed": "Tallentaminen ei onnistunut.",
+    "delete": "Poista",
+    "deleteWarning": "Tili anonymisoidaan, ei poisteta. Tilaukset säilyvät molemmilla puolilla ja toinen osapuoli säilyttää oman kopionsa keskusteluista.",
+    "confirmUsername": "Kirjoita {{username}} vahvistaaksesi",
+    "deleteReason": "Syy (jää lokiin)",
+    "showHistory": "Näytä historia",
+    "hideHistory": "Piilota historia",
+    "historyTitle": "Tilin historia",
+    "historyEmpty": "Ei toimenpiteitä.",
+    "historyError": "Historian lataaminen ei onnistunut.",
+    "deletedModerator": "Moderaattori on poistanut tilinsä",
+    "action": {
+      "suspended": "Jäädytetty",
+      "reinstated": "Palautettu",
+      "deleted": "Poistettu"
+    }
   },
   "orders": {
     "title": "Tilaukset",
@@ -352,6 +396,9 @@
     },
     "adminListings": {
       "title": "Moderointijono"
+    },
+    "adminUsers": {
+      "title": "Tilit"
     }
   },
   "chat": {

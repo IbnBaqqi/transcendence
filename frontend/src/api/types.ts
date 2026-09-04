@@ -338,3 +338,70 @@ export interface ModerateListingResponse {
   listing: Listing;
   reports_resolved: number;
 }
+
+// --- Admin users ---
+
+export type AdminUserStatus = "active" | "suspended" | "deleted";
+
+// Past tense: the audit log records what was done. Distinct from the request
+// bodies, which carry no action word at all - the endpoint is the verb.
+export type UserActionKind = "suspended" | "reinstated" | "deleted";
+
+// An account as an admin sees it. The only representation in the API carrying
+// `email`, and the only one that shows deleted accounts - both justified by
+// the route sitting behind RequireRole(ADMIN).
+export interface AdminUser {
+  id: string;
+  // `deleted-<id>` once deleted: the row is anonymised rather than removed, so
+  // nothing here identifies the person who left. Display "Deleted user".
+  username: string;
+  email: string;
+  role: UserRole;
+  // Derived at the response boundary, not stored. `deleted` wins over
+  // `suspended`, because a deleted account is gone whatever it was before.
+  status: AdminUserStatus;
+  // Present while suspended, and still present on an account deleted while
+  // suspended - why it was actioned is context an admin still wants.
+  suspension_reason?: string;
+  created_at: Timestamp;
+  // Absent if never seen, and once deleted. Unlike every other view this
+  // ignores show_online_status: it is a moderation signal, not presence.
+  last_seen_at?: Timestamp;
+}
+
+export interface PaginatedAdminUsers {
+  items: AdminUser[];
+  total: number;
+  // Echoes the requested page, even past the last one.
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
+export interface UserAction {
+  id: string;
+  action: UserActionKind;
+  // Empty only for a reinstatement, the one action needing no reason.
+  note: string;
+  // Null once that admin's own account is deleted - the record outlives them.
+  moderator_id: string | null;
+  created_at: Timestamp;
+}
+
+export interface SuspendUserInput {
+  // Shown to the suspended user on their next request, so write it for them.
+  reason: string;
+}
+
+export interface ReinstateUserInput {
+  // Optional here alone: "this was a mistake" needs no justification the way a
+  // punishment does.
+  note?: string;
+}
+
+export interface DeleteUserInput {
+  // The target's exact username, as confirmation. The same guard DELETE /me
+  // uses - an admin deleting the wrong account cannot undo it.
+  username: string;
+  reason: string;
+}
