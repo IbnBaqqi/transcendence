@@ -103,7 +103,7 @@ func RateLimitByKey(perMinute int) func(http.Handler) http.Handler {
 
 			if !allowed {
 				w.Header().Set("Retry-After", strconv.Itoa(int(retryAfter.Seconds())))
-				writeAuthzError(w, http.StatusTooManyRequests, "Rate limit exceeded")
+				writeError(w, http.StatusTooManyRequests, "Rate limit exceeded")
 				return
 			}
 

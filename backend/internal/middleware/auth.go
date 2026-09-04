@@ -39,7 +39,7 @@ func Authenticate(authService *auth.JwtService, keys keyStore) func(http.Handler
 					id, user, err := keys.Authenticate(r.Context(), presented)
 					if err != nil {
 						slog.Warn("rejected API key", "path", sanitizeLog(r.URL.Path)) // #nosec G706 -- path sanitized by sanitizeLog
-						writeAuthzError(w, http.StatusUnauthorized, "Invalid API key")
+						writeError(w, http.StatusUnauthorized, "Invalid API key")
 						return
 					}
 
@@ -93,7 +93,7 @@ func Authenticate(authService *auth.JwtService, keys keyStore) func(http.Handler
 func SessionOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, viaKey := apiKeyID(r.Context()); viaKey {
-			writeAuthzError(w, http.StatusForbidden, "Log in to do this")
+			writeError(w, http.StatusForbidden, "Log in to do this")
 			return
 		}
 		next.ServeHTTP(w, r)
