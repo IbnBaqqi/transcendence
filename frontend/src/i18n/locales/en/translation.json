@@ -10,6 +10,7 @@
     "following": "Following",
     "profile": "Profile",
     "admin": "Admin",
+    "adminOrders": "Order admin",
     "adminUsers": "Accounts"
   },
   "language": {
@@ -180,47 +181,39 @@
     "reportsError": "Couldn't load the reports.",
     "historyError": "Couldn't load the history."
   },
-  "adminUsers": {
-    "filterRole": "Role",
+  "adminOrders": {
     "filterStatus": "Status",
-    "anyRole": "Any role",
     "anyStatus": "Any status",
-    "deletedUser": "Deleted user",
-    "suspendedFor": "Suspended: {{reason}}",
-    "lastSeen": "Last seen {{date}}",
-    "neverSeen": "Never seen",
-    "listEmpty": "No accounts match those filters.",
-    "listError": "Couldn't load the accounts.",
-    "role": {
-      "USER": "User",
-      "ADMIN": "Admin"
+    "filterStuck": "Stuck",
+    "anyStuck": "Any",
+    "onlyStuck": "Only stuck",
+    "notStuck": "Not stuck",
+    "from": "From",
+    "to": "To",
+    "rangeBackwards": "The date range ends before it starts.",
+    "stuck": "Nobody can move this",
+    "placed": "Placed {{date}}",
+    "buyer": "Buyer",
+    "seller": "Seller",
+    "quantityAndTotal": "{{quantity}} × — {{total}} total",
+    "listEmpty": "No orders match those filters.",
+    "listError": "Couldn't load the orders.",
+    "handshake": {
+      "both": "Both sides acted",
+      "seller": "Seller handed over",
+      "buyer": "Buyer received",
+      "neither": "Neither side has acted"
     },
-    "status": {
-      "active": "Active",
-      "suspended": "Suspended",
-      "deleted": "Deleted"
-    },
-    "suspend": "Suspend",
-    "reinstate": "Reinstate",
-    "confirm": "Confirm",
-    "working": "Working…",
-    "reasonForUser": "Reason (shown to them)",
-    "noteOptional": "Note (optional)",
-    "actionFailed": "Couldn't record that.",
-    "delete": "Delete",
-    "deleteWarning": "The account is anonymised, not erased. Orders stay on both sides and the other person keeps their copy of any conversation.",
-    "confirmUsername": "Type {{username}} to confirm",
-    "deleteReason": "Reason (kept in the audit trail)",
-    "showHistory": "Show history",
-    "hideHistory": "Hide history",
-    "historyTitle": "Account history",
-    "historyEmpty": "Never actioned.",
-    "historyError": "Couldn't load the history.",
-    "deletedModerator": "Moderator has deleted their account",
-    "action": {
-      "suspended": "Suspended",
-      "reinstated": "Reinstated",
-      "deleted": "Deleted"
+    "resolve": "Resolve",
+    "resolving": "Resolving…",
+    "confirmResolve": "Resolve order",
+    "reasonForParties": "Reason (both parties can read this)",
+    "onlyCancellable": "Neither side ever acted, so this can only be cancelled.",
+    "resolveFailed": "Couldn't resolve that order.",
+    "outcome": {
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
     }
   },
   "report": {
@@ -407,6 +400,9 @@
     },
     "adminListings": {
       "title": "Moderation queue"
+    },
+    "adminOrders": {
+      "title": "All orders"
     },
     "adminUsers": {
       "title": "Accounts"
@@ -595,6 +591,49 @@
       "order_cancelled": "Your {{title}} order was cancelled",
       "order_resolved": "Support resolved your {{title}} order",
       "chat_request": "Someone messaged you about {{title}}"
+    }
+  },
+  "adminUsers": {
+    "filterRole": "Role",
+    "filterStatus": "Status",
+    "anyRole": "Any role",
+    "anyStatus": "Any status",
+    "deletedUser": "Deleted user",
+    "suspendedFor": "Suspended: {{reason}}",
+    "lastSeen": "Last seen {{date}}",
+    "neverSeen": "Never seen",
+    "listEmpty": "No accounts match those filters.",
+    "listError": "Couldn't load the accounts.",
+    "role": {
+      "USER": "User",
+      "ADMIN": "Admin"
+    },
+    "status": {
+      "active": "Active",
+      "suspended": "Suspended",
+      "deleted": "Deleted"
+    },
+    "suspend": "Suspend",
+    "reinstate": "Reinstate",
+    "confirm": "Confirm",
+    "working": "Working…",
+    "reasonForUser": "Reason (shown to them)",
+    "noteOptional": "Note (optional)",
+    "actionFailed": "Couldn't record that.",
+    "delete": "Delete",
+    "deleteWarning": "The account is anonymised, not erased. Orders stay on both sides and the other person keeps their copy of any conversation.",
+    "confirmUsername": "Type {{username}} to confirm",
+    "deleteReason": "Reason (kept in the audit trail)",
+    "showHistory": "Show history",
+    "hideHistory": "Hide history",
+    "historyTitle": "Account history",
+    "historyEmpty": "Never actioned.",
+    "historyError": "Couldn't load the history.",
+    "deletedModerator": "Moderator has deleted their account",
+    "action": {
+      "suspended": "Suspended",
+      "reinstated": "Reinstated",
+      "deleted": "Deleted"
     }
   }
 }

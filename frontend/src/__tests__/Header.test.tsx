@@ -154,6 +154,10 @@ test("offers the admin section to an admin", () => {
   renderHeader({ user: { ...SIGNED_IN.user!, role: "ADMIN" } });
   expect(screen.getByRole("link", { name: "Admin" })).toHaveAttribute("href", "/admin/listings");
   expect(screen.getByRole("link", { name: "Accounts" })).toHaveAttribute("href", "/admin/users");
+  expect(screen.getByRole("link", { name: "Order admin" })).toHaveAttribute(
+    "href",
+    "/admin/orders",
+  );
 });
 
 test("hides it from an ordinary user and from a visitor", () => {

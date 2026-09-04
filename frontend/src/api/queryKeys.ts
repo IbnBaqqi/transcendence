@@ -63,6 +63,13 @@ export const keys = {
     list: () => [...keys.apiKeys.all, "list"] as const,
   },
 
+  adminOrders: {
+    all: ["adminOrders"] as const,
+    // The filters are part of the key, so paging back to a view already
+    // fetched is instant and two filters cannot overwrite each other's rows.
+    list: (query: string) => [...keys.adminOrders.all, "list", query] as const,
+  },
+
   moderation: {
     all: ["moderation"] as const,
     queue: () => [...keys.moderation.all, "queue"] as const,

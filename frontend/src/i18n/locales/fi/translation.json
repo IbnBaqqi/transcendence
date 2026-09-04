@@ -10,6 +10,7 @@
     "following": "Seuratut",
     "profile": "Profiili",
     "admin": "Ylläpito",
+    "adminOrders": "Tilausten hallinta",
     "adminUsers": "Tilit"
   },
   "language": {
@@ -180,47 +181,39 @@
     "reportsError": "Ilmoitusten lataaminen ei onnistunut.",
     "historyError": "Historian lataaminen ei onnistunut."
   },
-  "adminUsers": {
-    "filterRole": "Rooli",
+  "adminOrders": {
     "filterStatus": "Tila",
-    "anyRole": "Mikä tahansa rooli",
     "anyStatus": "Mikä tahansa tila",
-    "deletedUser": "Poistettu käyttäjä",
-    "suspendedFor": "Jäädytetty: {{reason}}",
-    "lastSeen": "Viimeksi nähty {{date}}",
-    "neverSeen": "Ei koskaan nähty",
-    "listEmpty": "Yksikään tili ei vastaa suodattimia.",
-    "listError": "Tilien lataaminen ei onnistunut.",
-    "role": {
-      "USER": "Käyttäjä",
-      "ADMIN": "Ylläpitäjä"
+    "filterStuck": "Jumissa",
+    "anyStuck": "Kaikki",
+    "onlyStuck": "Vain jumissa",
+    "notStuck": "Ei jumissa",
+    "from": "Alkaen",
+    "to": "Asti",
+    "rangeBackwards": "Aikaväli päättyy ennen alkuaan.",
+    "stuck": "Kukaan ei voi edetä",
+    "placed": "Tehty {{date}}",
+    "buyer": "Ostaja",
+    "seller": "Myyjä",
+    "quantityAndTotal": "{{quantity}} × — {{total}} yhteensä",
+    "listEmpty": "Yksikään tilaus ei vastaa suodattimia.",
+    "listError": "Tilausten lataaminen ei onnistunut.",
+    "handshake": {
+      "both": "Molemmat osapuolet toimivat",
+      "seller": "Myyjä luovutti",
+      "buyer": "Ostaja vastaanotti",
+      "neither": "Kumpikaan ei ole toiminut"
     },
-    "status": {
-      "active": "Aktiivinen",
-      "suspended": "Jäädytetty",
-      "deleted": "Poistettu"
-    },
-    "suspend": "Jäädytä",
-    "reinstate": "Palauta",
-    "confirm": "Vahvista",
-    "working": "Käsitellään…",
-    "reasonForUser": "Syy (näytetään käyttäjälle)",
-    "noteOptional": "Huomautus (valinnainen)",
-    "actionFailed": "Tallentaminen ei onnistunut.",
-    "delete": "Poista",
-    "deleteWarning": "Tili anonymisoidaan, ei poisteta. Tilaukset säilyvät molemmilla puolilla ja toinen osapuoli säilyttää oman kopionsa keskusteluista.",
-    "confirmUsername": "Kirjoita {{username}} vahvistaaksesi",
-    "deleteReason": "Syy (jää lokiin)",
-    "showHistory": "Näytä historia",
-    "hideHistory": "Piilota historia",
-    "historyTitle": "Tilin historia",
-    "historyEmpty": "Ei toimenpiteitä.",
-    "historyError": "Historian lataaminen ei onnistunut.",
-    "deletedModerator": "Moderaattori on poistanut tilinsä",
-    "action": {
-      "suspended": "Jäädytetty",
-      "reinstated": "Palautettu",
-      "deleted": "Poistettu"
+    "resolve": "Ratkaise",
+    "resolving": "Ratkaistaan…",
+    "confirmResolve": "Ratkaise tilaus",
+    "reasonForParties": "Syy (molemmat osapuolet näkevät tämän)",
+    "onlyCancellable": "Kumpikaan ei toiminut, joten tämän voi vain perua.",
+    "resolveFailed": "Tilauksen ratkaiseminen ei onnistunut.",
+    "outcome": {
+      "completed": "Valmis",
+      "cancelled": "Peruttu",
+      "refunded": "Hyvitetty"
     }
   },
   "report": {
@@ -407,6 +400,9 @@
     },
     "adminListings": {
       "title": "Moderointijono"
+    },
+    "adminOrders": {
+      "title": "Kaikki tilaukset"
     },
     "adminUsers": {
       "title": "Tilit"
@@ -595,6 +591,49 @@
       "order_cancelled": "Tilauksesi {{title}} peruttiin",
       "order_resolved": "Tuki ratkaisi tilauksesi {{title}}",
       "chat_request": "Joku lähetti sinulle viestin tuotteesta {{title}}"
+    }
+  },
+  "adminUsers": {
+    "filterRole": "Rooli",
+    "filterStatus": "Tila",
+    "anyRole": "Mikä tahansa rooli",
+    "anyStatus": "Mikä tahansa tila",
+    "deletedUser": "Poistettu käyttäjä",
+    "suspendedFor": "Jäädytetty: {{reason}}",
+    "lastSeen": "Viimeksi nähty {{date}}",
+    "neverSeen": "Ei koskaan nähty",
+    "listEmpty": "Yksikään tili ei vastaa suodattimia.",
+    "listError": "Tilien lataaminen ei onnistunut.",
+    "role": {
+      "USER": "Käyttäjä",
+      "ADMIN": "Ylläpitäjä"
+    },
+    "status": {
+      "active": "Aktiivinen",
+      "suspended": "Jäädytetty",
+      "deleted": "Poistettu"
+    },
+    "suspend": "Jäädytä",
+    "reinstate": "Palauta",
+    "confirm": "Vahvista",
+    "working": "Käsitellään…",
+    "reasonForUser": "Syy (näytetään käyttäjälle)",
+    "noteOptional": "Huomautus (valinnainen)",
+    "actionFailed": "Tallentaminen ei onnistunut.",
+    "delete": "Poista",
+    "deleteWarning": "Tili anonymisoidaan, ei poisteta. Tilaukset säilyvät molemmilla puolilla ja toinen osapuoli säilyttää oman kopionsa keskusteluista.",
+    "confirmUsername": "Kirjoita {{username}} vahvistaaksesi",
+    "deleteReason": "Syy (jää lokiin)",
+    "showHistory": "Näytä historia",
+    "hideHistory": "Piilota historia",
+    "historyTitle": "Tilin historia",
+    "historyEmpty": "Ei toimenpiteitä.",
+    "historyError": "Historian lataaminen ei onnistunut.",
+    "deletedModerator": "Moderaattori on poistanut tilinsä",
+    "action": {
+      "suspended": "Jäädytetty",
+      "reinstated": "Palautettu",
+      "deleted": "Poistettu"
     }
   }
 }
