@@ -53,6 +53,42 @@ func resolveAs(t *testing.T, h *Handler, caller uuid.UUID, idParam, body string)
 	return rec
 }
 
+func eventsAs(t *testing.T, h *Handler, caller uuid.UUID, idParam string) *httptest.ResponseRecorder {
+	t.Helper()
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("id", idParam)
+	ctx := context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx)
+	ctx = auth.WithUser(ctx, auth.User{ID: caller, Role: auth.RoleAdmin})
+
+	rec := httptest.NewRecorder()
+	h.GetOrderEventsForAdmin(rec, req.WithContext(ctx))
+	return rec
+}
+
+// A mistyped id must not read as "this order has no history".
+func TestAdminEventsRejectsAMalformedID(t *testing.T) {
+	h, _, admin := adminOrderHandler(t)
+
+	rec := eventsAs(t, h, admin, "not-a-uuid")
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", rec.Code)
+	}
+}
+
+func TestAdminEventsIsNotFoundForAnUnknownOrder(t *testing.T) {
+	h, _, admin := adminOrderHandler(t)
+
+	rec := eventsAs(t, h, admin, database.NewID().String())
+
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", rec.Code)
+	}
+}
+
 func TestResolvingAnOrderThatIsNotStuckIsAConflictNotAServerError(t *testing.T) {
 	h, db, admin := adminOrderHandler(t)
 	ctx := context.Background()
