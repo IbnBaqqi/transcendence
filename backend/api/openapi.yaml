@@ -916,6 +916,20 @@ components:
           format: date-time
           description: Differs from `created_at` when the review was edited.
 
+    ReorderImagesRequest:
+      type: object
+      required: [image_ids]
+      properties:
+        image_ids:
+          type: array
+          description: |
+            Every image on the listing, once each, in the order you want them.
+            The first becomes the cover photo.
+          items:
+            type: string
+            format: uuid
+      additionalProperties: false
+
     ReportListingRequest:
       type: object
       required: [reason]
@@ -2702,6 +2716,72 @@ paths:
           description: No such file. Plain text, not the JSON error envelope.
           content:
             text/plain: {}
+
+  /listings/{id}/images/order:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags: [listings]
+      summary: Reorder a listing's photos
+      operationId: reorderListingImages
+      description: |
+        Rewrites the gallery to the order of the ids you send. Positions become
+        `0..n-1`, derived from the array rather than sent alongside it — two
+        parallel lists could disagree, one cannot.
+
+        `position` is otherwise only ever written at insert, as
+        `MAX(position) + 1`, so without this a gallery's order is frozen as its
+        upload order and the cover photo is whichever file went up first.
+
+        **The list must be exactly the listing's current images**, once each. A
+        missing, extra or repeated id is a 400 rather than a partial reorder: a
+        gallery half in the old order and half in the new is worse than one
+        that did not change.
+
+        A full-list PUT rather than a per-image PATCH, so it is idempotent and
+        can be validated as a whole. A per-image patch would have to shuffle
+        the other rows to make room, and two concurrent ones can interleave
+        into a scrambled gallery.
+
+        Seller only. One transaction: the unique constraint on
+        `(listing_id, position)` is deferred, so a swap is momentarily a
+        duplicate and only legal because the check waits for the commit.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderImagesRequest"
+      responses:
+        "200":
+          description: The gallery in its new order.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingImage"
+        "400":
+          description: |
+            Bad body, an unknown field, an id that is not a uuid, or a list
+            that is not exactly this listing's images.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
   /listings/{id}/images/{imageID}:
     # Two path parameters. Note the casing: chi's route says {imageID}, so the

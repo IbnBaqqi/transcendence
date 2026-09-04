@@ -31,6 +31,14 @@ type UpdateListingInput struct {
 	Tags        []string `json:"tags"`
 }
 
+// The complete list, in the wanted order. A full-list PUT rather than a
+// per-image PATCH: it is idempotent, it is one request per reorder, and it can
+// be validated as a whole - a per-image patch has to shuffle the other rows to
+// make room, and two concurrent ones can interleave into a scrambled gallery.
+type ReorderImagesRequest struct {
+	ImageIDs []string `json:"image_ids"`
+}
+
 // --- Search DTOs ---
 
 // ListingSearchQuery holds raw, unparsed values pulled from URL query
