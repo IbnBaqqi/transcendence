@@ -180,6 +180,22 @@ var adminOutcomes = map[string]orderOutcome{
 	"refunded":  {status: "refunded", restoresStock: true},
 }
 
+// ListEvents is OrderService.ListEvents without the membership check, which is
+// the whole point: an admin is never a party to the order they are judging.
+// The order still has to exist, or a mistyped id would answer 200 with an
+// empty history and read as "nothing ever happened".
+//
+// Same query and same response shape as the parties get, so one schema serves
+// both - an admin reading a different history from the people it is about is
+// the failure this endpoint exists to avoid.
+func (s *AdminOrderService) ListEvents(ctx context.Context, orderID uuid.UUID) ([]database.OrderEvent, error) {
+	if _, err := s.db.GetOrder(ctx, orderID); err != nil {
+		return nil, &NotFoundError{Message: "Order not found"}
+	}
+
+	return s.db.ListOrderEvents(ctx, orderID)
+}
+
 func (s *AdminOrderService) Resolve(
 	ctx context.Context,
 	adminID, orderID uuid.UUID,

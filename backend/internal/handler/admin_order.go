@@ -57,3 +57,20 @@ func (h *Handler) ResolveOrder(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusOK, dtos.ToAdminOrderResponse(order, false))
 }
+
+// GetOrderEventsForAdmin handles GET /api/v1/admin/orders/{id}/events.
+func (h *Handler) GetOrderEventsForAdmin(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIDParam(r)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid order id")
+		return
+	}
+
+	events, err := h.AdminOrder.ListEvents(r.Context(), id)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToOrderEventResponses(events))
+}

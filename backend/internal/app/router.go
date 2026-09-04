@@ -116,6 +116,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 
 				r.Get("/admin/orders", h.ListOrdersForAdmin)
 				r.Post("/admin/orders/{id}/resolve", h.ResolveOrder)
+				r.Get("/admin/orders/{id}/events", h.GetOrderEventsForAdmin)
 				r.Get("/admin/users", h.ListUsers)
 				r.Get("/admin/users/{id}/history", h.GetUserHistory)
 				r.Post("/admin/users/{id}/suspend", h.SuspendUser)

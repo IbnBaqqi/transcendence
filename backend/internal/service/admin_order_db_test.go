@@ -189,6 +189,87 @@ func TestAResolutionSaysWhoWhatAndWhy(t *testing.T) {
 	}
 }
 
+// The point of the endpoint: an admin is never a party to the order they are
+// judging, so the parties-only check on OrderService.ListEvents locks them out
+// of the history they need.
+func TestAnAdminReadsTheHistoryOfAnOrderTheyAreNotPartOf(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+	f.stick(t)
+
+	if _, err := f.svc.ListEvents(ctx, f.admin, f.order.ID); err == nil {
+		t.Fatal("the parties-only endpoint let an outsider in; this test is not testing what it says")
+	}
+
+	events, err := f.admins.ListEvents(ctx, f.order.ID)
+	if err != nil {
+		t.Fatalf("admin reading the history: %v", err)
+	}
+	if len(events) == 0 {
+		t.Fatal("the admin got an empty history for an order that has one")
+	}
+}
+
+// The reason lands in this history and is documented as written for the buyer
+// and the seller - who were, until this endpoint, the only ones who could read
+// it. An admin could not check what they themselves had written.
+func TestAnAdminCanReadBackTheReasonAnAdminWrote(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+	f.stick(t)
+
+	if _, err := f.admins.Resolve(ctx, f.admin, f.order.ID, "refunded", "buyer never collected"); err != nil {
+		t.Fatalf("resolving: %v", err)
+	}
+
+	events, err := f.admins.ListEvents(ctx, f.order.ID)
+	if err != nil {
+		t.Fatalf("reading the history: %v", err)
+	}
+
+	last := events[len(events)-1]
+	if last.Note.String != "buyer never collected" {
+		t.Errorf("note = %q, want the resolution reason", last.Note.String)
+	}
+	if last.ActorID.UUID != f.admin {
+		t.Error("the history does not name the admin who resolved it")
+	}
+}
+
+// A mistyped id would otherwise answer 200 with an empty list, which reads as
+// "nothing ever happened to this order" rather than "no such order".
+func TestAnAdminGetsNotFoundForAnOrderThatDoesNotExist(t *testing.T) {
+	f := newAdminOrderFixture(t)
+
+	_, err := f.admins.ListEvents(context.Background(), database.NewID())
+
+	var notFound *NotFoundError
+	if !errors.As(err, &notFound) {
+		t.Fatalf("err = %v, want NotFoundError", err)
+	}
+}
+
+// Same rows in the same order as the parties get. An admin reading a different
+// history from the people it is about would be worse than reading none.
+func TestTheAdminHistoryMatchesThePartiesHistory(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+	f.stick(t)
+
+	mine, err := f.svc.ListEvents(ctx, f.buyer, f.order.ID)
+	if err != nil {
+		t.Fatalf("buyer reading their own history: %v", err)
+	}
+	theirs, err := f.admins.ListEvents(ctx, f.order.ID)
+	if err != nil {
+		t.Fatalf("admin reading the same history: %v", err)
+	}
+
+	if !reflect.DeepEqual(mine, theirs) {
+		t.Errorf("the admin sees a different history: %d events vs %d", len(theirs), len(mine))
+	}
+}
+
 func TestAResolutionNeedsAKnownOutcomeAndAReason(t *testing.T) {
 	ctx := context.Background()
 
