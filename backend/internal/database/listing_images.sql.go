@@ -170,3 +170,30 @@ func (q *Queries) ListListingImages(ctx context.Context, listingID uuid.UUID) ([
 	}
 	return items, nil
 }
+
+const setListingImagePositions = `-- name: SetListingImagePositions :execrows
+UPDATE listing_images AS li
+SET position = v.ord - 1
+FROM unnest($2::uuid[]) WITH ORDINALITY AS v(id, ord)
+WHERE li.id = v.id AND li.listing_id = $1
+`
+
+type SetListingImagePositionsParams struct {
+	ListingID uuid.UUID
+	ImageIds  []uuid.UUID
+}
+
+// One statement for the whole gallery. WITH ORDINALITY numbers the array as it
+// arrives, so the caller sends the ids in the wanted order and the positions
+// are derived here rather than passed alongside - two parallel arrays could
+// disagree, one cannot.
+//
+// The listing_id in the WHERE is what stops an id from another listing being
+// renumbered; :execrows is how the caller checks every id it sent matched a row.
+func (q *Queries) SetListingImagePositions(ctx context.Context, arg SetListingImagePositionsParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, setListingImagePositions, arg.ListingID, pq.Array(arg.ImageIds))
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}

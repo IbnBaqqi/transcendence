@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
+
+	"github.com/google/uuid"
 
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
@@ -90,4 +93,49 @@ func (h *Handler) DeleteListingImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) ReorderListingImages(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserID(r)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	listingID, err := parseIDParam(r)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid listing id")
+		return
+	}
+
+	var req dtos.ReorderImagesRequest
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&req); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	ids := make([]uuid.UUID, 0, len(req.ImageIDs))
+	for _, raw := range req.ImageIDs {
+		id, parseErr := uuid.Parse(raw)
+		if parseErr != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid image id")
+			return
+		}
+		ids = append(ids, id)
+	}
+
+	if err := h.ListingImage.ReorderImages(r.Context(), userID, listingID, ids); err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	imgs, err := h.ListingImage.ListImages(r.Context(), listingID)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToListingImageResponses(imgs))
 }
