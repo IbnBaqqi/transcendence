@@ -50,14 +50,17 @@ export default function Header() {
             </NavLink>
           )}
           {user?.role === "ADMIN" && (
-            <NavLink to="/admin/listings" className={navLinkClass}>
-              {t("nav.admin")}
-            </NavLink>
-          )}
-          {user?.role === "ADMIN" && (
-            <NavLink to="/admin/orders" className={navLinkClass}>
-              {t("nav.adminOrders")}
-            </NavLink>
+            <>
+              <NavLink to="/admin/listings" className={navLinkClass}>
+                {t("nav.admin")}
+              </NavLink>
+              <NavLink to="/admin/users" className={navLinkClass}>
+                {t("nav.adminUsers")}
+              </NavLink>
+              <NavLink to="/admin/orders" className={navLinkClass}>
+                {t("nav.adminOrders")}
+              </NavLink>
+            </>
           )}
           {/* openChat is wrapped, not passed straight to onClick: it takes an
               optional conversation id and would receive the click event. */}

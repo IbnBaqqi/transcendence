@@ -10,7 +10,8 @@
     "following": "Följer",
     "profile": "Profil",
     "admin": "Admin",
-    "adminOrders": "Orderadmin"
+    "adminOrders": "Orderadmin",
+    "adminUsers": "Konton"
   },
   "language": {
     "en": "English",
@@ -391,6 +392,9 @@
     },
     "adminOrders": {
       "title": "Alla beställningar"
+    },
+    "adminUsers": {
+      "title": "Konton"
     }
   },
   "chat": {
@@ -576,6 +580,49 @@
       "order_cancelled": "Din beställning {{title}} avbröts",
       "order_resolved": "Supporten löste din beställning {{title}}",
       "chat_request": "Någon skickade ett meddelande om {{title}}"
+    }
+  },
+  "adminUsers": {
+    "filterRole": "Roll",
+    "filterStatus": "Status",
+    "anyRole": "Alla roller",
+    "anyStatus": "Alla statusar",
+    "deletedUser": "Raderad användare",
+    "suspendedFor": "Avstängd: {{reason}}",
+    "lastSeen": "Senast sedd {{date}}",
+    "neverSeen": "Aldrig sedd",
+    "listEmpty": "Inga konton matchar filtren.",
+    "listError": "Kunde inte ladda kontona.",
+    "role": {
+      "USER": "Användare",
+      "ADMIN": "Administratör"
+    },
+    "status": {
+      "active": "Aktiv",
+      "suspended": "Avstängd",
+      "deleted": "Raderad"
+    },
+    "suspend": "Stäng av",
+    "reinstate": "Återställ",
+    "confirm": "Bekräfta",
+    "working": "Behandlar…",
+    "reasonForUser": "Orsak (visas för dem)",
+    "noteOptional": "Anteckning (valfri)",
+    "actionFailed": "Kunde inte spara det.",
+    "delete": "Radera",
+    "deleteWarning": "Kontot anonymiseras, inte raderas. Beställningar finns kvar på båda sidor och motparten behåller sin kopia av konversationer.",
+    "confirmUsername": "Skriv {{username}} för att bekräfta",
+    "deleteReason": "Orsak (sparas i loggen)",
+    "showHistory": "Visa historik",
+    "hideHistory": "Dölj historik",
+    "historyTitle": "Kontohistorik",
+    "historyEmpty": "Aldrig åtgärdad.",
+    "historyError": "Kunde inte ladda historiken.",
+    "deletedModerator": "Moderatorn har raderat sitt konto",
+    "action": {
+      "suspended": "Avstängd",
+      "reinstated": "Återställd",
+      "deleted": "Raderad"
     }
   }
 }
