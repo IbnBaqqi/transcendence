@@ -283,14 +283,19 @@ components:
             removed *and* you are its seller or an admin — for everyone else a
             removed listing is 404, so the field can never appear.
 
+            `ReportedListing.removed_at` uses the opposite convention on
+            purpose: always present, `null` while the listing is visible. Here
+            absence is itself the answer — you are not entitled to know — and
+            there it could not be, since only admins read that queue.
+
         seller:
           description: |
             Who posted it, enough to render a card: a name, a face and a
-            rating. Always
-            sent - a listing always has a seller, and a failure to load one
-            fails the request rather than answering without it, the same as the
-            images and tags beside it. Nullable in the schema because the Go
-            field is a pointer; a client that meets null has met a bug.
+            rating. Always sent - a listing always has a seller, and a failure
+            to load one fails the request rather than answering without it, the
+            same as the images and tags beside it. Nullable in the schema
+            because the Go field is a pointer; a client that meets null has met
+            a bug.
           oneOf:
             - type: "null"
             - type: object
@@ -988,7 +993,7 @@ components:
 
     ReportedListing:
       type: object
-      required: [listing_id, title, seller_id, report_count, first_reported_at]
+      required: [listing_id, title, seller_id, removed_at, report_count, first_reported_at]
       description: |
         One row of the queue: a listing with at least one open report, oldest
         complaint first.
@@ -1005,7 +1010,15 @@ components:
           type: string
           format: date-time
           nullable: true
-          description: Null when the listing is still visible.
+          description: |
+            When a moderator removed this listing. Always present — `null` while
+            it is still visible.
+
+            `Listing.removed_at` uses the opposite convention on purpose: absent
+            rather than `null` when there is nothing to report, because there the
+            field's absence means the reader may not be told. This queue is
+            admin-only, so there is nothing to withhold and the field always
+            carries a value.
         report_count:
           type: integer
           format: int64
@@ -1015,7 +1028,7 @@ components:
 
     Report:
       type: object
-      required: [id, reason, detail, status, created_at]
+      required: [id, reporter_id, reason, detail, status, created_at]
       properties:
         id:
           type: string
@@ -1048,7 +1061,7 @@ components:
 
     ModerationAction:
       type: object
-      required: [id, listing_id, action, note, created_at]
+      required: [id, listing_id, moderator_id, action, note, created_at]
       description: One entry in the audit trail. Nothing here is ever edited.
       properties:
         id:
@@ -1152,7 +1165,7 @@ components:
 
     UserAction:
       type: object
-      required: [id, action, note, created_at]
+      required: [id, action, note, moderator_id, created_at]
       description: One entry in an account's audit trail. Append-only.
       properties:
         id:
