@@ -93,6 +93,25 @@ test("a range that runs forwards is sent", async () => {
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 
+// keepPreviousData shows the previous page while the next one loads, which is
+// only safe because the placeholder is dropped on error. Without that, a failed
+// page would leave the reader looking at page 1's rows believing they had
+// moved. The comment in adminOrders.ts says so; this is what holds it true.
+test("a failed page says so rather than showing the previous one", async () => {
+  vi.mocked(api.get)
+    .mockResolvedValueOnce({
+      data: { items: [ORDER], total: 40, page: 1, limit: 20, total_pages: 2 },
+    } as never)
+    .mockRejectedValueOnce({ status: 500, message: "Something went wrong" });
+
+  renderAt();
+
+  await userEvent.click(await screen.findByRole("button", { name: "Next" }));
+
+  expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
+  expect(screen.queryByText("Golden Chanterelles")).not.toBeInTheDocument();
+});
+
 // A page change is a new query key: without keepPreviousData the list and the
 // pager unmount while the next page loads, so the control just clicked
 // disappears and focus falls to <body>.
