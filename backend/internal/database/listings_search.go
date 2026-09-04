@@ -20,6 +20,10 @@ type SearchListingsParams struct {
 	Sort     string
 	Offset   int32
 	Limit    int32
+	// Only ever true for a seller reading their own listings; the service
+	// decides that. A sold-out listing is the one that needs restocking or
+	// delisting, so hiding it from its owner hides the row they most need.
+	IncludeSoldOut bool
 }
 
 var sortOptions = map[string]string{
@@ -104,8 +108,12 @@ func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string,
 		FROM listings LEFT JOIN addresses ON addresses.user_id = listings.seller_id` + ratingJoin + ` WHERE 1=1`)
 	}
 
-	b.WriteString(" AND listings.quantity > 0 AND listings.removed_at IS NULL" +
+	b.WriteString(" AND listings.removed_at IS NULL" +
 		" AND EXISTS (SELECT 1 FROM users u WHERE u.id = listings.seller_id AND u.is_visible)")
+
+	if !arg.IncludeSoldOut {
+		b.WriteString(" AND listings.quantity > 0")
+	}
 
 	if arg.Keyword != "" {
 		p := next("%" + escapeLike(arg.Keyword) + "%")

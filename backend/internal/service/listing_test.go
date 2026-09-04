@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 )
@@ -93,7 +95,7 @@ func TestSearchListingsRejectsBadInput(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.SearchListings(context.Background(), tt.query)
+			_, err := svc.SearchListings(context.Background(), uuid.Nil, tt.query)
 
 			var validation *ValidationError
 			if !errors.As(err, &validation) {

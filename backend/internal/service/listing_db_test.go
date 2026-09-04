@@ -118,7 +118,7 @@ func TestSearchFindsAListingWhateverCaseTheFilterUses(t *testing.T) {
 
 	for _, filter := range []string{"mushrooms", "Mushrooms", "  MUSHROOMS "} {
 		t.Run(filter, func(t *testing.T) {
-			page, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{Category: filter})
+			page, err := listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{Category: filter})
 			if err != nil {
 				t.Fatalf("searching: %v", err)
 			}
@@ -170,7 +170,7 @@ func TestTheSellerFilterCountsWhatItReturns(t *testing.T) {
 		}
 	}
 
-	page, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{
+	page, err := listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{
 		SellerID: aino.String(), Limit: "2",
 	})
 	if err != nil {
@@ -194,7 +194,7 @@ func TestTheSellerFilterCountsWhatItReturns(t *testing.T) {
 func TestASellerIdThatIsNotAUUIDIsRejected(t *testing.T) {
 	listings, _ := listingFixture(t)
 
-	_, err := listings.SearchListings(context.Background(), dtos.ListingSearchQuery{
+	_, err := listings.SearchListings(context.Background(), uuid.Nil, dtos.ListingSearchQuery{
 		SellerID: "not-a-uuid",
 	})
 

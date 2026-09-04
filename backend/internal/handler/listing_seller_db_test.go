@@ -90,7 +90,7 @@ func TestListingResponsesCarryTheirSeller(t *testing.T) {
 	// The search path decorates a whole page at once through a different
 	// helper, so passing the detail case says nothing about this one.
 	t.Run("the search results", func(t *testing.T) {
-		result, err := h.Listing.SearchListings(ctx, dtos.ListingSearchQuery{
+		result, err := h.Listing.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{
 			SellerID: user.ID.String(),
 		})
 		if err != nil {

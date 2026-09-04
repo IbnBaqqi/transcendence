@@ -115,6 +115,12 @@ describe("toQueryString", () => {
     expect(toQueryString({ min_price: 5, sort: "price_asc" })).toBe("min_price=5&sort=price_asc");
   });
 
+  // The server tests the raw string for "true", so a boolean has to land as
+  // that exact word rather than as 1 or True.
+  test("serialises a boolean flag as the word the server checks for", () => {
+    expect(toQueryString({ include_sold_out: true })).toBe("include_sold_out=true");
+  });
+
   test("is empty when nothing is filtered", () => {
     expect(toQueryString({})).toBe("");
   });

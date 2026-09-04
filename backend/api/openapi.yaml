@@ -2342,18 +2342,46 @@ paths:
             bookmarked profile is better served by no results than by an error.
             A malformed one is a 400.
 
-            This is the **public** view of a seller's listings, because the
-            filter inherits the endpoint's visibility rules rather than
-            replacing them: sold-out and moderator-removed listings are absent,
-            and a suspended or deleted seller returns nothing at all. A seller
-            looking at their own inventory needs all of those, which is a
-            different endpoint.
+            This is the **public** view of a seller's listings by default,
+            because the filter inherits the endpoint's visibility rules rather
+            than replacing them: sold-out and moderator-removed listings are
+            absent, and a suspended or deleted seller returns nothing at all. A
+            seller reading their own inventory can lift the sold-out half of
+            that with `include_sold_out`; the other two are not liftable.
           schema:
             type: string
             format: uuid
           examples:
             seller:
               value: 3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34
+        - name: include_sold_out
+          in: query
+          description: |
+            Include listings with nothing left in stock. **Honoured only when
+            `seller_id` is the authenticated caller.** A seller's sold-out
+            listing is the row they most need to see: it is the one to restock
+            or delist, and hiding it is how it silently disappears.
+
+            For anyone else the parameter is **ignored rather than refused** -
+            sent with no `seller_id`, by an anonymous caller, or for another
+            seller's id, the answer is the ordinary one and there is no error.
+            Ignoring is what stops it ever widening public search, whoever sends
+            it; a 400 would advertise the parameter and turn a harmless request
+            into a failure.
+
+            Only `true` enables it. Any other value, including `1` and `TRUE`,
+            reads as absent - the same silence as an unauthorised request.
+
+            It lifts nothing else. A moderator-removed listing stays hidden from
+            its own seller, and so do the listings of a suspended one.
+
+            `total` is counted over the same set the page is drawn from, so
+            paging stays consistent when it is honoured.
+          schema:
+            type: boolean
+          examples:
+            own inventory:
+              value: true
         - name: min_price
           in: query
           description: Non-negative. Must not exceed `max_price`.
