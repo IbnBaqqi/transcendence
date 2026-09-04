@@ -216,6 +216,17 @@
       "refunded": "Återbetald"
     }
   },
+  "report": {
+    "open": "Rapportera annonsen",
+    "legend": "Varför rapporterar du den här annonsen?",
+    "detailRequired": "Vad är fel? (obligatoriskt)",
+    "detailOptional": "Något mer? (valfritt)",
+    "submit": "Skicka rapport",
+    "submitting": "Skickar…",
+    "thanks": "Tack. En moderator tittar på det här, och säljaren får inte veta vem som rapporterade.",
+    "already": "Du har redan rapporterat den här annonsen. Den är registrerad.",
+    "error": "Kunde inte skicka rapporten."
+  },
   "orders": {
     "title": "Beställningar",
     "signedOut": "Du är utloggad. Logga in för att se dina beställningar.",

@@ -2,7 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
-import type { Listing, ListingImage, Paginated } from "./types";
+import type { Listing, ListingImage, Paginated, ReportReason } from "./types";
 
 // Mirrors the backend's sort allow-list, so a typo is a compile error rather
 // than a 400 at runtime.
@@ -142,6 +142,23 @@ export function useDeleteListingImage() {
     onSuccess: (_result, { listingId }) => {
       void queryClient.invalidateQueries({ queryKey: keys.listings.images(listingId) });
       void queryClient.invalidateQueries({ queryKey: keys.listings.detail(listingId) });
+    },
+  });
+}
+
+export interface ReportListingInput {
+  listingId: string;
+  reason: ReportReason;
+  detail?: string;
+}
+
+// No onSuccess invalidation, unlike every other mutation in this file: a 204
+// here changes nothing this viewer can read. The listing is untouched, there
+// is no public report count, and the queue is admin-only.
+export function useReportListing() {
+  return useMutation({
+    mutationFn: async ({ listingId, ...body }: ReportListingInput) => {
+      await api.post(apiPath`/listings/${listingId}/report`, body);
     },
   });
 }
