@@ -68,6 +68,10 @@ type ListingSeller struct {
 	ID        uuid.UUID `json:"id"`
 	Username  string    `json:"username"`
 	AvatarURL *string   `json:"avatar_url"`
+	// The same shape the profile publishes, so a rating is one concept with one
+	// spelling. Always sent: count is what separates "no reviews yet" from
+	// "rated zero", so a client never has to branch on an absent object.
+	Rating RatingResponse `json:"rating"`
 }
 
 // ListingResponse is the public JSON shape for a listing.
@@ -138,11 +142,18 @@ func ToListingResponsesWithImages(
 	return out
 }
 
-func ToListingSeller(id uuid.UUID, username string, avatarFilename sql.NullString) ListingSeller {
+func ToListingSeller(
+	id uuid.UUID,
+	username string,
+	avatarFilename sql.NullString,
+	ratingAverage float64,
+	ratingCount int64,
+) ListingSeller {
 	return ListingSeller{
 		ID:        id,
 		Username:  username,
 		AvatarURL: avatarURL(avatarFilename),
+		Rating:    RatingResponse{Average: ratingAverage, Count: ratingCount},
 	}
 }
 

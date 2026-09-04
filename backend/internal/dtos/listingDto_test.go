@@ -114,13 +114,30 @@ func TestWithSellerEachMatchesOnSellerID(t *testing.T) {
 func TestToListingSellerBuildsTheAvatarPath(t *testing.T) {
 	id := uuid.New()
 
-	with := ToListingSeller(id, "matti", sql.NullString{String: "a.png", Valid: true})
+	with := ToListingSeller(id, "matti", sql.NullString{String: "a.png", Valid: true}, 0, 0)
 	if with.AvatarURL == nil || *with.AvatarURL != UploadURLPrefix+"a.png" {
 		t.Errorf("avatar_url = %v, want %q", with.AvatarURL, UploadURLPrefix+"a.png")
 	}
 
-	without := ToListingSeller(id, "matti", sql.NullString{})
+	without := ToListingSeller(id, "matti", sql.NullString{}, 0, 0)
 	if without.AvatarURL != nil {
 		t.Errorf("avatar_url with none set = %q, want nil", *without.AvatarURL)
+	}
+}
+
+// count, not just the average, because 0 reviews and a genuine 0 are different
+// states and only the count tells them apart. Both are always sent, so a
+// client never branches on an absent object.
+func TestToListingSellerCarriesTheRating(t *testing.T) {
+	id := uuid.New()
+
+	rated := ToListingSeller(id, "matti", sql.NullString{}, 4.5, 12)
+	if rated.Rating.Average != 4.5 || rated.Rating.Count != 12 {
+		t.Errorf("rating = %+v, want {4.5 12}", rated.Rating)
+	}
+
+	unrated := ToListingSeller(id, "matti", sql.NullString{}, 0, 0)
+	if unrated.Rating.Count != 0 {
+		t.Errorf("count = %d, want 0 - an unrated seller is not a badly rated one", unrated.Rating.Count)
 	}
 }

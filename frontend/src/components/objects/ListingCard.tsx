@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import { SellerRating } from "./SellerRating";
 import Avatar from "./Avatar";
 import { deriveInitials } from "../../lib/initials";
 import type { Listing } from "../../api/types";
@@ -40,10 +41,13 @@ export function ListingCard({
               initials={deriveInitials(listing.seller.username)}
               imageUrl={listing.seller.avatar_url ?? undefined}
             />
-            <span className="text-muted truncate text-sm">
-              <span className="sr-only">{t("listings.seller")}: </span>
-              {listing.seller.username}
-            </span>
+            <div className="min-w-0">
+              <span className="text-muted block truncate text-sm">
+                <span className="sr-only">{t("listings.seller")}: </span>
+                {listing.seller.username}
+              </span>
+              <SellerRating rating={listing.seller.rating} />
+            </div>
           </div>
         )}
       </article>
