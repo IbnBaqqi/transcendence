@@ -2,6 +2,9 @@ import { createContext } from "react";
 import type { User } from "../api/types";
 
 export interface AuthContextValue {
+  // null means signed out AND not known yet, so branching on this alone
+  // renders logged-out UI to a signed-in user for one round trip. Read
+  // isLoading first, or be sure a parent already does.
   user: User | null;
   // True until the session-restore attempt on mount finishes, so consumers can
   // hold off rendering logged-out UI while a cookie session is being revived.
