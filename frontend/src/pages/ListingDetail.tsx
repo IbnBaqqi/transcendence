@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { ReserveListingSection } from "../components/forms/ReserveListingSection";
 import { StartConversationSection } from "../components/forms/StartConversationSection";
+import { ReportListingSection } from "../components/forms/ReportListingSection";
 import { SellerFollowSection } from "../components/objects/SellerFollowSection";
 
 // Still the #21 stub. The reserve box is self-contained, so whoever builds the
@@ -24,6 +25,7 @@ export default function ListingDetail() {
         <SellerFollowSection listingId={id ?? ""} />
         <ReserveListingSection listingId={id ?? ""} />
         <StartConversationSection listingId={id ?? ""} />
+        <ReportListingSection listingId={id ?? ""} />
       </div>
     </div>
   );
