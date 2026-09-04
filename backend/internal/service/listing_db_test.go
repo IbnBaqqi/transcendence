@@ -118,7 +118,7 @@ func TestSearchFindsAListingWhateverCaseTheFilterUses(t *testing.T) {
 
 	for _, filter := range []string{"mushrooms", "Mushrooms", "  MUSHROOMS "} {
 		t.Run(filter, func(t *testing.T) {
-			page, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{Category: filter})
+			page, err := listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{Category: filter})
 			if err != nil {
 				t.Fatalf("searching: %v", err)
 			}
@@ -170,7 +170,7 @@ func TestTheSellerFilterCountsWhatItReturns(t *testing.T) {
 		}
 	}
 
-	page, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{
+	page, err := listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{
 		SellerID: aino.String(), Limit: "2",
 	})
 	if err != nil {
@@ -194,12 +194,51 @@ func TestTheSellerFilterCountsWhatItReturns(t *testing.T) {
 func TestASellerIdThatIsNotAUUIDIsRejected(t *testing.T) {
 	listings, _ := listingFixture(t)
 
-	_, err := listings.SearchListings(context.Background(), dtos.ListingSearchQuery{
+	_, err := listings.SearchListings(context.Background(), uuid.Nil, dtos.ListingSearchQuery{
 		SellerID: "not-a-uuid",
 	})
 
 	var invalid *ValidationError
 	if !errors.As(err, &invalid) {
 		t.Fatalf("error = %v, want a validation error - the ::uuid cast alone would make this a 500", err)
+	}
+}
+
+// The busiest read in the app: GET /listings/{id} and the images route behind
+// it both come through here. A 404 test cannot see the collapse - only a real
+// listing whose lookup genuinely fails can.
+func TestADatabaseFailureIsNotReportedAsAMissingListingToABuyer(t *testing.T) {
+	listings, seller := listingFixture(t)
+
+	listing, err := listings.CreateListing(context.Background(), seller, dtos.CreateListingInput{
+		Title: "Chanterelles", Category: "mushrooms",
+		Price: 18.10, Quantity: 4, Unit: "kg",
+	})
+	if err != nil {
+		t.Fatalf("creating the listing: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err = listings.GetListing(ctx, listing.ID)
+
+	var notFound *NotFoundError
+	if errors.As(err, &notFound) {
+		t.Fatalf("err = %v, want the underlying failure rather than a 404", err)
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("err = %v, want the context cancellation to survive", err)
+	}
+}
+
+func TestAListingThatDoesNotExistIsStillNotFound(t *testing.T) {
+	listings, _ := listingFixture(t)
+
+	_, err := listings.GetListing(context.Background(), database.NewID())
+
+	var notFound *NotFoundError
+	if !errors.As(err, &notFound) {
+		t.Fatalf("err = %v, want NotFoundError", err)
 	}
 }

@@ -42,11 +42,29 @@ func (s *ModerationService) Queue(ctx context.Context) ([]database.ListReportedL
 }
 
 func (s *ModerationService) ReportsFor(ctx context.Context, listingID uuid.UUID) ([]database.ListReportsForListingRow, error) {
+	if err := s.requireListing(ctx, listingID); err != nil {
+		return nil, err
+	}
+
 	return s.db.ListReportsForListing(ctx, listingID)
 }
 
 func (s *ModerationService) History(ctx context.Context, listingID uuid.UUID) ([]database.ModerationAction, error) {
+	if err := s.requireListing(ctx, listingID); err != nil {
+		return nil, err
+	}
+
 	return s.db.ListModerationActions(ctx, listingID)
+}
+
+func (s *ModerationService) requireListing(ctx context.Context, listingID uuid.UUID) error {
+	if _, err := s.db.GetListing(ctx, listingID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &NotFoundError{Message: "Listing not found"}
+		}
+		return err
+	}
+	return nil
 }
 
 func (s *ModerationService) Moderate(

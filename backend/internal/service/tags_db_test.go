@@ -142,7 +142,7 @@ func TestSearchNormalisesTheTagFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			page, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{Tag: tt.tag})
+			page, err := listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{Tag: tt.tag})
 			if err != nil {
 				t.Fatalf("searching: %v", err)
 			}
@@ -162,7 +162,7 @@ func TestSearchResultsCarryTheirTags(t *testing.T) {
 
 	createTagged(t, listings, seller, "Chanterelles", []string{"roadside", "sunny"})
 
-	page, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{Tag: "roadside"})
+	page, err := listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{Tag: "roadside"})
 	if err != nil {
 		t.Fatalf("searching: %v", err)
 	}

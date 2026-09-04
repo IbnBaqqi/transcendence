@@ -101,7 +101,6 @@
   },
   "listings": {
     "available": "{{qty}} {{unit}} tillgängliga",
-    "showingOf": "Visar {{shown}} av {{total}}",
     "seller": "Säljare",
     "newSeller": "Ny säljare",
     "rating": "{{average}} ★ ({{count}})"

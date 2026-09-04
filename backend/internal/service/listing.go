@@ -169,7 +169,10 @@ func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, 
 func (s *ListingService) GetListing(ctx context.Context, id uuid.UUID) (database.Listing, error) {
 	listing, err := s.db.GetListing(ctx, id)
 	if err != nil {
-		return database.Listing{}, &NotFoundError{Message: "Listing not found"}
+		if errors.Is(err, sql.ErrNoRows) {
+			return database.Listing{}, &NotFoundError{Message: "Listing not found"}
+		}
+		return database.Listing{}, err
 	}
 	return listing, nil
 }
@@ -339,7 +342,7 @@ func validateSearchText(values ...string) error {
 	return nil
 }
 
-func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearchQuery) (dtos.PaginatedListings, error) {
+func (s *ListingService) SearchListings(ctx context.Context, viewerID uuid.UUID, q dtos.ListingSearchQuery) (dtos.PaginatedListings, error) {
 	if err := validateSearchText(q.Keyword, q.Category, q.Tag, q.Location); err != nil {
 		return dtos.PaginatedListings{}, err
 	}
@@ -347,10 +350,13 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 	// Parsed here rather than left to the ::uuid cast in the query: Postgres
 	// answers a malformed value with an error the service cannot tell from a
 	// real failure, so it would reach the client as 500 instead of 400.
+	var sellerID uuid.UUID
 	if q.SellerID != "" {
-		if _, err := uuid.Parse(q.SellerID); err != nil {
+		parsed, err := uuid.Parse(q.SellerID)
+		if err != nil {
 			return dtos.PaginatedListings{}, &ValidationError{Message: "Seller id must be a UUID"}
 		}
+		sellerID = parsed
 	}
 
 	page := defaultPage
@@ -430,6 +436,12 @@ func (s *ListingService) SearchListings(ctx context.Context, q dtos.ListingSearc
 		Sort:     sortKey,
 		Offset:   int32(offset),
 		Limit:    int32(limit),
+		// Ignored rather than refused when the caller is not the seller: a 400
+		// would advertise the parameter and turn a harmless request into an
+		// error, while ignoring it means no caller can widen public search.
+		// The uuid.Nil guard is what stops an anonymous caller with no
+		// seller_id matching itself - Nil == Nil is true.
+		IncludeSoldOut: q.IncludeSoldOut == "true" && sellerID != uuid.Nil && sellerID == viewerID,
 	}
 	if minPrice.Valid {
 		params.MinPrice = minPrice.String
