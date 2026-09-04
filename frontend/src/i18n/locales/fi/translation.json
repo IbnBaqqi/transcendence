@@ -217,6 +217,17 @@
       "refunded": "Hyvitetty"
     }
   },
+  "report": {
+    "open": "Ilmoita ilmoituksesta",
+    "legend": "Miksi ilmoitat tästä ilmoituksesta?",
+    "detailRequired": "Mikä on vialla? (pakollinen)",
+    "detailOptional": "Muuta kerrottavaa? (valinnainen)",
+    "submit": "Lähetä ilmoitus",
+    "submitting": "Lähetetään…",
+    "thanks": "Kiitos. Moderaattori käy tämän läpi, eikä myyjälle kerrota kuka ilmoitti.",
+    "already": "Olet jo ilmoittanut tästä ilmoituksesta. Se on kirjattu.",
+    "error": "Ilmoituksen lähettäminen ei onnistunut."
+  },
   "orders": {
     "title": "Tilaukset",
     "signedOut": "Olet kirjautunut ulos. Kirjaudu sisään nähdäksesi tilauksesi.",

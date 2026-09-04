@@ -217,6 +217,17 @@
       "refunded": "Refunded"
     }
   },
+  "report": {
+    "open": "Report this listing",
+    "legend": "Why are you reporting this?",
+    "detailRequired": "What's wrong? (required)",
+    "detailOptional": "Anything else? (optional)",
+    "submit": "Send report",
+    "submitting": "Sending…",
+    "thanks": "Thanks. A moderator will take a look, and the seller isn't told who reported.",
+    "already": "You've already reported this listing. It's on record.",
+    "error": "Couldn't send that report."
+  },
   "orders": {
     "title": "Orders",
     "signedOut": "You're signed out. Log in to see your orders.",
