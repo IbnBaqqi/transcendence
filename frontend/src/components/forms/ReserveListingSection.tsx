@@ -14,7 +14,7 @@ import { Skeleton } from "../objects/Skeleton";
 import type { Listing } from "../../api/types";
 
 export function ReserveListingSection({ listingId }: { listingId: string }) {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { t } = useTranslation();
   const { openModal } = useModal();
 
@@ -26,7 +26,9 @@ export function ReserveListingSection({ listingId }: { listingId: string }) {
   // An empty id leaves the query disabled, which React Query still reports as
   // pending - so answer it before the skeleton branch spins forever.
   if (!listingId) return null;
-  if (isPending) return <Skeleton className="h-40 w-full" />;
+  // authLoading too: user is null for one render, which reads as "signed out"
+  // on the log-in branch below and as "not the seller" on the ownership check.
+  if (authLoading || isPending) return <Skeleton className="h-40 w-full" />;
 
   // Without this the box just disappears, on a page that has nothing else on
   // it - the same silent blank Orders.tsx already avoids.

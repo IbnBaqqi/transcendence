@@ -9,12 +9,13 @@ import { useTranslation } from "react-i18next";
 import Avatar from "../objects/Avatar.tsx";
 import { LanguageSwitcher } from "../objects/LanguageSwitcher";
 import { NotificationBell } from "../objects/NotificationBell";
+import { Skeleton } from "../objects/Skeleton";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "text-foreground" : "text-muted hover:text-foreground";
 
 export default function Header() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { openModal, openChat } = useModal();
   const { t } = useTranslation();
 
@@ -84,7 +85,12 @@ export default function Header() {
               <use href="/icons.svg#add-icon" />
             </svg>
           </Link>
-          {user ? (
+          {authLoading ? (
+            // Neither branch until we know who this is. The log-in button is a
+            // claim about the viewer, and it is the wrong one on every reload
+            // by a signed-in user.
+            <Skeleton className="h-8 w-8 rounded-full" />
+          ) : user ? (
             <Link to="/profile" aria-label={t("nav.profile")}>
               <Avatar
                 size="sm"
