@@ -151,6 +151,24 @@ describe("Dashboard", () => {
     );
   });
 
+  // A stale or shared ?page=N link outlives the listings it pointed at, and a
+  // moderator removing enough of them shrinks the set underneath the seller.
+  // Keying the empty state on this page's length rather than on the total told
+  // a seller with 30 listings they had none, and removed the pager that is the
+  // only way back.
+  test("keeps the pager on a page past the end instead of claiming there is nothing", () => {
+    renderDashboard({
+      listings: [],
+      listingsState: {
+        data: { items: [], total: 30, page: 9, limit: 20, total_pages: 2 },
+      },
+    });
+
+    expect(screen.queryByText("You haven't posted a listing yet.")).not.toBeInTheDocument();
+    expect(screen.getByText("30 results")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
+  });
+
   test("shows no page controls when everything fits on one", () => {
     renderDashboard({ listings: [makeListing()] });
     expect(screen.queryByRole("button", { name: "Next" })).not.toBeInTheDocument();

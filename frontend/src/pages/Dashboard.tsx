@@ -74,7 +74,7 @@ export default function Dashboard() {
             }
             onRetry={() => listingsQuery.refetch()}
           />
-        ) : listings.length === 0 ? (
+        ) : listingsQuery.data?.total === 0 ? (
           <div className="border-line rounded-lg border border-dashed p-8 text-center">
             <p className="text-muted text-sm">{t("pages.dashboard.noListings")}</p>
             <Link
