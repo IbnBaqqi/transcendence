@@ -58,9 +58,12 @@
    * here rather than per page, which is how 16 pages ended up answering it
    * two different ways.
    *
-   * Values are what the app already uses most, so adopting them is a
-   * consistency change and not a redesign: page-title is today's text-3xl
-   * (9 of 16 pages), section is text-lg (23 of 27 h2s), secondary is text-sm.
+   * Values are what the app already uses, so adopting them is a consistency
+   * change and not a redesign: section is today's text-lg (22 of 25 <h2>s)
+   * and secondary is text-sm. page-title is the exception — <h1> was split
+   * 8 pages to 8 between text-3xl and text-2xl, so the larger one is a
+   * decision rather than a majority: a page title should outrank a section
+   * heading clearly.
    */
   --text-page-title: 1.875rem;
   --text-page-title--line-height: 2.25rem;
