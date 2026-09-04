@@ -463,7 +463,8 @@
       "title": "Poista tili",
       "warning": "Tilisi anonymisoidaan, ei poisteta. Tilaukset säilyvät molemmilla puolilla ja toinen osapuoli säilyttää oman kopionsa keskusteluista.",
       "confirmLabel": "Kirjoita {{username}} vahvistaaksesi",
-      "failed": "Tilin poistaminen ei onnistunut."
+      "failed": "Tilin poistaminen ei onnistunut.",
+      "signedOut": "Olet kirjautunut ulos. Kirjaudu uudelleen poistaaksesi tilisi."
     },
     "imageUpload": {
       "title": "Lataa kuva"

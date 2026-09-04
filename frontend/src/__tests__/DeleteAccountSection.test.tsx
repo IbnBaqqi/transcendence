@@ -95,7 +95,7 @@ test("ends the session after the account is deleted", async () => {
 });
 
 // A failure must not close the modal and quietly leave the account standing.
-test("surfaces a failure rather than swallowing it", async () => {
+test("surfaces a failure rather than swallowing it", () => {
   setMutation({
     isError: true,
     error: { status: 400, message: "Type your username exactly to confirm" },
@@ -109,13 +109,16 @@ test("surfaces a failure rather than swallowing it", async () => {
 // session can end underneath it - a background token refresh failing sets the
 // user to null. The confirmation rule is value === username, so with no name to
 // confirm against an empty box would satisfy the one control this form is for.
-// Typing and clearing is what runs the validation; an untouched form is
-// disabled either way, so a test that never types proves nothing.
-test("offers no form at all once the session has ended", async () => {
+test("offers no form at all once the session has ended", () => {
   renderSection(null);
 
   expect(screen.queryByRole("button", { name: "Delete Account" })).not.toBeInTheDocument();
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  // Not a heading over an empty box: the state is rare, so it has to explain
+  // itself rather than read as the modal having broken.
+  expect(
+    screen.getByText("You're signed out. Log in again to delete your account."),
+  ).toBeInTheDocument();
 });
 
 // The same root cause with a visible symptom: the label interpolates the name.

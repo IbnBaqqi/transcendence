@@ -17,9 +17,13 @@ import Button from "../objects/Button.tsx";
 // absent user would make an empty box satisfy the one control this form exists
 // to provide.
 export function DeleteAccountSection({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
 
-  if (!user) return null;
+  // Says why rather than leaving a heading over an empty box. The modal is
+  // still dismissable either way - Escape and the backdrop both close it - so
+  // this is legibility, not an escape hatch.
+  if (!user) return <p className="text-muted text-sm">{t("modal.deleteAccount.signedOut")}</p>;
 
   return <DeleteAccountForm username={user.username} onClose={onClose} />;
 }

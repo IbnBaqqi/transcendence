@@ -463,7 +463,8 @@
       "title": "Radera konto",
       "warning": "Ditt konto anonymiseras, inte raderas. Beställningar finns kvar på båda sidor och motparten behåller sin kopia av konversationer.",
       "confirmLabel": "Skriv {{username}} för att bekräfta",
-      "failed": "Kunde inte radera ditt konto."
+      "failed": "Kunde inte radera ditt konto.",
+      "signedOut": "Du är utloggad. Logga in igen för att radera ditt konto."
     },
     "imageUpload": {
       "title": "Ladda upp bild"

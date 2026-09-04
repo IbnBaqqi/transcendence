@@ -463,7 +463,8 @@
       "title": "Delete Account",
       "warning": "Your account is anonymised, not erased. Orders stay on both sides and the other person keeps their copy of any conversation.",
       "confirmLabel": "Type {{username}} to confirm",
-      "failed": "Couldn't delete your account."
+      "failed": "Couldn't delete your account.",
+      "signedOut": "You're signed out. Log in again to delete your account."
     },
     "imageUpload": {
       "title": "Upload image"
