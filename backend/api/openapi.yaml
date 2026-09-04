@@ -285,7 +285,8 @@ components:
 
         seller:
           description: |
-            Who posted it, enough to render a card: a name and a face. Always
+            Who posted it, enough to render a card: a name, a face and a
+            rating. Always
             sent - a listing always has a seller, and a failure to load one
             fails the request rather than answering without it, the same as the
             images and tags beside it. Nullable in the schema because the Go
@@ -293,7 +294,7 @@ components:
           oneOf:
             - type: "null"
             - type: object
-              required: [id, username, avatar_url]
+              required: [id, username, avatar_url, rating]
               properties:
                 id:
                   type: string
@@ -304,6 +305,16 @@ components:
                   type: [string, "null"]
                   description: Null when none is set; the default is the client's decision.
                   examples: ["/uploads/0a7a0bc6-99f9-42f8-9ba0-c908a9cb3a93.png"]
+                rating:
+                  $ref: "#/components/schemas/Rating"
+                  description: |
+                    The seller's rating, the same shape the profile publishes.
+
+                    **Read `count`, not just `average`.** An unrated seller has
+                    `{average: 0, count: 0}`, which is indistinguishable from a
+                    genuinely bad one if you only look at the average. A client
+                    showing a rating should show something else below a
+                    threshold of its own choosing rather than rendering 0.
     PaginatedReviews:
       type: object
       required: [items, total, page, limit, total_pages]
@@ -2347,8 +2358,17 @@ paths:
           schema:
             type: string
             # Mirrors the sortOptions map in database/listings_search.go.
-            enum: [newest, oldest, price_asc, price_desc]
+            enum: [newest, oldest, price_asc, price_desc, rating_desc]
             default: newest
+            description: |
+              `rating_desc` orders by the seller's average review score, highest
+              first. A seller with no reviews sorts last rather than being
+              hidden — the listing still appears, and its `seller.rating.count`
+              is what tells a client to show something other than a score.
+
+              The average is raw, so a seller with one five-star review outranks
+              one with forty at 4.8. That is what an average is; a client that
+              wants to say otherwise has the count to say it with.
         - name: page
           in: query
           description: 1-based. A page past the end returns an empty `items`.

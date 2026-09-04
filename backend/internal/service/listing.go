@@ -541,7 +541,7 @@ func (s *ListingService) SellersFor(
 	}
 
 	for _, row := range rows {
-		out[row.ID] = dtos.ToListingSeller(row.ID, row.Username, row.AvatarFilename)
+		out[row.ID] = dtos.ToListingSeller(row.ID, row.Username, row.AvatarFilename, row.RatingAverage, row.RatingCount)
 	}
 	return out, nil
 }

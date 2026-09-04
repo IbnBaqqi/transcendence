@@ -24,10 +24,19 @@ export interface ListingImage {
   position: number;
 }
 
+// Always sent, both fields. count is what separates "no reviews yet" from
+// "rated zero" - an unrated seller is {average: 0, count: 0}, so a client that
+// reads only the average shows 0 for everyone new.
+export interface Rating {
+  average: number;
+  count: number;
+}
+
 export interface ListingSeller {
   id: string;
   username: string;
   avatar_url: string | null;
+  rating: Rating;
 }
 
 export interface Listing {

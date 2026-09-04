@@ -4,7 +4,7 @@ import type { ListingSearchParams, ListingSort } from "../api/listings";
 export const PAGE_SIZE = 20;
 
 // Mirrors the backend's sort allow-list; the literal tuple is what z.enum needs.
-export const SORTS = ["newest", "oldest", "price_asc", "price_desc"] as const;
+export const SORTS = ["newest", "oldest", "price_asc", "price_desc", "rating_desc"] as const;
 
 // The backend rejects anything past math.MaxInt32, and a larger number would
 // serialise as "1e+30", which it cannot parse either.
