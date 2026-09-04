@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { StrictMode } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthProvider } from "../providers/AuthProvider";
 import { useAuth } from "../hooks/useAuth";
@@ -9,6 +9,17 @@ import { ACCESS_TOKEN_KEY } from "../providers/AuthContext";
 
 vi.mock("../api/auth");
 const mockedAuthApi = vi.mocked(authApi);
+
+// The 401 interceptor pushes background refreshes through this callback.
+// Capturing it is the only way to drive that path from a test - nothing in
+// the UI triggers it, which is why it went uncovered.
+let onSessionChange: ((auth: typeof session | null) => void) | null = null;
+vi.mock("../api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../api/client")>()),
+  setOnSessionChange: (cb: ((auth: typeof session | null) => void) | null) => {
+    onSessionChange = cb;
+  },
+}));
 
 const session = {
   access_token: "tok",
@@ -190,4 +201,46 @@ test("a forced restore that fails drops the stale token and stays signed out", a
   // No fallback to the stale token: the callback cookie is authoritative and
   // failed, so the old identity must not linger.
   expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull();
+});
+
+// Login and logout already clear the cache; this third path did not. A page
+// read while the token was gone holds anonymous answers - GET /users/{id}
+// omits presence for an anonymous caller and returns 200, so there is no 401
+// to retry - and keys name the resource, never who asked.
+test("a background refresh under a different identity drops the cache", async () => {
+  renderApp();
+  await screen.findByText("probe:success");
+  expect(probeFetcher).toHaveBeenCalledTimes(1);
+
+  act(() => onSessionChange?.(session));
+
+  await screen.findByText("forager");
+  await waitFor(() => expect(probeFetcher).toHaveBeenCalledTimes(2));
+});
+
+// The half that keeps the clear from being blunt. A token rotation returns the
+// same person many times over a session; clearing then would throw away a warm
+// cache for nothing. Simplify the guard to an unconditional clear() and this
+// is the test that notices.
+test("a background refresh under the same identity keeps it", async () => {
+  mockedAuthApi.refresh.mockResolvedValue(session);
+  localStorage.setItem(ACCESS_TOKEN_KEY, "tok");
+  mockedAuthApi.getCurrentUser.mockResolvedValue(session.user);
+
+  const { queryClient } = renderApp();
+  await screen.findByText("forager");
+  await screen.findByText("probe:success");
+  expect(queryClient.getQueryData(["probe"])).toBe("fresh");
+
+  await act(async () => {
+    onSessionChange?.(session);
+  });
+
+  // Reads the cache rather than counting fetches, unlike its siblings above.
+  // A refresh under the same identity hands setUser the object it already
+  // holds, so React bails out of re-rendering and the probe never
+  // re-subscribes - meaning the fetch count stays flat even when the cache
+  // HAS been wiped. The entry itself is the only honest witness, and clear()
+  // is synchronous, so there is nothing to wait for.
+  expect(queryClient.getQueryData(["probe"])).toBe("fresh");
 });

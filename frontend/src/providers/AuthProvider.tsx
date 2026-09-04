@@ -23,6 +23,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // the effect closure; it has to reach inside restoreSession now, so it moves
   // to a ref.
   const mountedRef = useRef(true);
+  // Whose answers the cache currently holds. A ref rather than reading `user`,
+  // because the session-change callback below is registered once and would
+  // otherwise close over the value from that first render. One effect keeps it
+  // true whichever path set the user, so login and logout need no bookkeeping.
+  const viewerIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    viewerIdRef.current = user?.id ?? null;
+  }, [user]);
 
   const storeSession = useCallback(
     (res: AuthResponse) => {
@@ -79,7 +88,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mountedRef.current = true;
     // Background refreshes (see the 401 interceptor) funnel through here so
     // React state and localStorage never disagree about who is signed in.
-    setOnSessionChange((auth) => setUser(auth?.user ?? null));
+    setOnSessionChange((auth) => {
+      const next = auth?.user ?? null;
+      // A refresh normally returns the same person, and clearing then would
+      // throw away a warm cache on a routine token rotation. Only an identity
+      // change means the cached answers were written for somebody else: keys
+      // name the resource, never who asked, and GET /users/{id} carries
+      // presence for a signed-in caller while omitting it for an anonymous one.
+      //
+      // Not folded into a setUser updater: those must be pure, and StrictMode
+      // double-invokes them.
+      if (viewerIdRef.current !== (next?.id ?? null)) queryClient.clear();
+      setUser(next);
+    });
 
     async function restoreOnMount() {
       await restoreSession();
@@ -91,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mountedRef.current = false;
       setOnSessionChange(null);
     };
-  }, [restoreSession]);
+  }, [restoreSession, queryClient]);
 
   async function login(email: string, password: string) {
     storeSession(await loginApi({ email, password }));
