@@ -406,3 +406,36 @@ func TestTheGuardWaitsForTheAdminRosterLock(t *testing.T) {
 		t.Errorf("suspending a plain user waited for the roster lock: %v", err)
 	}
 }
+
+// A 404 test cannot tell "no such account" from "the database is down" - a
+// lookup that collapses its error answers both the same way. This one uses an
+// account that exists, so only the distinction can pass it.
+func TestADatabaseFailureIsNotReportedAsAMissingAccount(t *testing.T) {
+	f := newAdminFixture(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := f.admins.History(ctx, f.member)
+
+	var notFound *NotFoundError
+	if errors.As(err, &notFound) {
+		t.Fatalf("err = %v, want the underlying failure rather than a 404", err)
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("err = %v, want the context cancellation to survive", err)
+	}
+}
+
+// Without the check this answered 200 with an empty list, which reads as
+// "this account has never been actioned" rather than "no such account".
+func TestTheHistoryOfAnAccountThatDoesNotExistIsNotFound(t *testing.T) {
+	f := newAdminFixture(t)
+
+	_, err := f.admins.History(context.Background(), database.NewID())
+
+	var notFound *NotFoundError
+	if !errors.As(err, &notFound) {
+		t.Fatalf("err = %v, want NotFoundError", err)
+	}
+}
