@@ -977,7 +977,7 @@ components:
 
     ReportedListing:
       type: object
-      required: [listing_id, title, seller_id, report_count, first_reported_at]
+      required: [listing_id, title, seller_id, removed_at, report_count, first_reported_at]
       description: |
         One row of the queue: a listing with at least one open report, oldest
         complaint first.
@@ -1004,7 +1004,7 @@ components:
 
     Report:
       type: object
-      required: [id, reason, detail, status, created_at]
+      required: [id, reporter_id, reason, detail, status, created_at]
       properties:
         id:
           type: string
@@ -1037,7 +1037,7 @@ components:
 
     ModerationAction:
       type: object
-      required: [id, listing_id, action, note, created_at]
+      required: [id, listing_id, moderator_id, action, note, created_at]
       description: One entry in the audit trail. Nothing here is ever edited.
       properties:
         id:
@@ -1141,7 +1141,7 @@ components:
 
     UserAction:
       type: object
-      required: [id, action, note, created_at]
+      required: [id, action, note, moderator_id, created_at]
       description: One entry in an account's audit trail. Append-only.
       properties:
         id:
