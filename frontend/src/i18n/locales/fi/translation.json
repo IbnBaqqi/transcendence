@@ -86,6 +86,8 @@
     "retry": "Yritä uudelleen",
     "removePhoto": "Poista kuva",
     "addPhoto": "Lisää kuva",
+    "moveEarlier": "Siirrä aiemmaksi",
+    "moveLater": "Siirrä myöhemmäksi",
     "ariaUploadPhotos": "Lataa kuvia"
   },
   "categories": {
@@ -481,6 +483,7 @@
     "maxImages_other": "Voit lisätä enintään {{max}} kuvaa.",
     "unsupportedImageType": "\"{{name}}\" ei ole tuettu kuvatyyppi (käytä JPEG-, PNG- tai WebP-kuvia).",
     "fileTooLarge": "\"{{name}}\" on suurempi kuin {{mb}} MB.",
+    "uploadTooLarge": "Tämä kuva on liian suuri ladattavaksi.",
     "usernameRequired": "Käyttäjätunnus vaaditaan",
     "usernameTooLong": "Käyttäjätunnus saa olla enintään 50 merkkiä",
     "usernameNoSpaces": "Käyttäjätunnuksessa ei voi olla välilyöntejä",

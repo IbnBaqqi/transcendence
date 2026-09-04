@@ -93,10 +93,19 @@ export function useListingImages(id: string) {
   });
 }
 
-async function uploadListingImage(listingId: string, file: File): Promise<ListingImage> {
+async function uploadListingImage(
+  listingId: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<ListingImage> {
   const body = new FormData();
   body.append("image", file);
-  const res = await api.post<ListingImage>(apiPath`/listings/${listingId}/images`, body);
+  const res = await api.post<ListingImage>(apiPath`/listings/${listingId}/images`, body, {
+    // e.total is undefined when the body length is unknown - nothing to report then.
+    onUploadProgress: (e) => {
+      if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
+    },
+  });
   return res.data;
 }
 
@@ -105,8 +114,15 @@ async function uploadListingImage(listingId: string, file: File): Promise<Listin
 export function useUploadListingImage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ listingId, file }: { listingId: string; file: File }) =>
-      uploadListingImage(listingId, file),
+    mutationFn: ({
+      listingId,
+      file,
+      onProgress,
+    }: {
+      listingId: string;
+      file: File;
+      onProgress?: (percent: number) => void;
+    }) => uploadListingImage(listingId, file, onProgress),
     onSuccess: (_image, { listingId }) => {
       void queryClient.invalidateQueries({ queryKey: keys.listings.images(listingId) });
       void queryClient.invalidateQueries({ queryKey: keys.listings.detail(listingId) });
@@ -118,14 +134,14 @@ async function deleteListingImage(listingId: string, imageId: string): Promise<v
   await api.delete(apiPath`/listings/${listingId}/images/${imageId}`);
 }
 
-export function useDeleteListingImage(listingId: string | undefined) {
+export function useDeleteListingImage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (imageId: string) => deleteListingImage(listingId as string, imageId),
-    onSuccess: () => {
-      const id = listingId as string;
-      queryClient.invalidateQueries({ queryKey: keys.listings.images(id) });
-      queryClient.invalidateQueries({ queryKey: keys.listings.detail(id) });
+    mutationFn: ({ listingId, imageId }: { listingId: string; imageId: string }) =>
+      deleteListingImage(listingId, imageId),
+    onSuccess: (_result, { listingId }) => {
+      void queryClient.invalidateQueries({ queryKey: keys.listings.images(listingId) });
+      void queryClient.invalidateQueries({ queryKey: keys.listings.detail(listingId) });
     },
   });
 }

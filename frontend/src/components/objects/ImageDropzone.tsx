@@ -8,6 +8,8 @@ type ImageDropzoneProps = {
   onFilesSelected: (files: File[]) => void;
   onRemove: (id: string) => void;
   onRetry?: (id: string) => void;
+  /** Omit to hide the reorder arrows - e.g. once position is fixed server-side. */
+  onMove?: (id: string, offset: number) => void;
   /** Allow selecting/dropping more than one file at a time. */
   multiple?: boolean;
   disabled?: boolean;
@@ -35,6 +37,7 @@ export function ImageDropzone({
   onFilesSelected,
   onRemove,
   onRetry,
+  onMove,
   multiple = false,
   disabled = false,
   accept = "image/jpeg,image/png,image/webp",
@@ -147,7 +150,7 @@ export function ImageDropzone({
             isDragActive ? "outline-accent outline-2 outline-dashed" : ""
           }`}
         >
-          {images.map((image) => (
+          {images.map((image, index) => (
             <div
               key={image.id}
               className={`relative overflow-hidden ${roundedClass} ${thumbnailClassName} bg-surface-soft`}
@@ -155,8 +158,29 @@ export function ImageDropzone({
               <img src={image.previewUrl} alt="" className="h-full w-full object-cover" />
 
               {image.status === "uploading" && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                  <span className="text-xs font-medium text-white">{t("dropzone.uploading")}</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/40 px-2">
+                  {image.progress === undefined ? (
+                    <span className="text-xs font-medium text-white">
+                      {t("dropzone.uploading")}
+                    </span>
+                  ) : (
+                    <>
+                      <div
+                        role="progressbar"
+                        aria-label={t("dropzone.uploading")}
+                        aria-valuenow={image.progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        className="h-1 w-full overflow-hidden rounded-full bg-white/30"
+                      >
+                        <div
+                          className="bg-accent h-full transition-[width] duration-150"
+                          style={{ width: `${image.progress}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-medium text-white">{image.progress}%</span>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -165,7 +189,7 @@ export function ImageDropzone({
                   <span className="text-xs font-medium text-white">
                     {image.error ?? t("dropzone.uploadFailed")}
                   </span>
-                  {onRetry && (
+                  {onRetry && image.retryable && (
                     <button
                       type="button"
                       onClick={() => onRetry(image.id)}
@@ -186,6 +210,29 @@ export function ImageDropzone({
                 >
                   ×
                 </button>
+              )}
+
+              {onMove && !disabled && images.length > 1 && (
+                <div className="absolute inset-x-0 bottom-0 flex justify-between">
+                  <button
+                    type="button"
+                    onClick={() => onMove(image.id, -1)}
+                    disabled={index === 0}
+                    aria-label={t("dropzone.moveEarlier")}
+                    className="flex h-5 w-5 items-center justify-center bg-black/60 text-xs leading-none text-white hover:bg-black/80 disabled:opacity-30"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onMove(image.id, 1)}
+                    disabled={index === images.length - 1}
+                    aria-label={t("dropzone.moveLater")}
+                    className="flex h-5 w-5 items-center justify-center bg-black/60 text-xs leading-none text-white hover:bg-black/80 disabled:opacity-30"
+                  >
+                    ›
+                  </button>
+                </div>
               )}
             </div>
           ))}
