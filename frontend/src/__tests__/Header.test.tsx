@@ -181,3 +181,30 @@ test("holds the identity slot but keeps the header while the session restores", 
   expect(screen.queryByLabelText("Profile")).not.toBeInTheDocument();
   expect(screen.getByText("Metsätori")).toBeInTheDocument();
 });
+
+// Same reasoning as the admin links above, which have had a test since #216:
+// each of these is the only navigation into its screen anywhere in app code,
+// and every one of their accessible names comes from an aria-label alone. A
+// rewrite that drops one leaves a section reachable only by typing the URL,
+// with the suite still green - which is how /admin/orders was lost, and it
+// took comparing ancestry by hand to notice.
+test.each([
+  ["Home", "/"],
+  ["Search", "/search"],
+  ["Add listing", "/addlisting"],
+])("points %s at %s for every visitor", (name, href) => {
+  renderHeader({ user: null });
+  expect(screen.getByRole("link", { name })).toHaveAttribute("href", href);
+});
+
+test.each([
+  ["Orders", "/orders"],
+  ["Following", "/following"],
+])("points %s at %s once signed in, and hides it otherwise", (name, href) => {
+  renderHeader(SIGNED_IN);
+  expect(screen.getByRole("link", { name })).toHaveAttribute("href", href);
+
+  cleanup();
+  renderHeader({ user: null });
+  expect(screen.queryByRole("link", { name })).not.toBeInTheDocument();
+});

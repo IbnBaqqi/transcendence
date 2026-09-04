@@ -35,7 +35,10 @@ export function Modal({
   if (variant === "floating") {
     return createPortal(
       <div
-        className={`bg-surface fixed right-4 bottom-4 z-50 flex h-[70vh] flex-col overflow-hidden rounded-lg shadow-lg ${className}`}
+        // left-4 until sm: a floating panel wide enough to be useful on a desktop
+        // is wider than a phone, so below sm it spans between the margins
+        // instead of being anchored to the right edge and running off the left.
+        className={`bg-surface fixed right-4 bottom-4 left-4 z-50 flex h-[70vh] flex-col overflow-hidden rounded-lg shadow-lg sm:left-auto ${className}`}
       >
         {children}
       </div>,
