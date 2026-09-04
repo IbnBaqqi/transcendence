@@ -30,7 +30,7 @@ export default function Following() {
   if (!user) {
     return (
       <div className="mx-auto max-w-2xl space-y-3 px-4 py-8">
-        <h1 className="text-foreground text-2xl font-bold">{t("pages.following.title")}</h1>
+        <h1 className="text-foreground text-page-title font-bold">{t("pages.following.title")}</h1>
         <p className="text-muted text-sm">{t("pages.following.signedOut")}</p>
         <Button variant="primary" onClick={() => openModal("login")}>
           {t("common.logIn")}
@@ -41,7 +41,7 @@ export default function Following() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">{t("pages.following.title")}</h1>
+      <h1 className="text-foreground text-page-title font-bold">{t("pages.following.title")}</h1>
 
       {isPending && (
         <div className="mt-6 space-y-3">

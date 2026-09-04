@@ -51,6 +51,34 @@
   --color-soft-active: #5aab77; /* brand-400 */
 
   --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+
+  /*
+   * Type scale. Same two layers as the colors above: Tailwind ships the raw
+   * sizes, these name the ROLES — so "how big is a page title" is answered
+   * here rather than per page, which is how 16 pages ended up answering it
+   * two different ways.
+   *
+   * Values are what the app already uses, so adopting them is a consistency
+   * change and not a redesign: section is today's text-lg (22 of 25 <h2>s)
+   * and secondary is text-sm. page-title is the exception — <h1> was split
+   * 8 pages to 8 between text-3xl and text-2xl, so the larger one is a
+   * decision rather than a majority: a page title should outrank a section
+   * heading clearly.
+   *
+   * Three roles rather than a full scale: each one here has call sites, and
+   * body and meta sizes arrive when something adopts them. A token nothing
+   * references is dead API.
+   *
+   * These names are claimed in the text-* namespace, which Tailwind also
+   * builds from --color-*. Colour wins silently — add --color-section and
+   * text-section becomes a colour with the font-size dropped, no error.
+   */
+  --text-page-title: 1.875rem;
+  --text-page-title--line-height: 2.25rem;
+  --text-section: 1.125rem;
+  --text-section--line-height: 1.75rem;
+  --text-secondary: 0.875rem;
+  --text-secondary--line-height: 1.25rem;
 }
 
 /* Dark mode: swap semantic token VALUES based on the OS setting.

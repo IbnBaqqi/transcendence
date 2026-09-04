@@ -27,7 +27,7 @@ function LegalBullets({ bullets }: { bullets?: string[] }) {
 function LegalSection({ block }: { block: Block }) {
   return (
     <section>
-      <h2 className="text-foreground text-xl font-semibold">{block.title}</h2>
+      <h2 className="text-foreground text-section font-semibold">{block.title}</h2>
       <LegalParagraph paragraphs={block.paragraphs} />
       <LegalBullets bullets={block.bullets} />
     </section>
@@ -40,7 +40,7 @@ export function LegalDocument({ document }: { document: Document }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-foreground text-3xl font-bold">{title}</h1>
+      <h1 className="text-foreground text-page-title font-bold">{title}</h1>
       <p className="text-muted mt-2 text-sm">{t("legal.lastUpdated", { date: lastUpdated })}</p>
 
       <div className="text-muted mt-6 space-y-4">

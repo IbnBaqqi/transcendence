@@ -39,7 +39,7 @@ function ErrorBoundaryFallback({ message }: { message?: string }) {
   const { t } = useTranslation();
   return (
     <div className="mx-auto max-w-2xl p-9 text-center">
-      <h1 className="text-foreground text-2xl font-bold">
+      <h1 className="text-foreground text-page-title font-bold">
         {t("errorBoundary.somethingWentWrong")}
       </h1>
       <p className="text-muted mt-2">{message ?? t("errorBoundary.refresh")}</p>

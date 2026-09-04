@@ -71,7 +71,7 @@ export default function OrderDetail() {
           {t("orders.allOrders")}
         </Link>
         <div className="mt-2 flex items-start justify-between gap-3">
-          <h1 className="text-foreground text-2xl font-bold">{order.listing_title}</h1>
+          <h1 className="text-foreground text-page-title font-bold">{order.listing_title}</h1>
           <OrderStatusPill status={order.status} label={t(view.statusKey)} />
         </div>
         <p className="text-muted mt-1 text-sm">

@@ -14,7 +14,7 @@ export default function ListingDetail() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="text-foreground text-2xl font-bold">
+      <h1 className="text-foreground text-page-title font-bold">
         {t("pages.listingDetail.title", { id })}
       </h1>
       <p className="text-muted mt-2">
