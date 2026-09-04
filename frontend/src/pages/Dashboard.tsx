@@ -17,7 +17,10 @@ export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { openModal } = useModal();
 
-  const listingsQuery = useSearchListings({ seller_id: user?.id, limit: 50 }, { enabled: !!user });
+  const listingsQuery = useSearchListings(
+    { seller_id: user?.id, limit: 50, include_sold_out: true },
+    { enabled: !!user },
+  );
   const ordersQuery = useOrders({ enabled: !!user });
 
   if (authLoading) return <p className="text-muted p-8 text-sm">{t("common.loading")}</p>;

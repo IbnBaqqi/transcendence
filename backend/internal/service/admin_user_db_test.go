@@ -251,7 +251,7 @@ func TestASuspendedSellerLeavesTheReadPaths(t *testing.T) {
 	listings := NewListingService(f.db, nil)
 	profiles := NewProfileService(f.db, nil)
 
-	before, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{})
+	before, err := listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{})
 	if err != nil {
 		t.Fatalf("browsing: %v", err)
 	}
@@ -263,7 +263,7 @@ func TestASuspendedSellerLeavesTheReadPaths(t *testing.T) {
 		t.Fatalf("suspending: %v", err)
 	}
 
-	after, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{})
+	after, err := listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{})
 	if err != nil {
 		t.Fatalf("browsing: %v", err)
 	}
@@ -281,7 +281,7 @@ func TestASuspendedSellerLeavesTheReadPaths(t *testing.T) {
 		t.Fatalf("reinstating: %v", err)
 	}
 
-	back, err := listings.SearchListings(ctx, dtos.ListingSearchQuery{})
+	back, err := listings.SearchListings(ctx, uuid.Nil, dtos.ListingSearchQuery{})
 	if err != nil {
 		t.Fatalf("browsing: %v", err)
 	}
