@@ -175,9 +175,11 @@ SELECT COALESCE((SELECT is_visible FROM users WHERE id = sqlc.arg(user_id)), fal
 -- and only the count tells them apart.
 --
 -- The WHERE inside the aggregate is for cost, not correctness: the join filters
--- to these sellers either way, so removing it changes no result and no test can
--- catch it - it just makes every listing page aggregate every review in the
--- table instead of the twenty sellers it asked for.
+-- to these sellers either way, so removing it changes no row, and no test that
+-- reads results can catch it - it just makes every listing page aggregate every
+-- review in the table instead of the twenty sellers it asked for. The guard is
+-- TestTheRatingAggregateIsScopedToTheRequestedSellers, which reads this query's
+-- text rather than its output.
 SELECT
     users.id,
     users.username,
