@@ -47,9 +47,6 @@ export default function Header() {
         <nav className="xs:gap-4 flex flex-wrap items-center justify-end gap-2 text-sm">
           <LanguageSwitcher />
           {/* {navLinkClass} passes the function itself and React Router calls it and supplies { isActive } */}
-          {/* <NavLink to="/" className={navLinkClass}> */}
-          {/*   {t("nav.home")} */}
-          {/* </NavLink> */}
           <Link to="/" aria-label={t("nav.home")} className="text-muted hover:text-foreground">
             <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
               <use href="/icons.svg#home-icon" />
