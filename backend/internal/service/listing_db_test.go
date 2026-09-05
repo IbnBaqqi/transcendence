@@ -242,3 +242,185 @@ func TestAListingThatDoesNotExistIsStillNotFound(t *testing.T) {
 		t.Fatalf("err = %v, want NotFoundError", err)
 	}
 }
+
+// The premise of 024: an order does not need its listing. Every field a reader
+// sees is snapshotted on the order row at purchase, so SET NULL lets the
+// listing go while the order stays readable. Exercised through the database
+// rather than the service because it is the constraint being tested, not a
+// branch - the service is not allowed to delete a listing with orders yet.
+func TestAnOrderOutlivesTheListingItWasPlacedOn(t *testing.T) {
+	ctx := context.Background()
+	db := testdb.New(t)
+
+	seller, err := db.CreateUser(ctx, database.CreateUserParams{
+		ID: database.NewID(), Username: "seller", Email: "seller@example.test",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("creating the seller: %v", err)
+	}
+	buyer, err := db.CreateUser(ctx, database.CreateUserParams{
+		ID: database.NewID(), Username: "buyer", Email: "buyer@example.test",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("creating the buyer: %v", err)
+	}
+
+	listing, err := db.CreateListing(ctx, database.CreateListingParams{
+		ID: database.NewID(), SellerID: seller.ID, Title: "Chanterelles",
+		Category: "mushrooms", Price: "18.00", Quantity: 3, Unit: "kg",
+	})
+	if err != nil {
+		t.Fatalf("creating the listing: %v", err)
+	}
+
+	order, err := db.CreateOrder(ctx, database.CreateOrderParams{
+		ID: database.NewID(), ListingID: uuid.NullUUID{UUID: listing.ID, Valid: true},
+		BuyerID: buyer.ID, SellerID: seller.ID, Quantity: 2, UnitPrice: "18.00",
+		ListingTitle: listing.Title,
+	})
+	if err != nil {
+		t.Fatalf("creating the order: %v", err)
+	}
+
+	if err := db.DeleteListing(ctx, listing.ID); err != nil {
+		t.Fatalf("deleting the listing: %v", err)
+	}
+
+	survived, err := db.GetOrder(ctx, order.ID)
+	if err != nil {
+		t.Fatalf("reading the order back: %v", err)
+	}
+	if survived.ListingID.Valid {
+		t.Errorf("listing_id = %v, want null once the listing is deleted", survived.ListingID.UUID)
+	}
+	// The snapshot is the whole reason this is safe.
+	if survived.ListingTitle != "Chanterelles" {
+		t.Errorf("listing title = %q, want %q", survived.ListingTitle, "Chanterelles")
+	}
+	if survived.Quantity != 2 {
+		t.Errorf("quantity = %d, want 2", survived.Quantity)
+	}
+}
+
+// Seller, buyer and a listing with one order in the status the caller wants.
+func orderedListingFixture(t *testing.T, status string) (*ListingService, *database.DB, uuid.UUID, uuid.UUID) {
+	t.Helper()
+	ctx := context.Background()
+	db := testdb.New(t)
+
+	files, err := storage.NewLocal(t.TempDir())
+	if err != nil {
+		t.Fatalf("creating a temporary upload dir: %v", err)
+	}
+	t.Cleanup(func() { _ = files.Close() })
+
+	seller, err := db.CreateUser(ctx, database.CreateUserParams{
+		ID: database.NewID(), Username: "seller", Email: "seller@example.test",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("creating the seller: %v", err)
+	}
+	buyer, err := db.CreateUser(ctx, database.CreateUserParams{
+		ID: database.NewID(), Username: "buyer", Email: "buyer@example.test",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("creating the buyer: %v", err)
+	}
+
+	listing, err := db.CreateListing(ctx, database.CreateListingParams{
+		ID: database.NewID(), SellerID: seller.ID, Title: "Chanterelles",
+		Category: "mushrooms", Price: "18.00", Quantity: 3, Unit: "kg",
+	})
+	if err != nil {
+		t.Fatalf("creating the listing: %v", err)
+	}
+
+	order, err := db.CreateOrder(ctx, database.CreateOrderParams{
+		ID: database.NewID(), ListingID: uuid.NullUUID{UUID: listing.ID, Valid: true},
+		BuyerID: buyer.ID, SellerID: seller.ID, Quantity: 1, UnitPrice: "18.00",
+		ListingTitle: listing.Title,
+	})
+	if err != nil {
+		t.Fatalf("creating the order: %v", err)
+	}
+	if status != "pending" {
+		if _, err := db.UpdateOrderStatus(ctx, database.UpdateOrderStatusParams{
+			ID: order.ID, Status: status,
+		}); err != nil {
+			t.Fatalf("setting the order to %s: %v", status, err)
+		}
+	}
+
+	return NewListingService(db, files), db, seller.ID, listing.ID
+}
+
+// The rule in one table: an order still in flight blocks the delete, a finished
+// one does not. Before 024 every one of these blocked, and a seller who had
+// ever sold anything could never remove the listing.
+func TestOnlyASaleInFlightBlocksDeletingAListing(t *testing.T) {
+	for _, tc := range []struct {
+		status  string
+		deletes bool
+	}{
+		{status: "pending", deletes: false},
+		{status: "confirmed", deletes: false},
+		{status: "completed", deletes: true},
+		{status: "cancelled", deletes: true},
+		{status: "refunded", deletes: true},
+	} {
+		t.Run(tc.status, func(t *testing.T) {
+			ctx := context.Background()
+			listings, db, seller, listingID := orderedListingFixture(t, tc.status)
+
+			err := listings.DeleteListing(ctx, seller, listingID)
+
+			if !tc.deletes {
+				var conflict *ConflictError
+				if !errors.As(err, &conflict) {
+					t.Fatalf("err = %#v, want *ConflictError - %s is still in flight", err, tc.status)
+				}
+				if _, err := db.GetListing(ctx, listingID); err != nil {
+					t.Errorf("listing should still be there after a refused delete: %v", err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("deleting with only a %s order: %v", tc.status, err)
+			}
+			if _, err := db.GetListing(ctx, listingID); !errors.Is(err, sql.ErrNoRows) {
+				t.Errorf("GetListing err = %v, want sql.ErrNoRows - the row should be gone", err)
+			}
+		})
+	}
+}
+
+// The other half of the same change: the order the seller sold is still there
+// afterwards, reading off its own snapshot. Deleting a listing must not delete
+// somebody else's receipt.
+func TestACompletedOrderSurvivesTheSellerDeletingTheListing(t *testing.T) {
+	ctx := context.Background()
+	listings, db, seller, listingID := orderedListingFixture(t, "completed")
+
+	if err := listings.DeleteListing(ctx, seller, listingID); err != nil {
+		t.Fatalf("deleting the listing: %v", err)
+	}
+
+	orders, err := db.ListOrdersForUser(ctx, seller)
+	if err != nil {
+		t.Fatalf("listing the seller's orders: %v", err)
+	}
+	if len(orders) != 1 {
+		t.Fatalf("orders = %d, want 1 - the sale must outlive the listing", len(orders))
+	}
+	if orders[0].ListingID.Valid {
+		t.Errorf("listing_id = %v, want null", orders[0].ListingID.UUID)
+	}
+	if orders[0].ListingTitle != "Chanterelles" {
+		t.Errorf("listing title = %q, want %q", orders[0].ListingTitle, "Chanterelles")
+	}
+}

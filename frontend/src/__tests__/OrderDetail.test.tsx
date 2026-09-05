@@ -160,4 +160,15 @@ describe("OrderDetail", () => {
     renderDetail({ data: makeOrder(), isLoading: false }, { user: SELLER });
     expect(useOrder).toHaveBeenCalledWith("o1", SELLER_ID);
   });
+
+  // A seller can delete a listing once nothing is in flight, and the order
+  // outlives it on its own snapshot. A link to a listing that is gone is a
+  // dead end; the page still has to say what was bought.
+  test("survives the listing being deleted", () => {
+    renderDetail({ data: makeOrder({ listing_id: null }), isLoading: false }, { user: SELLER });
+
+    expect(screen.queryByRole("link", { name: "View listing" })).not.toBeInTheDocument();
+    expect(screen.getByText("This listing has been deleted.")).toBeInTheDocument();
+    expect(screen.getByText("Golden Chanterelles")).toBeInTheDocument();
+  });
 });

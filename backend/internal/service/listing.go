@@ -277,12 +277,15 @@ func (s *ListingService) DeleteListing(ctx context.Context, userID uuid.UUID, li
 		return &ForbiddenError{Message: "This listing was removed by a moderator and cannot be deleted"}
 	}
 
-	orderCount, err := qtx.CountOrdersForListing(ctx, listingID)
+	// Only orders still in flight stand in the way. A finished one does not:
+	// orders.listing_id is SET NULL since 024, and every field an order shows is
+	// snapshotted on its own row, so it survives the listing intact.
+	activeCount, err := qtx.CountActiveOrdersForListing(ctx, uuid.NullUUID{UUID: listingID, Valid: true})
 	if err != nil {
 		return err
 	}
-	if orderCount > 0 {
-		return &ConflictError{Message: "This listing has orders and cannot be deleted; its order history has to be kept"}
+	if activeCount > 0 {
+		return &ConflictError{Message: "This listing has a sale in progress — finish or cancel it before deleting"}
 	}
 
 	filenames, err := qtx.DeleteImagesForListing(ctx, listingID)

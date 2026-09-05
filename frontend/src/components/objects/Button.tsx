@@ -4,6 +4,9 @@ type ButtonProps = {
   disabled?: boolean; // Start true or false
   variant?: "primary" | "secondary" | "tertiary"; // Variants for main buttons, secondaries and tertiaries
   type?: "button" | "submit" | "reset"; // Native button type, defaults to "button"
+  // React 19 takes ref as an ordinary prop, so no forwardRef - but it still
+  // has to be passed through, or a caller moving focus here focuses nothing.
+  ref?: React.Ref<HTMLButtonElement>;
 };
 
 export default function Button({
@@ -12,6 +15,7 @@ export default function Button({
   disabled = false,
   variant = "primary",
   type = "button",
+  ref,
 }: ButtonProps) {
   // A click on a type="button" has no meaningful default action, so we cancel
   // it. Without this, Chromium runs the click's default action AFTER React has
@@ -41,6 +45,7 @@ export default function Button({
 
   return (
     <button
+      ref={ref}
       type={type}
       onClick={handleClick}
       disabled={disabled}

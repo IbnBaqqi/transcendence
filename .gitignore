@@ -54,3 +54,6 @@ desktop.ini
 # Self-signed TLS material for the local production stack (make certs).
 # Generated, never committed - a private key in a repository is a leaked key.
 certs/
+
+# The listing-photos plan (#265), parked mid-discussion.
+LISTING_IMAGES_PLAN.txt

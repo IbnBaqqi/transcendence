@@ -24,9 +24,11 @@ SELECT * FROM orders
 WHERE id = $1
 FOR UPDATE;
 
--- name: CountOrdersForListing :one
+-- name: CountActiveOrdersForListing :one
+-- pending and confirmed are in flight; completed, cancelled and refunded are
+-- over and no longer stand in the way of deleting the listing.
 SELECT COUNT(*) FROM orders
-WHERE listing_id = $1;
+WHERE listing_id = $1 AND status IN ('pending', 'confirmed');
 
 -- name: MarkOrderHandedOver :one
 UPDATE orders

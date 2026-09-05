@@ -90,6 +90,7 @@ export default function Dashboard() {
               <SellerListingRow
                 key={listing.id}
                 listing={listing}
+                orders={allOrders}
                 // Every order, not just sales: a listing's stock is spent by
                 // whoever ordered it.
                 stats={deriveListingStats(listing, allOrders)}

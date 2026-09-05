@@ -23,7 +23,7 @@ func TestNewOrderResponseJSON(t *testing.T) {
 	at := sql.NullTime{Time: time.Unix(0, 0).UTC(), Valid: true}
 	row := database.Order{
 		ID:           testOrderID,
-		ListingID:    testListingID,
+		ListingID:    uuid.NullUUID{UUID: testListingID, Valid: true},
 		ListingTitle: "Golden Chanterelles",
 		BuyerID:      uuid.MustParse("3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34"),
 		SellerID:     uuid.MustParse("9c2b1d40-5e6f-4a7b-8c9d-0e1f2a3b4c5d"),

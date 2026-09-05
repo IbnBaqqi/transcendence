@@ -254,6 +254,7 @@
     },
     "noPayments": "Metsätori ei käsittele maksuja - sopikaa maksusta ja noudosta keskenänne.",
     "viewListing": "Näytä ilmoitus",
+    "listingDeleted": "Tämä ilmoitus on poistettu.",
     "notYet": "Ei vielä",
     "fields": {
       "quantity": "Määrä",
@@ -357,7 +358,13 @@
         "allRemaining": "{{qty}} {{unit}} jäljellä",
         "remaining": "{{left}} / {{original}} {{unit}} jäljellä",
         "sold": "{{count}} myyty",
-        "soldOut": "Loppuunmyyty"
+        "soldOut": "Loppuunmyyty",
+        "delete": "Poista ilmoitus",
+        "confirmDelete": "Poista pysyvästi",
+        "deleting": "Poistetaan…",
+        "deleteWarning": "Ilmoitus ja sen kuvat poistetaan. Valmiit kaupat säilyvät tiedoissa.",
+        "saleInProgress": "Kauppa on kesken. Voit poistaa tämän, kun se on valmis tai peruttu.",
+        "deleteFailed": "Ilmoituksen poistaminen epäonnistui."
       }
     },
     "following": {

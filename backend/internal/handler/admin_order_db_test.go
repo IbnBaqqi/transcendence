@@ -110,7 +110,7 @@ func TestResolvingAnOrderThatIsNotStuckIsAConflictNotAServerError(t *testing.T) 
 	}
 
 	order, err := db.CreateOrder(ctx, database.CreateOrderParams{
-		ID: database.NewID(), ListingID: listing.ID, BuyerID: admin, SellerID: seller.ID,
+		ID: database.NewID(), ListingID: uuid.NullUUID{UUID: listing.ID, Valid: true}, BuyerID: admin, SellerID: seller.ID,
 		Quantity: 1, UnitPrice: "18.10", ListingTitle: "Chanterelles",
 	})
 	if err != nil {

@@ -12,6 +12,20 @@ import (
 	"github.com/google/uuid"
 )
 
+const countActiveOrdersForListing = `-- name: CountActiveOrdersForListing :one
+SELECT COUNT(*) FROM orders
+WHERE listing_id = $1 AND status IN ('pending', 'confirmed')
+`
+
+// pending and confirmed are in flight; completed, cancelled and refunded are
+// over and no longer stand in the way of deleting the listing.
+func (q *Queries) CountActiveOrdersForListing(ctx context.Context, listingID uuid.NullUUID) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countActiveOrdersForListing, listingID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countOrdersForAdmin = `-- name: CountOrdersForAdmin :one
 SELECT COUNT(*) FROM admin_orders
 WHERE ($1::text IS NULL OR status = $1::text)
@@ -39,18 +53,6 @@ func (q *Queries) CountOrdersForAdmin(ctx context.Context, arg CountOrdersForAdm
 	return count, err
 }
 
-const countOrdersForListing = `-- name: CountOrdersForListing :one
-SELECT COUNT(*) FROM orders
-WHERE listing_id = $1
-`
-
-func (q *Queries) CountOrdersForListing(ctx context.Context, listingID uuid.UUID) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countOrdersForListing, listingID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, listing_title)
 VALUES ($1, $2, $3, $4, $5, $6, $6::numeric * $5::integer, $7)
@@ -59,7 +61,7 @@ RETURNING id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price
 
 type CreateOrderParams struct {
 	ID           uuid.UUID
-	ListingID    uuid.UUID
+	ListingID    uuid.NullUUID
 	BuyerID      uuid.UUID
 	SellerID     uuid.UUID
 	Quantity     int32

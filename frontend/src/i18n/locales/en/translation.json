@@ -254,6 +254,7 @@
     },
     "noPayments": "Metsätori handles no payments - arrange payment and pickup between yourselves.",
     "viewListing": "View the listing",
+    "listingDeleted": "This listing has been deleted.",
     "notYet": "Not yet",
     "fields": {
       "quantity": "Quantity",
@@ -357,7 +358,13 @@
         "allRemaining": "{{qty}} {{unit}} left",
         "remaining": "{{left}} of {{original}} {{unit}} left",
         "sold": "{{count}} sold",
-        "soldOut": "Sold out"
+        "soldOut": "Sold out",
+        "delete": "Delete listing",
+        "confirmDelete": "Delete permanently",
+        "deleting": "Deleting…",
+        "deleteWarning": "This listing and its photos will be deleted. Completed sales keep their records.",
+        "saleInProgress": "A sale is in progress. You can delete this once it is finished or cancelled.",
+        "deleteFailed": "Couldn't delete that listing."
       }
     },
     "following": {

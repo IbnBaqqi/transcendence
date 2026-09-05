@@ -41,6 +41,24 @@ export function deriveListingStats(listing: Listing, orders: Order[]): ListingSt
   return { sold, original: listing.quantity + sold };
 }
 
+// pending and confirmed are in flight; the rest are over. Record<OrderStatus,…>
+// for the same reason as RESTORED_STOCK above: a sixth status should be a
+// compile error rather than a silent miscount.
+const IN_FLIGHT: Record<OrderStatus, boolean> = {
+  pending: true,
+  confirmed: true,
+  completed: false,
+  cancelled: false,
+  refunded: false,
+};
+
+// Mirrors the rule the backend enforces (listing.go, CountActiveOrdersForListing)
+// so the seller sees a disabled button with a reason rather than a 409 after
+// the click. The server still decides.
+export function hasSaleInProgress(listing: Listing, orders: Order[]): boolean {
+  return orders.some((order) => order.listing_id === listing.id && IN_FLIGHT[order.status]);
+}
+
 // A dashboard answers "what do I need to do?", so orders group by whose turn it
 // is rather than by status. deriveOrderView already computes that.
 export function groupOrdersByUrgency(orders: Order[], userId?: string): UrgencyGroups {

@@ -140,7 +140,7 @@ func TestOnlyANonTradeReturnsTheStock(t *testing.T) {
 			f := newAdminOrderFixture(t)
 			f.stick(t)
 
-			before, err := f.db.GetListing(ctx, f.order.ListingID)
+			before, err := f.db.GetListing(ctx, f.order.ListingID.UUID)
 			if err != nil {
 				t.Fatalf("reading the listing: %v", err)
 			}
@@ -152,7 +152,7 @@ func TestOnlyANonTradeReturnsTheStock(t *testing.T) {
 				t.Fatalf("resolving: %v", err)
 			}
 
-			after, err := f.db.GetListing(ctx, f.order.ListingID)
+			after, err := f.db.GetListing(ctx, f.order.ListingID.UUID)
 			if err != nil {
 				t.Fatalf("re-reading the listing: %v", err)
 			}
@@ -626,7 +626,7 @@ func TestAStrandedOrderResolvesToCancelledAndReturnsStock(t *testing.T) {
 		t.Errorf("status = %q, want cancelled", resolved.Status)
 	}
 
-	listing, err := f.db.GetListing(ctx, f.order.ListingID)
+	listing, err := f.db.GetListing(ctx, f.order.ListingID.UUID)
 	if err != nil {
 		t.Fatalf("reading the listing: %v", err)
 	}
@@ -836,8 +836,13 @@ func TestAListedAdminOrderCarriesTheWholeOrder(t *testing.T) {
 	if got.SellerID != want.SellerID.String() {
 		t.Errorf("seller = %v, want %v - buyer and seller are the pair most easily swapped", got.SellerID, want.SellerID)
 	}
-	if got.ListingID != want.ListingID {
-		t.Errorf("listing = %v, want %v", got.ListingID, want.ListingID)
+	// A pointer now: an order whose listing was deleted marshals as null, so
+	// both directions are worth checking rather than dereferencing blindly.
+	if want.ListingID.Valid && (got.ListingID == nil || *got.ListingID != want.ListingID.UUID) {
+		t.Errorf("listing = %v, want %v", got.ListingID, want.ListingID.UUID)
+	}
+	if !want.ListingID.Valid && got.ListingID != nil {
+		t.Errorf("listing = %v, want null", got.ListingID)
 	}
 	if got.ListingTitle != want.ListingTitle {
 		t.Errorf("listing title = %q, want %q", got.ListingTitle, want.ListingTitle)
@@ -937,7 +942,7 @@ func TestAnAdminRefundClearsTheSoldOutNotice(t *testing.T) {
 		t.Fatalf("creating the saver: %v", err)
 	}
 	if err := f.db.SaveListing(ctx, database.SaveListingParams{
-		UserID: saver.ID, ListingID: f.order.ListingID,
+		UserID: saver.ID, ListingID: f.order.ListingID.UUID,
 	}); err != nil {
 		t.Fatalf("saving the listing: %v", err)
 	}
@@ -959,7 +964,7 @@ func TestAnAdminRefundClearsTheSoldOutNotice(t *testing.T) {
 
 	// The fixture's order took 2 of 10; the rest empties it.
 	if _, err := f.svc.CreateOrder(ctx, f.buyer, dtos.CreateOrderInput{
-		ListingID: f.order.ListingID, Quantity: 8,
+		ListingID: f.order.ListingID.UUID, Quantity: 8,
 	}); err != nil {
 		t.Fatalf("buying the remaining stock: %v", err)
 	}
@@ -971,7 +976,7 @@ func TestAnAdminRefundClearsTheSoldOutNotice(t *testing.T) {
 		t.Fatalf("resolving as refunded: %v", err)
 	}
 
-	listing, err := f.db.GetListing(ctx, f.order.ListingID)
+	listing, err := f.db.GetListing(ctx, f.order.ListingID.UUID)
 	if err != nil {
 		t.Fatalf("re-reading the listing: %v", err)
 	}
