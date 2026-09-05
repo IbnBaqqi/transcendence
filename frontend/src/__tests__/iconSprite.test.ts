@@ -13,7 +13,13 @@ const sources = import.meta.glob("../{components,pages,providers,hooks}/**/*.tsx
   eager: true,
 }) as Record<string, string>;
 
-const defined = new Set([...sprite.matchAll(/<symbol id="([^"]+)"/g)].map((m) => m[1]));
+// Comments are stripped first. A commented-out <symbol> is not rendered by a
+// browser, so counting it as defined would let a <use> pointing at one pass
+// the check below while the icon draws nothing - the exact failure this file
+// exists to catch. It also lets an icon be staged in the sprite ahead of the
+// change that uses it, without tripping the unused check.
+const live = sprite.replace(/<!--[\s\S]*?-->/g, "");
+const defined = new Set([...live.matchAll(/<symbol id="([^"]+)"/g)].map((m) => m[1]));
 const referenced = new Set(
   Object.values(sources).flatMap((code) =>
     [...code.matchAll(/\/icons\.svg#([a-zA-Z0-9-]+)/g)].map((m) => m[1]),
@@ -28,6 +34,14 @@ test("the glob actually found the components", () => {
 
 test("every icon a component asks for exists in the sprite", () => {
   expect([...referenced].filter((id) => !defined.has(id))).toEqual([]);
+});
+
+test("a commented-out symbol does not count as defined", () => {
+  // Staged icons live in the sprite as comments. If this ever passed by
+  // accident, a reference to a staged icon would look resolved and render
+  // blank.
+  expect(sprite).toContain("profile-icon");
+  expect(defined.has("profile-icon")).toBe(false);
 });
 
 // The other direction: #232 deleted six symbols nothing referenced, by hand.
