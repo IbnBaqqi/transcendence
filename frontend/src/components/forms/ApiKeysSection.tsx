@@ -39,7 +39,11 @@ export function ApiKeysSection() {
       <p className="text-muted text-sm">{t("apiKeys.intro")}</p>
 
       <form onSubmit={(e) => void handleCreate(e)} className="flex items-end gap-2">
-        <div className="flex flex-1 flex-col gap-1">
+        {/* min-w-0: a flex item defaults to min-width:auto, and an input's
+            content width is ~20 characters, so without this the field holds a
+            ~206px floor and the button is the one that gets squeezed - down to
+            the width of "Create", with "key" wrapping under it. */}
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
           <label htmlFor="api-key-name" className="text-muted text-sm">
             {t("apiKeys.nameLabel")}
           </label>
@@ -52,9 +56,14 @@ export function ApiKeysSection() {
             className="border-line bg-surface text-foreground rounded-md border px-3 py-2"
           />
         </div>
-        <Button type="submit" variant="primary" disabled={!valid || create.isPending}>
-          {create.isPending ? t("common.saving") : t("apiKeys.create")}
-        </Button>
+        {/* Not a className on Button: its label is what must not wrap, and
+            shrink-0 on every button in the app would stop the admin action
+            rows narrowing, which is what lets them wrap (b4d0cee). */}
+        <div className="shrink-0">
+          <Button type="submit" variant="primary" disabled={!valid || create.isPending}>
+            {create.isPending ? t("common.saving") : t("apiKeys.create")}
+          </Button>
+        </div>
       </form>
 
       {error && (
