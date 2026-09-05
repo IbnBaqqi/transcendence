@@ -15,3 +15,11 @@ UPDATE notifications
 SET read_at = CURRENT_TIMESTAMP
 WHERE user_id = $1
   AND read_at IS NULL;
+
+-- name: ListNotificationsForExport :many
+-- Unpaginated twin of ListNotifications, which takes a LIMIT because the bell
+-- shows a page. An export that silently stopped at that limit would hand
+-- someone part of their data and no way to know it was partial.
+SELECT * FROM notifications
+WHERE user_id = sqlc.arg(user_id)
+ORDER BY created_at, id;

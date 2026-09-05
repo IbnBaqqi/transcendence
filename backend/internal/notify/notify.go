@@ -55,6 +55,8 @@ const (
 	KindChatRequest              Kind = "chat_request"
 	KindPasswordReset            Kind = "password_reset"
 	KindPasswordResetUnavailable Kind = "password_reset_unavailable"
+	KindDataExported             Kind = "data_exported"
+	KindAccountDeleted           Kind = "account_deleted"
 )
 
 type Message struct {
@@ -76,6 +78,40 @@ func (Disabled) Close() {}
 func (Disabled) Notify(_ context.Context, m Message) {
 	slog.Debug("notification not sent, mail is not configured",
 		"kind", m.Kind, "to", m.To)
+}
+
+// DataExported confirms that an export happened. It does NOT carry the file:
+// mailing someone's full record would put it in an inbox and in whatever relay
+// handled it, which is the opposite of what this feature is for. The export is
+// downloaded from the response that produced it.
+func DataExported(to, username string, at time.Time) Message {
+	return Message{
+		Kind:    KindDataExported,
+		To:      to,
+		Subject: "Your data was downloaded",
+		Body: fmt.Sprintf(
+			"Hei %s,\n\nA copy of your data was downloaded from your account on %s.\n\n"+
+				"If that was not you, change your password.\n",
+			username, at.Format("2 January 2006 at 15:04 UTC")),
+	}
+}
+
+// AccountDeleted is sent AFTER the deletion commits, to an address read BEFORE
+// it: the scrub rewrites users.email, so looking the recipient up afterwards -
+// the way every other notification does - would address the message to
+// deleted-<id>@example.invalid.
+func AccountDeleted(to, username string) Message {
+	return Message{
+		Kind:    KindAccountDeleted,
+		To:      to,
+		Subject: "Your account has been deleted",
+		Body: fmt.Sprintf(
+			"Hei %s,\n\nYour account is gone. Your name and contact details have been "+
+				"removed.\n\nOrders you were part of survive, because the other person "+
+				"keeps their own record of a trade you both made - they no longer name "+
+				"you.\n",
+			username),
+	}
 }
 
 func Welcome(to, username string) Message {

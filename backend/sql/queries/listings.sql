@@ -41,3 +41,11 @@ SET quantity = quantity + $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING *;
+
+-- name: ListListingsForExport :many
+-- Everything the seller posted, including sold-out and moderator-removed ones.
+-- The buyer-facing filters are deliberately absent: this is the seller's own
+-- record of what they wrote, not a shop window.
+SELECT * FROM listings
+WHERE seller_id = sqlc.arg(seller_id)
+ORDER BY created_at;

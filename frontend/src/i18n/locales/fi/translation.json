@@ -379,7 +379,12 @@
       "password": "Salasana",
       "bio": "Kuvaus",
       "accountManagement": "Tilin hallinta",
-      "apiKeys": "API-avaimet"
+      "apiKeys": "API-avaimet",
+      "yourData": "Omat tietosi",
+      "exportExplainer": "Lataa kaikki tilistäsi tallennetut tiedot JSON-tiedostona. Lähetämme sinulle sähköpostin, kun näin tapahtuu.",
+      "exportDownload": "Lataa omat tietoni",
+      "exportWorking": "Valmistellaan…",
+      "exportFailed": "Latausta ei voitu valmistella."
     },
     "notFound": {
       "title": "404 - Sivua ei löydy",

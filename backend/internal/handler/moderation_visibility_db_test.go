@@ -13,6 +13,7 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/IbnBaqqi/transcendence/internal/service"
 	"github.com/IbnBaqqi/transcendence/internal/storage"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
@@ -194,7 +195,7 @@ func TestADepartedSellersListingIsHiddenFromEveryoneButAdmins(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = files.Close() })
 
-	if err := service.NewUserService(db, files).DeleteAccount(ctx, seller, "seller"); err != nil {
+	if err := service.NewUserService(db, files, notify.Disabled{}).DeleteAccount(ctx, seller, "seller"); err != nil {
 		t.Fatalf("deleting the seller: %v", err)
 	}
 

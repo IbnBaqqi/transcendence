@@ -52,3 +52,17 @@ WHERE seller_id = $1;
 -- The FK is ON DELETE SET NULL, but account deletion anonymises rather than
 -- deleting, so nothing fires it.
 UPDATE reviews SET reviewer_id = NULL WHERE reviewer_id = sqlc.arg(user_id)::uuid;
+
+-- name: ListReviewsWrittenBy :many
+-- The other direction from ListReviewsForSeller: what this account said about
+-- other people, which is theirs to take with them.
+SELECT * FROM reviews
+WHERE reviewer_id = sqlc.arg(reviewer_id)
+ORDER BY created_at;
+
+-- name: ListReviewsAboutUserForExport :many
+-- Unpaginated, for the same reason as the notifications twin: the public
+-- profile pages through these, an export must not.
+SELECT * FROM reviews
+WHERE seller_id = sqlc.arg(seller_id)
+ORDER BY created_at;

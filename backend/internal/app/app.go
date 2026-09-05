@@ -47,7 +47,7 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 	orderService := service.NewOrderService(db, notifier)
 	savedService := service.NewSavedListingService(db.Queries)
 	conversationService := service.NewConversationService(db, notifier)
-	userService := service.NewUserService(db, files)
+	userService := service.NewUserService(db, files, notifier)
 	profileService := service.NewProfileService(db, files) // needs *DB for transaction
 	followService := service.NewFollowService(db.Queries)
 	notificationService := service.NewNotificationService(db.Queries)

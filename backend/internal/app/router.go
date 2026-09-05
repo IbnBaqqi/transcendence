@@ -156,6 +156,11 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 				r.Get("/me/api-keys", h.GetAPIKeys)
 				r.Delete("/me/api-keys/{id}", h.RevokeAPIKey)
 
+				// SessionOnly, like account deletion beside it: an endpoint that
+				// answers with everything about a person in one response is
+				// exactly what a leaked API key must not be able to call.
+				r.Get("/me/export", h.ExportMyData)
+
 				r.Delete("/me", h.DeleteAccount)
 				r.Post("/me/password", h.ChangePassword)
 			})

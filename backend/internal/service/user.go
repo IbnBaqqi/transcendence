@@ -7,16 +7,18 @@ import (
 	"log/slog"
 
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/notify"
 	"github.com/google/uuid"
 )
 
 type UserService struct {
-	db    *database.DB
-	files fileStore
+	db     *database.DB
+	files  fileStore
+	notify notify.Notifier
 }
 
-func NewUserService(db *database.DB, files fileStore) *UserService {
-	return &UserService{db: db, files: files}
+func NewUserService(db *database.DB, files fileStore, notifier notify.Notifier) *UserService {
+	return &UserService{db: db, files: files, notify: notifier}
 }
 
 func (s *UserService) Get(ctx context.Context, userID uuid.UUID) (database.User, error) {
@@ -113,6 +115,11 @@ func (s *UserService) DeleteAccount(ctx context.Context, userID uuid.UUID, confi
 		return &ValidationError{Message: "Type your username exactly to confirm"}
 	}
 
+	// Read before the scrub, used after the commit. scrubAccount rewrites
+	// users.email to deleted-<id>@example.invalid, so the usual "look the
+	// recipient up afterwards" path would address this to nobody.
+	recipient, name := user.Email, user.Username
+
 	avatar, err := scrubAccount(ctx, qtx, userID)
 	if err != nil {
 		return err
@@ -121,6 +128,10 @@ func (s *UserService) DeleteAccount(ctx context.Context, userID uuid.UUID, confi
 	if err := tx.Commit(); err != nil {
 		return err
 	}
+
+	// After the commit and unable to fail it: the deletion is what the user
+	// asked for, the email is a courtesy. Notify queues rather than sends.
+	s.notify.Notify(context.WithoutCancel(ctx), notify.AccountDeleted(recipient, name))
 
 	if avatar.Valid {
 		if err := s.files.Delete(avatar.String); err != nil {

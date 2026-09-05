@@ -555,7 +555,7 @@ func (f adminOrderFixture) deleteAccount(t *testing.T, id uuid.UUID, username st
 	}
 	t.Cleanup(func() { _ = files.Close() })
 
-	if err := NewUserService(f.db, files).DeleteAccount(ctx, id, username); err != nil {
+	if err := NewUserService(f.db, files, notify.Disabled{}).DeleteAccount(ctx, id, username); err != nil {
 		t.Fatalf("deleting %s: %v", username, err)
 	}
 }

@@ -108,6 +108,47 @@ func (q *Queries) ListMessagesAfter(ctx context.Context, arg ListMessagesAfterPa
 	return items, nil
 }
 
+const listMessagesForExport = `-- name: ListMessagesForExport :many
+SELECT messages.id, messages.conversation_id, messages.sender_id, messages.body, messages.read_at, messages.created_at FROM messages
+JOIN conversations ON conversations.id = messages.conversation_id
+WHERE conversations.buyer_id = $1
+   OR conversations.seller_id = $1
+ORDER BY messages.conversation_id, messages.id
+`
+
+// Every message in every conversation this account is part of - both sides.
+// The other person's text is already readable in the app, so exporting it
+// discloses nothing new; omitting it would produce half a conversation.
+func (q *Queries) ListMessagesForExport(ctx context.Context, userID uuid.UUID) ([]Message, error) {
+	rows, err := q.db.QueryContext(ctx, listMessagesForExport, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Message
+	for rows.Next() {
+		var i Message
+		if err := rows.Scan(
+			&i.ID,
+			&i.ConversationID,
+			&i.SenderID,
+			&i.Body,
+			&i.ReadAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRecentMessages = `-- name: ListRecentMessages :many
 SELECT id, conversation_id, sender_id, body, read_at, created_at FROM messages
 WHERE conversation_id = $1
