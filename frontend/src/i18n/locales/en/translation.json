@@ -598,7 +598,10 @@
       "order_handed_over": "Your {{title}} order was handed over",
       "order_cancelled": "Your {{title}} order was cancelled",
       "order_resolved": "Support resolved your {{title}} order",
-      "chat_request": "Someone messaged you about {{title}}"
+      "chat_request": "Someone messaged you about {{title}}",
+      "order_confirmed": "Your {{title}} order was confirmed",
+      "order_completed": "Your {{title}} order is complete",
+      "unknown": "Something happened on your account"
     }
   },
   "adminUsers": {
