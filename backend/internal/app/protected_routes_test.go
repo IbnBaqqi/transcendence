@@ -54,6 +54,53 @@ func TestProtectedRoutesRejectAnonymousCallers(t *testing.T) {
 	}
 }
 
+// The inverse of the table above, and it exists because of how this endpoint
+// fails. /auth/providers feeds the signed-out login screen, so a visitor with
+// no session is its whole audience, and the client deliberately renders nothing
+// when it cannot read the list. A 401 here therefore draws zero sign-in buttons
+// with no error and nothing in the console - which is exactly what "no provider
+// is configured" looks like, the legitimate state that endpoint exists to
+// report. Moving it inside an auth group would look like the feature working.
+//
+// TestSpecMatchesRouter compares paths and methods, not middleware, and the
+// handler tests call the handler directly, so nothing else can catch it.
+func TestPublicRoutesAnswerAnonymousCallers(t *testing.T) {
+	files, err := storage.NewLocal(t.TempDir())
+	if err != nil {
+		t.Fatalf("temporary upload dir: %v", err)
+	}
+	t.Cleanup(func() { _ = files.Close() })
+
+	router := NewRouter(
+		slog.New(slog.NewTextHandler(io.Discard, nil)),
+		&api{Files: files, DB: &database.DB{}},
+	)
+
+	tests := []struct {
+		method string
+		path   string
+		want   int
+	}{
+		// No credentials are configured in this router, so the honest answer to
+		// an anonymous caller is an empty list rather than a refusal.
+		{http.MethodGet, "/api/v1/auth/providers", http.StatusOK},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.method+" "+tt.path, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			router.ServeHTTP(rec, httptest.NewRequest(tt.method, tt.path, nil))
+
+			if rec.Code == http.StatusUnauthorized {
+				t.Fatalf("status = 401 - has this route moved inside an auth group? it is read before a session exists")
+			}
+			if rec.Code != tt.want {
+				t.Errorf("status = %d, want %d", rec.Code, tt.want)
+			}
+		})
+	}
+}
+
 func TestProtectedRoutesAreInsideTheAuthGroup(t *testing.T) {
 	files, err := storage.NewLocal(t.TempDir())
 	if err != nil {

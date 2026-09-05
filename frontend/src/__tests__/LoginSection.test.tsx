@@ -3,6 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { LoginSection } from "../components/forms/LoginSection";
 
+// OAuthButtons asks the backend which providers are configured, which would
+// need a QueryClient here. These tests are about the email form beside it.
+vi.mock("../api/oauth", () => ({
+  useOAuthProviders: () => ({ data: ["google", "github"] }),
+}));
+
 // The real provider would hit the network on mount; the sections only need the
 // context values, so hand them a wired-up stub directly.
 function renderLogin(login: AuthContextValue["login"]) {

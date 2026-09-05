@@ -3,6 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { RegisterSection } from "../components/forms/RegisterSection";
 
+// OAuthButtons asks the backend which providers are configured, which would
+// need a QueryClient here. These tests are about the email form beside it.
+vi.mock("../api/oauth", () => ({
+  useOAuthProviders: () => ({ data: ["google", "github"] }),
+}));
+
 function renderRegister(signup: AuthContextValue["signup"]) {
   const value: AuthContextValue = {
     user: null,

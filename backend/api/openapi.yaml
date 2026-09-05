@@ -2230,6 +2230,41 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
+  /auth/providers:
+    get:
+      tags: [auth]
+      summary: List the sign-in providers this deployment has configured
+      operationId: oauthProviders
+      security: []
+      description: |
+        The names accepted by `/auth/oauth/{provider}`, which is only the ones
+        whose client id and secret are set. Empty when none are, and the
+        sign-in screen then offers no provider buttons at all.
+
+        Read before a session exists, so it needs none. Always sorted, so the
+        buttons do not reorder between page loads.
+      responses:
+        "200":
+          description: The configured providers, alphabetically.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  enum: [google, github]
+              examples:
+                both:
+                  summary: Both configured
+                  value: ["github", "google"]
+                none:
+                  summary: None configured
+                  value: []
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /auth/oauth/{provider}:
     get:
       tags: [auth]
@@ -2242,7 +2277,8 @@ paths:
         HttpOnly `oauth_state` cookie that the callback checks.
 
         Returns 404 when the provider has no credentials configured for this
-        deployment, so a build with no Google client id simply has no Google
+        deployment. `GET /auth/providers` is how a client knows that in
+        advance, so a build with no Google client id simply has no Google
         button.
       parameters:
         - name: provider
