@@ -64,7 +64,9 @@ export type OrderStatus = "pending" | "confirmed" | "completed" | "cancelled" | 
 
 export interface Order {
   id: string;
-  listing_id: string;
+  // Null once the seller deletes the listing. The order stands on its own -
+  // everything below is snapshotted at order time.
+  listing_id: string | null;
   listing_title: string; // snapshotted at order time
   buyer_id: string;
   seller_id: string;

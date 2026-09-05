@@ -254,6 +254,7 @@
     },
     "noPayments": "Metsätori hanterar inga betalningar - kom överens om betalning och upphämtning sinsemellan.",
     "viewListing": "Visa annonsen",
+    "listingDeleted": "Den här annonsen har raderats.",
     "notYet": "Inte än",
     "fields": {
       "quantity": "Antal",

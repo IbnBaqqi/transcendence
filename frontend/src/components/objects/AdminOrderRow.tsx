@@ -24,12 +24,17 @@ export function AdminOrderRow({ order }: { order: AdminOrder }) {
     <li className="border-line bg-surface rounded-lg border p-3">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <Link
-            to={`/listings/${order.listing_id}`}
-            className="text-foreground font-medium hover:underline"
-          >
-            {order.listing_title}
-          </Link>
+          {/* The listing can be gone; the snapshot title still names it. */}
+          {order.listing_id ? (
+            <Link
+              to={`/listings/${order.listing_id}`}
+              className="text-foreground font-medium hover:underline"
+            >
+              {order.listing_title}
+            </Link>
+          ) : (
+            <span className="text-foreground font-medium">{order.listing_title}</span>
+          )}
           <p className="text-muted mt-1 text-sm">
             {t("adminOrders.quantityAndTotal", {
               quantity: order.quantity,

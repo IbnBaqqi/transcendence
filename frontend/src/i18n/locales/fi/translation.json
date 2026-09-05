@@ -254,6 +254,7 @@
     },
     "noPayments": "Metsätori ei käsittele maksuja - sopikaa maksusta ja noudosta keskenänne.",
     "viewListing": "Näytä ilmoitus",
+    "listingDeleted": "Tämä ilmoitus on poistettu.",
     "notYet": "Ei vielä",
     "fields": {
       "quantity": "Määrä",

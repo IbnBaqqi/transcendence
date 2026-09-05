@@ -111,9 +111,15 @@ export default function OrderDetail() {
 
       <p className="text-muted text-sm">
         {t("orders.noPayments")}{" "}
-        <Link to={`/listings/${order.listing_id}`} className="text-accent hover:underline">
-          {t("orders.viewListing")}
-        </Link>
+        {/* The seller can delete a listing once nothing is in flight, and the
+            order outlives it - everything above comes from its own snapshot. */}
+        {order.listing_id ? (
+          <Link to={`/listings/${order.listing_id}`} className="text-accent hover:underline">
+            {t("orders.viewListing")}
+          </Link>
+        ) : (
+          <span>{t("orders.listingDeleted")}</span>
+        )}
       </p>
     </div>
   );

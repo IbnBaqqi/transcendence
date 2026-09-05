@@ -254,6 +254,7 @@
     },
     "noPayments": "Metsätori handles no payments - arrange payment and pickup between yourselves.",
     "viewListing": "View the listing",
+    "listingDeleted": "This listing has been deleted.",
     "notYet": "Not yet",
     "fields": {
       "quantity": "Quantity",
