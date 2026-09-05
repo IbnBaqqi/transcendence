@@ -167,34 +167,6 @@ test("other failures surface their message rather than spinning forever", () => 
   expect(screen.getByText("Something went wrong")).toBeInTheDocument();
 });
 
-test("logs out through the auth context when Log Out is clicked", async () => {
-  const user = userEvent.setup();
-  renderPage({ data: PROFILE, isLoading: false, error: null });
-
-  await user.click(screen.getByRole("button", { name: "Log Out" }));
-
-  expect(AUTH_STUB.logout).toHaveBeenCalledTimes(1);
-});
-
-test("disables the Log Out button while the request is in flight", async () => {
-  let resolveLogout!: () => void;
-  vi.mocked(AUTH_STUB.logout).mockReturnValue(
-    new Promise<void>((resolve) => {
-      resolveLogout = resolve;
-    }),
-  );
-  const user = userEvent.setup();
-  renderPage({ data: PROFILE, isLoading: false, error: null });
-
-  await user.click(screen.getByRole("button", { name: "Log Out" }));
-
-  const pendingButton = screen.getByRole("button", { name: "Logging out…" });
-  expect(pendingButton).toBeDisabled();
-
-  resolveLogout();
-  expect(await screen.findByRole("button", { name: "Log Out" })).toBeInTheDocument();
-});
-
 const WITH_AVATAR: OwnProfile = { ...PROFILE, avatar_url: "/uploads/stored.png" };
 
 // alt="" on purpose - the picture is decorative beside the username - so it

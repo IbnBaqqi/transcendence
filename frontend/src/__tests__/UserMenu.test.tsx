@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -124,6 +124,40 @@ test("closes on Escape and hands focus back to the trigger", async () => {
 
   expect(screen.queryByRole("group")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Menu" })).toHaveFocus();
+});
+
+test("logs out through the auth context", async () => {
+  const user = userEvent.setup();
+  const logout = vi.fn().mockResolvedValue(undefined);
+  renderMenu({ user: USER, logout });
+
+  await openMenu(user);
+  await user.click(screen.getByRole("button", { name: "Log Out" }));
+
+  expect(logout).toHaveBeenCalledTimes(1);
+});
+
+// The round trip is a network call, and the menu stays open through it - a
+// dead-looking click is how somebody logs out twice.
+test("disables the log out row while the request is in flight", async () => {
+  let resolveLogout!: () => void;
+  const logout = vi.fn().mockReturnValue(
+    new Promise<void>((resolve) => {
+      resolveLogout = resolve;
+    }),
+  );
+  const user = userEvent.setup();
+  renderMenu({ user: USER, logout });
+
+  await openMenu(user);
+  await user.click(screen.getByRole("button", { name: "Log Out" }));
+
+  expect(screen.getByRole("button", { name: "Logging out…" })).toBeDisabled();
+
+  resolveLogout();
+  // The menu closes on success, so the row goes with it - the trigger coming
+  // back to its signed-in self is what says the flight finished.
+  await waitFor(() => expect(screen.queryByRole("group")).not.toBeInTheDocument());
 });
 
 // A menu offering "Log In" is a claim about the viewer, and it is the wrong

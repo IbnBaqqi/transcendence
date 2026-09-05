@@ -27,23 +27,11 @@ import { useTranslation } from "react-i18next";
 export default function Profile() {
   const { t } = useTranslation();
   const { openModal } = useModal();
-  const { logout, user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   const { data: profile, isLoading, error } = useOwnProfile();
 
   const signedOut = isApiError(error) && error.status === 401;
-
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      // Clears the session (and its cache) - the profile query then reruns,
-      // gets a 401, and the signed-out branch above takes over.
-      await logout();
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
 
   const uploadAvatar = useUploadAvatar(profile?.id);
   const deleteAvatar = useDeleteAvatar(profile?.id);
@@ -190,9 +178,6 @@ export default function Profile() {
               {t("pages.profile.accountManagement")}
             </h2>
             <div className="flex flex-row gap-4">
-              <Button variant="primary" onClick={handleLogout} disabled={isLoggingOut}>
-                {isLoggingOut ? t("common.loggingOut") : t("common.logOut")}
-              </Button>
               {/* NOTE: Delete Account currently waiting for backend functionality to wire into */}
               <Button variant="secondary" onClick={() => openModal("deleteAccount")}>
                 {t("common.deleteAccount")}

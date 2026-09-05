@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../../hooks/useAuth";
@@ -25,7 +25,8 @@ function MenuIcon({ href }: { href: string }) {
 
 export function UserMenu() {
   const { t } = useTranslation();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, logout } = useAuth();
+  const navigate = useNavigate();
   const { openModal, openChat } = useModal();
 
   // The picture lives on the profile, not the auth session, so the menu has
@@ -33,6 +34,7 @@ export function UserMenu() {
   const { data: profile } = useOwnProfile({ enabled: Boolean(user) });
 
   const [open, setOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   useDismissable(open, setOpen, rootRef, triggerRef);
@@ -43,6 +45,20 @@ export function UserMenu() {
   if (authLoading) return <Skeleton className="h-8 w-8 rounded-full" />;
 
   const close = () => setOpen(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await logout();
+      close();
+      // Home rather than staying put: logout reaches every page from here now,
+      // including /admin/*, where RequireAdmin answers a signed-out viewer
+      // with the 404.
+      navigate("/");
+    } finally {
+      setLoggingOut(false);
+    }
+  }
 
   return (
     <div ref={rootRef} className="relative">
@@ -112,6 +128,17 @@ export function UserMenu() {
                   </Link>
                 </div>
               )}
+              <div className="border-line mt-1 border-t pt-1">
+                <button
+                  type="button"
+                  disabled={loggingOut}
+                  onClick={() => void handleLogout()}
+                  className={`${row} disabled:cursor-not-allowed disabled:opacity-50`}
+                >
+                  <MenuIcon href="/icons.svg#logout-icon" />
+                  {loggingOut ? t("common.loggingOut") : t("common.logOut")}
+                </button>
+              </div>
             </>
           ) : (
             <>
