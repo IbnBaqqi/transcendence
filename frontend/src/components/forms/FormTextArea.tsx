@@ -35,9 +35,9 @@ export function FormTextArea({
 
   return (
     <div className="">
-      {label && <label htmlFor={name}>{label}</label>}
       {isEditing ? (
         <>
+          {label && <label htmlFor={name}>{label}</label>}
           <textarea
             className="m-0 field-sizing-content w-full min-w-64 resize-none overflow-y-auto rounded border p-2 shadow focus:outline-none"
             id={name}
@@ -71,7 +71,11 @@ export function FormTextArea({
           )}
         </>
       ) : (
-        <span>{value}</span>
+        <>
+          {/* See FormField: a label with nothing to point at is the bug. */}
+          {label && <span>{label}</span>}
+          <span>{value}</span>
+        </>
       )}
     </div>
   );

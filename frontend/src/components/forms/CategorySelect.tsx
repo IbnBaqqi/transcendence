@@ -54,7 +54,9 @@ export function CategorySelect({
   if (!isEditing) {
     return (
       <div className="flex flex-col gap-1.5">
-        {label && <label className="text-muted">{label}</label>}
+        {/* See FormField: no <select> is rendered here, and a label with
+            neither `for` nor a nested control is a DevTools issue too. */}
+        {label && <span className="text-muted">{label}</span>}
         <span>{selected ? categoryName(selected.slug) : value}</span>
       </div>
     );

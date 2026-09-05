@@ -44,13 +44,13 @@ export function FormField({
 
   return (
     <div className="flex flex-col gap-1.5">
-      {label && (
-        <label className="text-muted" htmlFor={name}>
-          {label}
-        </label>
-      )}
       {isEditing ? (
         <>
+          {label && (
+            <label className="text-muted" htmlFor={name}>
+              {label}
+            </label>
+          )}
           <input
             className={`focus:shadow-outline ${width} appearance-none rounded border px-3 py-2 leading-tight shadow focus:outline-none`}
             id={name}
@@ -72,7 +72,13 @@ export function FormField({
           {error && <span className="text-danger text-xs">{error.message as string}</span>}
         </>
       ) : (
-        <span>{value}</span>
+        <>
+          {/* A span, not a label: no input is rendered here, so `for` would
+              point at nothing - and a label with neither `for` nor a nested
+              control is the same DevTools issue by another name. */}
+          {label && <span className="text-muted">{label}</span>}
+          <span>{value}</span>
+        </>
       )}
     </div>
   );
