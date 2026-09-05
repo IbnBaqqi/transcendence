@@ -93,6 +93,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 		r.Post("/auth/forgot-password", h.ForgotPassword)
 		r.Post("/auth/reset-password", h.ResetPassword)
 
+		r.Get("/auth/providers", h.OAuthProviders)
 		r.Get("/auth/oauth/{provider}", h.OAuthStart)
 		r.Get("/auth/oauth/{provider}/callback", h.OAuthCallback)
 
