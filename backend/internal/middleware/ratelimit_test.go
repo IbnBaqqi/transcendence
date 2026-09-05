@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -223,5 +224,69 @@ func TestTheBucketMapStaysBounded(t *testing.T) {
 
 	if len(l.buckets) > maxTrackedKeys {
 		t.Errorf("tracking %d buckets, want at most %d", len(l.buckets), maxTrackedKeys)
+	}
+}
+
+// The gap this closes: RateLimitByKey waves through every request without an
+// API key, so a session-only route mounted under it alone is not limited at
+// all. Both halves are asserted here, because the first is what made the
+// second necessary.
+func TestASessionIsLimitedOnlyByTheUserLimiter(t *testing.T) {
+	ctx := auth.WithUser(context.Background(), auth.User{ID: keyA})
+
+	byKey := RateLimitByKey(3)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	for i := 1; i <= 10; i++ {
+		rec := httptest.NewRecorder()
+		byKey.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/me/export", nil).WithContext(ctx))
+		if rec.Code != http.StatusNoContent {
+			t.Fatalf("RateLimitByKey request %d: status = %d, want %d - it is not supposed to see sessions at all",
+				i, rec.Code, http.StatusNoContent)
+		}
+	}
+
+	byUser := RateLimitByUser(3)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	for i := 1; i <= 3; i++ {
+		rec := httptest.NewRecorder()
+		byUser.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/me/export", nil).WithContext(ctx))
+		if rec.Code != http.StatusNoContent {
+			t.Fatalf("request %d: status = %d, want %d", i, rec.Code, http.StatusNoContent)
+		}
+	}
+
+	rec := httptest.NewRecorder()
+	byUser.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/me/export", nil).WithContext(ctx))
+	if rec.Code != http.StatusTooManyRequests {
+		t.Errorf("the fourth export: status = %d, want %d", rec.Code, http.StatusTooManyRequests)
+	}
+	if rec.Header().Get("Retry-After") == "" {
+		t.Error("a refused export carried no Retry-After")
+	}
+
+	// A second person is unaffected, so the limit is per account and not a
+	// single global bucket everyone shares.
+	other := auth.WithUser(context.Background(), auth.User{ID: keyB})
+	rec = httptest.NewRecorder()
+	byUser.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/me/export", nil).WithContext(other))
+	if rec.Code != http.StatusNoContent {
+		t.Errorf("a second account: status = %d, want %d", rec.Code, http.StatusNoContent)
+	}
+}
+
+func TestAnAnonymousRequestReachesTheUserLimitersHandler(t *testing.T) {
+	h := RateLimitByUser(1)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	for i := 1; i <= 3; i++ {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/me/export", nil))
+		if rec.Code != http.StatusNoContent {
+			t.Fatalf("request %d: status = %d, want %d - an unauthenticated caller must reach the 401, not a 429",
+				i, rec.Code, http.StatusNoContent)
+		}
 	}
 }

@@ -180,6 +180,50 @@ func (q *Queries) IncrementListingQuantity(ctx context.Context, arg IncrementLis
 	return i, err
 }
 
+const listListingsForExport = `-- name: ListListingsForExport :many
+SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at FROM listings
+WHERE seller_id = $1
+ORDER BY created_at
+`
+
+// Everything the seller posted, including sold-out and moderator-removed ones.
+// The buyer-facing filters are deliberately absent: this is the seller's own
+// record of what they wrote, not a shop window.
+func (q *Queries) ListListingsForExport(ctx context.Context, sellerID uuid.UUID) ([]Listing, error) {
+	rows, err := q.db.QueryContext(ctx, listListingsForExport, sellerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Listing
+	for rows.Next() {
+		var i Listing
+		if err := rows.Scan(
+			&i.ID,
+			&i.SellerID,
+			&i.Title,
+			&i.Description,
+			&i.Category,
+			&i.Price,
+			&i.Quantity,
+			&i.Unit,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.RemovedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateListing = `-- name: UpdateListing :one
 UPDATE listings
 SET title = $2,

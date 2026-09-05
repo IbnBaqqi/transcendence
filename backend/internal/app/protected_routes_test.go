@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
@@ -9,7 +10,9 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
+	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	mw "github.com/IbnBaqqi/transcendence/internal/middleware"
 	"github.com/IbnBaqqi/transcendence/internal/storage"
@@ -99,5 +102,84 @@ func TestProtectedRoutesAreInsideTheAuthGroup(t *testing.T) {
 		if !seen[key] {
 			t.Errorf("%s is not registered at all", key)
 		}
+	}
+}
+
+// Identifying the limiter by behaviour rather than by pointer, because
+// RateLimitByUser returns a fresh closure per call and there is nothing stable
+// to compare against. A middleware on this route that allows the first
+// exportsPerHour requests from one account and then refuses is the limiter.
+func exportIsRateLimitedPerUser(mws []func(http.Handler) http.Handler) bool {
+	ctx := auth.WithUser(context.Background(), auth.User{ID: uuid.New()})
+
+	for _, m := range mws {
+		if limits(m, ctx) {
+			return true
+		}
+	}
+	return false
+}
+
+func limits(m func(http.Handler) http.Handler, ctx context.Context) (found bool) {
+	// Most of the inherited chain needs wiring this test does not build.
+	defer func() {
+		if recover() != nil {
+			found = false
+		}
+	}()
+
+	h := m(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	for i := 0; i < exportsPerHour; i++ {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/me/export", nil).WithContext(ctx))
+		if rec.Code != http.StatusNoContent {
+			return false
+		}
+	}
+
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/me/export", nil).WithContext(ctx))
+	return rec.Code == http.StatusTooManyRequests
+}
+
+// The export runs fifteen unpaginated queries over an entire account history
+// and queues an email. Nothing else in the chain bounds it: the group limiter
+// keys on the API key, and this route is session-only.
+func TestTheExportRouteIsRateLimited(t *testing.T) {
+	files, err := storage.NewLocal(t.TempDir())
+	if err != nil {
+		t.Fatalf("temporary upload dir: %v", err)
+	}
+	t.Cleanup(func() { _ = files.Close() })
+
+	handler := NewRouter(
+		slog.New(slog.NewTextHandler(io.Discard, nil)),
+		&api{Files: files, DB: &database.DB{}},
+	)
+	routes, ok := handler.(chi.Routes)
+	if !ok {
+		t.Fatal("NewRouter no longer returns a chi router")
+	}
+
+	seen := false
+	err = chi.Walk(routes, func(method, route string, _ http.Handler, mws ...func(http.Handler) http.Handler) error {
+		if method != http.MethodGet || route != "/api/v1/me/export" {
+			return nil
+		}
+		seen = true
+
+		if !exportIsRateLimitedPerUser(mws) {
+			t.Error("GET /api/v1/me/export carries no per-user rate limit")
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking the router: %v", err)
+	}
+	if !seen {
+		t.Fatal("GET /api/v1/me/export is not registered at all")
 	}
 }

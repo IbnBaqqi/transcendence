@@ -26,7 +26,7 @@ func authRouter(t *testing.T) http.Handler {
 	h := New(Deps{
 		DB:           db,
 		Auth:         auth.NewService(db, jwt, notify.Disabled{}, "http://frontend.test"),
-		User:         service.NewUserService(db, nil),
+		User:         service.NewUserService(db, nil, notify.Disabled{}),
 		CookieSecure: true,
 	})
 
