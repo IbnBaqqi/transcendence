@@ -57,7 +57,7 @@ func (s *FollowService) Follow(ctx context.Context, followerID, followeeID uuid.
 		return nil
 	}
 
-	if err := recordActorNotification(ctx, qtx, followeeID, notifyKindNewFollower, followerID); err != nil {
+	if err := recordActorNotification(ctx, qtx, followeeID, notifyKindNewFollower, followerID, sql.NullString{}); err != nil {
 		return err
 	}
 

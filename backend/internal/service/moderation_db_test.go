@@ -679,3 +679,159 @@ func TestTheRemovalRollsBackWhenTheNotificationFails(t *testing.T) {
 		t.Error("the removal outlived its failed notification")
 	}
 }
+
+// The delete leg of saved_listing_gone. This is the test that catches the
+// cascade: notifications.listing_id is a foreign key with ON DELETE CASCADE,
+// so a row pointing at the listing being deleted is erased inside the same
+// transaction and the savers are told nothing.
+func TestDeletingAListingTellsEveryoneWhoSavedIt(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	for _, saver := range []uuid.UUID{f.buyer, f.other} {
+		if err := f.saved.SaveListing(ctx, saver, f.listing); err != nil {
+			t.Fatalf("saving as %v: %v", saver, err)
+		}
+	}
+	// The seller saved their own listing, and is the one deleting it.
+	if err := f.saved.SaveListing(ctx, f.seller, f.listing); err != nil {
+		t.Fatalf("the seller saving their own: %v", err)
+	}
+
+	if err := f.listings.DeleteListing(ctx, f.seller, f.listing); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+
+	for _, saver := range []uuid.UUID{f.buyer, f.other} {
+		got, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{UserID: saver, Limit: 30})
+		if err != nil {
+			t.Fatalf("notifications for %v: %v", saver, err)
+		}
+		var found *database.Notification
+		for i := range got {
+			if got[i].Kind == notifyKindSavedListingDeleted {
+				found = &got[i]
+			}
+		}
+		if found == nil {
+			t.Fatalf("%v was not told their saved listing was deleted", saver)
+		}
+		// The seller, because the listing no longer exists to point at.
+		if !found.ActorID.Valid || found.ActorID.UUID != f.seller {
+			t.Errorf("actor = %v, want the seller %v", found.ActorID, f.seller)
+		}
+		if found.ListingID.Valid {
+			t.Error("the row points at the deleted listing, so the cascade will have eaten it")
+		}
+		if found.ListingTitle.String == "" {
+			t.Error("no title snapshot, so the inbox cannot name what is gone")
+		}
+	}
+
+	sellers, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{UserID: f.seller, Limit: 30})
+	if err != nil {
+		t.Fatalf("the seller's notifications: %v", err)
+	}
+	for _, n := range sellers {
+		if n.Kind == notifyKindSavedListingDeleted {
+			t.Error("the seller was told about their own deletion")
+		}
+	}
+}
+
+func TestTheDeleteRollsBackWhenTheNotificationFails(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	if err := f.saved.SaveListing(ctx, f.buyer, f.listing); err != nil {
+		t.Fatalf("saving: %v", err)
+	}
+	if _, err := f.db.Exec("ALTER TABLE notifications RENAME TO notifications_hidden"); err != nil {
+		t.Fatalf("hiding the notifications table: %v", err)
+	}
+
+	if err := f.listings.DeleteListing(ctx, f.seller, f.listing); err == nil {
+		t.Fatal("delete succeeded despite the notification write failing")
+	}
+
+	if _, err := f.db.Exec("ALTER TABLE notifications_hidden RENAME TO notifications"); err != nil {
+		t.Fatalf("restoring the notifications table: %v", err)
+	}
+
+	if _, err := f.db.GetListing(ctx, f.listing); err != nil {
+		t.Errorf("the listing was deleted despite its failed notification: %v", err)
+	}
+}
+
+// The sell-out leg. Unlike a deletion the listing still exists, so the row
+// points at it and the reader lands on the listing itself.
+func TestSellingOutTellsEveryoneWhoSavedIt(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	for _, saver := range []uuid.UUID{f.other, f.buyer} {
+		if err := f.saved.SaveListing(ctx, saver, f.listing); err != nil {
+			t.Fatalf("saving as %v: %v", saver, err)
+		}
+	}
+
+	// Five is the fixture's whole stock, so this order empties it.
+	if _, err := f.orders.CreateOrder(ctx, f.buyer, dtos.CreateOrderInput{
+		ListingID: f.listing, Quantity: 5,
+	}); err != nil {
+		t.Fatalf("buying the lot: %v", err)
+	}
+
+	got, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{UserID: f.other, Limit: 30})
+	if err != nil {
+		t.Fatalf("notifications: %v", err)
+	}
+	var found *database.Notification
+	for i := range got {
+		if got[i].Kind == notifyKindSavedListingGone {
+			found = &got[i]
+		}
+	}
+	if found == nil {
+		t.Fatal("a saver was not told the listing sold out")
+	}
+	if !found.ListingID.Valid || found.ListingID.UUID != f.listing {
+		t.Errorf("listing = %v, want %v - the listing still exists, so point at it", found.ListingID, f.listing)
+	}
+
+	// The buyer emptied it themselves and does not need telling.
+	buyers, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{UserID: f.buyer, Limit: 30})
+	if err != nil {
+		t.Fatalf("the buyer's notifications: %v", err)
+	}
+	for _, n := range buyers {
+		if n.Kind == notifyKindSavedListingGone {
+			t.Error("the buyer who emptied the stock was told it was gone")
+		}
+	}
+}
+
+func TestAPartialPurchaseTellsNobody(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	if err := f.saved.SaveListing(ctx, f.other, f.listing); err != nil {
+		t.Fatalf("saving: %v", err)
+	}
+
+	if _, err := f.orders.CreateOrder(ctx, f.buyer, dtos.CreateOrderInput{
+		ListingID: f.listing, Quantity: 4,
+	}); err != nil {
+		t.Fatalf("buying four of five: %v", err)
+	}
+
+	got, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{UserID: f.other, Limit: 30})
+	if err != nil {
+		t.Fatalf("notifications: %v", err)
+	}
+	for _, n := range got {
+		if n.Kind == notifyKindSavedListingGone {
+			t.Error("a saver was told the listing was gone while one is still in stock")
+		}
+	}
+}

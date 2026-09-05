@@ -24,10 +24,11 @@ const (
 	notifyKindOrderConfirmed = "order_confirmed"
 	notifyKindOrderCompleted = "order_completed"
 
-	notifyKindReviewReceived   = "review_received"
-	notifyKindNewFollower      = "new_follower"
-	notifyKindListingRemoved   = "listing_removed"
-	notifyKindSavedListingGone = "saved_listing_gone"
+	notifyKindReviewReceived      = "review_received"
+	notifyKindNewFollower         = "new_follower"
+	notifyKindListingRemoved      = "listing_removed"
+	notifyKindSavedListingGone    = "saved_listing_gone"
+	notifyKindSavedListingDeleted = "saved_listing_deleted"
 )
 
 // Written with qtx inside the caller's transaction, unlike the email beside it:
@@ -72,12 +73,14 @@ func recordActorNotification(
 	userID uuid.UUID,
 	kind string,
 	actorID uuid.UUID,
+	listingTitle sql.NullString,
 ) error {
 	return qtx.CreateNotification(ctx, database.CreateNotificationParams{
-		ID:      database.NewID(),
-		UserID:  userID,
-		Kind:    kind,
-		ActorID: uuid.NullUUID{UUID: actorID, Valid: true},
+		ID:           database.NewID(),
+		UserID:       userID,
+		Kind:         kind,
+		ListingTitle: listingTitle,
+		ActorID:      uuid.NullUUID{UUID: actorID, Valid: true},
 	})
 }
 
@@ -95,6 +98,38 @@ func recordListingNotification(
 		ListingTitle: sql.NullString{String: listing.Title, Valid: true},
 		ListingID:    uuid.NullUUID{UUID: listing.ID, Valid: true},
 	})
+}
+
+func notifySavers(
+	ctx context.Context,
+	qtx *database.Queries,
+	listing database.Listing,
+	except uuid.UUID,
+	kind string,
+) error {
+	savers, err := qtx.ListSaversOfListing(ctx, database.ListSaversOfListingParams{
+		ListingID:  listing.ID,
+		ExceptUser: except,
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, saver := range savers {
+		// A deleted listing takes its notifications with it: listing_id is a
+		// foreign key that cascades, so the row has to point at the seller,
+		// who survives. Switching this to the listing loses every row silently.
+		if kind == notifyKindSavedListingDeleted {
+			err = recordActorNotification(ctx, qtx, saver, kind, listing.SellerID,
+				sql.NullString{String: listing.Title, Valid: true})
+		} else {
+			err = recordListingNotification(ctx, qtx, saver, kind, listing)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // The centre shows what happened lately, not an archive: a cap here means the
