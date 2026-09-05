@@ -916,3 +916,70 @@ func TestASuspendedPairIsNotStranded(t *testing.T) {
 		t.Fatalf("resolve error = %v, want a conflict - an admin must not end an order that can still move", err)
 	}
 }
+
+// restock() is reached from here as well as from a seller's cancel, and only
+// the cancel path was pinned - inlining IncrementListingQuantity back into
+// this one passed the whole package. The scenario is the one the pair exists
+// to prevent, reached through the admin door: the listing sells out, its
+// savers are told, an admin refunds the order and the stock comes back, and
+// the notice has to go with it.
+func TestAnAdminRefundClearsTheSoldOutNotice(t *testing.T) {
+	f := newAdminOrderFixture(t)
+	ctx := context.Background()
+	f.stick(t)
+
+	saver, err := f.db.CreateUser(ctx, database.CreateUserParams{
+		ID:       database.NewID(),
+		Username: "saver", Email: "saver@example.test",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("creating the saver: %v", err)
+	}
+	if err := f.db.SaveListing(ctx, database.SaveListingParams{
+		UserID: saver.ID, ListingID: f.order.ListingID,
+	}); err != nil {
+		t.Fatalf("saving the listing: %v", err)
+	}
+
+	soldOut := func() int {
+		t.Helper()
+		got, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{UserID: saver.ID, Limit: 30})
+		if err != nil {
+			t.Fatalf("the saver's notifications: %v", err)
+		}
+		n := 0
+		for _, row := range got {
+			if row.Kind == notifyKindSavedListingGone {
+				n++
+			}
+		}
+		return n
+	}
+
+	// The fixture's order took 2 of 10; the rest empties it.
+	if _, err := f.svc.CreateOrder(ctx, f.buyer, dtos.CreateOrderInput{
+		ListingID: f.order.ListingID, Quantity: 8,
+	}); err != nil {
+		t.Fatalf("buying the remaining stock: %v", err)
+	}
+	if got := soldOut(); got != 1 {
+		t.Fatalf("sold-out notices = %d, want 1 - nothing to clear, so the rest proves nothing", got)
+	}
+
+	if _, err := f.admins.Resolve(ctx, f.admin, f.order.ID, "refunded", "the buyer never collected"); err != nil {
+		t.Fatalf("resolving as refunded: %v", err)
+	}
+
+	listing, err := f.db.GetListing(ctx, f.order.ListingID)
+	if err != nil {
+		t.Fatalf("re-reading the listing: %v", err)
+	}
+	if listing.Quantity == 0 {
+		t.Fatal("the refund did not return the stock, so this tests nothing")
+	}
+
+	if got := soldOut(); got != 0 {
+		t.Errorf("%d sold-out notices survived an admin refund that restocked the listing", got)
+	}
+}

@@ -483,11 +483,17 @@ mean "no requests at all", not "unlimited".
 
 Key-authenticated requests are limited to `RATE_LIMIT_PER_MINUTE` (default 60)
 per key — per **key**, not per IP, so one noisy client cannot throttle everyone
-behind the same NAT. Browser sessions are not limited.
+behind the same NAT. Browser sessions are not limited as a group.
 
-Key-authenticated responses carry `X-RateLimit-Limit` and
-`X-RateLimit-Remaining`; a refusal is a **429** with `Retry-After` in seconds.
-Session requests carry neither, because they are not counted.
+**One route is limited per account instead:** `GET /me/export`, at three per
+hour. It is session-only, so the key limiter never sees it, and one call reads
+an entire account history and queues an email — the same limiter keyed on the
+session rather than the key.
+
+A limited response carries `X-RateLimit-Limit` and `X-RateLimit-Remaining`; a
+refusal is a **429** with `Retry-After` in seconds. Session requests carry
+neither unless they went through a per-account limit, since nothing else counts
+them.
 
 **The counters live in memory.** They reset when the API restarts, and each
 instance counts separately — two instances behind a load balancer give one key
