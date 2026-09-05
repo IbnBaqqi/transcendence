@@ -835,3 +835,59 @@ func TestAPartialPurchaseTellsNobody(t *testing.T) {
 		}
 	}
 }
+
+// A sold-out notice is only true while the stock is gone. Cancelling puts it
+// back, so the notice has to go with it - otherwise the reader is sent to an
+// in-stock listing, and a repeated buy-and-cancel fills their inbox with
+// copies until the 30-row cap has pushed everything real out of it.
+func TestCancellingAnOrderClearsTheSoldOutNotice(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	if err := f.saved.SaveListing(ctx, f.other, f.listing); err != nil {
+		t.Fatalf("saving: %v", err)
+	}
+
+	soldOut := func() int {
+		t.Helper()
+		got, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{UserID: f.other, Limit: 30})
+		if err != nil {
+			t.Fatalf("notifications: %v", err)
+		}
+		n := 0
+		for _, row := range got {
+			if row.Kind == notifyKindSavedListingGone {
+				n++
+			}
+		}
+		return n
+	}
+
+	for round := 1; round <= 3; round++ {
+		order, err := f.orders.CreateOrder(ctx, f.buyer, dtos.CreateOrderInput{
+			ListingID: f.listing, Quantity: 5,
+		})
+		if err != nil {
+			t.Fatalf("round %d, buying the lot: %v", round, err)
+		}
+		if got := soldOut(); got != 1 {
+			t.Fatalf("round %d: sold-out notices = %d, want 1", round, got)
+		}
+
+		if _, err := f.orders.CancelOrder(ctx, f.seller, order.ID); err != nil {
+			t.Fatalf("round %d, cancelling: %v", round, err)
+		}
+
+		if got := soldOut(); got != 0 {
+			t.Errorf("round %d: %d sold-out notices survived the restock", round, got)
+		}
+
+		listing, err := f.db.GetListing(ctx, f.listing)
+		if err != nil {
+			t.Fatalf("re-reading the listing: %v", err)
+		}
+		if listing.Quantity != 5 {
+			t.Fatalf("round %d: quantity = %d, want 5 back in stock", round, listing.Quantity)
+		}
+	}
+}

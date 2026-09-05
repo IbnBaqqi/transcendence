@@ -315,3 +315,60 @@ func TestTheFollowRollsBackWhenTheNotificationFails(t *testing.T) {
 		t.Error("the follow outlived its failed notification")
 	}
 }
+
+// A block must not be discoverable, so the follow still answers 204 and it is
+// the notification that goes. Both halves matter: refusing instead would tell
+// the follower they are blocked, and notifying anyway hands the blocker the
+// contact they blocked to avoid.
+func TestABlockedFollowSucceedsSilently(t *testing.T) {
+	svc, db, aino, bea := newFollowService(t)
+	ctx := context.Background()
+
+	if err := db.BlockUser(ctx, database.BlockUserParams{BlockerID: bea, BlockedID: aino}); err != nil {
+		t.Fatalf("bea blocking aino: %v", err)
+	}
+
+	if err := svc.Follow(ctx, aino, bea); err != nil {
+		t.Fatalf("the follow was refused, which tells aino she is blocked: %v", err)
+	}
+
+	got, err := db.ListNotifications(ctx, database.ListNotificationsParams{UserID: bea, Limit: 30})
+	if err != nil {
+		t.Fatalf("bea's notifications: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("bea was told about a follow from someone she blocked (%d rows)", len(got))
+	}
+
+	// The follow itself is real, so nothing about the block leaked into it.
+	following, err := db.ListFollowing(ctx, database.ListFollowingParams{ViewerID: aino, SubjectID: aino})
+	if err != nil {
+		t.Fatalf("re-reading the follows: %v", err)
+	}
+	if len(following) != 1 {
+		t.Errorf("following = %d, want 1 - the follow should still have happened", len(following))
+	}
+}
+
+// The block is symmetric in its effects: it does not matter which way round it
+// was created.
+func TestBlockingTheOtherWayAlsoSilencesTheFollow(t *testing.T) {
+	svc, db, aino, bea := newFollowService(t)
+	ctx := context.Background()
+
+	if err := db.BlockUser(ctx, database.BlockUserParams{BlockerID: aino, BlockedID: bea}); err != nil {
+		t.Fatalf("aino blocking bea: %v", err)
+	}
+
+	if err := svc.Follow(ctx, aino, bea); err != nil {
+		t.Fatalf("follow: %v", err)
+	}
+
+	got, err := db.ListNotifications(ctx, database.ListNotificationsParams{UserID: bea, Limit: 30})
+	if err != nil {
+		t.Fatalf("notifications: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("a notification crossed a block created the other way (%d rows)", len(got))
+	}
+}

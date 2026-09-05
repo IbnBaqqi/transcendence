@@ -127,9 +127,6 @@ func (s *ReviewService) Create(
 		return database.Review{}, err
 	}
 
-	// actor_id is the seller here, not the buyer who wrote the review: it is
-	// what the row points at, and a seller's reviews live on their own profile.
-	// Setting it to the reviewer sends them to a page their review is not on.
 	if err := recordActorNotification(ctx, qtx, order.SellerID, notifyKindReviewReceived, order.SellerID, sql.NullString{}); err != nil {
 		return database.Review{}, err
 	}

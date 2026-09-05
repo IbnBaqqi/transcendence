@@ -132,6 +132,24 @@ func notifySavers(
 	return nil
 }
 
+// Restocking is what makes an existing saved_listing_gone false, so the rows
+// go when the stock comes back. Without this a buy-and-cancel cycle leaves a
+// "sold out" notice on a listing that is in stock, and repeating it fills the
+// reader's 30-row inbox with copies until nothing else is left in it.
+func restock(ctx context.Context, qtx *database.Queries, listingID uuid.UUID, quantity int32) error {
+	if _, err := qtx.IncrementListingQuantity(ctx, database.IncrementListingQuantityParams{
+		ID:       listingID,
+		Quantity: quantity,
+	}); err != nil {
+		return err
+	}
+
+	return qtx.DeleteNotificationsForListingKind(ctx, database.DeleteNotificationsForListingKindParams{
+		ListingID: uuid.NullUUID{UUID: listingID, Valid: true},
+		Kind:      notifyKindSavedListingGone,
+	})
+}
+
 // The centre shows what happened lately, not an archive: a cap here means the
 // endpoint never has to explain itself, and there is no paging to design until
 // somebody asks for one.

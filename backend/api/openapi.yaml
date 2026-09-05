@@ -1322,6 +1322,11 @@ components:
               order_confirmed,
               order_completed,
               chat_request,
+              review_received,
+              new_follower,
+              listing_removed,
+              saved_listing_gone,
+              saved_listing_deleted,
             ]
         listing_title:
           type: [string, "null"]
@@ -1345,14 +1350,17 @@ components:
           format: uuid
           description: |
             The person a notification is about, for kinds whose subject is
-            neither an order nor a conversation. No kind uses it yet; the
-            column and the field exist so that one can.
+            neither an order nor a conversation: `new_follower` (whoever
+            followed you), `review_received` and `saved_listing_deleted` (you
+            and the seller respectively - it is what the row points *at*, not
+            always who acted).
         listing_id:
           type: [string, "null"]
           format: uuid
           description: |
-            The listing a notification is about, for the same reason as
-            `actor_id`.
+            The listing a notification is about: `listing_removed` and
+            `saved_listing_gone`. Not `saved_listing_deleted` - that listing no
+            longer exists, so the row points at its seller instead.
         read_at:
           type: [string, "null"]
           format: date-time
@@ -3451,8 +3459,11 @@ paths:
         sentence. The wording is the client's, so it can be read in the reader's
         language rather than the one the server was written in.
 
-        Exactly one of `order_id` and `conversation_id` is set — the four order
-        kinds point at an order, `chat_request` at a conversation.
+        **Exactly one of the four subject ids is set**, and which one depends
+        on the kind: the six order kinds point at an order, `chat_request` at a
+        conversation, `listing_removed` and `saved_listing_gone` at a listing,
+        and `new_follower`, `review_received` and `saved_listing_deleted` at a
+        person. Route on `kind` rather than on whichever id is non-null.
       responses:
         "200":
           description: Your recent notifications, newest first.

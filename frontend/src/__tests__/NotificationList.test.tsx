@@ -118,11 +118,15 @@ test.each([
   expect(screen.getByRole("link", { name: text })).toHaveAttribute("href", `/listings/${LISTING}`);
 });
 
-// The two kinds whose rows carry no listing_title: interpolating one would
-// leave a gap where a name should be.
-test.each(["new_follower", "review_received"])("%s reads without a listing title", (kind) => {
+// The two kinds whose rows carry no listing_title. Asserting the exact
+// sentence rather than the absence of a stray gap: a translator adding
+// {{title}} to one of these renders the empty string, and "no double space"
+// does not notice that.
+test.each([
+  ["new_follower", "You have a new follower"],
+  ["review_received", "You got a new review"],
+])("%s reads as its whole sentence with no listing title", (kind, text) => {
   renderList({ kind, order_id: null, conversation_id: null, actor_id: ACTOR, listing_title: null });
 
-  const row = screen.getByRole("link");
-  expect(row.textContent).not.toMatch(/\s{2,}|undefined|null/);
+  expect(screen.getByRole("link").textContent).toBe(text);
 });

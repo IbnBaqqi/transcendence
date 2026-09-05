@@ -57,8 +57,22 @@ func (s *FollowService) Follow(ctx context.Context, followerID, followeeID uuid.
 		return nil
 	}
 
-	if err := recordActorNotification(ctx, qtx, followeeID, notifyKindNewFollower, followerID, sql.NullString{}); err != nil {
+	blocked, err := qtx.BlockExistsBetween(ctx, database.BlockExistsBetweenParams{
+		UserA: followerID,
+		UserB: followeeID,
+	})
+	if err != nil {
 		return err
+	}
+
+	// The follow still succeeds and the notification is what gets dropped.
+	// Refusing here would answer 403 where an unblocked follow answers 204,
+	// which tells the follower they have been blocked - the one thing this
+	// codebase says blocking must never do.
+	if !blocked {
+		if err := recordActorNotification(ctx, qtx, followeeID, notifyKindNewFollower, followerID, sql.NullString{}); err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit()

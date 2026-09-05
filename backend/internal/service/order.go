@@ -36,7 +36,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 		return database.Order{}, err
 	}
 	defer func() {
-		if err := tx.Rollback(); err != nil {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
 			slog.Error("order transaction rollback failed", "error", err)
 		}
 	}()
@@ -266,10 +266,7 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 	}
 
 	if action.restoresStock {
-		if _, err := qtx.IncrementListingQuantity(ctx, database.IncrementListingQuantityParams{
-			ID:       order.ListingID,
-			Quantity: order.Quantity,
-		}); err != nil {
+		if err := restock(ctx, qtx, order.ListingID, order.Quantity); err != nil {
 			return database.Order{}, err
 		}
 	}
