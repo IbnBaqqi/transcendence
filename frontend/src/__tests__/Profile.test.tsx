@@ -266,6 +266,10 @@ test("closes the editor before the delete answers, so the page can show progress
   await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
   await user.click(screen.getByRole("button", { name: "Remove photo" }));
 
+  // This one catches the bug. The line below cannot: isPending is stubbed from
+  // render, so "Removing…" is on the page before the click, and getByText does
+  // not know a modal is covering it - it guards Profile's indicator existing at
+  // all, not the closing.
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(screen.getByText("Removing…")).toBeInTheDocument();
 
