@@ -410,6 +410,15 @@ export interface ReinstateUserInput {
   note?: string;
 }
 
+export interface SetRoleInput {
+  // The role the account should end up with, not a direction - so a third role
+  // later is a value rather than another endpoint. Sending the one it already
+  // has is a no-op the server answers 200 to, writing no history.
+  role: AdminUser["role"];
+  // Optional, like a reinstatement's: a role change is not a sanction.
+  note?: string;
+}
+
 export interface DeleteUserInput {
   // The target's exact username, as confirmation. The same guard DELETE /me
   // uses - an admin deleting the wrong account cannot undo it.
