@@ -38,7 +38,9 @@ export function Modal({
         // left-4 until sm: a floating panel wide enough to be useful on a desktop
         // is wider than a phone, so below sm it spans between the margins
         // instead of being anchored to the right edge and running off the left.
-        className={`bg-surface fixed right-4 bottom-4 left-4 z-50 flex h-[70vh] flex-col overflow-hidden rounded-lg shadow-lg sm:left-auto ${className}`}
+        // z-40: under the header, so its menus open over the chat rather than
+        // behind it. A tie would not do - this is portalled after the app root.
+        className={`bg-surface fixed right-4 bottom-4 left-4 z-40 flex h-[70vh] flex-col overflow-hidden rounded-lg shadow-lg sm:left-auto ${className}`}
       >
         {children}
       </div>,

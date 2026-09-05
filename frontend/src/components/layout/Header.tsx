@@ -12,8 +12,11 @@ const iconSize = "xs:h-6 xs:w-5 h-5 w-4";
 export default function Header() {
   const { t } = useTranslation();
 
+  // z-50 governs the menus below too: a sticky element with a z-index makes the
+  // header one stacking context, so their own z-index cannot lift them out of
+  // it. Above the chat panel, below the dialog backdrop.
   return (
-    <header className="border-line bg-surface sticky top-0 z-10 border-b">
+    <header className="border-line bg-surface sticky top-0 z-50 border-b">
       <div className="max-w-wide mx-auto flex items-center justify-between px-4 py-3">
         {/* One link, not two: the mark and the wordmark are the same target
             with the same name, and as separate links they were two tab stops
