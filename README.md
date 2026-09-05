@@ -15,8 +15,10 @@ docker compose up
 ```
 
 Then <http://localhost:5173> for the app and <http://localhost:8080/api/docs>
-for the API. Migrations are a separate step the first time:
-`cd backend && make migrate-up`.
+for the API. `docker compose up` applies the migrations itself: a goose
+one-shot (`migrate`) runs `up` before the backend starts, so a fresh database
+gets its schema automatically. `cd backend && make migrate-up` still works for
+manual runs from the host.
 
 **`make setup` before the first `up`, and the order matters.** It creates
 `frontend/node_modules` and `backend/uploads` so that Docker does not. A
