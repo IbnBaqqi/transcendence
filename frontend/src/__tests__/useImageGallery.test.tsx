@@ -59,6 +59,29 @@ describe("useImageGallery error messages", () => {
     expect(result.current.images).toHaveLength(0);
   });
 
+  // Awaiting the shrink yields, and imagesRef only catches up after setImages
+  // commits - so two picks in quick succession read the same budget. Real on
+  // the avatar picker, where maxFiles is 1 and shrinking a 6MB photo is not
+  // instant.
+  test("holds the cap when a second pick lands mid-shrink", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    vi.mocked(shrinkImage).mockImplementation(async (file: File) => {
+      await gate;
+      return file;
+    });
+    const { result } = renderHook(() => useImageGallery({ maxFiles: 1 }));
+
+    await act(async () => {
+      const first = result.current.addFiles([makeFile("a.jpg", "image/jpeg")]);
+      const second = result.current.addFiles([makeFile("b.jpg", "image/jpeg")]);
+      release();
+      await Promise.all([first, second]);
+    });
+
+    expect(result.current.images).toHaveLength(1);
+  });
+
   // The cap is measured after shrinking, which is the whole point: a phone
   // photo over the limit becomes a file under it instead of a refusal.
   test("measures the cap against the shrunk file, not the original", async () => {

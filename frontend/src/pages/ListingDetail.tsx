@@ -75,7 +75,7 @@ function Gallery({ listing }: { listing: Listing }) {
           // unlike the thumbnails below, which are a way to change this one.
           <img src={image.url} alt={listing.title} className="h-full w-full object-contain" />
         ) : (
-          <svg className="text-surface-soft h-16 w-16 fill-current" aria-hidden="true">
+          <svg className="text-muted h-16 w-16 fill-current opacity-50" aria-hidden="true">
             <use href="/icons.svg#brand-mark" />
           </svg>
         )}

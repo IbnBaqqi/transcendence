@@ -94,7 +94,11 @@ export function useImageGallery({
         next.push({ id: makeId(shrunk), file: shrunk, previewUrl, status: "pending" });
       }
       if (next.length) {
-        setImages((prev) => [...prev, ...next]);
+        // Sliced here, not trusted from `remaining` above: awaiting the shrink
+        // yields, and imagesRef only catches up once setImages has committed -
+        // so two overlapping calls read the same budget and both spend it.
+        // The cap belongs where the state is actually written.
+        setImages((prev) => [...prev, ...next].slice(0, maxFiles));
       }
     },
     [maxFiles, maxSizeBytes, acceptedTypes, onError],

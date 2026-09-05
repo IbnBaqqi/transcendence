@@ -39,7 +39,10 @@ export function ListingCard({
               {/* fill-current beats the mark's own fill attribute - a CSS rule
                   outranks a presentation attribute - so the logo follows the
                   theme here instead of staying brand green on a dark ground. */}
-              <svg className="text-surface-soft h-10 w-10 fill-current" aria-hidden="true">
+              {/* muted at half strength, measured: surface-soft came out at
+                  1.27:1 on this ground in light and 1.23:1 in dark - an empty
+                  grey box rather than a logo. This reads as a watermark. */}
+              <svg className="text-muted h-10 w-10 fill-current opacity-50" aria-hidden="true">
                 <use href="/icons.svg#brand-mark" />
               </svg>
             </div>
