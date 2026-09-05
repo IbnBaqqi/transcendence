@@ -153,6 +153,86 @@ func (s *AdminUserService) transition(
 	return updated, nil
 }
 
+// SetRole promotes or demotes an account. The role is read from the database
+// on every request that needs it, so it takes effect on the caller's NEXT
+// request rather than when their token expires - which is what makes a
+// demotion mean anything.
+func (s *AdminUserService) SetRole(ctx context.Context, adminID, subjectID uuid.UUID, role, note string) (database.User, error) {
+	if role != auth.RoleUser && role != auth.RoleAdmin {
+		return database.User{}, &ValidationError{Message: "Role must be USER or ADMIN"}
+	}
+	note, err := validateNote(note, false)
+	if err != nil {
+		return database.User{}, err
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return database.User{}, err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			slog.Error("admin role change rollback failed", "error", err)
+		}
+	}()
+
+	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	subject, err := qtx.GetUserForUpdate(ctx, subjectID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return database.User{}, &NotFoundError{Message: "User not found"}
+		}
+		return database.User{}, err
+	}
+	if subject.DeletedAt.Valid {
+		return database.User{}, &NotFoundError{Message: "User not found"}
+	}
+
+	if subject.ID == adminID {
+		return database.User{}, &ForbiddenError{Message: "You cannot do this to your own account"}
+	}
+
+	// Only a demotion can empty the roster, and guardTarget is what takes the
+	// lock and counts INSIDE this transaction. Read the count outside it and
+	// two admins demoting each other both see two admins, both write, and
+	// nobody is left who can grant the role back.
+	if role == auth.RoleUser {
+		if err := guardTarget(ctx, qtx, adminID, subject); err != nil {
+			return database.User{}, err
+		}
+	}
+
+	updated, err := qtx.SetUserRole(ctx, database.SetUserRoleParams{ID: subjectID, Role: role})
+	if errors.Is(err, sql.ErrNoRows) {
+		// The query's WHERE carries the precondition, so no rows means the
+		// account already has this role. That is not an error and must not
+		// write history: a promotion that did not happen has no business in
+		// GET /admin/users/{id}/history.
+		if err := tx.Commit(); err != nil {
+			return database.User{}, err
+		}
+		return subject, nil
+	}
+	if err != nil {
+		return database.User{}, err
+	}
+
+	action := "promoted"
+	if role == auth.RoleUser {
+		action = "demoted"
+	}
+	if err := s.record(ctx, qtx, adminID, subjectID, action, note); err != nil {
+		return database.User{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return database.User{}, err
+	}
+
+	return updated, nil
+}
+
 func (s *AdminUserService) Delete(ctx context.Context, adminID, subjectID uuid.UUID, confirmation, reason string) error {
 	reason, err := validateNote(reason, true)
 	if err != nil {

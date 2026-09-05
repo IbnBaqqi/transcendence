@@ -623,6 +623,10 @@
     },
     "suspend": "Jäädytä",
     "reinstate": "Palauta",
+    "makeAdmin": "Tee ylläpitäjäksi",
+    "removeAdmin": "Poista ylläpito-oikeudet",
+    "makeAdminWarning": "{{username}} voi jatkossa moderoida ilmoituksia, tilauksia ja tilejä.",
+    "removeAdminWarning": "{{username}} menettää pääsyn ylläpito-osioon seuraavalla pyynnöllä.",
     "confirm": "Vahvista",
     "working": "Käsitellään…",
     "reasonForUser": "Syy (näytetään käyttäjälle)",
@@ -641,7 +645,9 @@
     "action": {
       "suspended": "Jäädytetty",
       "reinstated": "Palautettu",
-      "deleted": "Poistettu"
+      "deleted": "Poistettu",
+      "promoted": "Nostettu ylläpitäjäksi",
+      "demoted": "Ylläpito-oikeudet poistettu"
     }
   }
 }

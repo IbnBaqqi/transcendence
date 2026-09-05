@@ -62,6 +62,26 @@ func (h *Handler) SuspendUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, dtos.ToAdminUserResponse(user))
 }
 
+func (h *Handler) SetUserRole(w http.ResponseWriter, r *http.Request) {
+	adminID, subjectID, ok := adminAndSubject(w, r)
+	if !ok {
+		return
+	}
+
+	var req dtos.SetRoleRequest
+	if !decodeStrict(w, r, &req) {
+		return
+	}
+
+	user, err := h.AdminUser.SetRole(r.Context(), adminID, subjectID, req.Role, req.Note)
+	if err != nil {
+		respondWithServiceError(w, r, err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, dtos.ToAdminUserResponse(user))
+}
+
 func (h *Handler) ReinstateUser(w http.ResponseWriter, r *http.Request) {
 	adminID, subjectID, ok := adminAndSubject(w, r)
 	if !ok {
