@@ -99,24 +99,24 @@ export default function Profile() {
                 editable
                 imageUrl={avatarPreviewUrl ?? profile.avatar_url ?? undefined}
                 onImageSelected={(file) => void handleAvatarSelected(file)}
+                // Undefined with no stored picture: that is how the modal knows
+                // whether there is anything to remove.
+                onRemove={profile.avatar_url ? () => handleAvatarRemove() : undefined}
               />
             </div>
-            <div className="text-accent my-auto flex flex-col gap-1 text-base">
+            {/* min-w-0 and break-words: the column inherits min-width:auto, so
+                without them a long address holds it open past the viewport
+                instead of wrapping. */}
+            <div className="text-accent my-auto flex min-w-0 flex-col gap-1 text-base">
               <div className="font-bold">{profile.username}</div>
-              <div className="font-normal">{profile.email}</div>
-              {uploadAvatar.isPending ? (
+              <div className="font-normal break-words">{profile.email}</div>
+              {/* Both requests land with the modal already closed, so the page
+                  is where their progress shows. */}
+              {uploadAvatar.isPending && (
                 <p className="text-muted text-sm">{t("avatar.uploading")}</p>
-              ) : (
-                profile.avatar_url && (
-                  <button
-                    type="button"
-                    disabled={deleteAvatar.isPending}
-                    onClick={() => void handleAvatarRemove()}
-                    className="text-muted hover:text-foreground w-fit text-sm underline"
-                  >
-                    {deleteAvatar.isPending ? t("avatar.removing") : t("avatar.remove")}
-                  </button>
-                )
+              )}
+              {deleteAvatar.isPending && (
+                <p className="text-muted text-sm">{t("avatar.removing")}</p>
               )}
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import Profile from "../pages/Profile";
@@ -196,21 +196,33 @@ test("uploads the picture the user picks", async () => {
   expect(uploadAvatar).toHaveBeenCalledWith(file);
 });
 
-test("offers removal only once a picture is stored", () => {
+// Removal lives in the picture editor now, next to the thing it acts on, and
+// the page decides whether to offer it by handing the modal an onRemove at all.
+test("offers removal only once a picture is stored", async () => {
+  const user = userEvent.setup();
   renderPage({ data: PROFILE });
+
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
   expect(screen.queryByRole("button", { name: "Remove photo" })).not.toBeInTheDocument();
 
+  cleanup();
   renderPage({ data: WITH_AVATAR });
+
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
   expect(screen.getByRole("button", { name: "Remove photo" })).toBeInTheDocument();
 });
 
-test("removing a picture calls the delete endpoint", async () => {
+test("removing a picture calls the delete endpoint and closes the editor", async () => {
   const user = userEvent.setup();
   renderPage({ data: WITH_AVATAR });
 
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
   await user.click(screen.getByRole("button", { name: "Remove photo" }));
 
   expect(deleteAvatar).toHaveBeenCalled();
+  await waitFor(() =>
+    expect(screen.queryByRole("button", { name: "Remove photo" })).not.toBeInTheDocument(),
+  );
 });
 
 // The backend's own message is more useful than anything written here - 413
@@ -234,11 +246,14 @@ test("a rejected upload surfaces the reason and keeps no preview", async () => {
   });
 });
 
+// The modal is gone by the time the request answers, so the page is where a
+// failure has to land - same as a rejected upload.
 test("a rejected removal surfaces the reason", async () => {
   deleteAvatar.mockRejectedValue({ status: 500, message: "Something broke" });
   const user = userEvent.setup();
   renderPage({ data: WITH_AVATAR });
 
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
   await user.click(screen.getByRole("button", { name: "Remove photo" }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Something broke");

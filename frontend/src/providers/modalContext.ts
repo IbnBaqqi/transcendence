@@ -7,6 +7,9 @@ export type DialogType = "login" | "register" | "imageUpload" | "deleteAccount" 
 // once they confirm, so e.g. Avatar/Profile can show the new preview.
 export interface ImageUploadModalOptions {
   onComplete?: (file: File) => void;
+  // Present only when there is a stored picture to remove: the modal shows the
+  // button if it is handed one, and asks nothing about the profile itself.
+  onRemove?: () => void | Promise<void>;
 }
 
 export interface ModalContextValue {

@@ -6,13 +6,14 @@ import Button from "../objects/Button.tsx";
 
 type ImageUploadSectionProps = {
   onComplete?: (file: File) => void;
+  onRemove?: () => void | Promise<void>;
   onClose: () => void;
 };
 
 // Single-image picker used inside the "imageUpload" modal (currently just the
 // avatar flow, see Avatar.tsx/Profile.tsx). It sends nothing itself: the file
 // goes back to the caller via onComplete, which decides where it is uploaded.
-export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionProps) {
+export function ImageUploadSection({ onComplete, onRemove, onClose }: ImageUploadSectionProps) {
   const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const { images, addFiles, removeImage } = useImageGallery({
@@ -23,6 +24,11 @@ export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionPr
   const handleFilesSelected = (files: File[]) => {
     setError(null);
     addFiles(files);
+  };
+
+  const handleRemove = async () => {
+    await onRemove?.();
+    onClose();
   };
 
   const handleSave = () => {
@@ -51,6 +57,15 @@ export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionPr
         <Button variant="secondary" type="button" onClick={onClose}>
           {t("common.cancel")}
         </Button>
+        {/* Right and tertiary: it acts on the stored picture, not on the file
+            being picked, so it should not read as a third step in that flow. */}
+        {onRemove && (
+          <div className="ml-auto">
+            <Button variant="tertiary" type="button" onClick={() => void handleRemove()}>
+              {t("avatar.remove")}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

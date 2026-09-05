@@ -9,7 +9,11 @@ export function ImageUploadModal() {
   return (
     <div className="p-6">
       <h2 className="text-section mb-4 font-semibold">{t("modal.imageUpload.title")}</h2>
-      <ImageUploadSection onComplete={imageUploadOptions?.onComplete} onClose={closeModal} />
+      <ImageUploadSection
+        onComplete={imageUploadOptions?.onComplete}
+        onRemove={imageUploadOptions?.onRemove}
+        onClose={closeModal}
+      />
     </div>
   );
 }

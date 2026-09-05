@@ -13,6 +13,9 @@ type AvatarProps = {
   imageUrl?: string;
   /** Called with the file the user picked in the upload modal, once confirmed. */
   onImageSelected?: (file: File) => void;
+  /** Removes the stored picture. Omit when there is none - the modal offers
+      the button only when it is given one. */
+  onRemove?: () => void | Promise<void>;
 };
 
 const sizeStyles = {
@@ -31,6 +34,7 @@ export default function Avatar({
   interactive = false,
   imageUrl,
   onImageSelected,
+  onRemove,
 }: AvatarProps) {
   const { t } = useTranslation();
   const { circle, label } = sizeStyles[size];
@@ -60,6 +64,7 @@ export default function Avatar({
       <EditableAvatar
         className={`relative ${circle} overflow-hidden rounded-full ring-2 select-none ${interactiveClasses}`}
         onImageSelected={onImageSelected}
+        onRemove={onRemove}
       >
         {content}
       </EditableAvatar>
@@ -83,10 +88,12 @@ export default function Avatar({
 function EditableAvatar({
   className,
   onImageSelected,
+  onRemove,
   children,
 }: {
   className: string;
   onImageSelected?: (file: File) => void;
+  onRemove?: () => void | Promise<void>;
   children: React.ReactNode;
 }) {
   const { t } = useTranslation();
@@ -95,7 +102,7 @@ function EditableAvatar({
   return (
     <button
       type="button"
-      onClick={() => openModal("imageUpload", { onComplete: onImageSelected })}
+      onClick={() => openModal("imageUpload", { onComplete: onImageSelected, onRemove })}
       aria-label={t("avatar.editAria")}
       className={className}
     >
