@@ -305,7 +305,7 @@ func TestDeletionClearsTheOwnedRows(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("saving: %v", err)
 	}
-	if err := f.db.FollowUser(ctx, database.FollowUserParams{
+	if _, err := f.db.FollowUser(ctx, database.FollowUserParams{
 		FollowerID: f.buyer, FolloweeID: f.seller,
 	}); err != nil {
 		t.Fatalf("following: %v", err)

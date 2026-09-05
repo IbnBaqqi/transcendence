@@ -49,7 +49,7 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 	conversationService := service.NewConversationService(db, notifier)
 	userService := service.NewUserService(db, files)
 	profileService := service.NewProfileService(db, files) // needs *DB for transaction
-	followService := service.NewFollowService(db.Queries)
+	followService := service.NewFollowService(db)
 	notificationService := service.NewNotificationService(db.Queries)
 	blockService := service.NewBlockService(db.Queries)
 	apiKeyService := service.NewAPIKeyService(db.Queries)

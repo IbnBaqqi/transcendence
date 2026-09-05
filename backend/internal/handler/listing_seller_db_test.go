@@ -122,7 +122,7 @@ func TestFollowListsSurviveAMissingAvatar(t *testing.T) {
 	}
 	follower, followee := mk("follower"), mk("followee")
 
-	if err := db.FollowUser(ctx, database.FollowUserParams{
+	if _, err := db.FollowUser(ctx, database.FollowUserParams{
 		FollowerID: follower, FolloweeID: followee,
 	}); err != nil {
 		t.Fatalf("following: %v", err)

@@ -24,11 +24,10 @@ const (
 	notifyKindOrderConfirmed = "order_confirmed"
 	notifyKindOrderCompleted = "order_completed"
 
-	// Migration 022 also permits review_received, new_follower,
-	// listing_removed and saved_listing_gone. Their constants and writers
-	// arrive with the call sites that use them: the three services involved
-	// hold a *database.Queries and cannot open the transaction the row has to
-	// share with the change it describes.
+	notifyKindReviewReceived   = "review_received"
+	notifyKindNewFollower      = "new_follower"
+	notifyKindListingRemoved   = "listing_removed"
+	notifyKindSavedListingGone = "saved_listing_gone"
 )
 
 // Written with qtx inside the caller's transaction, unlike the email beside it:
@@ -64,6 +63,37 @@ func recordChatNotification(
 		Kind:           notifyKindChatRequest,
 		ListingTitle:   sql.NullString{String: conv.ListingTitle, Valid: true},
 		ConversationID: uuid.NullUUID{UUID: conv.ID, Valid: true},
+	})
+}
+
+func recordActorNotification(
+	ctx context.Context,
+	qtx *database.Queries,
+	userID uuid.UUID,
+	kind string,
+	actorID uuid.UUID,
+) error {
+	return qtx.CreateNotification(ctx, database.CreateNotificationParams{
+		ID:      database.NewID(),
+		UserID:  userID,
+		Kind:    kind,
+		ActorID: uuid.NullUUID{UUID: actorID, Valid: true},
+	})
+}
+
+func recordListingNotification(
+	ctx context.Context,
+	qtx *database.Queries,
+	userID uuid.UUID,
+	kind string,
+	listing database.Listing,
+) error {
+	return qtx.CreateNotification(ctx, database.CreateNotificationParams{
+		ID:           database.NewID(),
+		UserID:       userID,
+		Kind:         kind,
+		ListingTitle: sql.NullString{String: listing.Title, Valid: true},
+		ListingID:    uuid.NullUUID{UUID: listing.ID, Valid: true},
 	})
 }
 
