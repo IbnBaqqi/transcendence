@@ -1222,6 +1222,7 @@ components:
           description: |
             Optional, unlike a suspension's reason. A role change is not a
             sanction.
+
     ReinstateRequest:
       type: object
       description: |
