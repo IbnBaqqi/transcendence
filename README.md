@@ -20,6 +20,10 @@ one-shot (`migrate`) runs `up` before the backend starts, so a fresh database
 gets its schema automatically. `cd backend && make migrate-up` still works for
 manual runs from the host.
 
+The schema arrives empty, so there is nothing to look at until you fill it:
+`cd backend && make seed` gives you an admin, twenty foragers and fifty
+listings. See [Demo data](#demo-data) for the credentials.
+
 **`make setup` before the first `up`, and the order matters.** It creates
 `frontend/node_modules` and `backend/uploads` so that Docker does not. A
 container cannot mount onto a path that does not exist, so the daemon creates
