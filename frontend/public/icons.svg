@@ -302,11 +302,6 @@
     />
   </symbol>
 
-  <!-- Staged, not live: nothing references this yet. The profile link
-       shows the account's own avatar rather than a generic icon, so
-       this waits for whatever does use it. Commented out because a
-       symbol nothing points at is dead weight in a file every page
-       fetches - uncomment it in the same change that adds the <use>.
   <symbol id="profile-icon" viewBox="0 0 24 30">
     <circle
       cx="12"
@@ -328,7 +323,6 @@
       d="M 4.5 24.5 C 4.5 18.5, 19.5 18.5, 19.5 24.5"
     />
   </symbol>
-  -->
 
   <!-- Admin Icons -->
   <symbol id="admin-icon" viewBox="0 0 24 30">

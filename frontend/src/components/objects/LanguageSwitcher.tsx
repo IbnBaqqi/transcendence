@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useDismissable } from "../../hooks/useDismissable";
 import { supportedLngs, type Locale } from "../../i18n";
 
 // flag emojis render regionally; on platforms without them they degrade to
@@ -20,24 +21,7 @@ export function LanguageSwitcher() {
   const current = (i18n.language?.split("-")[0] ?? "en") as Locale;
   const active = supportedLngs.includes(current) ? current : "en";
 
-  // Close when the user clicks anywhere outside, or presses Escape.
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  useDismissable(open, setOpen, rootRef, triggerRef);
 
   return (
     <div ref={rootRef} className="relative">

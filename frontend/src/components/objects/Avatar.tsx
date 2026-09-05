@@ -68,7 +68,6 @@ export default function Avatar({
 
   return (
     <div
-      tabIndex={isInteractive ? 0 : undefined}
       className={`relative ${circle} overflow-hidden rounded-full ring-2 select-none ${
         isInteractive ? interactiveClasses : "ring-line"
       }`}

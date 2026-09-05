@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { unreadCount, useNotifications } from "../../api/notifications";
 import { useAuth } from "../../hooks/useAuth";
+import { useDismissable } from "../../hooks/useDismissable";
 import { MarkAllReadButton } from "./MarkAllReadButton";
 import { NotificationList } from "./NotificationList";
 
@@ -15,30 +16,10 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  useDismissable(open, setOpen, rootRef, triggerRef);
 
   const { data: notifications, isError } = useNotifications({ enabled: signedIn });
   const unread = unreadCount(notifications);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
 
   if (!signedIn) return null;
 
@@ -50,7 +31,7 @@ export function NotificationBell() {
         onClick={() => setOpen((value) => !value)}
         aria-label={t("nav.notifications")}
         aria-expanded={open}
-        className="text-muted hover:text-foreground relative cursor-pointer"
+        className="text-muted hover:text-foreground relative inline-flex cursor-pointer items-center"
       >
         <svg className="h-6 w-5" aria-hidden="true">
           <use href="/icons.svg#notifications-icon" />

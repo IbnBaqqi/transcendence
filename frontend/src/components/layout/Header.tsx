@@ -1,24 +1,16 @@
-import { useModal } from "../../providers/modalContext";
-import { useAuth } from "../../hooks/useAuth";
-import { useOwnProfile } from "../../api/profile";
-import { deriveInitials } from "../../lib/initials";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import Avatar from "../objects/Avatar.tsx";
 import { LanguageSwitcher } from "../objects/LanguageSwitcher";
 import { NotificationBell } from "../objects/NotificationBell";
-import { Skeleton } from "../objects/Skeleton";
+import { UserMenu } from "./UserMenu";
+
+// inline-flex, not the default inline: an inline <svg> sits on the text
+// baseline and rides low next to its neighbours.
+const iconLink = "text-muted hover:text-foreground inline-flex items-center";
+const iconSize = "xs:h-6 xs:w-5 h-5 w-4";
 
 export default function Header() {
-  const { user, isLoading: authLoading } = useAuth();
-  const { openModal, openChat } = useModal();
   const { t } = useTranslation();
-
-  // The picture lives on the profile, not the auth session, so the header has
-  // to ask for it - disabled while signed out, where it would only 401.
-  const { data: profile } = useOwnProfile({ enabled: Boolean(user) });
-
-  const initials = user ? deriveInitials(user.username) : "?";
 
   return (
     <header className="border-line bg-surface sticky top-0 z-10 border-b">
@@ -38,120 +30,28 @@ export default function Header() {
               there is room for it. */}
           <span className="text-accent hidden text-lg font-bold sm:inline">{t("brand")}</span>
         </Link>
-        {/* wrap, not hide: an admin gets three icon+text links appended here,
-            and at 320px that is ~470px of nav in a 320px viewport. Hiding them
-            below sm would leave those sections reachable only by typing the
-            URL - these links are the only navigation into them anywhere in the
-            app. */}
-        <nav className="xs:gap-4 flex flex-wrap items-center justify-end gap-2 text-sm">
+        {/* Four icons and the menu, at every width: everything that used to
+            wrap here - orders, following, profile, the three admin links -
+            lives in UserMenu now. */}
+        <nav className="xs:gap-4 flex items-center justify-end gap-3 text-sm">
           <LanguageSwitcher />
-          <Link to="/" aria-label={t("nav.home")} className="text-muted hover:text-foreground">
-            <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
+          <Link to="/" aria-label={t("nav.home")} className={iconLink}>
+            <svg className={iconSize} aria-hidden="true">
               <use href="/icons.svg#home-icon" />
             </svg>
           </Link>
-          <Link
-            to="/search"
-            aria-label={t("nav.search")}
-            className="text-muted hover:text-foreground"
-          >
-            <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
+          <Link to="/search" aria-label={t("nav.search")} className={iconLink}>
+            <svg className={iconSize} aria-hidden="true">
               <use href="/icons.svg#search-icon" />
             </svg>
           </Link>
-          <Link
-            to="/addlisting"
-            aria-label={t("nav.addListing")}
-            className="text-muted hover:text-foreground"
-          >
-            <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
+          <Link to="/addlisting" aria-label={t("nav.addListing")} className={iconLink}>
+            <svg className={iconSize} aria-hidden="true">
               <use href="/icons.svg#add-icon" />
             </svg>
           </Link>
-          {authLoading ? (
-            // Neither branch until we know who this is. The log-in button is a
-            // claim about the viewer, and it is the wrong one on every reload
-            // by a signed-in user.
-            <Skeleton className="h-8 w-8 rounded-full" />
-          ) : user ? (
-            <>
-              {/* openChat is wrapped, not passed straight to onClick: it takes an
-                  optional conversation id and would receive the click event. */}
-              <button
-                type="button"
-                onClick={() => openChat()}
-                aria-label={t("nav.openChat")}
-                className="text-muted hover:text-foreground"
-              >
-                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
-                  <use href="/icons.svg#chat-icon" />
-                </svg>
-              </button>
-              <NotificationBell />
-              <Link
-                to="/orders"
-                aria-label={t("nav.orders")}
-                className="text-muted hover:text-foreground"
-              >
-                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
-                  <use href="/icons.svg#orders-icon" />
-                </svg>
-              </Link>
-              <Link
-                to="/following"
-                aria-label={t("nav.following")}
-                className="text-muted hover:text-foreground"
-              >
-                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
-                  <use href="/icons.svg#following-icon" />
-                </svg>
-              </Link>
-              <Link to="/profile" aria-label={t("nav.profile")}>
-                <Avatar
-                  size="sm"
-                  initials={initials}
-                  imageUrl={profile?.avatar_url ?? undefined}
-                  interactive
-                />
-              </Link>
-            </>
-          ) : (
-            <button type="button" aria-label={t("common.logIn")} onClick={() => openModal("login")}>
-              <Avatar size="sm" initials="?" interactive />
-            </button>
-          )}
-          {user?.role === "ADMIN" && (
-            <>
-              <Link
-                to="/admin/listings"
-                className="text-muted hover:text-foreground inline-flex items-center gap-1"
-              >
-                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
-                  <use href="/icons.svg#admin-icon" />
-                </svg>
-                {t("nav.admin")}
-              </Link>
-              <Link
-                to="/admin/users"
-                className="text-muted hover:text-foreground inline-flex items-center gap-1"
-              >
-                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
-                  <use href="/icons.svg#users-admin-icon" />
-                </svg>
-                {t("nav.adminUsers")}
-              </Link>
-              <Link
-                to="/admin/orders"
-                className="text-muted hover:text-foreground inline-flex items-center gap-1"
-              >
-                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
-                  <use href="/icons.svg#orders-admin-icon" />
-                </svg>
-                {t("nav.adminOrders")}
-              </Link>
-            </>
-          )}
-          {/* TODO: add Listing (#20) and auth links (#46) when those pages exist */}
+          <NotificationBell />
+          <UserMenu />
         </nav>
       </div>
     </header>
