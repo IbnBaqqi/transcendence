@@ -306,7 +306,13 @@
     "home": {
       "latestFinds": "Senaste fynden",
       "listingsError": "Kunde inte ladda annonserna.",
-      "noListings": "Inga annonser ännu."
+      "noListings": "Inga annonser ännu.",
+      "directory": {
+        "label": "Mer på Metsätori",
+        "categories": "Kategorier",
+        "browse": "Bläddra",
+        "account": "Ditt konto"
+      }
     },
     "search": {
       "title": "Sök",

@@ -1,5 +1,6 @@
 import { useSearchListings } from "../api/listings";
 import { useLocalizedCategoryNames } from "../api/categories";
+import { HomeDirectory } from "../components/objects/HomeDirectory";
 import { ListingCard } from "../components/objects/ListingCard";
 import { Skeleton } from "../components/objects/Skeleton";
 import { Pagination } from "../components/objects/Pagination";
@@ -78,6 +79,7 @@ export default function Home() {
           />
         </div>
       )}
+      <HomeDirectory />
     </div>
   );
 }

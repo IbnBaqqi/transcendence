@@ -306,7 +306,13 @@
     "home": {
       "latestFinds": "Uusimmat löydöt",
       "listingsError": "Ilmoituksia ei voitu ladata.",
-      "noListings": "Ei ilmoituksia vielä."
+      "noListings": "Ei ilmoituksia vielä.",
+      "directory": {
+        "label": "Lisää Metsätorissa",
+        "categories": "Kategoriat",
+        "browse": "Selaa",
+        "account": "Oma tili"
+      }
     },
     "search": {
       "title": "Haku",

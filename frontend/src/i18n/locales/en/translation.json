@@ -306,7 +306,13 @@
     "home": {
       "latestFinds": "Latest Finds",
       "listingsError": "Couldn't load listings.",
-      "noListings": "No listings yet."
+      "noListings": "No listings yet.",
+      "directory": {
+        "label": "More on Metsätori",
+        "categories": "Categories",
+        "browse": "Browse",
+        "account": "Your account"
+      }
     },
     "search": {
       "title": "Search",
