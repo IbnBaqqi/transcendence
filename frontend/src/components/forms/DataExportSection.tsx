@@ -41,7 +41,7 @@ export function DataExportSection() {
         {pending ? t("pages.profile.exportWorking") : t("pages.profile.exportDownload")}
       </Button>
       {failed && (
-        <p role="alert" className="text-berry-500 text-sm">
+        <p role="alert" className="text-danger text-sm">
           {t("pages.profile.exportFailed")}
         </p>
       )}
