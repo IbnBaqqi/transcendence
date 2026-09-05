@@ -73,6 +73,30 @@ there is no issuer. Click through it. If you would rather not, `mkcert -install
 && mkcert localhost` writes a locally-trusted certificate to the same two paths
 and the warning goes away.
 
+#### Reaching it from another machine
+
+The certificate covers `localhost` and `127.0.0.1`, and a browser checks the
+host you typed against that list — so a second machine on the same network gets
+a *name mismatch* on top of the untrusted-issuer warning, and strict clients
+like `curl` refuse outright. Reissue with the serving machine's address added:
+
+```bash
+make certs-force CERT_EXTRA_SAN=IP:10.18.185.59      # your LAN address
+docker compose -f docker-compose.prod.yml restart frontend
+```
+
+`CERT_EXTRA_SAN` takes openssl's own syntax, comma-separated, so
+`'IP:10.18.185.59,DNS:metsatori.local'` works too. It only applies when a
+certificate is actually issued: plain `make certs` leaves an existing one
+alone, which is why the reissue is a separate target. The issuer warning
+remains either way — that part is inherent to signing it ourselves.
+
+Nothing else needs configuring. The frontend calls the relative `/api/v1`, so
+it follows whatever origin loaded it, and there is no CORS allowlist to update.
+OAuth is the exception: `docker-compose.prod.yml` pins the redirect URLs to
+`https://localhost`, so sign-in with Google or GitHub only works on the serving
+machine.
+
 Two things follow from having TLS rather than being incidental to it. The
 refresh cookie is `Secure` in this stack, so it is only ever sent over HTTPS —
 which is why plain `http://localhost` redirects instead of serving the app; a

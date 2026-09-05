@@ -1,4 +1,4 @@
-.PHONY: setup certs
+.PHONY: setup certs certs-force
 
 # One command to make a fresh checkout runnable, in the order that matters.
 #
@@ -25,6 +25,18 @@ setup: certs
 	@test -f .env || cp .env.example .env
 	@echo "✓ ready: run 'docker compose up'"
 
+# A literal comma cannot appear inside $(if ...) - commas separate a function's
+# arguments - so it goes in a variable first.
+comma := ,
+
+# Extra subjectAltName entries, in openssl's own syntax and comma-separated:
+#   make certs-force CERT_EXTRA_SAN=IP:10.18.185.59
+#   make certs-force CERT_EXTRA_SAN='IP:10.18.185.59,DNS:metsatori.local'
+# Needed to reach this stack from another machine. A browser matches the host
+# you typed against the SAN, and localhost/127.0.0.1 do not cover a LAN address.
+CERT_EXTRA_SAN ?=
+CERT_SAN := DNS:localhost,IP:127.0.0.1$(if $(CERT_EXTRA_SAN),$(comma)$(CERT_EXTRA_SAN))
+
 # A self-signed certificate for the production-shaped stack, which terminates
 # TLS. Generated rather than committed: a private key in a repository is a
 # leaked key even when it is a throwaway one.
@@ -44,12 +56,26 @@ certs:
 		out=$$(openssl req -x509 -newkey rsa:2048 -nodes \
 			-keyout certs/localhost-key.pem -out certs/localhost.pem -days 365 \
 			-subj "/CN=localhost" \
-			-addext "subjectAltName=DNS:localhost,IP:127.0.0.1" 2>&1) \
+			-addext "subjectAltName=$(CERT_SAN)" 2>&1) \
 			|| { echo "$$out" >&2; exit 1; }; \
+	elif [ -n "$(CERT_EXTRA_SAN)" ]; then \
+		echo "! certs/ already exists, so CERT_EXTRA_SAN did nothing."; \
+		echo "  make certs-force CERT_EXTRA_SAN='$(CERT_EXTRA_SAN)'  reissues it."; \
 	fi
 	@# openssl writes the key 0600, and the frontend image runs nginx as uid 101,
 	@# which then cannot read it. Readable rather than root-owned or a privileged
-	@# container: this key is generated, gitignored, valid only for localhost and
-	@# worth nothing to anyone. Do not copy this line for a real certificate.
+	@# container: this key is generated, gitignored, valid only for a local stack
+	@# and worth nothing to anyone. Do not copy this line for a real certificate.
 	@chmod 0644 certs/localhost-key.pem
 	@echo "✓ certs/ ready (self-signed - browsers will warn, which is expected)"
+	@# Read back from the file rather than echoing $(CERT_SAN): when the variable
+	@# was ignored above, the two differ, and only the file tells the truth.
+	@openssl x509 -in certs/localhost.pem -noout -ext subjectAltName \
+		| tail -1 | sed 's/^ */  covers: /'
+
+# Reissuing rather than editing: the SAN list is signed, so a name cannot be
+# added to a certificate that already exists. Deletes and delegates, so the
+# openssl command lives in exactly one place.
+certs-force:
+	@rm -f certs/localhost.pem certs/localhost-key.pem
+	@$(MAKE) --no-print-directory certs CERT_EXTRA_SAN='$(CERT_EXTRA_SAN)'
