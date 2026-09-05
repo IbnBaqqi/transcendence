@@ -587,3 +587,95 @@ func TestADatabaseFailureIsNotReportedAsAMissingListing(t *testing.T) {
 		t.Errorf("err = %v, want the context cancellation to survive", err)
 	}
 }
+
+func TestRemovingAListingTellsItsSeller(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	listing, err := f.db.GetListing(ctx, f.listing)
+	if err != nil {
+		t.Fatalf("reading the listing: %v", err)
+	}
+
+	if _, _, err := f.mod.Moderate(ctx, f.admin, f.listing, "remove", "not a foraged good"); err != nil {
+		t.Fatalf("remove: %v", err)
+	}
+
+	got, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{UserID: f.seller, Limit: 30})
+	if err != nil {
+		t.Fatalf("the seller's notifications: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("the seller has %d notifications, want 1", len(got))
+	}
+	if got[0].Kind != notifyKindListingRemoved {
+		t.Errorf("kind = %q, want %q", got[0].Kind, notifyKindListingRemoved)
+	}
+	if !got[0].ListingID.Valid || got[0].ListingID.UUID != f.listing {
+		t.Errorf("listing = %v, want %v", got[0].ListingID, f.listing)
+	}
+	// The title is snapshotted so the inbox can still name the listing once
+	// nothing else will show it - a removed listing is not in any index.
+	if got[0].ListingTitle.String != listing.Title {
+		t.Errorf("title = %q, want %q", got[0].ListingTitle.String, listing.Title)
+	}
+}
+
+func TestRestoringAndDismissingTellNobody(t *testing.T) {
+	for _, action := range []string{"restore", "dismiss"} {
+		t.Run(action, func(t *testing.T) {
+			f := newModerationFixture(t)
+			ctx := context.Background()
+
+			// restore needs something to restore; dismiss needs a listing that
+			// is not removed, which is the fixture's starting state.
+			if action == "restore" {
+				if _, _, err := f.mod.Moderate(ctx, f.admin, f.listing, "remove", "reason"); err != nil {
+					t.Fatalf("setting up the removal: %v", err)
+				}
+			}
+
+			before, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{UserID: f.seller, Limit: 30})
+			if err != nil {
+				t.Fatalf("notifications: %v", err)
+			}
+
+			if _, _, err := f.mod.Moderate(ctx, f.admin, f.listing, action, "reason"); err != nil {
+				t.Fatalf("%s: %v", action, err)
+			}
+
+			after, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{UserID: f.seller, Limit: 30})
+			if err != nil {
+				t.Fatalf("notifications: %v", err)
+			}
+			if len(after) != len(before) {
+				t.Errorf("%s wrote %d notifications, want 0 - there is no kind for it", action, len(after)-len(before))
+			}
+		})
+	}
+}
+
+func TestTheRemovalRollsBackWhenTheNotificationFails(t *testing.T) {
+	f := newModerationFixture(t)
+	ctx := context.Background()
+
+	if _, err := f.db.Exec("ALTER TABLE notifications RENAME TO notifications_hidden"); err != nil {
+		t.Fatalf("hiding the notifications table: %v", err)
+	}
+
+	if _, _, err := f.mod.Moderate(ctx, f.admin, f.listing, "remove", "not a foraged good"); err == nil {
+		t.Fatal("remove succeeded despite the notification write failing")
+	}
+
+	if _, err := f.db.Exec("ALTER TABLE notifications_hidden RENAME TO notifications"); err != nil {
+		t.Fatalf("restoring the notifications table: %v", err)
+	}
+
+	listing, err := f.db.GetListing(ctx, f.listing)
+	if err != nil {
+		t.Fatalf("re-reading the listing: %v", err)
+	}
+	if listing.RemovedAt.Valid {
+		t.Error("the removal outlived its failed notification")
+	}
+}

@@ -156,6 +156,12 @@ func (s *ModerationService) Moderate(
 		return database.Listing{}, 0, err
 	}
 
+	if action == "remove" {
+		if err := recordListingNotification(ctx, qtx, listing.SellerID, notifyKindListingRemoved, listing); err != nil {
+			return database.Listing{}, 0, err
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return database.Listing{}, 0, err
 	}
