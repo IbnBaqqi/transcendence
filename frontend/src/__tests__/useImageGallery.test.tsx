@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 
 import { useImageGallery } from "../hooks/useImageGallery";
+import { shrinkImage } from "../lib/shrinkImage";
 import i18next from "../i18n";
 
 function makeFile(name: string, type: string, bytes = 16) {
@@ -21,6 +22,14 @@ afterAll(() => {
   delete urlCtor.revokeObjectURL;
 });
 
+// The canvas work itself has no jsdom to run in, so shrinkImage is mocked and
+// what is tested here is the contract around it: the order of the checks, and
+// that the shrunk file is the one kept.
+vi.mock("../lib/shrinkImage", () => ({
+  shrinkImage: vi.fn((file: File) => Promise.resolve(file)),
+}));
+
+// addFiles awaits shrinkImage now, so every call here is awaited too.
 describe("useImageGallery error messages", () => {
   beforeEach(async () => {
     urlCtor.createObjectURL = vi.fn(() => "blob:mock");
@@ -28,21 +37,21 @@ describe("useImageGallery error messages", () => {
     if (i18next.language !== "en") await i18next.changeLanguage("en");
   });
 
-  test("accepts a valid image", () => {
+  test("accepts a valid image", async () => {
     const onError = vi.fn();
     const { result } = renderHook(() => useImageGallery({ onError }));
 
-    act(() => result.current.addFiles([makeFile("a.jpg", "image/jpeg")]));
+    await act(async () => result.current.addFiles([makeFile("a.jpg", "image/jpeg")]));
 
     expect(result.current.images).toHaveLength(1);
     expect(onError).not.toHaveBeenCalled();
   });
 
-  test("rejects an unsupported type with a localized message", () => {
+  test("rejects an unsupported type with a localized message", async () => {
     const onError = vi.fn();
     const { result } = renderHook(() => useImageGallery({ onError }));
 
-    act(() => result.current.addFiles([makeFile("notes.txt", "text/plain")]));
+    await act(async () => result.current.addFiles([makeFile("notes.txt", "text/plain")]));
 
     expect(onError).toHaveBeenCalledWith(
       '"notes.txt" isn\'t a supported image type (use JPEG, PNG or WebP).',
@@ -50,32 +59,64 @@ describe("useImageGallery error messages", () => {
     expect(result.current.images).toHaveLength(0);
   });
 
-  test("rejects an oversized file with its size interpolated", () => {
+  // The cap is measured after shrinking, which is the whole point: a phone
+  // photo over the limit becomes a file under it instead of a refusal.
+  test("measures the cap against the shrunk file, not the original", async () => {
+    const onError = vi.fn();
+    const small = makeFile("shrunk.jpg", "image/jpeg", 300 * 1024);
+    vi.mocked(shrinkImage).mockResolvedValueOnce(small);
+    const { result } = renderHook(() => useImageGallery({ onError }));
+
+    await act(async () =>
+      result.current.addFiles([makeFile("huge.jpg", "image/jpeg", 8 * 1024 * 1024)]),
+    );
+
+    expect(result.current.images).toHaveLength(1);
+    expect(result.current.images[0].file).toBe(small);
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  // The other order would let a converted file in through the back door: the
+  // accepted list is the backend's, and shrinking outputs JPEG.
+  test("checks the type before shrinking, so conversion cannot bypass the list", async () => {
     const onError = vi.fn();
     const { result } = renderHook(() => useImageGallery({ onError }));
 
-    act(() => result.current.addFiles([makeFile("big.jpg", "image/jpeg", 6 * 1024 * 1024)]));
+    await act(async () => result.current.addFiles([makeFile("photo.heic", "image/heic")]));
+
+    expect(shrinkImage).not.toHaveBeenCalled();
+    expect(result.current.images).toHaveLength(0);
+    expect(onError).toHaveBeenCalled();
+  });
+
+  test("rejects an oversized file with its size interpolated", async () => {
+    const onError = vi.fn();
+    const { result } = renderHook(() => useImageGallery({ onError }));
+
+    await act(async () =>
+      result.current.addFiles([makeFile("big.jpg", "image/jpeg", 6 * 1024 * 1024)]),
+    );
 
     expect(onError).toHaveBeenCalledWith('"big.jpg" is larger than 5MB.');
     expect(result.current.images).toHaveLength(0);
   });
 
-  test("uses the singular for a limit of one", () => {
+  test("uses the singular for a limit of one", async () => {
     const onError = vi.fn();
     const { result } = renderHook(() => useImageGallery({ maxFiles: 1, onError }));
 
-    act(() => result.current.addFiles([makeFile("a.jpg", "image/jpeg")]));
-    act(() => result.current.addFiles([makeFile("b.jpg", "image/jpeg")]));
+    await act(async () => result.current.addFiles([makeFile("a.jpg", "image/jpeg")]));
+    await act(async () => result.current.addFiles([makeFile("b.jpg", "image/jpeg")]));
 
     expect(result.current.images).toHaveLength(1);
     expect(onError).toHaveBeenCalledWith("You can only add up to 1 image.");
   });
 
-  test("uses the plural for a limit above one and adds no more than the limit", () => {
+  test("uses the plural for a limit above one and adds no more than the limit", async () => {
     const onError = vi.fn();
     const { result } = renderHook(() => useImageGallery({ maxFiles: 3, onError }));
 
-    act(() =>
+    await act(async () =>
       result.current.addFiles([
         makeFile("a.jpg", "image/jpeg"),
         makeFile("b.jpg", "image/jpeg"),
@@ -94,7 +135,7 @@ describe("useImageGallery error messages", () => {
     const { result } = renderHook(() => useImageGallery({ onError }));
 
     await i18next.changeLanguage("fi");
-    act(() => result.current.addFiles([makeFile("notes.txt", "text/plain")]));
+    await act(async () => result.current.addFiles([makeFile("notes.txt", "text/plain")]));
 
     expect(onError).toHaveBeenCalledWith(
       '"notes.txt" ei ole tuettu kuvatyyppi (käytä JPEG-, PNG- tai WebP-kuvia).',
@@ -108,9 +149,9 @@ describe("useImageGallery ordering", () => {
     urlCtor.revokeObjectURL = vi.fn();
   });
 
-  test("moves an image and clamps at the ends", () => {
+  test("moves an image and clamps at the ends", async () => {
     const { result } = renderHook(() => useImageGallery());
-    act(() =>
+    await act(async () =>
       result.current.addFiles([
         makeFile("a.jpg", "image/jpeg"),
         makeFile("b.jpg", "image/jpeg"),

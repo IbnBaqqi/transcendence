@@ -378,8 +378,8 @@
       "title": "Add Listing"
     },
     "listingDetail": {
-      "title": "Listing {{id}}",
-      "stub": "Listing detail page - not built yet (#21)."
+      "showPhoto": "Show photo {{n}}",
+      "loadError": "Couldn't load this listing."
     },
     "notifications": {
       "title": "Notifications",

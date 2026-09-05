@@ -378,8 +378,8 @@
       "title": "Lägg till annons"
     },
     "listingDetail": {
-      "title": "Annons {{id}}",
-      "stub": "Annonssida - inte byggt ännu (#21)."
+      "showPhoto": "Visa bild {{n}}",
+      "loadError": "Kunde inte ladda annonsen."
     },
     "notifications": {
       "title": "Meddelanden",

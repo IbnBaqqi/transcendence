@@ -23,6 +23,34 @@ describe("ListingCard", () => {
 
   // The card is where the rating was asked for, so this pins that it arrives
   // there rather than only that SellerRating can render one.
+  // The photos have always been uploaded, stored and served; nothing rendered
+  // them (#265). position is the stored order, so images[0] is the cover.
+  test("wears the first photo as its cover", () => {
+    const { container } = renderCard(
+      makeListing({
+        images: [
+          { id: "i1", url: "/uploads/first.jpg", position: 0 },
+          { id: "i2", url: "/uploads/second.jpg", position: 1 },
+        ],
+      }),
+    );
+
+    const images = container.querySelectorAll("article img");
+    expect(images).toHaveLength(1);
+    expect(images[0]).toHaveAttribute("src", "/uploads/first.jpg");
+    // The card's title is this link's accessible name already.
+    expect(images[0]).toHaveAttribute("alt", "");
+  });
+
+  // Rows would go ragged if a photoless card were shorter than its neighbours,
+  // so the box stays and the mark stands in.
+  test("stands the logo in when a listing has no photo", () => {
+    const { container } = renderCard(makeListing({ images: [] }));
+
+    expect(container.querySelector("article img")).toBeNull();
+    expect(container.querySelector('use[href="/icons.svg#brand-mark"]')).not.toBeNull();
+  });
+
   test("shows the seller's rating beside their name", () => {
     renderCard(makeListing());
 

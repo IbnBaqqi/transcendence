@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import i18next from "../i18n";
+import { shrinkImage } from "../lib/shrinkImage";
 
 export type GalleryImageStatus = "pending" | "uploading" | "uploaded" | "error";
 
@@ -55,7 +56,7 @@ export function useImageGallery({
   }, [images]);
 
   const addFiles = useCallback(
-    (files: File[]) => {
+    async (files: File[]) => {
       const remaining = maxFiles - imagesRef.current.length;
       if (remaining <= 0) {
         onError?.(i18next.t("validation.maxImages", { count: maxFiles, max: maxFiles }));
@@ -72,7 +73,13 @@ export function useImageGallery({
           onError?.(i18next.t("validation.unsupportedImageType", { name: file.name }));
           continue;
         }
-        if (file.size > maxSizeBytes) {
+        // After the type check and before the size one, deliberately. After,
+        // so converting to JPEG cannot slip an unaccepted format past the
+        // list the backend enforces. Before, because the whole point is that
+        // a 6MB phone photo passes the cap instead of being refused.
+        const shrunk = await shrinkImage(file);
+
+        if (shrunk.size > maxSizeBytes) {
           onError?.(
             i18next.t("validation.fileTooLarge", {
               name: file.name,
@@ -82,9 +89,9 @@ export function useImageGallery({
           continue;
         }
 
-        const previewUrl = URL.createObjectURL(file);
+        const previewUrl = URL.createObjectURL(shrunk);
         objectUrls.current.add(previewUrl);
-        next.push({ id: makeId(file), file, previewUrl, status: "pending" });
+        next.push({ id: makeId(shrunk), file: shrunk, previewUrl, status: "pending" });
       }
       if (next.length) {
         setImages((prev) => [...prev, ...next]);
