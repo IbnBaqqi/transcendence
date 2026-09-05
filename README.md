@@ -546,6 +546,37 @@ the app already tells you, better:
 - **A reply in a conversation you already have open** shows as an unread count
   in the chat list, which is where you are looking.
 
+### What the inbox covers
+
+The **Notification system** minor asks for "a complete notification system for
+all creation, update, and deletion actions". The inbox is that system, and this
+is its coverage — every row written inside the transaction that made the change,
+so a notification cannot describe something that did not happen:
+
+| You are told | when | it takes you to |
+|---|---|---|
+| `order_placed` | someone orders your listing | the order |
+| `order_confirmed` | the seller accepts your order | the order |
+| `order_handed_over` | the goods change hands | the order |
+| `order_completed` | the order finishes | the order |
+| `order_cancelled` | either side cancels | the order |
+| `order_resolved` | support settles a dispute | the order |
+| `chat_request` | someone opens a conversation | the chat |
+| `review_received` | a review lands on you | your profile, where it is |
+| `new_follower` | someone follows you | their profile |
+| `listing_removed` | a moderator removes your listing | the listing |
+| `saved_listing_gone` | a listing you saved sells out | the listing |
+| `saved_listing_deleted` | a listing you saved is deleted | the seller |
+
+Creation, update and deletion are all represented: an order placed, an order
+moving through its states, and a saved listing disappearing.
+
+The last two are one event with two rows because they cannot share a subject.
+`notifications.listing_id` is a foreign key that cascades, so a row pointing at
+a listing being deleted is erased by that same delete — the row has to point at
+the seller instead, who survives. A sold-out listing still exists, so that one
+points at the listing.
+
 ## Hot reload
 
 Both halves of the stack pick up edits without a restart, whichever way you
