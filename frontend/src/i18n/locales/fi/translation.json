@@ -378,8 +378,8 @@
       "title": "Lisää ilmoitus"
     },
     "listingDetail": {
-      "title": "Ilmoitus {{id}}",
-      "stub": "Ilmoitussivu - ei vielä rakennettu (#21)."
+      "showPhoto": "Näytä kuva {{n}}",
+      "loadError": "Ilmoitusta ei voitu ladata."
     },
     "notifications": {
       "title": "Ilmoitukset",
