@@ -311,7 +311,7 @@ func TestBlockingDoesNotRemoveAFollow(t *testing.T) {
 	f := newBlockFixture(t)
 	ctx := context.Background()
 
-	follows := NewFollowService(f.db.Queries)
+	follows := NewFollowService(f.db)
 	if err := follows.Follow(ctx, f.buyer, f.seller); err != nil {
 		t.Fatalf("following: %v", err)
 	}
@@ -361,7 +361,7 @@ func TestABlockHidesPresenceInBothDirections(t *testing.T) {
 		t.Error("the blocked party still sees the blocker's online status in the inbox")
 	}
 
-	follows := NewFollowService(f.db.Queries)
+	follows := NewFollowService(f.db)
 	if err := follows.Follow(ctx, f.seller, f.buyer); err != nil {
 		t.Fatalf("following: %v", err)
 	}
@@ -419,7 +419,7 @@ func TestAFollowListHidesPresenceForItsReaderNotItsSubject(t *testing.T) {
 		}
 	}
 
-	follows := NewFollowService(f.db.Queries)
+	follows := NewFollowService(f.db)
 	if err := follows.Follow(ctx, f.buyer, f.seller); err != nil {
 		t.Fatalf("following: %v", err)
 	}

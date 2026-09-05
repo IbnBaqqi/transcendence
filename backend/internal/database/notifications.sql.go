@@ -48,6 +48,21 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 	return err
 }
 
+const deleteNotificationsForListingKind = `-- name: DeleteNotificationsForListingKind :exec
+DELETE FROM notifications
+WHERE listing_id = $1 AND kind = $2
+`
+
+type DeleteNotificationsForListingKindParams struct {
+	ListingID uuid.NullUUID
+	Kind      string
+}
+
+func (q *Queries) DeleteNotificationsForListingKind(ctx context.Context, arg DeleteNotificationsForListingKindParams) error {
+	_, err := q.db.ExecContext(ctx, deleteNotificationsForListingKind, arg.ListingID, arg.Kind)
+	return err
+}
+
 const listNotifications = `-- name: ListNotifications :many
 SELECT id, user_id, kind, listing_title, order_id, conversation_id, read_at, created_at, actor_id, listing_id FROM notifications
 WHERE user_id = $1

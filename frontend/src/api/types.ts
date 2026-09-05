@@ -157,7 +157,12 @@ export type NotificationKind =
   | "order_resolved"
   | "order_confirmed"
   | "order_completed"
-  | "chat_request";
+  | "chat_request"
+  | "review_received"
+  | "new_follower"
+  | "listing_removed"
+  | "saved_listing_gone"
+  | "saved_listing_deleted";
 
 export interface Notification {
   id: string;

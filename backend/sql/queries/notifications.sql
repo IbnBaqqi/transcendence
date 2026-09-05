@@ -8,6 +8,10 @@ INSERT INTO notifications (
 )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
 
+-- name: DeleteNotificationsForListingKind :exec
+DELETE FROM notifications
+WHERE listing_id = $1 AND kind = $2;
+
 -- name: ListNotifications :many
 SELECT * FROM notifications
 WHERE user_id = $1

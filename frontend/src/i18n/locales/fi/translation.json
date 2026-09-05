@@ -606,6 +606,11 @@
       "chat_request": "Joku lähetti sinulle viestin tuotteesta {{title}}",
       "order_confirmed": "Tilauksesi {{title}} on vahvistettu",
       "order_completed": "Tilauksesi {{title}} on valmis",
+      "review_received": "Sait uuden arvostelun",
+      "new_follower": "Sinulla on uusi seuraaja",
+      "listing_removed": "Moderaattori poisti ilmoituksesi {{title}}",
+      "saved_listing_gone": "Tallentamasi {{title}} on loppuunmyyty",
+      "saved_listing_deleted": "Tallentamasi {{title}} on poistettu",
       "unknown": "Tililläsi tapahtui jotain"
     }
   },

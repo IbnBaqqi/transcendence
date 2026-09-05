@@ -11,8 +11,10 @@ import type { Notification, NotificationKind } from "../../api/types";
 // panel. Inference breaks the moment a third subject exists, and the schema
 // now has four.
 type Destination =
-  | { via: "order"; id: (n: Notification) => string | null }
+  | { via: "order" | "user" | "listing"; id: (n: Notification) => string | null }
   | { via: "conversation"; id: (n: Notification) => string | null };
+
+const PATHS = { order: "orders", user: "users", listing: "listings" } as const;
 
 const DESTINATIONS: Record<NotificationKind, Destination> = {
   order_placed: { via: "order", id: (n) => n.order_id },
@@ -22,6 +24,11 @@ const DESTINATIONS: Record<NotificationKind, Destination> = {
   order_confirmed: { via: "order", id: (n) => n.order_id },
   order_completed: { via: "order", id: (n) => n.order_id },
   chat_request: { via: "conversation", id: (n) => n.conversation_id },
+  review_received: { via: "user", id: (n) => n.actor_id },
+  new_follower: { via: "user", id: (n) => n.actor_id },
+  listing_removed: { via: "listing", id: (n) => n.listing_id },
+  saved_listing_gone: { via: "listing", id: (n) => n.listing_id },
+  saved_listing_deleted: { via: "user", id: (n) => n.actor_id },
 };
 
 function Row({
@@ -65,9 +72,9 @@ function Row({
     return <div className={className}>{inner}</div>;
   }
 
-  if (destination.via === "order") {
+  if (destination.via !== "conversation") {
     return (
-      <Link to={`/orders/${id}`} onClick={onNavigate} className={className}>
+      <Link to={`/${PATHS[destination.via]}/${id}`} onClick={onNavigate} className={className}>
         {inner}
       </Link>
     );

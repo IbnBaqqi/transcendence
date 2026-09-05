@@ -67,7 +67,7 @@ func newReviewFixture(t *testing.T) reviewFixture {
 	t.Cleanup(func() { _ = files.Close() })
 
 	return reviewFixture{
-		reviews:  NewReviewService(db.Queries),
+		reviews:  NewReviewService(db),
 		orders:   NewOrderService(db, notify.Disabled{}),
 		users:    NewUserService(db, files, notify.Disabled{}),
 		profiles: NewProfileService(db, files),
@@ -636,5 +636,72 @@ func TestSellerReviewsPaginate(t *testing.T) {
 	}
 	if beyond.Items == nil {
 		t.Error("a page past the end returned nil, which marshals to null")
+	}
+}
+
+func TestReviewingNotifiesTheSellerAndPointsAtTheirOwnProfile(t *testing.T) {
+	f := newReviewFixture(t)
+	ctx := context.Background()
+	order := f.completedOrder(t)
+
+	// The order lifecycle has already notified the seller several times, so
+	// what matters is the row this call adds, not the total.
+	reviewRows := func(who uuid.UUID) []database.Notification {
+		t.Helper()
+		all, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{UserID: who, Limit: 30})
+		if err != nil {
+			t.Fatalf("notifications: %v", err)
+		}
+		var out []database.Notification
+		for _, n := range all {
+			if n.Kind == notifyKindReviewReceived {
+				out = append(out, n)
+			}
+		}
+		return out
+	}
+
+	if before := reviewRows(f.seller); len(before) != 0 {
+		t.Fatalf("the seller already had %d review notifications before the review", len(before))
+	}
+
+	if _, err := f.reviews.Create(ctx, f.buyer, order.ID, 5, "quick and dry"); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	got := reviewRows(f.seller)
+	if len(got) != 1 {
+		t.Fatalf("the seller has %d review notifications, want 1", len(got))
+	}
+	// The seller, not the buyer who wrote it: a review is read on the profile
+	// it is about. Pointing at the reviewer sends them somewhere it is not.
+	if !got[0].ActorID.Valid || got[0].ActorID.UUID != f.seller {
+		t.Errorf("actor = %v, want the seller %v", got[0].ActorID, f.seller)
+	}
+
+	if len(reviewRows(f.buyer)) != 0 {
+		t.Errorf("the reviewer was notified about their own review")
+	}
+}
+
+func TestTheReviewRollsBackWhenTheNotificationFails(t *testing.T) {
+	f := newReviewFixture(t)
+	ctx := context.Background()
+	order := f.completedOrder(t)
+
+	if _, err := f.db.Exec("ALTER TABLE notifications RENAME TO notifications_hidden"); err != nil {
+		t.Fatalf("hiding the notifications table: %v", err)
+	}
+
+	if _, err := f.reviews.Create(ctx, f.buyer, order.ID, 5, "quick and dry"); err == nil {
+		t.Fatal("create succeeded despite the notification write failing")
+	}
+
+	if _, err := f.db.Exec("ALTER TABLE notifications_hidden RENAME TO notifications"); err != nil {
+		t.Fatalf("restoring the notifications table: %v", err)
+	}
+
+	if _, err := f.db.GetReviewForOrder(ctx, order.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Errorf("the review outlived its failed notification (err = %v)", err)
 	}
 }

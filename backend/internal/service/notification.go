@@ -24,11 +24,11 @@ const (
 	notifyKindOrderConfirmed = "order_confirmed"
 	notifyKindOrderCompleted = "order_completed"
 
-	// Migration 022 also permits review_received, new_follower,
-	// listing_removed and saved_listing_gone. Their constants and writers
-	// arrive with the call sites that use them: the three services involved
-	// hold a *database.Queries and cannot open the transaction the row has to
-	// share with the change it describes.
+	notifyKindReviewReceived      = "review_received"
+	notifyKindNewFollower         = "new_follower"
+	notifyKindListingRemoved      = "listing_removed"
+	notifyKindSavedListingGone    = "saved_listing_gone"
+	notifyKindSavedListingDeleted = "saved_listing_deleted"
 )
 
 // Written with qtx inside the caller's transaction, unlike the email beside it:
@@ -64,6 +64,89 @@ func recordChatNotification(
 		Kind:           notifyKindChatRequest,
 		ListingTitle:   sql.NullString{String: conv.ListingTitle, Valid: true},
 		ConversationID: uuid.NullUUID{UUID: conv.ID, Valid: true},
+	})
+}
+
+func recordActorNotification(
+	ctx context.Context,
+	qtx *database.Queries,
+	userID uuid.UUID,
+	kind string,
+	actorID uuid.UUID,
+	listingTitle sql.NullString,
+) error {
+	return qtx.CreateNotification(ctx, database.CreateNotificationParams{
+		ID:           database.NewID(),
+		UserID:       userID,
+		Kind:         kind,
+		ListingTitle: listingTitle,
+		ActorID:      uuid.NullUUID{UUID: actorID, Valid: true},
+	})
+}
+
+func recordListingNotification(
+	ctx context.Context,
+	qtx *database.Queries,
+	userID uuid.UUID,
+	kind string,
+	listing database.Listing,
+) error {
+	return qtx.CreateNotification(ctx, database.CreateNotificationParams{
+		ID:           database.NewID(),
+		UserID:       userID,
+		Kind:         kind,
+		ListingTitle: sql.NullString{String: listing.Title, Valid: true},
+		ListingID:    uuid.NullUUID{UUID: listing.ID, Valid: true},
+	})
+}
+
+func notifySavers(
+	ctx context.Context,
+	qtx *database.Queries,
+	listing database.Listing,
+	except uuid.UUID,
+	kind string,
+) error {
+	savers, err := qtx.ListSaversOfListing(ctx, database.ListSaversOfListingParams{
+		ListingID:  listing.ID,
+		ExceptUser: except,
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, saver := range savers {
+		// A deleted listing takes its notifications with it: listing_id is a
+		// foreign key that cascades, so the row has to point at the seller,
+		// who survives. Switching this to the listing loses every row silently.
+		if kind == notifyKindSavedListingDeleted {
+			err = recordActorNotification(ctx, qtx, saver, kind, listing.SellerID,
+				sql.NullString{String: listing.Title, Valid: true})
+		} else {
+			err = recordListingNotification(ctx, qtx, saver, kind, listing)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Restocking is what makes an existing saved_listing_gone false, so the rows
+// go when the stock comes back. Without this a buy-and-cancel cycle leaves a
+// "sold out" notice on a listing that is in stock, and repeating it fills the
+// reader's 30-row inbox with copies until nothing else is left in it.
+func restock(ctx context.Context, qtx *database.Queries, listingID uuid.UUID, quantity int32) error {
+	if _, err := qtx.IncrementListingQuantity(ctx, database.IncrementListingQuantityParams{
+		ID:       listingID,
+		Quantity: quantity,
+	}); err != nil {
+		return err
+	}
+
+	return qtx.DeleteNotificationsForListingKind(ctx, database.DeleteNotificationsForListingKindParams{
+		ListingID: uuid.NullUUID{UUID: listingID, Valid: true},
+		Kind:      notifyKindSavedListingGone,
 	})
 }
 

@@ -290,6 +290,10 @@ func (s *ListingService) DeleteListing(ctx context.Context, userID uuid.UUID, li
 		return err
 	}
 
+	if err := notifySavers(ctx, qtx, existing, userID, notifyKindSavedListingDeleted); err != nil {
+		return err
+	}
+
 	if err := qtx.DeleteListing(ctx, listingID); err != nil {
 		return err
 	}
