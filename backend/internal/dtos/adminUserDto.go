@@ -24,6 +24,13 @@ type ReinstateRequest struct {
 	Note string `json:"note"`
 }
 
+// The request carries the value it wants, so a third role later adds a
+// constant rather than a second pair of endpoints.
+type SetRoleRequest struct {
+	Role string `json:"role"`
+	Note string `json:"note"`
+}
+
 type AdminDeleteRequest struct {
 	Username string `json:"username"`
 	Reason   string `json:"reason"`

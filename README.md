@@ -403,6 +403,18 @@ docker compose exec db psql -U postgres -d transcendence \
 `UPDATE 1` means it worked; `UPDATE 0` means no account has that email. Adjust
 `-U` and `-d` if you changed `POSTGRES_USER` / `POSTGRES_DB` in `.env`.
 
+**This is for the *first* admin only.** After that,
+`PATCH /api/v1/admin/users/{id}/role` promotes and demotes from the admin
+console, writing a `promoted` or `demoted` row to the account's history. The
+psql route stays documented because the bootstrap problem is real: the endpoint
+requires an admin, so the very first one has nobody to grant it.
+
+Two refusals are worth knowing. You cannot change your own role — an admin who
+demotes themselves loses the endpoint that would undo it. And the last active
+admin cannot be demoted: the check takes the roster lock in the same
+transaction as the write, so two admins demoting each other at the same moment
+cannot both succeed and leave the instance with none.
+
 The role is read from the database on every request that needs it, not from the
 token, so **promotion and demotion take effect on the next request** — no
 logging out and back in. That is also what makes revoking an admin meaningful:

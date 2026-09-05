@@ -515,6 +515,46 @@ func (q *Queries) ReinstateUser(ctx context.Context, id uuid.UUID) (User, error)
 	return i, err
 }
 
+const setUserRole = `-- name: SetUserRole :one
+UPDATE users
+SET role = $1,
+    updated_at = now()
+WHERE id = $2
+  AND role <> $1
+  AND deleted_at IS NULL
+RETURNING id, email, username, password, role, created_at, updated_at, last_seen_at, show_online_status, deleted_at, suspended_at, suspension_reason, is_visible
+`
+
+type SetUserRoleParams struct {
+	Role string
+	ID   uuid.UUID
+}
+
+// The WHERE carries the precondition: no rows means the account already has
+// this role, which the service reports as an unchanged 200 rather than an
+// error. Deleted accounts are excluded here as well as in the service, so a
+// race between the two cannot promote a scrubbed row.
+func (q *Queries) SetUserRole(ctx context.Context, arg SetUserRoleParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, setUserRole, arg.Role, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LastSeenAt,
+		&i.ShowOnlineStatus,
+		&i.DeletedAt,
+		&i.SuspendedAt,
+		&i.SuspensionReason,
+		&i.IsVisible,
+	)
+	return i, err
+}
+
 const suspendUser = `-- name: SuspendUser :one
 UPDATE users
 SET suspended_at      = now(),
