@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
 	"strings"
 	"unicode/utf8"
 
@@ -20,10 +21,10 @@ const (
 )
 
 type ReviewService struct {
-	db *database.Queries
+	db *database.DB
 }
 
-func NewReviewService(db *database.Queries) *ReviewService {
+func NewReviewService(db *database.DB) *ReviewService {
 	return &ReviewService{db: db}
 }
 
@@ -98,7 +99,19 @@ func (s *ReviewService) Create(
 		}
 	}
 
-	review, err := s.db.CreateReview(ctx, database.CreateReviewParams{
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return database.Review{}, err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			slog.Error("review transaction rollback failed", "error", err)
+		}
+	}()
+
+	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	review, err := qtx.CreateReview(ctx, database.CreateReviewParams{
 		ID:         database.NewID(),
 		OrderID:    orderID,
 		SellerID:   order.SellerID,
@@ -111,6 +124,17 @@ func (s *ReviewService) Create(
 		return database.Review{}, &ConflictError{Message: "You have already reviewed this order"}
 	}
 	if err != nil {
+		return database.Review{}, err
+	}
+
+	// actor_id is the seller here, not the buyer who wrote the review: it is
+	// what the row points at, and a seller's reviews live on their own profile.
+	// Setting it to the reviewer sends them to a page their review is not on.
+	if err := recordActorNotification(ctx, qtx, order.SellerID, notifyKindReviewReceived, order.SellerID); err != nil {
+		return database.Review{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return database.Review{}, err
 	}
 

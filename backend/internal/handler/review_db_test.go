@@ -64,7 +64,7 @@ func TestCreatingAReviewEchoesTheAuthor(t *testing.T) {
 		}
 	}
 
-	h := New(Deps{DB: db, Review: service.NewReviewService(db.Queries)})
+	h := New(Deps{DB: db, Review: service.NewReviewService(db)})
 
 	req := httptest.NewRequest(http.MethodPost, "/orders/"+order.ID.String()+"/review",
 		strings.NewReader(`{"rating":5,"comment":"picked fresh"}`))

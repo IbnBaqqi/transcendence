@@ -58,7 +58,7 @@ func New(cfg *config.Config, db *database.DB, notifier notify.Notifier) (*api, e
 	adminUserService := service.NewAdminUserService(db, files)
 	moderationService := service.NewModerationService(db, files) // needs *DB for transaction
 	adminOrderService := service.NewAdminOrderService(db, notifier)
-	reviewService := service.NewReviewService(db.Queries)
+	reviewService := service.NewReviewService(db)
 
 	return &api{
 		DB:           db,
