@@ -3213,17 +3213,32 @@ paths:
       summary: Block a user
       operationId: blockUser
       description: |
-        Stops messaging in **both** directions: neither of you can start a
-        conversation with the other or send into an existing one. One-way would
-        leave the blocker able to open a thread the blocked party cannot answer.
+        While a block stands, the two of you are hidden from each other. It is
+          symmetric in every case below — one-way would leave the blocker able to
+          act on someone who cannot answer — and nothing is destroyed, so
+          unblocking restores all of it.
 
-        Idempotent — blocking someone already blocked is still a 204.
+          * **Messaging** stops both ways: neither can start a conversation nor
+            send into an existing one.
+          * **Profiles** answer 404 to each other, and so do **listings**,
+            whether fetched directly or through search.
+          * **New orders** are refused, with the same 404 a removed listing
+            gives.
 
-        A block does **not** remove a follow, and it does not affect orders. If
-        the two of you have a sale in progress, `confirm`, `handover` and
-        `receive` keep working: blocking is about messaging, and letting it
-        strand an order would turn a safety feature into a way to break
-        someone's transaction.
+          Refusals are 404 rather than 403 throughout: one that names the block
+          announces it, and the blocked party should not be able to tell a block
+          apart from a listing that was taken down.
+
+          Idempotent — blocking someone already blocked is still a 204.
+
+          A block does **not** remove a follow, and it does **not** touch an
+          order already placed. `confirm`, `handover` and `receive` keep working
+          on a sale in progress: letting a block strand one would turn a safety
+          feature into a way to break someone's transaction. The line is between
+          starting a sale and finishing one.
+
+          Moderators are exempt from the hiding, so a seller cannot conceal
+          their listings from review by blocking the person reviewing them.
       responses:
         "204":
           description: Blocked. No body.

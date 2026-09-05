@@ -66,7 +66,7 @@ func TestThePublicProfileHidesPresenceFromBlockedViewersAndStrangers(t *testing.
 		Block:   blocks,
 	})
 
-	profileOf := func(t *testing.T, subject uuid.UUID, viewer *uuid.UUID) string {
+	profileOf := func(t *testing.T, subject uuid.UUID, viewer *uuid.UUID) (int, string) {
 		t.Helper()
 
 		req := httptest.NewRequest(http.MethodGet, "/users/"+subject.String(), nil)
@@ -80,10 +80,16 @@ func TestThePublicProfileHidesPresenceFromBlockedViewersAndStrangers(t *testing.
 
 		rec := httptest.NewRecorder()
 		h.GetPublicProfile(rec, req.WithContext(reqCtx))
-		if rec.Code != http.StatusOK {
-			t.Fatalf("status = %d: %s", rec.Code, rec.Body.String())
+		return rec.Code, rec.Body.String()
+	}
+
+	mustSee := func(t *testing.T, subject uuid.UUID, viewer *uuid.UUID) string {
+		t.Helper()
+		code, body := profileOf(t, subject, viewer)
+		if code != http.StatusOK {
+			t.Fatalf("status = %d: %s", code, body)
 		}
-		return rec.Body.String()
+		return body
 	}
 
 	online := func(body string) bool {
@@ -91,20 +97,39 @@ func TestThePublicProfileHidesPresenceFromBlockedViewersAndStrangers(t *testing.
 	}
 
 	t.Run("a stranger sees presence", func(t *testing.T) {
-		if body := profileOf(t, alice, &carol); !online(body) {
+		if body := mustSee(t, alice, &carol); !online(body) {
 			t.Errorf("carol should see alice online:\n%s", body)
 		}
 	})
 
-	t.Run("the blocked user does not", func(t *testing.T) {
-		if body := profileOf(t, alice, &bob); online(body) {
-			t.Errorf("bob was blocked by alice and still sees her online:\n%s", body)
+	// Presence is moot between these two now: a block hides the whole profile,
+	// so there is no body to read a status out of. 404 rather than 403 on
+	// purpose - a refusal that names the block announces it. The presence rule
+	// above still governs the list endpoints, where a blocked person is still
+	// listed but never shown as online.
+	t.Run("the blocked user cannot read the profile at all", func(t *testing.T) {
+		if code, body := profileOf(t, alice, &bob); code != http.StatusNotFound {
+			t.Errorf("bob was blocked by alice: status = %d, want 404\n%s", code, body)
 		}
 	})
 
-	t.Run("the blocker does not either", func(t *testing.T) {
-		if body := profileOf(t, bob, &alice); online(body) {
-			t.Errorf("alice blocked bob and still sees him online:\n%s", body)
+	t.Run("nor can the blocker read theirs", func(t *testing.T) {
+		if code, body := profileOf(t, bob, &alice); code != http.StatusNotFound {
+			t.Errorf("alice blocked bob: status = %d, want 404\n%s", code, body)
+		}
+	})
+
+	t.Run("unblocking gives both profiles back", func(t *testing.T) {
+		if err := blocks.Unblock(ctx, alice, bob); err != nil {
+			t.Fatalf("unblocking: %v", err)
+		}
+		t.Cleanup(func() { _ = blocks.Block(ctx, alice, bob) })
+
+		if code, body := profileOf(t, alice, &bob); code != http.StatusOK {
+			t.Errorf("after unblocking, bob still cannot read alice: %d\n%s", code, body)
+		}
+		if code, body := profileOf(t, bob, &alice); code != http.StatusOK {
+			t.Errorf("after unblocking, alice still cannot read bob: %d\n%s", code, body)
 		}
 	})
 
@@ -113,7 +138,7 @@ func TestThePublicProfileHidesPresenceFromBlockedViewersAndStrangers(t *testing.
 	// "you are not signed in" apart from "this person is offline" - otherwise
 	// every public profile renders a permanent, false "Offline".
 	t.Run("an anonymous caller gets no presence field at all", func(t *testing.T) {
-		body := profileOf(t, alice, nil)
+		body := mustSee(t, alice, nil)
 
 		if strings.Contains(body, "presence") {
 			t.Errorf("presence was served without a token:\n%s", body)
