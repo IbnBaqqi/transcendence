@@ -14,6 +14,7 @@ import (
 
 	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/IbnBaqqi/transcendence/internal/database"
+	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/service"
 	"github.com/IbnBaqqi/transcendence/internal/storage"
 	"github.com/IbnBaqqi/transcendence/internal/testdb"
@@ -167,5 +168,70 @@ func TestAnUnactionedAccountHasAnEmptyHistoryNotNull(t *testing.T) {
 	// iterate. ToUserActionResponses allocates so it never can.
 	if body := strings.TrimSpace(rec.Body.String()); body != "[]" {
 		t.Fatalf("an empty history: got %s, want []", body)
+	}
+}
+
+// The response carries the account in its new state, so a console can render
+// the row it just changed without refetching.
+func TestARoleChangeRespondsWithTheNewState(t *testing.T) {
+	h, db := adminHandler(t)
+	admin := mkAdminUser(t, db, "admin", auth.RoleAdmin)
+	target := mkAdminUser(t, db, "target", auth.RoleUser)
+
+	rec := callAdmin(t, h.SetUserRole, admin, target.String(), `{"role":"ADMIN","note":"trusted"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("got %d with body %s, want 200", rec.Code, rec.Body.String())
+	}
+
+	var got dtos.AdminUserResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decoding: %v", err)
+	}
+	if got.Role != auth.RoleAdmin {
+		t.Errorf("role = %q, want the new one", got.Role)
+	}
+}
+
+// The role is a value the request carries, so a value outside the two is a
+// client mistake rather than a server state - 400, not 500.
+func TestAnUnknownRoleIsA400(t *testing.T) {
+	h, db := adminHandler(t)
+	admin := mkAdminUser(t, db, "admin", auth.RoleAdmin)
+	target := mkAdminUser(t, db, "target", auth.RoleUser)
+
+	rec := callAdmin(t, h.SetUserRole, admin, target.String(), `{"role":"MODERATOR"}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("got %d with body %s, want 400", rec.Code, rec.Body.String())
+	}
+}
+
+// The client's idea of how many admins exist is a stale page of a paginated
+// list, so the refusal has to be the server's and has to arrive as a message
+// the console can show.
+func TestDemotingTheLastAdminIsA409WithAMessage(t *testing.T) {
+	h, db := adminHandler(t)
+	admin := mkAdminUser(t, db, "admin", auth.RoleAdmin)
+	other := mkAdminUser(t, db, "other", auth.RoleAdmin)
+
+	if rec := callAdmin(t, h.SetUserRole, admin, other.String(), `{"role":"USER"}`); rec.Code != http.StatusOK {
+		t.Fatalf("demoting the second admin: %d %s", rec.Code, rec.Body.String())
+	}
+
+	rec := callAdmin(t, h.SetUserRole, other, admin.String(), `{"role":"USER"}`)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("got %d with body %s, want 409", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "last active admin") {
+		t.Errorf("body = %s, want the reason a console can render", rec.Body.String())
+	}
+}
+
+func TestChangingYourOwnRoleIsA403(t *testing.T) {
+	h, db := adminHandler(t)
+	admin := mkAdminUser(t, db, "admin", auth.RoleAdmin)
+
+	rec := callAdmin(t, h.SetUserRole, admin, admin.String(), `{"role":"USER"}`)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("got %d with body %s, want 403", rec.Code, rec.Body.String())
 	}
 }
