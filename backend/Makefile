@@ -136,11 +136,19 @@ db-reset:
 	@$(MAKE) --no-print-directory migrate-up
 	@$(MAKE) --no-print-directory seed
 
-# Fills an empty database with a few users and listings to click around.
-# Truncates first, so it is safe to re-run.
+# Fills the database with an admin, twenty foragers and fifty listings to click
+# around. Truncates first, so it is safe to re-run.
+#
+# Plain SQL through the db container rather than a Go program: it needs no
+# toolchain on the host, which is the difference between working and not on a
+# machine where `go` will not execute. The same file pastes into adminer, or
+# runs through any psql: see the header of sql/seed.sql.
+#
+# User and database come from the container's own environment, so this follows
+# whatever POSTGRES_* the compose file was brought up with.
 seed:
-	$(require-db-url)
-	@go run ./cmd/seed
+	@docker compose exec -T db psql -v ON_ERROR_STOP=1 \
+		-U $(POSTGRES_USER) -d $(POSTGRES_DB) < sql/seed.sql
 
 # Deletes tags no listing uses. Safe against a live database: it takes the
 # advisory lock every tag writer takes, so it cannot delete a tag a concurrent
