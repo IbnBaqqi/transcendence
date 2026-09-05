@@ -99,7 +99,10 @@ export function AccountActions({ account }: { account: AdminUser }) {
   return (
     <div className="flex flex-col items-end gap-2">
       {mode === null && (
-        <div className="flex gap-2">
+        // Wraps, like the other button rows: three actions do not fit a phone,
+        // and the longest labels are Finnish and Swedish rather than English -
+        // "Poista yllapito-oikeudet" is what tips it at 390px.
+        <div className="flex flex-wrap justify-end gap-2">
           <Button variant="secondary" onClick={() => setMode("primary")}>
             {t(suspending ? "adminUsers.suspend" : "adminUsers.reinstate")}
           </Button>

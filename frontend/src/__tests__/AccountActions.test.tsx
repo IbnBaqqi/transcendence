@@ -41,8 +41,12 @@ function setMutations(overrides: Record<string, unknown> = {}) {
   vi.mocked(useDeleteUser).mockReturnValue(
     stub({ mutate: deleteMutate }) as unknown as ReturnType<typeof useDeleteUser>,
   );
+  // No ...overrides here. A test passing a single shared reset spy would
+  // otherwise land it on two mutations, and deleting suspend.reset() from
+  // done() would still pass because setRole.reset() satisfied the same spy -
+  // the fixture manufacturing the evidence rather than the code providing it.
   vi.mocked(useSetUserRole).mockReturnValue(
-    stub({ mutate: roleMutate, ...overrides }) as unknown as ReturnType<typeof useSetUserRole>,
+    stub({ mutate: roleMutate }) as unknown as ReturnType<typeof useSetUserRole>,
   );
 }
 
