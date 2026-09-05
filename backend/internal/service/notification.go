@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 
@@ -16,6 +17,18 @@ const (
 	notifyKindOrderCancelled  = "order_cancelled"
 	notifyKindOrderResolved   = "order_resolved"
 	notifyKindChatRequest     = "chat_request"
+
+	// The order lifecycle's other two ends. The buyer was told when their
+	// order was cancelled and not when it was accepted or finished, which is
+	// the half of the handshake they actually wait on.
+	notifyKindOrderConfirmed = "order_confirmed"
+	notifyKindOrderCompleted = "order_completed"
+
+	// Migration 022 also permits review_received, new_follower,
+	// listing_removed and saved_listing_gone. Their constants and writers
+	// arrive with the call sites that use them: the three services involved
+	// hold a *database.Queries and cannot open the transaction the row has to
+	// share with the change it describes.
 )
 
 // Written with qtx inside the caller's transaction, unlike the email beside it:
@@ -34,7 +47,7 @@ func recordOrderNotification(
 		ID:           database.NewID(),
 		UserID:       userID,
 		Kind:         kind,
-		ListingTitle: order.ListingTitle,
+		ListingTitle: sql.NullString{String: order.ListingTitle, Valid: true},
 		OrderID:      uuid.NullUUID{UUID: order.ID, Valid: true},
 	})
 }
@@ -49,7 +62,7 @@ func recordChatNotification(
 		ID:             database.NewID(),
 		UserID:         userID,
 		Kind:           notifyKindChatRequest,
-		ListingTitle:   conv.ListingTitle,
+		ListingTitle:   sql.NullString{String: conv.ListingTitle, Valid: true},
 		ConversationID: uuid.NullUUID{UUID: conv.ID, Valid: true},
 	})
 }

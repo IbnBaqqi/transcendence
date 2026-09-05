@@ -325,13 +325,29 @@ func orderActionNotification(
 	actorID uuid.UUID,
 ) (kind string, recipient uuid.UUID, ok bool) {
 	switch action.key {
+	case keyConfirm:
+		// The buyer has been waiting on this since they ordered. They were
+		// told when an order was cancelled and not when it was accepted,
+		// which is the half of the handshake they actually watch for.
+		return notifyKindOrderConfirmed, order.BuyerID, true
+
 	case keyHandover:
 		// Both sides marked, so the order completed rather than merely being
-		// handed over - the completion is the news, not this.
+		// handed over. The completion is the news, and it goes to the party
+		// who did NOT act - the seller is standing here having just acted.
 		if order.Status == actionHandover.to {
-			return "", uuid.Nil, false
+			return notifyKindOrderCompleted, order.BuyerID, true
 		}
 		return notifyKindOrderHandedOver, order.BuyerID, true
+
+	case keyReceive:
+		// Same rule from the other side. A receipt that does not complete the
+		// order is the buyer marking their half early; the seller learns of it
+		// when their own action completes the order.
+		if order.Status == actionReceive.to {
+			return notifyKindOrderCompleted, order.SellerID, true
+		}
+		return "", uuid.Nil, false
 
 	case keyCancel:
 		if actorID == order.BuyerID {
@@ -367,13 +383,29 @@ func (s *OrderService) notifyOrderAction(
 		return
 	}
 
-	notifyUser(ctx, s.db.Queries, s.notify, recipient,
-		func(email, _ string) notify.Message {
-			if kind == notifyKindOrderHandedOver {
-				return notify.OrderHandedOver(email, order.ListingTitle)
-			}
+	// The inbox grows with new kinds; the email set does not. Emailing on every
+	// action is how a sending domain gets blacklisted, and the in-app inbox IS
+	// the notification system - mail is a courtesy on top of it.
+	//
+	// Listed explicitly rather than defaulting to one of them. The previous
+	// shape fell through to "an order was cancelled" for anything it did not
+	// recognise, so the first kind added here mailed people about a
+	// cancellation that never happened.
+	var build func(email, username string) notify.Message
+	switch kind {
+	case notifyKindOrderHandedOver:
+		build = func(email, _ string) notify.Message {
+			return notify.OrderHandedOver(email, order.ListingTitle)
+		}
+	case notifyKindOrderCancelled:
+		build = func(email, _ string) notify.Message {
 			return notify.OrderCancelled(email, order.ListingTitle)
-		})
+		}
+	default:
+		return
+	}
+
+	notifyUser(ctx, s.db.Queries, s.notify, recipient, build)
 }
 
 func (s *OrderService) ListEvents(ctx context.Context, userID uuid.UUID, orderID uuid.UUID) ([]database.OrderEvent, error) {

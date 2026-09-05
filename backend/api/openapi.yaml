@@ -1280,34 +1280,60 @@ components:
       description: |
         Something that happened to you. `kind` and the ids say what and where;
         the sentence is the client's to write.
-      required: [id, kind, listing_title, order_id, conversation_id, read_at, created_at]
+      required:
+        [id, kind, listing_title, order_id, conversation_id, actor_id,
+         listing_id, read_at, created_at]
       properties:
         id:
           type: string
           format: uuid
         kind:
           type: string
+          description: |
+            **Exactly one of the four subject ids is set**, and which one
+            depends on the kind rather than on what happens to be non-null.
+            Route on `kind`; a kind you do not recognise should render as plain
+            text rather than being guessed at from the ids.
           enum:
             [
               order_placed,
               order_handed_over,
               order_cancelled,
               order_resolved,
+              order_confirmed,
+              order_completed,
               chat_request,
             ]
         listing_title:
-          type: string
+          type: [string, "null"]
           description: |
             Snapshotted when the notification was written, like the one on an
-            order: the listing can be removed and this still has to read sensibly.
+            order: the listing can be removed and this still has to read
+            sensibly.
+
+            **Null for a kind with no listing.** Always present, so a client
+            tests for null rather than for a missing key.
         order_id:
           type: [string, "null"]
           format: uuid
-          description: Set for the four order kinds, null for `chat_request`.
+          description: Set for the six order kinds.
         conversation_id:
           type: [string, "null"]
           format: uuid
-          description: Set for `chat_request`, null for the order kinds.
+          description: Set for `chat_request`.
+        actor_id:
+          type: [string, "null"]
+          format: uuid
+          description: |
+            The person a notification is about, for kinds whose subject is
+            neither an order nor a conversation. No kind uses it yet; the
+            column and the field exist so that one can.
+        listing_id:
+          type: [string, "null"]
+          format: uuid
+          description: |
+            The listing a notification is about, for the same reason as
+            `actor_id`.
         read_at:
           type: [string, "null"]
           format: date-time
