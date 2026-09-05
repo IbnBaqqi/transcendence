@@ -42,6 +42,8 @@
   --color-muted: #57534e; /* secondary text */
   --color-line: #e7e5e4; /* borders / dividers */
   --color-danger: #c23b73; /* berry-500 - errors, alerts, anything gone wrong */
+  --color-attention: #c23b73; /* berry-500 - marks what wants the user's eye */
+  --color-attention-contrast: #ffffff; /* text on an attention fill */
   --color-accent: #297244; /* brand-600 */
   --color-accent-contrast: #ffffff; /* text on an accent background */
   --color-accent-hover: #225b39; /* brand-700 */
@@ -129,6 +131,10 @@
     /* berry-400, not the 500 used in light: 500 on this ground is 3.55:1,
        under the 4.5:1 floor for body text. 400 is 5.05:1. */
     --color-danger: #d6608f;
+    /* Same swap, and the contrast flips with it: white on berry-400 is only
+       3.54:1, off-black is 5.11:1. */
+    --color-attention: #d6608f; /* berry-400 */
+    --color-attention-contrast: #16171d; /* off-black */
     --color-accent: #5aab77; /* brand-400 — lighter reads better on dark */
     --color-accent-contrast: #16171d; /* off-black */
     --color-accent-hover: #8fc9a3; /* brand-300 */

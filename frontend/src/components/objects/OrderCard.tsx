@@ -30,7 +30,7 @@ export function OrderCard({ order }: { order: Order }) {
         {view.waitingKey && (
           <p
             className={`mt-2 text-sm ${
-              view.waitingOn === "you" ? "text-foreground font-medium" : "text-muted"
+              view.waitingOn === "you" ? "text-attention font-medium" : "text-muted"
             }`}
           >
             {t(view.waitingKey)}

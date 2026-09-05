@@ -39,7 +39,7 @@ export function NotificationBell() {
         {unread > 0 && (
           <span
             aria-label={t("notifications.unread", { count: unread })}
-            className="bg-accent text-accent-contrast absolute -top-1 -right-1.5 min-w-4 rounded-full px-1 text-[10px] leading-4 font-medium"
+            className="bg-attention text-attention-contrast absolute -top-1 -right-1.5 min-w-4 rounded-full px-1 text-[10px] leading-4 font-medium"
           >
             {unread > 9 ? "9+" : unread}
           </span>
