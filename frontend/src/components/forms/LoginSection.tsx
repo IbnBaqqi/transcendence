@@ -37,12 +37,7 @@ export function LoginSection({ onClose }: { onClose: () => void }) {
   return (
     <Form form={form} onSubmit={handleSubmit} isEditing={true}>
       <div className="space-y-4">
-        <OAuthButtons />
-        <div className="text-muted flex items-center gap-3 text-xs">
-          <span className="border-line h-px flex-1 border-t" />
-          {t("auth.orSignInWithEmail")}
-          <span className="border-line h-px flex-1 border-t" />
-        </div>
+        <OAuthButtons divider={t("auth.orSignInWithEmail")} />
         <div className="space-y-2">
           <FormField label={t("forms.email")} name="email" validateOnChange />
           <FormField label={t("forms.password")} name="password" type="password" validateOnChange />

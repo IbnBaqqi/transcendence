@@ -91,4 +91,9 @@ export const keys = {
     all: ["categories"] as const,
     list: () => [...keys.categories.all, "list"] as const,
   },
+
+  oauth: {
+    all: ["oauth"] as const,
+    providers: () => [...keys.oauth.all, "providers"] as const,
+  },
 } as const;

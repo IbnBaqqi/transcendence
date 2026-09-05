@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -54,6 +55,21 @@ func (r *Registry) Get(name string) (*Provider, bool) {
 	}
 	p, ok := r.providers[name]
 	return p, ok
+}
+
+// Sorted because Go randomises map iteration: unsorted, the sign-in buttons
+// would reorder between requests. Empty rather than nil so the JSON is [] and
+// not null - the frontend maps over this.
+func (r *Registry) Names() []string {
+	if r == nil {
+		return []string{}
+	}
+	names := make([]string, 0, len(r.providers))
+	for name := range r.providers {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 func RedirectURI(publicURL, provider string) string {

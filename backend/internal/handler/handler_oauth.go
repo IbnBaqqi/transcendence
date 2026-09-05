@@ -28,6 +28,14 @@ func oauthStateCookie(provider string) string {
 	return oauthStatePrefix + provider
 }
 
+// The registry only holds a provider whose credentials are set, so this is
+// what the sign-in buttons render from. Without it the frontend advertises
+// every provider the code knows about and a misconfigured one sends the user
+// to a JSON error page, outside the app.
+func (h *Handler) OAuthProviders(w http.ResponseWriter, r *http.Request) {
+	respondWithJSON(w, http.StatusOK, h.oauth.Names())
+}
+
 func (h *Handler) OAuthStart(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "provider")
 
