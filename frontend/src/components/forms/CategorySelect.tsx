@@ -9,7 +9,7 @@ type CategorySelectProps = {
   ariaLabel?: string;
   name: string;
   isEditing?: boolean;
-  width?: string;
+  width?: `max-w-${string}`;
 };
 
 export function CategorySelect({
@@ -30,9 +30,8 @@ export function CategorySelect({
   const { data: categories, isPending, isError, refetch } = useCategories();
   const categoryName = useLocalizedCategoryNames();
 
-  // A cap on a full-width control, not a replacement for it: a <select> with
-  // only a max-width falls back to the width of its longest option, so the
-  // field changes size with the category list and never reaches the cap.
+  // The cap applies on top of w-full: a bare <select> sizes to its longest
+  // option, so the field would change width with the category list.
   const width = widthProp ? `w-full ${widthProp}` : "w-full";
   const isEditing = isEditingProp ?? ctxEditing ?? false;
 

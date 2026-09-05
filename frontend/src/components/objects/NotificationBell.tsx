@@ -33,7 +33,7 @@ export function NotificationBell() {
         aria-expanded={open}
         className="text-muted hover:text-foreground relative inline-flex cursor-pointer items-center"
       >
-        <svg className="h-6 w-5" aria-hidden="true">
+        <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
           <use href="/icons.svg#notifications-icon" />
         </svg>
         {unread > 0 && (

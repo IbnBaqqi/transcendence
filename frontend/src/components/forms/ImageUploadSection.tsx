@@ -26,8 +26,11 @@ export function ImageUploadSection({ onComplete, onRemove, onClose }: ImageUploa
     addFiles(files);
   };
 
-  const handleRemove = async () => {
-    await onRemove?.();
+  // Fired, not awaited, like handleSave below: awaiting keeps the modal over
+  // the page for the whole request, which hides the caller's own pending line
+  // and leaves the button live for a second click.
+  const handleRemove = () => {
+    void onRemove?.();
     onClose();
   };
 
@@ -61,7 +64,7 @@ export function ImageUploadSection({ onComplete, onRemove, onClose }: ImageUploa
             being picked, so it should not read as a third step in that flow. */}
         {onRemove && (
           <div className="ml-auto">
-            <Button variant="tertiary" type="button" onClick={() => void handleRemove()}>
+            <Button variant="tertiary" type="button" onClick={handleRemove}>
               {t("avatar.remove")}
             </Button>
           </div>

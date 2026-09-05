@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
 function ErrorBoundaryFallback({ message }: { message?: string }) {
   const { t } = useTranslation();
   return (
-    <div className="mx-auto max-w-2xl p-9 text-center">
+    <div className="max-w-column mx-auto p-9 text-center">
       <h1 className="text-foreground text-page-title font-bold">
         {t("errorBoundary.somethingWentWrong")}
       </h1>

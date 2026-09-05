@@ -48,9 +48,8 @@ const USER: User = {
   providers: [],
 };
 
-// Profile itself only needs the modal system (delete-account, login prompt)
-// and the logout action. The auth stub exists because the login modal it can
-// open needs a context too.
+// Profile itself only needs the modal system (delete-account, login prompt).
+// The auth stub exists because the login modal it can open needs a context too.
 const AUTH_STUB: AuthContextValue = {
   user: USER,
   isLoading: false,
@@ -64,7 +63,6 @@ const uploadAvatar = vi.fn();
 const deleteAvatar = vi.fn();
 
 beforeEach(() => {
-  vi.mocked(AUTH_STUB.logout).mockClear();
   vi.mocked(useBlocks).mockReturnValue({
     data: [],
     isPending: false,
@@ -244,6 +242,34 @@ test("a rejected upload surfaces the reason and keeps no preview", async () => {
   await waitFor(() => {
     expect(container.querySelector("img")).toHaveAttribute("src", "/uploads/stored.png");
   });
+});
+
+// The editor must be gone before the request settles, or the page's own
+// "Removing…" line renders behind it and the button stays live for a second
+// click. The stubbed isPending in beforeEach cannot show this - the mutation
+// has to be caught mid-flight.
+test("closes the editor before the delete answers, so the page can show progress", async () => {
+  let finishDelete!: () => void;
+  deleteAvatar.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishDelete = resolve;
+    }),
+  );
+  vi.mocked(useDeleteAvatar).mockReturnValue({
+    mutateAsync: deleteAvatar,
+    isPending: true,
+  } as unknown as ReturnType<typeof useDeleteAvatar>);
+
+  const user = userEvent.setup();
+  renderPage({ data: WITH_AVATAR });
+
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
+  await user.click(screen.getByRole("button", { name: "Remove photo" }));
+
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByText("Removing…")).toBeInTheDocument();
+
+  finishDelete();
 });
 
 // The modal is gone by the time the request answers, so the page is where a

@@ -1,14 +1,8 @@
 import { useEffect, type RefObject } from "react";
 
-/**
- * Closes an open panel on an outside pointerdown or Escape, and on Escape
- * hands focus back to the trigger - the row the keyboard was standing on has
- * just unmounted, and without this focus falls to the top of the document.
- *
- * Takes the state setter rather than a close callback because useState
- * setters are stable: the listeners re-subscribe once per open, not once per
- * render.
- */
+// Escape hands focus back to the trigger: the row the keyboard was standing on
+// has just unmounted. The setter rather than a callback because useState
+// setters are stable, so the listeners subscribe once per open, not per render.
 export function useDismissable(
   open: boolean,
   setOpen: (open: boolean) => void,

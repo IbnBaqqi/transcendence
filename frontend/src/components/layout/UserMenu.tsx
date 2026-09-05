@@ -67,7 +67,6 @@ export function UserMenu() {
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-label={t("nav.menu")}
-        aria-haspopup="true"
         aria-expanded={open}
         className="focus:ring-accent inline-flex cursor-pointer items-center rounded-full focus:ring-2 focus:ring-offset-2 focus:outline-none"
       >
