@@ -238,6 +238,66 @@ protects this flow today.
 us to store. It also makes `users.password` nullable, which is what lets an
 account exist without one at all.
 
+### The backend framework
+
+**What the subject asks for.** The Web category names two separate minors — a
+frontend framework and a backend one — and defines a framework as a structured
+architecture with conventions, built-in features for common tasks such as
+routing, and an ecosystem of tools around it. Its examples are "Express,
+Fastify, NestJS, Django, Flask, Ruby on Rails".
+
+**The objection, first.** chi's own README calls it a *router*, and the same
+page of the subject lists jQuery and Axios as things that are **not**
+frameworks. Anyone who reads one line of chi's documentation has a fair
+question, and this section exists to answer it rather than hope it is not
+asked.
+
+**Why we claim it anyway.** Express is on the subject's own list, and Express is
+a router plus a middleware pipeline over Node's `http`. chi is a router plus a
+middleware pipeline over Go's `net/http` — the same relationship, to the same
+kind of standard library, solving the same problem. If Express is a framework,
+the structural argument that chi is not becomes hard to state.
+
+The definition the subject gives is about **how the application is organised**,
+not about what a dependency calls itself. On that reading:
+
+- **Routing with per-group middleware.** `backend/internal/app/router.go` is one
+  table: an `/api/v1` route with three groups nested inside it — authenticated,
+  then admin-only and session-only within that. Thirteen `r.Use` declarations,
+  and a route's protection is a property of where it sits rather than of what
+  its handler remembers to check.
+- **Built-ins used as built-ins.** Request ids and client-IP extraction come
+  from chi itself, which is the "built-in features for common tasks" half of
+  the definition doing its job rather than something we had to write.
+- **Our own middleware on the same seam**, seven files in
+  `backend/internal/middleware/`: structured logging, panic recovery, JWT and
+  API-key authentication, role and suspension checks, presence stamping, rate
+  limiting and a request-body cap — each written against chi's interface and
+  mounted the same way its own are.
+- **Layering as a convention, not a suggestion.** Fourteen packages under
+  `internal/`, with handler → service → database strictly one-directional:
+  handlers parse and respond, services own the rules and the transactions, and
+  nothing above `database/` writes SQL.
+- **Codegen and migrations as the data-access convention** — sqlc generates the
+  query layer from `sql/queries/`, goose versions the schema, and the generated
+  Go is never hand-edited.
+- **The contract is enforced, not documented.** `backend/api/openapi.yaml` is
+  hand-written and embedded in the binary, and a test walks chi's own route
+  table against it, failing when a route is in one and not the other.
+
+**Where the line actually is.** jQuery and Axios are libraries you *call* from
+code organised some other way — remove Axios and you change call sites. chi is
+what the code is organised *inside*: removing it means rewriting the routing
+table, re-deriving every group's middleware chain by hand, and finding a new
+home for the guarantees that currently come from where a route is declared.
+That is the difference the subject's definition is pointing at, and it is the
+test we would want applied to any candidate.
+
+**What it adds.** Honestly: no user-visible feature. What it buys is that
+adding an endpoint is a one-line declaration in a table whose surrounding group
+already decides who may reach it — which is why "is this route inside the
+`RequiredAuth` group?" is a question a test can ask, and does.
+
 ## API documentation
 
 The API describes itself. With the stack up (`docker compose up`):
