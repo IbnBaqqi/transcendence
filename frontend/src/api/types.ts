@@ -151,14 +151,31 @@ export interface UnreadCount {
 }
 
 export type NotificationKind =
-  "order_placed" | "order_handed_over" | "order_cancelled" | "order_resolved" | "chat_request";
+  | "order_placed"
+  | "order_handed_over"
+  | "order_cancelled"
+  | "order_resolved"
+  | "order_confirmed"
+  | "order_completed"
+  | "chat_request";
 
 export interface Notification {
   id: string;
-  kind: NotificationKind;
-  listing_title: string;
+  // Not closed to NotificationKind: the backend can ship a kind before the
+  // frontend knows it - they live in one repo but not in one PR. `(string & {})`
+  // keeps autocomplete for the known ones while admitting the rest, so an
+  // unrecognised kind is a case to handle rather than a type that cannot exist.
+  kind: NotificationKind | (string & {});
+  // Null for a kind with no listing - a follow has none. Always present, so a
+  // client tests for null rather than for a missing key.
+  listing_title: string | null;
+  // Exactly one of these four is set, and WHICH one depends on the kind. The
+  // database enforces it; the client routes on the kind rather than on which
+  // id happens to be non-null.
   order_id: string | null;
   conversation_id: string | null;
+  actor_id: string | null;
+  listing_id: string | null;
   read_at: Timestamp | null;
   created_at: Timestamp;
 }
