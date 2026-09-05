@@ -403,6 +403,18 @@ docker compose exec db psql -U postgres -d transcendence \
 `UPDATE 1` means it worked; `UPDATE 0` means no account has that email. Adjust
 `-U` and `-d` if you changed `POSTGRES_USER` / `POSTGRES_DB` in `.env`.
 
+**This is for the *first* admin only.** After that,
+`PATCH /api/v1/admin/users/{id}/role` promotes and demotes from the admin
+console, writing a `promoted` or `demoted` row to the account's history. The
+psql route stays documented because the bootstrap problem is real: the endpoint
+requires an admin, so the very first one has nobody to grant it.
+
+Two refusals are worth knowing. You cannot change your own role — an admin who
+demotes themselves loses the endpoint that would undo it. And the last active
+admin cannot be demoted: the check takes the roster lock in the same
+transaction as the write, so two admins demoting each other at the same moment
+cannot both succeed and leave the instance with none.
+
 The role is read from the database on every request that needs it, not from the
 token, so **promotion and demotion take effect on the next request** — no
 logging out and back in. That is also what makes revoking an admin meaningful:
@@ -559,6 +571,78 @@ rather than from your `PATH`, so there is nothing to install.
 The build output goes to `/tmp/air`, deliberately outside the repository: under
 compose the source is a bind mount, so a binary written into the tree would
 appear on your machine owned by the container's user.
+
+## Browser support
+
+Chrome, Brave and Firefox. Brave is Chromium like Chrome, and the subject's own
+list counts Edge, which is also Chromium — so a second Chromium browser is a
+browser rather than a reskin. What it adds here is **Shields**, whose cookie and
+storage blocking is the most likely thing in these three to break a real flow.
+
+### Minimum versions
+
+Set by Tailwind CSS v4, which compiles to `@property` and `color-mix()`:
+
+| Browser | Minimum |
+|---|---|
+| Chrome / Brave / Edge | **111** (March 2023) |
+| Firefox | **128** (July 2024) |
+| Safari | **16.4** (March 2023) — see below |
+
+**Safari is not claimed.** Nobody on the team runs macOS, so it has never been
+opened; the row is Tailwind's floor, not a result.
+
+### What was tested, and how
+
+Driven with Playwright at 1280x1000 and 320x700, signed out and signed in, on
+**Firefox 155**, **Chromium 153** and **Brave 152** — the last being a real
+Brave install, confirmed through `navigator.brave`. Chrome itself is the
+day-to-day development browser and shares Brave's and Chromium's engine, but it
+is not installed on the machine this pass ran on and was not driven here.
+
+Every check below produced **identical results in all three**, which is the
+claim the "consistent UI/UX" requirement is really about:
+
+| Check | Result |
+|---|---|
+| Sign up, then delete the access token and reload | Session returns through the refresh cookie |
+| Modal opens with `role="dialog"` and `aria-modal` | Present |
+| Description box grows as you type | 42px to 162px |
+| Drag a file onto the photo dropzone | Photo added |
+| Brand mark paints in the header | 24x32 box |
+| Dark mode through `prefers-color-scheme` | `rgb(22, 23, 29)` |
+| Header at 320px, signed out, signed in, as admin | No horizontal overflow |
+| Console errors | None |
+
+**Brave was tested with Shields both ways.** Playwright launches Chromium
+browsers with `--disable-extensions`, and Shields is an extension — so the
+default run may not exercise it at all. Repeating the sign-up and refresh-cookie
+flow with extensions kept gives the same result: the `refresh_token` cookie is
+set `SameSite=Lax`, path-scoped to `/api/v1/auth`, and survives.
+
+### Known limitations
+
+- **Auto-growing text boxes need a 2026 browser.** The bio and description
+  fields use `field-sizing: content`, which MDN puts at Baseline June 2026.
+  Below that they fall back to a three-row box with a scrollbar — nothing is
+  lost but the growing.
+- **Number inputs look different.** Firefox draws the spinner arrows on the
+  price fields permanently; Chromium reveals them on hover. Cosmetic, and not
+  worth overriding a platform control to hide.
+- **Modals do not trap focus.** Tab moves out of an open dialog into the page
+  behind it, in every browser. `aria-modal` says otherwise, which is a promise
+  the keyboard does not yet keep. Escape and the backdrop both close them.
+
+### Two bugs this found
+
+- **The brand mark did not render in Firefox at all.** It was referenced as
+  `<use href="/favicon.svg">` with no fragment, which asks for the target
+  document's root element — Chromium supports that, Firefox does not. Below
+  `sm` the wordmark is hidden, so on a phone in Firefox the top-left corner was
+  empty. The mark now lives in the icon sprite and is referenced by id, like
+  every other icon. `iconSprite.test.ts` fails on any fragment-less reference.
+- **Modals were not announced as dialogs.** No `role`, no `aria-modal` — found
+  because a test driver could not locate the dialog it had just opened.
 
 ## Running the tests
 

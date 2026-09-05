@@ -626,6 +626,10 @@
     },
     "suspend": "Suspend",
     "reinstate": "Reinstate",
+    "makeAdmin": "Make admin",
+    "removeAdmin": "Remove admin",
+    "makeAdminWarning": "{{username}} will be able to moderate listings, orders and accounts.",
+    "removeAdminWarning": "{{username}} will lose access to the admin section on their next request.",
     "confirm": "Confirm",
     "working": "Working…",
     "reasonForUser": "Reason (shown to them)",
@@ -644,7 +648,9 @@
     "action": {
       "suspended": "Suspended",
       "reinstated": "Reinstated",
-      "deleted": "Deleted"
+      "deleted": "Deleted",
+      "promoted": "Made admin",
+      "demoted": "Admin removed"
     }
   }
 }

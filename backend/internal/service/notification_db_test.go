@@ -128,6 +128,30 @@ func TestAHandoverBeforeReceiptTellsTheBuyer(t *testing.T) {
 	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
 		t.Errorf("buyer notifications = %v, want %v", got, want)
 	}
+
+	// The other direction of "it goes to whoever did not act", continued on the
+	// state this test already built. The seller has handed over and the order
+	// is still confirmed, so the buyer's receipt is the second mark and the
+	// SELLER is the one who learns of it.
+	//
+	// This half is where a copied order.BuyerID would be invisible: it is the
+	// only branch that introduces a new recipient, and every other completion
+	// assertion reads the buyer's inbox.
+	// Not empty to begin with - placing the order already told the seller - so
+	// the assertion is about what the receipt ADDS, at the front.
+	before := kindsOf(notificationsFor(t, f.db, f.seller))
+
+	if _, err := f.svc.ReceiveOrder(ctx, f.buyer, f.order.ID); err != nil {
+		t.Fatalf("receive: %v", err)
+	}
+
+	after := kindsOf(notificationsFor(t, f.db, f.seller))
+	if len(after) != len(before)+1 {
+		t.Fatalf("seller notifications went from %v to %v, want one more", before, after)
+	}
+	if after[0] != notifyKindOrderCompleted {
+		t.Errorf("newest = %q, want %q", after[0], notifyKindOrderCompleted)
+	}
 }
 
 // The row commits with the change it describes. A refused action leaves no

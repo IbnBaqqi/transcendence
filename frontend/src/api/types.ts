@@ -373,7 +373,10 @@ export type AdminUserStatus = "active" | "suspended" | "deleted";
 
 // Past tense: the audit log records what was done. Distinct from the request
 // bodies, which carry no action word at all - the endpoint is the verb.
-export type UserActionKind = "suspended" | "reinstated" | "deleted";
+//
+// Every value here needs a matching adminUsers.action.* string in all three
+// locales, or the history panel renders the raw key at whoever is reading it.
+export type UserActionKind = "suspended" | "reinstated" | "deleted" | "promoted" | "demoted";
 
 // An account as an admin sees it. The only representation in the API carrying
 // `email`, and the only one that shows deleted accounts - both justified by
@@ -424,6 +427,15 @@ export interface SuspendUserInput {
 export interface ReinstateUserInput {
   // Optional here alone: "this was a mistake" needs no justification the way a
   // punishment does.
+  note?: string;
+}
+
+export interface SetRoleInput {
+  // The role the account should end up with, not a direction - so a third role
+  // later is a value rather than another endpoint. Sending the one it already
+  // has is a no-op the server answers 200 to, writing no history.
+  role: AdminUser["role"];
+  // Optional, like a reinstatement's: a role change is not a sanction.
   note?: string;
 }
 

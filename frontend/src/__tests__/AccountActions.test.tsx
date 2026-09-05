@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { AccountActions } from "../components/objects/AccountActions";
-import { useDeleteUser, useReinstateUser, useSuspendUser } from "../api/adminUsers";
+import { useDeleteUser, useReinstateUser, useSetUserRole, useSuspendUser } from "../api/adminUsers";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import type { AdminUser, User } from "../api/types";
 
@@ -10,6 +10,7 @@ vi.mock("../api/adminUsers", () => ({
   useSuspendUser: vi.fn(),
   useReinstateUser: vi.fn(),
   useDeleteUser: vi.fn(),
+  useSetUserRole: vi.fn(),
 }));
 
 const TARGET_ID = "9c4e1b7a-2d63-4f80-8e15-77b2a4c9d0e6";
@@ -18,6 +19,7 @@ const ADMIN_ID = "3f1a7c2e-8b4d-4e91-9a5f-2c6d8e0b1a34";
 const suspendMutate = vi.fn();
 const reinstateMutate = vi.fn();
 const deleteMutate = vi.fn();
+const roleMutate = vi.fn();
 
 function stub(overrides: Record<string, unknown> = {}) {
   return {
@@ -38,6 +40,13 @@ function setMutations(overrides: Record<string, unknown> = {}) {
   );
   vi.mocked(useDeleteUser).mockReturnValue(
     stub({ mutate: deleteMutate }) as unknown as ReturnType<typeof useDeleteUser>,
+  );
+  // No ...overrides here. A test passing a single shared reset spy would
+  // otherwise land it on two mutations, and deleting suspend.reset() from
+  // done() would still pass because setRole.reset() satisfied the same spy -
+  // the fixture manufacturing the evidence rather than the code providing it.
+  vi.mocked(useSetUserRole).mockReturnValue(
+    stub({ mutate: roleMutate }) as unknown as ReturnType<typeof useSetUserRole>,
   );
 }
 
@@ -270,4 +279,59 @@ test("cancelling clears a failure rather than leaving it under the row", async (
   await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
   expect(reset).toHaveBeenCalled();
+});
+
+// The label is the destination, not the direction: a row already showing ADMIN
+// offers the way back, and a USER row offers the way up.
+test("offers Make admin to a plain user", () => {
+  renderActions(makeAccount({ role: "USER" }));
+  expect(screen.getByRole("button", { name: "Make admin" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Remove admin" })).not.toBeInTheDocument();
+});
+
+test("offers Remove admin to an admin", () => {
+  renderActions(makeAccount({ role: "ADMIN" }));
+  expect(screen.getByRole("button", { name: "Remove admin" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Make admin" })).not.toBeInTheDocument();
+});
+
+// The request carries the role it wants. Sending a direction would mean the
+// client deciding what ADMIN's opposite is, which is the server's business.
+test("sends the role the account should end up with", async () => {
+  const user = userEvent.setup();
+  renderActions(makeAccount({ role: "USER" }));
+
+  await user.click(screen.getByRole("button", { name: "Make admin" }));
+  await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+  expect(roleMutate).toHaveBeenCalledWith({ userId: TARGET_ID, role: "ADMIN" }, expect.anything());
+});
+
+// Omitted rather than sent as "", like the reinstate note: an empty string is
+// a value the audit trail would keep.
+test("sends the note only when one was written", async () => {
+  const user = userEvent.setup();
+  renderActions(makeAccount({ role: "ADMIN" }));
+
+  await user.click(screen.getByRole("button", { name: "Remove admin" }));
+  await user.type(screen.getByLabelText("Note (optional)"), "stepping down");
+  await user.click(screen.getByRole("button", { name: "Confirm" }));
+
+  expect(roleMutate).toHaveBeenCalledWith(
+    { userId: TARGET_ID, role: "USER", note: "stepping down" },
+    expect.anything(),
+  );
+});
+
+// Deletion asks for a typed username because it cannot be undone. A role
+// change is undone by the same control that did it, and over-confirming a
+// reversible action trains people to click through the one that is not.
+test("confirms without asking for the username to be typed", async () => {
+  const user = userEvent.setup();
+  renderActions(makeAccount({ role: "USER" }));
+
+  await user.click(screen.getByRole("button", { name: "Make admin" }));
+
+  expect(screen.queryByLabelText(/Type forager/)).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Confirm" })).toBeEnabled();
 });

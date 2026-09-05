@@ -41,7 +41,12 @@ export function FormTextArea({
           <textarea
             className="m-0 field-sizing-content w-full min-w-64 resize-none overflow-y-auto rounded border p-2 shadow focus:outline-none"
             id={name}
-            rows={1}
+            // field-sizing overrides rows where it is supported, so this is
+            // invisible on a current browser. It is the fallback that matters:
+            // field-sizing is Baseline only since June 2026, and with rows={1}
+            // and resize-none an older browser gives a one-line box the user
+            // cannot enlarge.
+            rows={3}
             maxLength={maxLength}
             placeholder={placeholder}
             {...registerRest}
