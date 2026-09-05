@@ -645,7 +645,9 @@
     "action": {
       "suspended": "Avstängd",
       "reinstated": "Återställd",
-      "deleted": "Raderad"
+      "deleted": "Raderad",
+      "promoted": "Gjord till administratör",
+      "demoted": "Administratör borttagen"
     }
   }
 }

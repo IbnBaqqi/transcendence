@@ -356,7 +356,10 @@ export type AdminUserStatus = "active" | "suspended" | "deleted";
 
 // Past tense: the audit log records what was done. Distinct from the request
 // bodies, which carry no action word at all - the endpoint is the verb.
-export type UserActionKind = "suspended" | "reinstated" | "deleted";
+//
+// Every value here needs a matching adminUsers.action.* string in all three
+// locales, or the history panel renders the raw key at whoever is reading it.
+export type UserActionKind = "suspended" | "reinstated" | "deleted" | "promoted" | "demoted";
 
 // An account as an admin sees it. The only representation in the API carrying
 // `email`, and the only one that shows deleted accounts - both justified by

@@ -123,3 +123,20 @@ test("offers the history of a deleted account", async () => {
   await userEvent.click(screen.getByRole("button", { name: "Show history" }));
   expect(screen.getByText("Suspended")).toBeInTheDocument();
 });
+
+// The role endpoint writes `promoted` and `demoted` audit rows. Without a
+// label for each, this panel renders the raw key - "adminUsers.action.promoted"
+// - at whoever opens the history. Every UserActionKind needs a string in all
+// three locales, and the union is what makes a missing one a build error.
+test.each([
+  ["promoted", "Made admin"],
+  ["demoted", "Admin removed"],
+])("names a %s row rather than showing its key", async (action, label) => {
+  setHistory([makeAction({ action: action as UserAction["action"] })]);
+  renderRow();
+
+  await userEvent.click(screen.getByRole("button", { name: "Show history" }));
+
+  expect(screen.getByText(label)).toBeInTheDocument();
+  expect(screen.queryByText(/adminUsers\.action\./)).not.toBeInTheDocument();
+});

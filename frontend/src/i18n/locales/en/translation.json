@@ -645,7 +645,9 @@
     "action": {
       "suspended": "Suspended",
       "reinstated": "Reinstated",
-      "deleted": "Deleted"
+      "deleted": "Deleted",
+      "promoted": "Made admin",
+      "demoted": "Admin removed"
     }
   }
 }

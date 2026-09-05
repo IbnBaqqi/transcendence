@@ -645,7 +645,9 @@
     "action": {
       "suspended": "Jäädytetty",
       "reinstated": "Palautettu",
-      "deleted": "Poistettu"
+      "deleted": "Poistettu",
+      "promoted": "Nostettu ylläpitäjäksi",
+      "demoted": "Ylläpito-oikeudet poistettu"
     }
   }
 }
