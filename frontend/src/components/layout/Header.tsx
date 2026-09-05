@@ -23,18 +23,21 @@ export default function Header() {
   return (
     <header className="border-line bg-surface sticky top-0 z-10 border-b">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <div className="flex flex-row items-center gap-2">
-          <Link to="/">
-            <svg className="xs:h-8 xs:w-6 h-6 w-5" aria-hidden="true">
-              <use href="/favicon.svg" />
-            </svg>
-          </Link>
-          {/* Mark only when narrow: mobile-first, so the wordmark is hidden by
-              default and appears once there is room for it. */}
-          <Link to="/" className="text-accent hidden text-lg font-bold sm:inline">
-            {t("brand")}
-          </Link>
-        </div>
+        {/* One link, not two: the mark and the wordmark are the same target
+            with the same name, and as separate links they were two tab stops
+            announcing "Metsatori" twice. The label is on the link because the
+            wordmark is display:none below sm and the mark is aria-hidden, so
+            otherwise the only thing in the corner has no accessible name. */}
+        <Link to="/" aria-label={t("brand")} className="flex flex-row items-center gap-2">
+          {/* The sprite, not favicon.svg: an external <use> with no fragment
+              renders nothing in Firefox. */}
+          <svg className="xs:h-8 xs:w-6 h-6 w-5" aria-hidden="true">
+            <use href="/icons.svg#brand-mark" />
+          </svg>
+          {/* Mobile-first: the wordmark is hidden by default and appears once
+              there is room for it. */}
+          <span className="text-accent hidden text-lg font-bold sm:inline">{t("brand")}</span>
+        </Link>
         {/* wrap, not hide: an admin gets three icon+text links appended here,
             and at 320px that is ~470px of nav in a 320px viewport. Hiding them
             below sm would leave those sections reachable only by typing the
