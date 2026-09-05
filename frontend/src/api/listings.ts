@@ -87,6 +87,21 @@ export function useCreateListing() {
   });
 }
 
+export function useDeleteListing() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(apiPath`/listings/${id}`);
+    },
+
+    onSuccess: (_data, id) => {
+      queryClient.removeQueries({ queryKey: keys.listings.detail(id) });
+      return queryClient.invalidateQueries({ queryKey: keys.listings.all });
+    },
+  });
+}
+
 export function useListingImages(id: string) {
   return useQuery({
     queryKey: keys.listings.images(id),

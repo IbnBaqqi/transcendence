@@ -11,7 +11,11 @@ import { makeListing, makeOrder, BUYER_ID, SELLER_ID } from "../test/factories";
 import type { Listing, Order, User } from "../api/types";
 
 vi.mock("../api/orders", () => ({ useOrders: vi.fn() }));
-vi.mock("../api/listings", () => ({ useSearchListings: vi.fn() }));
+// The rows carry a delete action now, so the module needs its mutation too.
+vi.mock("../api/listings", () => ({
+  useSearchListings: vi.fn(),
+  useDeleteListing: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
 
 const SELLER: User = {
   id: SELLER_ID,

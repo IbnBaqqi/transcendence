@@ -358,7 +358,13 @@
         "allRemaining": "{{qty}} {{unit}} kvar",
         "remaining": "{{left}} av {{original}} {{unit}} kvar",
         "sold": "{{count}} sålda",
-        "soldOut": "Slutsåld"
+        "soldOut": "Slutsåld",
+        "delete": "Radera annons",
+        "confirmDelete": "Radera permanent",
+        "deleting": "Raderar…",
+        "deleteWarning": "Annonsen och dess bilder raderas. Slutförda köp behåller sina uppgifter.",
+        "saleInProgress": "En försäljning pågår. Du kan radera den när den är klar eller avbruten.",
+        "deleteFailed": "Kunde inte radera annonsen."
       }
     },
     "following": {

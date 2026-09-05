@@ -1,5 +1,6 @@
-import { deriveListingStats, groupOrdersByUrgency } from "../lib/sellerStats";
+import { deriveListingStats, groupOrdersByUrgency, hasSaleInProgress } from "../lib/sellerStats";
 import { makeListing, makeOrder, BUYER_ID, SELLER_ID } from "../test/factories";
+import type { OrderStatus } from "../api/types";
 
 // makeListing's id, which makeOrder already points its listing_id at.
 const LISTING = makeListing({ quantity: 2 });
@@ -76,6 +77,31 @@ describe("groupOrdersByUrgency", () => {
 
     expect(groups.needsYou.length + groups.inProgress.length + groups.finished.length).toBe(
       orders.length,
+    );
+  });
+});
+
+describe("hasSaleInProgress", () => {
+  // The exhaustive Record in the module makes a sixth status a compile error,
+  // so this only has to pin which side of the line each status falls on.
+  test.each([
+    ["pending", true],
+    ["confirmed", true],
+    ["completed", false],
+    ["cancelled", false],
+    ["refunded", false],
+  ] as [OrderStatus, boolean][])("%s counts as in flight: %s", (status, expected) => {
+    expect(hasSaleInProgress(LISTING, [makeOrder({ status })])).toBe(expected);
+  });
+
+  // listing_id is nullable now, and another listing's order must not disable
+  // this row's button.
+  test("ignores orders that belong to another listing, or to none", () => {
+    expect(
+      hasSaleInProgress(LISTING, [makeOrder({ listing_id: "other", status: "pending" })]),
+    ).toBe(false);
+    expect(hasSaleInProgress(LISTING, [makeOrder({ listing_id: null, status: "pending" })])).toBe(
+      false,
     );
   });
 });

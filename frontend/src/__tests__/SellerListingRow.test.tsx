@@ -1,16 +1,35 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
 import { SellerListingRow } from "../components/objects/SellerListingRow";
+import { useDeleteListing } from "../api/listings";
 import { deriveListingStats } from "../lib/sellerStats";
 import { makeListing, makeOrder } from "../test/factories";
-import type { Order } from "../api/types";
+import type { Order, OrderStatus } from "../api/types";
+
+// The row owns the delete action now, so every render needs the mutation.
+vi.mock("../api/listings", () => ({ useDeleteListing: vi.fn() }));
+
+const deleteListing = vi.fn();
+
+beforeEach(() => {
+  deleteListing.mockReset().mockResolvedValue(undefined);
+  vi.mocked(useDeleteListing).mockReturnValue({
+    mutateAsync: deleteListing,
+    isPending: false,
+  } as unknown as ReturnType<typeof useDeleteListing>);
+});
 
 function renderRow(quantity: number, orders: Order[] = []) {
   const listing = makeListing({ quantity });
   return render(
     <MemoryRouter>
-      <SellerListingRow listing={listing} stats={deriveListingStats(listing, orders)} />
+      <SellerListingRow
+        listing={listing}
+        stats={deriveListingStats(listing, orders)}
+        orders={orders}
+      />
     </MemoryRouter>,
   );
 }
@@ -36,8 +55,63 @@ describe("SellerListingRow", () => {
     expect(screen.getByText(/4 sold/)).toBeInTheDocument();
   });
 
-  test("links to the listing", () => {
+  // The card used to be one <Link> around everything, which cannot hold a
+  // button - so the link moved to the title when the delete action arrived.
+  test("links to the listing, without wrapping the controls in it", () => {
     renderRow(4);
-    expect(screen.getByRole("link")).toHaveAttribute("href", `/listings/${makeListing().id}`);
+    const title = screen.getByRole("link");
+    expect(title).toHaveAttribute("href", `/listings/${makeListing().id}`);
+    expect(title.querySelector("button")).toBeNull();
+  });
+});
+
+describe("deleting", () => {
+  // The rule the backend enforces, mirrored so the seller reads it before
+  // clicking rather than after a 409. Both sides matter: blocking on a finished
+  // sale is what made a listing permanent once anything had ever sold.
+  test.each([
+    ["pending", false],
+    ["confirmed", false],
+    ["completed", true],
+    ["cancelled", true],
+    ["refunded", true],
+  ] as [OrderStatus, boolean][])("a %s order leaves delete available: %s", (status, available) => {
+    renderRow(3, [makeOrder({ status })]);
+
+    if (available) {
+      expect(screen.getByRole("button", { name: "Delete listing" })).toBeInTheDocument();
+    } else {
+      expect(screen.queryByRole("button", { name: "Delete listing" })).not.toBeInTheDocument();
+      expect(screen.getByText(/A sale is in progress/)).toBeInTheDocument();
+    }
+  });
+
+  // Irreversible, and it takes the photos with it, so the first click only asks.
+  test("takes two clicks, and says what goes", async () => {
+    const user = userEvent.setup();
+    renderRow(3);
+
+    await user.click(screen.getByRole("button", { name: "Delete listing" }));
+    expect(deleteListing).not.toHaveBeenCalled();
+    expect(screen.getByText(/Completed sales keep their records/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Delete permanently" }));
+    expect(deleteListing).toHaveBeenCalledWith(makeListing().id);
+  });
+
+  // A sale can start between the render and the click, so the client's guess
+  // can be stale - the server's answer is the one the seller needs to see.
+  test("shows the server's reason when it refuses", async () => {
+    deleteListing.mockRejectedValue({
+      status: 409,
+      message: "This listing has a sale in progress. Finish or cancel it before deleting.",
+    });
+    const user = userEvent.setup();
+    renderRow(3);
+
+    await user.click(screen.getByRole("button", { name: "Delete listing" }));
+    await user.click(screen.getByRole("button", { name: "Delete permanently" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("sale in progress");
   });
 });
