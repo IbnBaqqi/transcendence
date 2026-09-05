@@ -13,6 +13,7 @@ import type {
   DeleteUserInput,
   PaginatedAdminUsers,
   ReinstateUserInput,
+  SetRoleInput,
   SuspendUserInput,
   UserAction,
 } from "./types";
@@ -67,6 +68,20 @@ export function useReinstateUser() {
   return useMutation({
     mutationFn: async ({ userId, ...input }: ReinstateUserInput & { userId: string }) =>
       (await api.post<AdminUser>(apiPath`/admin/users/${userId}/reinstate`, input)).data,
+    onSuccess: () => invalidateAdminUsers(qc),
+    onError: () => invalidateAdminUsers(qc),
+  });
+}
+
+export function useSetUserRole() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    // PATCH, because the request carries the role it wants rather than a
+    // direction. The server refuses a self-target and the last active admin;
+    // both arrive as errors to render, not rules to duplicate here.
+    mutationFn: async ({ userId, ...input }: SetRoleInput & { userId: string }) =>
+      (await api.patch<AdminUser>(apiPath`/admin/users/${userId}/role`, input)).data,
     onSuccess: () => invalidateAdminUsers(qc),
     onError: () => invalidateAdminUsers(qc),
   });

@@ -623,6 +623,10 @@
     },
     "suspend": "Stäng av",
     "reinstate": "Återställ",
+    "makeAdmin": "Gör till administratör",
+    "removeAdmin": "Ta bort administratör",
+    "makeAdminWarning": "{{username}} kommer att kunna moderera annonser, beställningar och konton.",
+    "removeAdminWarning": "{{username}} förlorar åtkomst till administratörsdelen vid nästa förfrågan.",
     "confirm": "Bekräfta",
     "working": "Behandlar…",
     "reasonForUser": "Orsak (visas för dem)",
@@ -641,7 +645,9 @@
     "action": {
       "suspended": "Avstängd",
       "reinstated": "Återställd",
-      "deleted": "Raderad"
+      "deleted": "Raderad",
+      "promoted": "Gjord till administratör",
+      "demoted": "Administratör borttagen"
     }
   }
 }
