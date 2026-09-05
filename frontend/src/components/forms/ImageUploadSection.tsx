@@ -6,13 +6,14 @@ import Button from "../objects/Button.tsx";
 
 type ImageUploadSectionProps = {
   onComplete?: (file: File) => void;
+  onRemove?: () => void | Promise<void>;
   onClose: () => void;
 };
 
 // Single-image picker used inside the "imageUpload" modal (currently just the
 // avatar flow, see Avatar.tsx/Profile.tsx). It sends nothing itself: the file
 // goes back to the caller via onComplete, which decides where it is uploaded.
-export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionProps) {
+export function ImageUploadSection({ onComplete, onRemove, onClose }: ImageUploadSectionProps) {
   const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const { images, addFiles, removeImage } = useImageGallery({
@@ -23,6 +24,14 @@ export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionPr
   const handleFilesSelected = (files: File[]) => {
     setError(null);
     addFiles(files);
+  };
+
+  // Fired, not awaited, like handleSave below: awaiting keeps the modal over
+  // the page for the whole request, which hides the caller's own pending line
+  // and leaves the button live for a second click.
+  const handleRemove = () => {
+    void onRemove?.();
+    onClose();
   };
 
   const handleSave = () => {
@@ -43,7 +52,7 @@ export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionPr
         thumbnailClassName="h-48 w-48"
         shape="circle"
       />
-      {error && <p className="text-berry-500 text-center text-sm">{error}</p>}
+      {error && <p className="text-danger text-center text-sm">{error}</p>}
       <div className="flex flex-row gap-2">
         <Button variant="primary" type="button" onClick={handleSave} disabled={images.length === 0}>
           {t("common.save")}
@@ -51,6 +60,15 @@ export function ImageUploadSection({ onComplete, onClose }: ImageUploadSectionPr
         <Button variant="secondary" type="button" onClick={onClose}>
           {t("common.cancel")}
         </Button>
+        {/* Right and tertiary: it acts on the stored picture, not on the file
+            being picked, so it should not read as a third step in that flow. */}
+        {onRemove && (
+          <div className="ml-auto">
+            <Button variant="tertiary" type="button" onClick={handleRemove}>
+              {t("avatar.remove")}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

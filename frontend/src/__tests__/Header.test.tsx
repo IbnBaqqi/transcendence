@@ -146,48 +146,21 @@ test("does not ask for a profile while signed out", () => {
   expect(useOwnProfile).toHaveBeenLastCalledWith({ enabled: false });
 });
 
-// The link is UX, not a lock - /admin/listings is guarded by RequireAdmin and
-// every endpoint under it by RequireRole(ADMIN). This just stops the nav
-// advertising a section three quarters of users cannot open.
-// Each link is the only navigation into its screen anywhere in app code, so
-// this asserts they exist as well as who sees them. Without it a refactor can
-// delete one and leave a whole admin section reachable only by typing the URL,
-// with the suite still green.
-test("offers the admin section to an admin", () => {
-  renderHeader({ user: { ...SIGNED_IN.user!, role: "ADMIN" } });
-  expect(screen.getByRole("link", { name: "Admin" })).toHaveAttribute("href", "/admin/listings");
-  expect(screen.getByRole("link", { name: "Accounts" })).toHaveAttribute("href", "/admin/users");
-  expect(screen.getByRole("link", { name: "Order admin" })).toHaveAttribute(
-    "href",
-    "/admin/orders",
-  );
-});
-
-test("hides it from an ordinary user and from a visitor", () => {
-  renderHeader(SIGNED_IN);
-  expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
-
-  cleanup();
-  renderHeader({ user: null });
-  expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
-});
-
 // The header is on every page, so it cannot early-return like a section can -
 // only the slot that names the viewer holds. The brand assertion is what makes
 // that difference the subject of the test rather than a side effect.
 test("holds the identity slot but keeps the header while the session restores", () => {
   renderHeader({ isLoading: true });
-  expect(screen.queryByLabelText("Log In")).not.toBeInTheDocument();
-  expect(screen.queryByLabelText("Profile")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Menu")).not.toBeInTheDocument();
   expect(screen.getByText("Metsätori")).toBeInTheDocument();
 });
 
-// Same reasoning as the admin links above, which have had a test since #216:
-// each of these is the only navigation into its screen anywhere in app code,
+// Each of these is the only navigation into its screen anywhere in app code,
 // and every one of their accessible names comes from an aria-label alone. A
 // rewrite that drops one leaves a section reachable only by typing the URL,
 // with the suite still green - which is how /admin/orders was lost, and it
-// took comparing ancestry by hand to notice.
+// took comparing ancestry by hand to notice. The signed-in links moved into
+// UserMenu and are tested there for the same reason.
 // The mark is the only thing in the top-left below sm, where the wordmark is
 // hidden. It renders through the sprite because an external <use> with no
 // fragment draws nothing in Firefox - which is how it was found. Named for the
@@ -209,16 +182,4 @@ test.each([
 ])("points %s at %s for every visitor", (name, href) => {
   renderHeader({ user: null });
   expect(screen.getByRole("link", { name })).toHaveAttribute("href", href);
-});
-
-test.each([
-  ["Orders", "/orders"],
-  ["Following", "/following"],
-])("points %s at %s once signed in, and hides it otherwise", (name, href) => {
-  renderHeader(SIGNED_IN);
-  expect(screen.getByRole("link", { name })).toHaveAttribute("href", href);
-
-  cleanup();
-  renderHeader({ user: null });
-  expect(screen.queryByRole("link", { name })).not.toBeInTheDocument();
 });

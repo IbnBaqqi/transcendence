@@ -100,7 +100,7 @@ export function ReportedListingRow({ row }: { row: ReportedListing }) {
       {expanded && (
         <div className="border-line mt-3 grid gap-4 border-t pt-3 sm:grid-cols-2">
           <section>
-            <h3 className="text-foreground text-secondary font-bold">
+            <h3 className="text-foreground text-item-title font-bold">
               {t("moderation.reportsTitle")}
             </h3>
             {/* Resolved reports stay: a listing reported before and cleared is
@@ -123,7 +123,7 @@ export function ReportedListingRow({ row }: { row: ReportedListing }) {
           </section>
 
           <section>
-            <h3 className="text-foreground text-secondary font-bold">
+            <h3 className="text-foreground text-item-title font-bold">
               {t("moderation.historyTitle")}
             </h3>
             {history && history.length > 0 ? (

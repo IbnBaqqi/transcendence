@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import Profile from "../pages/Profile";
@@ -48,9 +48,8 @@ const USER: User = {
   providers: [],
 };
 
-// Profile itself only needs the modal system (delete-account, login prompt)
-// and the logout action. The auth stub exists because the login modal it can
-// open needs a context too.
+// Profile itself only needs the modal system (delete-account, login prompt).
+// The auth stub exists because the login modal it can open needs a context too.
 const AUTH_STUB: AuthContextValue = {
   user: USER,
   isLoading: false,
@@ -64,7 +63,6 @@ const uploadAvatar = vi.fn();
 const deleteAvatar = vi.fn();
 
 beforeEach(() => {
-  vi.mocked(AUTH_STUB.logout).mockClear();
   vi.mocked(useBlocks).mockReturnValue({
     data: [],
     isPending: false,
@@ -167,34 +165,6 @@ test("other failures surface their message rather than spinning forever", () => 
   expect(screen.getByText("Something went wrong")).toBeInTheDocument();
 });
 
-test("logs out through the auth context when Log Out is clicked", async () => {
-  const user = userEvent.setup();
-  renderPage({ data: PROFILE, isLoading: false, error: null });
-
-  await user.click(screen.getByRole("button", { name: "Log Out" }));
-
-  expect(AUTH_STUB.logout).toHaveBeenCalledTimes(1);
-});
-
-test("disables the Log Out button while the request is in flight", async () => {
-  let resolveLogout!: () => void;
-  vi.mocked(AUTH_STUB.logout).mockReturnValue(
-    new Promise<void>((resolve) => {
-      resolveLogout = resolve;
-    }),
-  );
-  const user = userEvent.setup();
-  renderPage({ data: PROFILE, isLoading: false, error: null });
-
-  await user.click(screen.getByRole("button", { name: "Log Out" }));
-
-  const pendingButton = screen.getByRole("button", { name: "Logging out…" });
-  expect(pendingButton).toBeDisabled();
-
-  resolveLogout();
-  expect(await screen.findByRole("button", { name: "Log Out" })).toBeInTheDocument();
-});
-
 const WITH_AVATAR: OwnProfile = { ...PROFILE, avatar_url: "/uploads/stored.png" };
 
 // alt="" on purpose - the picture is decorative beside the username - so it
@@ -224,21 +194,33 @@ test("uploads the picture the user picks", async () => {
   expect(uploadAvatar).toHaveBeenCalledWith(file);
 });
 
-test("offers removal only once a picture is stored", () => {
+// Removal lives in the picture editor now, next to the thing it acts on, and
+// the page decides whether to offer it by handing the modal an onRemove at all.
+test("offers removal only once a picture is stored", async () => {
+  const user = userEvent.setup();
   renderPage({ data: PROFILE });
+
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
   expect(screen.queryByRole("button", { name: "Remove photo" })).not.toBeInTheDocument();
 
+  cleanup();
   renderPage({ data: WITH_AVATAR });
+
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
   expect(screen.getByRole("button", { name: "Remove photo" })).toBeInTheDocument();
 });
 
-test("removing a picture calls the delete endpoint", async () => {
+test("removing a picture calls the delete endpoint and closes the editor", async () => {
   const user = userEvent.setup();
   renderPage({ data: WITH_AVATAR });
 
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
   await user.click(screen.getByRole("button", { name: "Remove photo" }));
 
   expect(deleteAvatar).toHaveBeenCalled();
+  await waitFor(() =>
+    expect(screen.queryByRole("button", { name: "Remove photo" })).not.toBeInTheDocument(),
+  );
 });
 
 // The backend's own message is more useful than anything written here - 413
@@ -262,11 +244,46 @@ test("a rejected upload surfaces the reason and keeps no preview", async () => {
   });
 });
 
+// The editor must be gone before the request settles, or the page's own
+// "Removing…" line renders behind it and the button stays live for a second
+// click. The stubbed isPending in beforeEach cannot show this - the mutation
+// has to be caught mid-flight.
+test("closes the editor before the delete answers, so the page can show progress", async () => {
+  let finishDelete!: () => void;
+  deleteAvatar.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishDelete = resolve;
+    }),
+  );
+  vi.mocked(useDeleteAvatar).mockReturnValue({
+    mutateAsync: deleteAvatar,
+    isPending: true,
+  } as unknown as ReturnType<typeof useDeleteAvatar>);
+
+  const user = userEvent.setup();
+  renderPage({ data: WITH_AVATAR });
+
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
+  await user.click(screen.getByRole("button", { name: "Remove photo" }));
+
+  // This one catches the bug. The line below cannot: isPending is stubbed from
+  // render, so "Removing…" is on the page before the click, and getByText does
+  // not know a modal is covering it - it guards Profile's indicator existing at
+  // all, not the closing.
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByText("Removing…")).toBeInTheDocument();
+
+  finishDelete();
+});
+
+// The modal is gone by the time the request answers, so the page is where a
+// failure has to land - same as a rejected upload.
 test("a rejected removal surfaces the reason", async () => {
   deleteAvatar.mockRejectedValue({ status: 500, message: "Something broke" });
   const user = userEvent.setup();
   renderPage({ data: WITH_AVATAR });
 
+  await user.click(screen.getByRole("button", { name: "Edit profile picture" }));
   await user.click(screen.getByRole("button", { name: "Remove photo" }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Something broke");

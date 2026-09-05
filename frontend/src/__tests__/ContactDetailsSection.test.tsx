@@ -42,10 +42,15 @@ beforeEach(() => {
 });
 
 test("shows the saved details before editing", () => {
-  render(<ContactDetailsSection />);
+  const { container } = render(<ContactDetailsSection />);
 
   expect(screen.getByText("Oscar")).toBeInTheDocument();
   expect(screen.getByText("+358 123456")).toBeInTheDocument();
+
+  // Read-only renders no inputs, so a <label> here would point at an id that
+  // is not in the document - which is what the browser reports. The edit-mode
+  // test below is the other half: there the association has to exist.
+  expect(container.querySelector("label")).toBeNull();
 });
 
 test("prefills the inputs when entering edit mode", async () => {

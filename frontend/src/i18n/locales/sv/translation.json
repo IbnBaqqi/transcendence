@@ -9,6 +9,7 @@
     "orders": "Beställningar",
     "following": "Följer",
     "profile": "Profil",
+    "menu": "Meny",
     "admin": "Admin",
     "adminOrders": "Orderadmin",
     "adminUsers": "Konton"
@@ -305,7 +306,13 @@
     "home": {
       "latestFinds": "Senaste fynden",
       "listingsError": "Kunde inte ladda annonserna.",
-      "noListings": "Inga annonser ännu."
+      "noListings": "Inga annonser ännu.",
+      "directory": {
+        "label": "Mer på Metsätori",
+        "categories": "Kategorier",
+        "browse": "Bläddra",
+        "account": "Ditt konto"
+      }
     },
     "search": {
       "title": "Sök",
@@ -518,6 +525,7 @@
     "emailTooLong": "E-postadressen får vara högst 150 tecken",
     "emailInvalid": "Ogiltig e-postadress",
     "nameRequired": "Namn krävs",
+    "passwordRequired": "Lösenord krävs",
     "passwordTooShort": "Lösenordet måste vara minst 8 tecken",
     "passwordTooLongChars": "Lösenordet får vara högst 64 tecken",
     "passwordNoSpaces": "Lösenordet får inte innehålla mellanslag",

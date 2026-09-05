@@ -63,7 +63,7 @@ function DeleteAccountForm({ username, onClose }: { username: string; onClose: (
         />
 
         {deleteAccount.isError && (
-          <p role="alert" className="text-berry-500 text-sm">
+          <p role="alert" className="text-danger text-sm">
             {isApiError(deleteAccount.error)
               ? deleteAccount.error.message
               : t("modal.deleteAccount.failed")}

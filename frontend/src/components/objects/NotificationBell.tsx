@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { unreadCount, useNotifications } from "../../api/notifications";
 import { useAuth } from "../../hooks/useAuth";
+import { useDismissable } from "../../hooks/useDismissable";
 import { MarkAllReadButton } from "./MarkAllReadButton";
 import { NotificationList } from "./NotificationList";
 
@@ -15,30 +16,10 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  useDismissable(open, setOpen, rootRef, triggerRef);
 
   const { data: notifications, isError } = useNotifications({ enabled: signedIn });
   const unread = unreadCount(notifications);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
 
   if (!signedIn) return null;
 
@@ -50,15 +31,15 @@ export function NotificationBell() {
         onClick={() => setOpen((value) => !value)}
         aria-label={t("nav.notifications")}
         aria-expanded={open}
-        className="text-muted hover:text-foreground relative cursor-pointer"
+        className="text-muted hover:text-foreground relative inline-flex cursor-pointer items-center"
       >
-        <svg className="h-6 w-5" aria-hidden="true">
+        <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
           <use href="/icons.svg#notifications-icon" />
         </svg>
         {unread > 0 && (
           <span
             aria-label={t("notifications.unread", { count: unread })}
-            className="bg-accent text-accent-contrast absolute -top-1 -right-1.5 min-w-4 rounded-full px-1 text-[10px] leading-4 font-medium"
+            className="bg-attention text-attention-contrast absolute -top-1 -right-1.5 min-w-4 rounded-full px-1 text-[10px] leading-4 font-medium"
           >
             {unread > 9 ? "9+" : unread}
           </span>
@@ -75,7 +56,7 @@ export function NotificationBell() {
           className="border-line bg-surface fixed inset-x-2 top-14 z-20 rounded border shadow-lg sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-80"
         >
           <div className="border-line flex items-center justify-between border-b px-3 py-2">
-            <h2 className="text-foreground text-secondary font-bold">{t("nav.notifications")}</h2>
+            <h2 className="text-foreground text-item-title font-bold">{t("nav.notifications")}</h2>
             <MarkAllReadButton unread={unread} className="text-xs" />
           </div>
 

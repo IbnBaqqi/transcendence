@@ -53,17 +53,22 @@ export function ContactDetailsSection() {
     }
   };
 
+  // max-w-md rather than max-w-fit: once the grid stacks, fit-content shrinks
+  // the whole form to one input's width and leaves the fields floating in the
+  // viewport. 28rem is within a few pixels of today's two-column width.
   return (
-    <Form form={form} onSubmit={handleSubmit} className="max-w-fit" isEditing={isEditing}>
+    <Form form={form} onSubmit={handleSubmit} className="max-w-md" isEditing={isEditing}>
       <div className="space-y-2">
-        <div className="grid grid-cols-2 gap-4">
+        {/* One column below sm: at 320px a fixed two-up grid gives each input
+            ~136px against a content width of ~206px. */}
+        <div className="grid gap-4 sm:grid-cols-2">
           <FormField label={t("forms.firstName")} name="firstname" validateOnChange />
           <FormField label={t("forms.lastName")} name="lastname" />
           <FormField label={t("forms.phone")} name="phone_number" type="tel" />
           <FormField label={t("forms.city")} name="location" validateOnChange />
         </div>
         {errors.root?.message && (
-          <p role="alert" className="text-berry-500 text-sm">
+          <p role="alert" className="text-danger text-sm">
             {errors.root.message}
           </p>
         )}

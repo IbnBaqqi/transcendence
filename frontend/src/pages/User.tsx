@@ -66,7 +66,7 @@ export default function User() {
 
   if (error || !profile) {
     return (
-      <p className="text-berry-500 p-8 text-sm">
+      <p className="text-danger p-8 text-sm">
         {isApiError(error) ? error.message : t("pages.user.profileError")}
       </p>
     );
@@ -84,7 +84,7 @@ export default function User() {
   const listings = sellerListings?.items ?? [];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
+    <div className="max-w-column mx-auto space-y-5 px-4 py-8">
       <h1 className="text-foreground text-page-title font-bold">{t("pages.user.title")}</h1>
 
       <div className="flex flex-row gap-4">

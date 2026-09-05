@@ -9,6 +9,7 @@
     "orders": "Tilaukset",
     "following": "Seuratut",
     "profile": "Profiili",
+    "menu": "Valikko",
     "admin": "Ylläpito",
     "adminOrders": "Tilausten hallinta",
     "adminUsers": "Tilit"
@@ -305,7 +306,13 @@
     "home": {
       "latestFinds": "Uusimmat löydöt",
       "listingsError": "Ilmoituksia ei voitu ladata.",
-      "noListings": "Ei ilmoituksia vielä."
+      "noListings": "Ei ilmoituksia vielä.",
+      "directory": {
+        "label": "Lisää Metsätorissa",
+        "categories": "Kategoriat",
+        "browse": "Selaa",
+        "account": "Oma tili"
+      }
     },
     "search": {
       "title": "Haku",
@@ -518,6 +525,7 @@
     "emailTooLong": "Sähköposti saa olla enintään 150 merkkiä",
     "emailInvalid": "Virheellinen sähköpostiosoite",
     "nameRequired": "Nimi vaaditaan",
+    "passwordRequired": "Salasana vaaditaan",
     "passwordTooShort": "Salasanan on oltava vähintään 8 merkkiä",
     "passwordTooLongChars": "Salasana saa olla enintään 64 merkkiä",
     "passwordNoSpaces": "Salasanassa ei voi olla välilyöntejä",

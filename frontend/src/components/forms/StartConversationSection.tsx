@@ -107,7 +107,7 @@ function StartConversationForm({ listing }: { listing: Listing }) {
       <p className="text-muted text-sm">{t("chat.start.note")}</p>
 
       {error && (
-        <p role="alert" className="text-berry-500 text-sm">
+        <p role="alert" className="text-danger text-sm">
           {error}
         </p>
       )}

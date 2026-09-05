@@ -42,6 +42,11 @@ export const passwordSchema = z
   .regex(/^\S+$/, msg("validation.passwordNoSpaces"));
 // NOTE: Backend all chars allowed, length 8-72 counted in bytes, whitespace
 // never trimmed
+
+// A password being checked against a stored one, not created. The policy above
+// is register's: applying it here rejects passwords that predate it, and tells
+// the user their own password is wrong before anything has been asked.
+export const existingPasswordSchema = z.string().min(1, msg("validation.passwordRequired"));
 export const phoneSchema = z
   .string()
   .trim()

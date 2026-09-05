@@ -74,7 +74,7 @@ export function OrderActions({ order }: { order: Order }) {
         ))}
       </div>
       {error && (
-        <p role="alert" className="text-berry-500 text-sm">
+        <p role="alert" className="text-danger text-sm">
           {error}
         </p>
       )}

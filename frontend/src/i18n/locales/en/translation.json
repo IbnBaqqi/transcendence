@@ -9,6 +9,7 @@
     "orders": "Orders",
     "following": "Following",
     "profile": "Profile",
+    "menu": "Menu",
     "admin": "Admin",
     "adminOrders": "Order admin",
     "adminUsers": "Accounts"
@@ -305,7 +306,13 @@
     "home": {
       "latestFinds": "Latest Finds",
       "listingsError": "Couldn't load listings.",
-      "noListings": "No listings yet."
+      "noListings": "No listings yet.",
+      "directory": {
+        "label": "More on Metsätori",
+        "categories": "Categories",
+        "browse": "Browse",
+        "account": "Your account"
+      }
     },
     "search": {
       "title": "Search",
@@ -518,6 +525,7 @@
     "emailTooLong": "Email must be less than 150 characters",
     "emailInvalid": "Invalid email address",
     "nameRequired": "Name is required",
+    "passwordRequired": "Password is required",
     "passwordTooShort": "Password must be at least 8 characters long",
     "passwordTooLongChars": "Password must be less than 64 characters",
     "passwordNoSpaces": "Password cannot contain spaces",

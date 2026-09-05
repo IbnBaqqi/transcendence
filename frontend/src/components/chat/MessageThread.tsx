@@ -158,7 +158,7 @@ export function MessageThread({
         )}
 
         {error && (
-          <p role="alert" className="text-berry-500 mt-2 text-sm">
+          <p role="alert" className="text-danger mt-2 text-sm">
             {error}
           </p>
         )}

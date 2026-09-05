@@ -35,7 +35,7 @@ export function ApiKeyCreatedDialog({
       <div className="space-y-4 p-6">
         <h2 className="text-foreground text-section font-semibold">{t("apiKeys.created.title")}</h2>
 
-        <p className="text-berry-500 text-sm font-medium">{t("apiKeys.created.warning")}</p>
+        <p className="text-danger text-sm font-medium">{t("apiKeys.created.warning")}</p>
 
         <div className="flex gap-2">
           <input

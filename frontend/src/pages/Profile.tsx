@@ -28,23 +28,11 @@ import { useTranslation } from "react-i18next";
 export default function Profile() {
   const { t } = useTranslation();
   const { openModal } = useModal();
-  const { logout, user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   const { data: profile, isLoading, error } = useOwnProfile();
 
   const signedOut = isApiError(error) && error.status === 401;
-
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      // Clears the session (and its cache) - the profile query then reruns,
-      // gets a 401, and the signed-out branch above takes over.
-      await logout();
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
 
   const uploadAvatar = useUploadAvatar(profile?.id);
   const deleteAvatar = useDeleteAvatar(profile?.id);
@@ -83,7 +71,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
+    <div className="max-w-column mx-auto space-y-5 px-4 py-8">
       <h1 className="text-foreground text-page-title font-bold">{t("pages.profile.title")}</h1>
       {signedOut ? (
         <div className="space-y-3">
@@ -93,7 +81,7 @@ export default function Profile() {
           </Button>
         </div>
       ) : error ? (
-        <p className="text-berry-500 text-sm">
+        <p className="text-danger text-sm">
           {isApiError(error) ? error.message : t("common.somethingWentWrong")}
         </p>
       ) : authLoading || isLoading || !profile ? (
@@ -112,29 +100,29 @@ export default function Profile() {
                 editable
                 imageUrl={avatarPreviewUrl ?? profile.avatar_url ?? undefined}
                 onImageSelected={(file) => void handleAvatarSelected(file)}
+                // Undefined with no stored picture: that is how the modal knows
+                // whether there is anything to remove.
+                onRemove={profile.avatar_url ? () => handleAvatarRemove() : undefined}
               />
             </div>
-            <div className="text-accent my-auto flex flex-col gap-1 text-base">
+            {/* min-w-0 and break-words: the column inherits min-width:auto, so
+                without them a long address holds it open past the viewport
+                instead of wrapping. */}
+            <div className="text-accent my-auto flex min-w-0 flex-col gap-1 text-base">
               <div className="font-bold">{profile.username}</div>
-              <div className="font-normal">{profile.email}</div>
-              {uploadAvatar.isPending ? (
+              <div className="font-normal break-words">{profile.email}</div>
+              {/* Both requests land with the modal already closed, so the page
+                  is where their progress shows. */}
+              {uploadAvatar.isPending && (
                 <p className="text-muted text-sm">{t("avatar.uploading")}</p>
-              ) : (
-                profile.avatar_url && (
-                  <button
-                    type="button"
-                    disabled={deleteAvatar.isPending}
-                    onClick={() => void handleAvatarRemove()}
-                    className="text-muted hover:text-foreground w-fit text-sm underline"
-                  >
-                    {deleteAvatar.isPending ? t("avatar.removing") : t("avatar.remove")}
-                  </button>
-                )
+              )}
+              {deleteAvatar.isPending && (
+                <p className="text-muted text-sm">{t("avatar.removing")}</p>
               )}
             </div>
           </div>
           {avatarError && (
-            <p role="alert" className="text-berry-500 text-sm">
+            <p role="alert" className="text-danger text-sm">
               {avatarError}
             </p>
           )}
@@ -197,9 +185,6 @@ export default function Profile() {
               {t("pages.profile.accountManagement")}
             </h2>
             <div className="flex flex-row gap-4">
-              <Button variant="primary" onClick={handleLogout} disabled={isLoggingOut}>
-                {isLoggingOut ? t("common.loggingOut") : t("common.logOut")}
-              </Button>
               {/* NOTE: Delete Account currently waiting for backend functionality to wire into */}
               <Button variant="secondary" onClick={() => openModal("deleteAccount")}>
                 {t("common.deleteAccount")}

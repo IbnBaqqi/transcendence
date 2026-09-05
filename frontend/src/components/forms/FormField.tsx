@@ -7,7 +7,7 @@ type FormFieldProps = {
   type?: string;
   placeholder?: string;
   isEditing?: boolean;
-  width?: string;
+  width?: `max-w-${string}`;
   validateOnChange?: boolean;
 };
 
@@ -28,7 +28,9 @@ export function FormField({
   } = useFormContext();
   const { isEditing: ctxEditing } = useFormConfig();
 
-  const width = widthProp ?? "w-full";
+  // The cap applies on top of w-full: a control with only a max-width falls
+  // back to its intrinsic width and never reaches the cap.
+  const width = widthProp ? `w-full ${widthProp}` : "w-full";
   const isEditing = isEditingProp ?? ctxEditing ?? false;
 
   const error = errors[name];
@@ -41,13 +43,13 @@ export function FormField({
 
   return (
     <div className="flex flex-col gap-1.5">
-      {label && (
-        <label className="text-muted" htmlFor={name}>
-          {label}
-        </label>
-      )}
       {isEditing ? (
         <>
+          {label && (
+            <label className="text-muted" htmlFor={name}>
+              {label}
+            </label>
+          )}
           <input
             className={`focus:shadow-outline ${width} appearance-none rounded border px-3 py-2 leading-tight shadow focus:outline-none`}
             id={name}
@@ -66,10 +68,16 @@ export function FormField({
                 : undefined
             }
           />
-          {error && <span className="text-berry-500 text-xs">{error.message as string}</span>}
+          {error && <span className="text-danger text-xs">{error.message as string}</span>}
         </>
       ) : (
-        <span>{value}</span>
+        <>
+          {/* A span, not a label: no input is rendered here, so `for` would
+              point at nothing - and a label with neither `for` nor a nested
+              control is the same DevTools issue by another name. */}
+          {label && <span className="text-muted">{label}</span>}
+          <span>{value}</span>
+        </>
       )}
     </div>
   );

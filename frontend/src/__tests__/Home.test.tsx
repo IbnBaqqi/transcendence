@@ -4,7 +4,8 @@ import { MemoryRouter } from "react-router-dom";
 
 import Home from "../pages/Home";
 import { useSearchListings } from "../api/listings";
-import { useLocalizedCategoryNames } from "../api/categories";
+import { useCategories, useLocalizedCategoryNames } from "../api/categories";
+import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { makeListing } from "../test/factories";
 import type { Listing, Paginated } from "../api/types";
 
@@ -47,14 +48,31 @@ beforeEach(() => {
   vi.mocked(useLocalizedCategoryNames).mockReturnValue(
     (slug: string) => ({ mushrooms: "Mushrooms", berries: "Berries" })[slug] ?? slug,
   );
+  // The directory below the grid lists them; these tests are about the grid,
+  // so it gets an empty list and renders no category column.
+  vi.mocked(useCategories).mockReturnValue({ data: [] } as unknown as ReturnType<
+    typeof useCategories
+  >);
 });
 
-// The cards are links now, so every render needs a router in scope.
+// The cards are links now, so every render needs a router in scope - and the
+// directory below the grid asks who is signed in, so an auth context too.
+const AUTH_STUB: AuthContextValue = {
+  user: null,
+  isLoading: false,
+  login: vi.fn(),
+  signup: vi.fn(),
+  logout: vi.fn(),
+  restoreSession: vi.fn(),
+};
+
 function renderHome() {
   return render(
-    <MemoryRouter>
-      <Home />
-    </MemoryRouter>,
+    <AuthContext.Provider value={AUTH_STUB}>
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>
+    </AuthContext.Provider>,
   );
 }
 

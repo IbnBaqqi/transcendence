@@ -23,7 +23,7 @@ export function ListingCard({
       className="focus-visible:ring-accent block rounded-lg focus:outline-none focus-visible:ring-2"
     >
       <article className="border-line bg-surface hover:border-accent rounded-lg border p-4 transition-colors">
-        <h2 className="text-foreground font-semibold">{listing.title}</h2>
+        <h2 className="text-foreground text-item-title font-semibold">{listing.title}</h2>
         <p className="text-muted mt-1 text-sm">{categoryName}</p>
         <p className="text-accent mt-2 font-medium">
           €{Number(listing.price).toFixed(2)} / {listing.unit}

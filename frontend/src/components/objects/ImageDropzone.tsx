@@ -135,7 +135,7 @@ export function ImageDropzone({
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center">
             <span className="text-foreground text-sm font-medium">{empty}</span>
             <span
-              className={`${isHover ? "text-berry-500" : "text-muted"} text-xs transition-colors duration-150`}
+              className={`${isHover ? "text-attention" : "text-muted"} text-xs transition-colors duration-150`}
             >
               {helper}
             </span>

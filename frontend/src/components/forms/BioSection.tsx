@@ -51,7 +51,7 @@ export function BioSection() {
           <FormTextArea name="bio" validateOnChange />
         </div>
         {errors.root?.message && (
-          <p role="alert" className="text-berry-500 text-sm">
+          <p role="alert" className="text-danger text-sm">
             {errors.root.message}
           </p>
         )}

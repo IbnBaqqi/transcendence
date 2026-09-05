@@ -7,7 +7,7 @@ import type { AdminUser, UserAction } from "../../api/types";
 
 const STATUS_STYLES: Record<AdminUser["status"], string> = {
   active: "text-foreground",
-  suspended: "text-berry-500",
+  suspended: "text-danger",
   // Deleted rows carry no information but do take up space, so they stay
   // legible and quiet rather than being filtered out of the default view.
   deleted: "text-muted",
@@ -95,7 +95,7 @@ export function AccountRow({ account }: { account: AdminUser }) {
 
       {expanded && (
         <div className="border-line mt-3 border-t pt-3">
-          <h3 className="text-foreground text-secondary font-bold">
+          <h3 className="text-foreground text-item-title font-bold">
             {t("adminUsers.historyTitle")}
           </h3>
           {history && history.length > 0 ? (

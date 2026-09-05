@@ -9,7 +9,7 @@ type CategorySelectProps = {
   ariaLabel?: string;
   name: string;
   isEditing?: boolean;
-  width?: string;
+  width?: `max-w-${string}`;
 };
 
 export function CategorySelect({
@@ -30,7 +30,9 @@ export function CategorySelect({
   const { data: categories, isPending, isError, refetch } = useCategories();
   const categoryName = useLocalizedCategoryNames();
 
-  const width = widthProp ?? "w-full";
+  // The cap applies on top of w-full: a bare <select> sizes to its longest
+  // option, so the field would change width with the category list.
+  const width = widthProp ? `w-full ${widthProp}` : "w-full";
   const isEditing = isEditingProp ?? ctxEditing ?? false;
 
   const error = errors[name];
@@ -51,7 +53,9 @@ export function CategorySelect({
   if (!isEditing) {
     return (
       <div className="flex flex-col gap-1.5">
-        {label && <label className="text-muted">{label}</label>}
+        {/* See FormField: no <select> is rendered here, and a label with
+            neither `for` nor a nested control is a DevTools issue too. */}
+        {label && <span className="text-muted">{label}</span>}
         <span>{selected ? categoryName(selected.slug) : value}</span>
       </div>
     );
@@ -92,12 +96,12 @@ export function CategorySelect({
       </select>
 
       {empty && (
-        <span id={statusId} role="alert" className="text-berry-500 text-xs">
+        <span id={statusId} role="alert" className="text-danger text-xs">
           {t("forms.category.noCategories")}
         </span>
       )}
       {isError && (
-        <span id={statusId} role="alert" className="text-berry-500 text-xs">
+        <span id={statusId} role="alert" className="text-danger text-xs">
           {t("forms.category.loadError")}{" "}
           <button type="button" className="underline" onClick={() => void refetch()}>
             {t("common.tryAgain")}
@@ -105,7 +109,7 @@ export function CategorySelect({
         </span>
       )}
       {error && (
-        <span id={errorId} role="alert" className="text-berry-500 text-xs">
+        <span id={errorId} role="alert" className="text-danger text-xs">
           {error.message as string}
         </span>
       )}

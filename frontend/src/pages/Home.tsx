@@ -1,5 +1,6 @@
 import { useSearchListings } from "../api/listings";
 import { useLocalizedCategoryNames } from "../api/categories";
+import { HomeDirectory } from "../components/objects/HomeDirectory";
 import { ListingCard } from "../components/objects/ListingCard";
 import { Skeleton } from "../components/objects/Skeleton";
 import { Pagination } from "../components/objects/Pagination";
@@ -18,7 +19,7 @@ export default function Home() {
   const categoryName = useLocalizedCategoryNames();
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="max-w-wide mx-auto px-4 py-8">
       <h1 className="text-foreground text-page-title font-bold">{t("pages.home.latestFinds")}</h1>
       {/*
         Live region: always in the DOM so assistive tech has something to
@@ -78,6 +79,7 @@ export default function Home() {
           />
         </div>
       )}
+      <HomeDirectory />
     </div>
   );
 }

@@ -156,7 +156,7 @@ export function AddListingSection() {
               emptyMessage={t("dropzone.noPhotos")}
               helperText={t("dropzone.dragDropAddListing")}
             />
-            {photoError && <p className="text-berry-500 text-sm">{photoError}</p>}
+            {photoError && <p className="text-danger text-sm">{photoError}</p>}
           </div>
           <div className="space-y-1">
             <h2 className="text-foreground text-section font-bold">
@@ -178,7 +178,10 @@ export function AddListingSection() {
             <h2 className="text-foreground text-section font-bold">
               {t("forms.addListing.priceQuantity")}
             </h2>
-            <div className="flex flex-col gap-4 sm:flex-row">
+            {/* grid, not flex: a flex item with width:auto sizes to its
+                content, so w-full inside it resolves to that same width and
+                the pair never shares the row. Grid columns stretch. */}
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 name="price"
                 label={t("forms.price")}
@@ -216,13 +219,13 @@ export function AddListingSection() {
         </Button>
 
         {submitError && (
-          <p role="alert" className="text-berry-500 text-sm">
+          <p role="alert" className="text-danger text-sm">
             {submitError}
           </p>
         )}
 
         {partial && (
-          <p role="alert" className="text-berry-500 space-x-2 text-sm">
+          <p role="alert" className="text-danger space-x-2 text-sm">
             <span>{t("forms.addListing.photosFailed", { count: partial.failed })}</span>
             <Link to={`/listings/${partial.id}`} className="text-accent underline">
               {t("forms.addListing.viewListing")}

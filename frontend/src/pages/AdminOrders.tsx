@@ -40,7 +40,7 @@ export default function AdminOrders() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
+    <div className="max-w-page mx-auto space-y-4 px-4 py-8">
       <h1 className="text-foreground text-page-title font-bold">{t("pages.adminOrders.title")}</h1>
 
       <div className="flex flex-wrap items-end gap-3">
@@ -103,7 +103,7 @@ export default function AdminOrders() {
       </div>
 
       {backwards && (
-        <p role="alert" className="text-berry-500 text-sm">
+        <p role="alert" className="text-danger text-sm">
           {t("adminOrders.rangeBackwards")}
         </p>
       )}
