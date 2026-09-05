@@ -41,6 +41,22 @@ services:
       - "127.0.0.1:1025:1025"        # SMTP, what the backend sends to
       - "127.0.0.1:8025:8025"        # web UI, where you read what was sent
 
+  # --- migrations (goose one-shot, mirrors prod) ---
+  migrate:
+    # The migrator stage: the pinned goose plus a copy of sql/migrations. The
+    # read-only bind mount below shadows that copy, so a new migration applies
+    # on the next `up` without rebuilding the image.
+    build:
+      context: ./backend
+      target: migrator
+    environment:
+      GOOSE_DBSTRING: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+    volumes:
+      - ./backend/sql/migrations:/migrations:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
   # --- backend (Go) ---
   backend:
     # The dev stage: the Go toolchain plus a pinned air, watching the bind mount
@@ -70,6 +86,8 @@ services:
     depends_on:
       db:
         condition: service_healthy                            # wait for the healthcheck above
+      migrate:
+        condition: service_completed_successfully             # schema exists before air starts
 
   # --- frontend (Vite dev server)
   frontend:
