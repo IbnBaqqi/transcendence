@@ -17,8 +17,10 @@ type CreateOrderInput struct {
 
 // OrderResponse is the shape we send back to clients.
 type OrderResponse struct {
-	ID                 uuid.UUID  `json:"id"`
-	ListingID          uuid.UUID  `json:"listing_id"`
+	ID uuid.UUID `json:"id"`
+	// Null once the seller deletes the listing. Everything below is snapshotted
+	// on the order row, so it reads correctly with nothing behind it.
+	ListingID          *uuid.UUID `json:"listing_id"`
 	ListingTitle       string     `json:"listing_title"`
 	BuyerID            string     `json:"buyer_id"`
 	SellerID           string     `json:"seller_id"`
@@ -36,7 +38,7 @@ type OrderResponse struct {
 func NewOrderResponse(o database.Order) OrderResponse {
 	return OrderResponse{
 		ID:                 o.ID,
-		ListingID:          o.ListingID,
+		ListingID:          nullUUIDPtr(o.ListingID),
 		ListingTitle:       o.ListingTitle,
 		BuyerID:            o.BuyerID.String(),
 		SellerID:           o.SellerID.String(),

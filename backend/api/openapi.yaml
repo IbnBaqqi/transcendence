@@ -649,11 +649,15 @@ components:
         listing_id:
           type: string
           format: uuid
+          nullable: true
+          description: |
+            Null once the seller deletes the listing. The order stands on its
+            own: every field below is snapshotted at purchase.
         listing_title:
           type: string
           description: |
             Snapshotted when the order was placed, so the order still reads
-            correctly after the listing is edited.
+            correctly after the listing is edited - or deleted.
         buyer_id:
           type: string
           format: uuid
@@ -2676,11 +2680,18 @@ paths:
       summary: Delete a listing
       operationId: deleteListing
       description: |
-        Refused once the listing has orders — the order history has to keep
-        pointing at something, so the foreign key is ON DELETE RESTRICT.
+        Refused only while a sale is in flight — an order that is `pending` or
+        `confirmed`. Finished orders do not stand in the way: since migration
+        024 `orders.listing_id` is ON DELETE SET NULL, and an order snapshots
+        the title and prices it displays, so it survives the listing intact.
+
+        A moderator-removed listing cannot be deleted either: the reports and
+        the audit trail cascade from it.
       responses:
         "204":
-          description: Deleted. No body.
+          description: |
+            Deleted, along with its photos. Any finished order that pointed at
+            it keeps its own copy of what was bought, with `listing_id` null.
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -2690,7 +2701,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
-          description: The listing has orders and cannot be deleted.
+          description: A sale is in progress on this listing.
           content:
             application/json:
               schema:

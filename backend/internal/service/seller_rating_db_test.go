@@ -54,7 +54,7 @@ func TestSellersForCarriesTheRating(t *testing.T) {
 	for _, score := range []int32{5, 4} {
 		buyer := user("buyer" + string(rune('a'+score)))
 		order, err := db.CreateOrder(ctx, database.CreateOrderParams{
-			ID: database.NewID(), ListingID: ratedListing.ID,
+			ID: database.NewID(), ListingID: uuid.NullUUID{UUID: ratedListing.ID, Valid: true},
 			BuyerID: buyer, SellerID: rated, Quantity: 1, UnitPrice: "18.10",
 		})
 		if err != nil {

@@ -255,8 +255,11 @@ func (s *AdminOrderService) Resolve(
 		}
 	}
 
-	if action.restoresStock {
-		if err := restock(ctx, qtx, order.ListingID, order.Quantity); err != nil {
+	// Valid: the listing is gone once the seller has deleted it, and there is
+	// nothing to put the stock back into. restock also clears the sold-out
+	// notices, which cascaded away with it.
+	if action.restoresStock && order.ListingID.Valid {
+		if err := restock(ctx, qtx, order.ListingID.UUID, order.Quantity); err != nil {
 			return database.Order{}, err
 		}
 	}

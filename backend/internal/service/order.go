@@ -89,7 +89,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 
 	order, err := qtx.CreateOrder(ctx, database.CreateOrderParams{
 		ID:           database.NewID(),
-		ListingID:    listing.ID,
+		ListingID:    uuid.NullUUID{UUID: listing.ID, Valid: true},
 		BuyerID:      buyerID,
 		SellerID:     listing.SellerID,
 		Quantity:     input.Quantity,
@@ -265,8 +265,11 @@ func (s *OrderService) applyAction(ctx context.Context, userID uuid.UUID, orderI
 		return database.Order{}, err
 	}
 
-	if action.restoresStock {
-		if err := restock(ctx, qtx, order.ListingID, order.Quantity); err != nil {
+	// Valid: the listing is gone once the seller has deleted it, and there is
+	// nothing to put the stock back into. restock also clears the sold-out
+	// notices, which cascaded away with it.
+	if action.restoresStock && order.ListingID.Valid {
+		if err := restock(ctx, qtx, order.ListingID.UUID, order.Quantity); err != nil {
 			return database.Order{}, err
 		}
 	}

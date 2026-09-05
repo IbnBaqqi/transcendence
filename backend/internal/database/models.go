@@ -21,7 +21,7 @@ type Address struct {
 
 type AdminOrder struct {
 	ID                 uuid.UUID
-	ListingID          uuid.UUID
+	ListingID          uuid.NullUUID
 	BuyerID            uuid.UUID
 	SellerID           uuid.UUID
 	Quantity           int32
@@ -158,7 +158,7 @@ type OauthIdentity struct {
 
 type Order struct {
 	ID                 uuid.UUID
-	ListingID          uuid.UUID
+	ListingID          uuid.NullUUID
 	BuyerID            uuid.UUID
 	SellerID           uuid.UUID
 	Quantity           int32
