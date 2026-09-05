@@ -93,6 +93,10 @@ export function UserMenu() {
                 <MenuIcon href="/icons.svg#profile-icon" />
                 {t("nav.profile")}
               </Link>
+              <Link to="/dashboard" onClick={close} className={row}>
+                <MenuIcon href="/icons.svg#dashboard-icon" />
+                {t("pages.dashboard.title")}
+              </Link>
               <Link to="/orders" onClick={close} className={row}>
                 <MenuIcon href="/icons.svg#orders-icon" />
                 {t("nav.orders")}

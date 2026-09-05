@@ -324,6 +324,55 @@
     />
   </symbol>
 
+  <symbol id="dashboard-icon" viewBox="0 0 24 30">
+    <!-- Four panels: the conventional dashboard mark, on the same stroke
+         weight and corner radius as the rest of the set. -->
+    <rect
+      x="4.5"
+      y="6"
+      width="6.5"
+      height="7.5"
+      rx="1.5"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linejoin="round"
+      fill="none"
+    />
+    <rect
+      x="13"
+      y="6"
+      width="6.5"
+      height="7.5"
+      rx="1.5"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linejoin="round"
+      fill="none"
+    />
+    <rect
+      x="4.5"
+      y="16"
+      width="6.5"
+      height="7.5"
+      rx="1.5"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linejoin="round"
+      fill="none"
+    />
+    <rect
+      x="13"
+      y="16"
+      width="6.5"
+      height="7.5"
+      rx="1.5"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linejoin="round"
+      fill="none"
+    />
+  </symbol>
+
   <symbol id="logout-icon" viewBox="0 0 24 30">
     <!-- Door, open on the side the arrow leaves through -->
     <path

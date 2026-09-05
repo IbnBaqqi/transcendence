@@ -68,6 +68,9 @@ test("keeps the panel closed until the trigger is pressed, and says so", async (
 // still green - which is how /admin/orders was lost once already.
 test.each([
   ["Profile", "/profile"],
+  // Nothing linked to /dashboard at all until this row existed - the page was
+  // reachable only by typing the URL, which is what this test guards against.
+  ["Seller Dashboard", "/dashboard"],
   ["Orders", "/orders"],
   ["Following", "/following"],
 ])("points %s at %s once signed in, and hides it from a visitor", async (name, href) => {
