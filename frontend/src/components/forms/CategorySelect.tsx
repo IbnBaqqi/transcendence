@@ -30,7 +30,10 @@ export function CategorySelect({
   const { data: categories, isPending, isError, refetch } = useCategories();
   const categoryName = useLocalizedCategoryNames();
 
-  const width = widthProp ?? "w-full";
+  // A cap on a full-width control, not a replacement for it: a <select> with
+  // only a max-width falls back to the width of its longest option, so the
+  // field changes size with the category list and never reaches the cap.
+  const width = widthProp ? `w-full ${widthProp}` : "w-full";
   const isEditing = isEditingProp ?? ctxEditing ?? false;
 
   const error = errors[name];

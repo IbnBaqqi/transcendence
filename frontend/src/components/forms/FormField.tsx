@@ -28,7 +28,10 @@ export function FormField({
   } = useFormContext();
   const { isEditing: ctxEditing } = useFormConfig();
 
-  const width = widthProp ?? "w-full";
+  // A cap on a full-width control, not a replacement for it: an <input> with
+  // only a max-width falls back to its ~20-character intrinsic width and never
+  // reaches the cap.
+  const width = widthProp ? `w-full ${widthProp}` : "w-full";
   const isEditing = isEditingProp ?? ctxEditing ?? false;
 
   const error = errors[name];
