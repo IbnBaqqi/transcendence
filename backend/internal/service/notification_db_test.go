@@ -47,8 +47,10 @@ func TestPlacingAnOrderRecordsANotificationForTheSeller(t *testing.T) {
 	if !seller[0].OrderID.Valid || seller[0].OrderID.UUID != f.order.ID {
 		t.Error("the notification does not link to the order it is about")
 	}
-	if seller[0].ListingTitle != f.order.ListingTitle {
-		t.Errorf("listing_title = %q, want the order's %q", seller[0].ListingTitle, f.order.ListingTitle)
+	// Nullable since migration 022 - a follow has no listing to name - but an
+	// order notification still snapshots one.
+	if !seller[0].ListingTitle.Valid || seller[0].ListingTitle.String != f.order.ListingTitle {
+		t.Errorf("listing_title = %v, want the order's %q", seller[0].ListingTitle, f.order.ListingTitle)
 	}
 	if seller[0].ReadAt.Valid {
 		t.Error("a new notification is already read")
@@ -73,10 +75,11 @@ func TestCancellingRecordsANotificationForTheOtherParty(t *testing.T) {
 	}
 }
 
-// A handover that completes the order announces nothing: the completion is the
-// news, not the handover. The sequence matters - the guard only fires when the
-// handover is the second mark, so the buyer has to confirm receipt first.
-func TestAHandoverThatCompletesTheOrderAnnouncesNothing(t *testing.T) {
+// A handover that completes the order announces the COMPLETION, not the
+// handover - the completion is the news. The sequence matters: the branch only
+// fires when the handover is the second mark, so the buyer confirms receipt
+// first.
+func TestAHandoverThatCompletesTheOrderAnnouncesTheCompletion(t *testing.T) {
 	f := newOrderFixture(t)
 	ctx := context.Background()
 
@@ -94,8 +97,14 @@ func TestAHandoverThatCompletesTheOrderAnnouncesNothing(t *testing.T) {
 		t.Fatalf("handover: %v", err)
 	}
 
-	if got := kindsOf(notificationsFor(t, f.db, f.buyer)); len(got) != len(before) {
-		t.Errorf("buyer notifications went from %v to %v; the completing handover should add nothing", before, got)
+	got := kindsOf(notificationsFor(t, f.db, f.buyer))
+	if len(got) != len(before)+1 {
+		t.Fatalf("buyer notifications went from %v to %v, want one more", before, got)
+	}
+	// Newest first, so the completion is at the front - and it is NOT a
+	// handover row, which is what "the completion is the news" means.
+	if got[0] != notifyKindOrderCompleted {
+		t.Errorf("newest = %q, want %q", got[0], notifyKindOrderCompleted)
 	}
 }
 
@@ -112,8 +121,36 @@ func TestAHandoverBeforeReceiptTellsTheBuyer(t *testing.T) {
 		t.Fatalf("handover: %v", err)
 	}
 
-	if got := kindsOf(notificationsFor(t, f.db, f.buyer)); len(got) != 1 || got[0] != notifyKindOrderHandedOver {
-		t.Errorf("buyer notifications = %v, want [order_handed_over]", got)
+	// Two rows now: the confirmation the buyer was waiting on, then the
+	// handover. Newest first.
+	got := kindsOf(notificationsFor(t, f.db, f.buyer))
+	want := []string{notifyKindOrderHandedOver, notifyKindOrderConfirmed}
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("buyer notifications = %v, want %v", got, want)
+	}
+
+	// The other direction of "it goes to whoever did not act", continued on the
+	// state this test already built. The seller has handed over and the order
+	// is still confirmed, so the buyer's receipt is the second mark and the
+	// SELLER is the one who learns of it.
+	//
+	// This half is where a copied order.BuyerID would be invisible: it is the
+	// only branch that introduces a new recipient, and every other completion
+	// assertion reads the buyer's inbox.
+	// Not empty to begin with - placing the order already told the seller - so
+	// the assertion is about what the receipt ADDS, at the front.
+	before := kindsOf(notificationsFor(t, f.db, f.seller))
+
+	if _, err := f.svc.ReceiveOrder(ctx, f.buyer, f.order.ID); err != nil {
+		t.Fatalf("receive: %v", err)
+	}
+
+	after := kindsOf(notificationsFor(t, f.db, f.seller))
+	if len(after) != len(before)+1 {
+		t.Fatalf("seller notifications went from %v to %v, want one more", before, after)
+	}
+	if after[0] != notifyKindOrderCompleted {
+		t.Errorf("newest = %q, want %q", after[0], notifyKindOrderCompleted)
 	}
 }
 

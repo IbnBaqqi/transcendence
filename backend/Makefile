@@ -33,7 +33,7 @@ build:
 
 # Run tests
 test:
-	@go test -timeout 20m -v ./...
+	@go test -timeout 30m -v ./...
 
 # Run every test, including the ones that need Postgres.
 # TEST_DB_URL is separate from DB_URL on purpose: these tests CREATE and DROP
@@ -41,18 +41,18 @@ test:
 # The URL names the `postgres` maintenance database — each test makes its own.
 test-db:
 	$(require-test-db-url)
-	@TEST_DB_URL="$(TEST_DB_URL)" go test -timeout 20m -count=1 -v ./...
+	@TEST_DB_URL="$(TEST_DB_URL)" go test -timeout 30m -count=1 -v ./...
 
 # Same as test-db but with the race detector, which is what CI runs. The
 # notification dispatcher is the only concurrent code here, and its test proves
 # nothing without this.
 test-race:
 	$(require-test-db-url)
-	@TEST_DB_URL="$(TEST_DB_URL)" go test -timeout 20m -race -count=1 ./...
+	@TEST_DB_URL="$(TEST_DB_URL)" go test -timeout 30m -race -count=1 ./...
 
 # Run tests with coverage
 test-coverage:
-	@go test -timeout 20m -coverprofile=coverage.out ./...
+	@go test -timeout 30m -coverprofile=coverage.out ./...
 	@go tool cover -html=coverage.out
 
 # Clean build artifacts

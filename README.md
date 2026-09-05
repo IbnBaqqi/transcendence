@@ -528,6 +528,24 @@ goroutine. Two consequences worth knowing:
 A full queue drops rather than blocks, for the same reason: blocking would put
 the mail server back on the request path.
 
+### Why the inbox has more kinds than the mail
+
+The in-app inbox **is** the notification system; email is a courtesy on top of
+it. So the inbox grows as the app grows a new thing worth knowing, and the set
+of things that send mail does not.
+
+That is deliberate rather than unfinished. Emailing on every action is how a
+sending domain gets blacklisted, and most of what belongs in an inbox does not
+belong in someone's mail: an order you confirmed, an order that completed.
+
+Two things are absent from the inbox as well, and for the same kind of reason —
+the app already tells you, better:
+
+- **A suspension** reaches you as a 403 carrying its reason on your very next
+  request. A row saying the same thing is a second, worse copy.
+- **A reply in a conversation you already have open** shows as an unread count
+  in the chat list, which is where you are looking.
+
 ## Hot reload
 
 Both halves of the stack pick up edits without a restart, whichever way you

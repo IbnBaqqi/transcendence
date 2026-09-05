@@ -140,11 +140,13 @@ type Notification struct {
 	ID             uuid.UUID
 	UserID         uuid.UUID
 	Kind           string
-	ListingTitle   string
+	ListingTitle   sql.NullString
 	OrderID        uuid.NullUUID
 	ConversationID uuid.NullUUID
 	ReadAt         sql.NullTime
 	CreatedAt      time.Time
+	ActorID        uuid.NullUUID
+	ListingID      uuid.NullUUID
 }
 
 type OauthIdentity struct {
