@@ -7,24 +7,33 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
 
 const createNotification = `-- name: CreateNotification :exec
-INSERT INTO notifications (id, user_id, kind, listing_title, order_id, conversation_id)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO notifications (
+    id, user_id, kind, listing_title, order_id, conversation_id, actor_id, listing_id
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 `
 
 type CreateNotificationParams struct {
 	ID             uuid.UUID
 	UserID         uuid.UUID
 	Kind           string
-	ListingTitle   string
+	ListingTitle   sql.NullString
 	OrderID        uuid.NullUUID
 	ConversationID uuid.NullUUID
+	ActorID        uuid.NullUUID
+	ListingID      uuid.NullUUID
 }
 
+// Exactly one of the four subject columns is set, enforced by
+// notifications_one_subject_check: a row the UI cannot route is not worth
+// writing. listing_title is a snapshot where a listing is involved and null
+// where none is - a follow has no listing to name.
 func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotificationParams) error {
 	_, err := q.db.ExecContext(ctx, createNotification,
 		arg.ID,
@@ -33,12 +42,29 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 		arg.ListingTitle,
 		arg.OrderID,
 		arg.ConversationID,
+		arg.ActorID,
+		arg.ListingID,
 	)
 	return err
 }
 
+const deleteNotificationsForListingKind = `-- name: DeleteNotificationsForListingKind :exec
+DELETE FROM notifications
+WHERE listing_id = $1 AND kind = $2
+`
+
+type DeleteNotificationsForListingKindParams struct {
+	ListingID uuid.NullUUID
+	Kind      string
+}
+
+func (q *Queries) DeleteNotificationsForListingKind(ctx context.Context, arg DeleteNotificationsForListingKindParams) error {
+	_, err := q.db.ExecContext(ctx, deleteNotificationsForListingKind, arg.ListingID, arg.Kind)
+	return err
+}
+
 const listNotifications = `-- name: ListNotifications :many
-SELECT id, user_id, kind, listing_title, order_id, conversation_id, read_at, created_at FROM notifications
+SELECT id, user_id, kind, listing_title, order_id, conversation_id, read_at, created_at, actor_id, listing_id FROM notifications
 WHERE user_id = $1
 ORDER BY created_at DESC, id DESC
 LIMIT $2
@@ -69,6 +95,51 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 			&i.ConversationID,
 			&i.ReadAt,
 			&i.CreatedAt,
+			&i.ActorID,
+			&i.ListingID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listNotificationsForExport = `-- name: ListNotificationsForExport :many
+SELECT id, user_id, kind, listing_title, order_id, conversation_id, read_at, created_at, actor_id, listing_id FROM notifications
+WHERE user_id = $1
+ORDER BY created_at, id
+`
+
+// Unpaginated twin of ListNotifications, which takes a LIMIT because the bell
+// shows a page. An export that silently stopped at that limit would hand
+// someone part of their data and no way to know it was partial.
+func (q *Queries) ListNotificationsForExport(ctx context.Context, userID uuid.UUID) ([]Notification, error) {
+	rows, err := q.db.QueryContext(ctx, listNotificationsForExport, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Notification
+	for rows.Next() {
+		var i Notification
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Kind,
+			&i.ListingTitle,
+			&i.OrderID,
+			&i.ConversationID,
+			&i.ReadAt,
+			&i.CreatedAt,
+			&i.ActorID,
+			&i.ListingID,
 		); err != nil {
 			return nil, err
 		}

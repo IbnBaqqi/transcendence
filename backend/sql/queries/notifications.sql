@@ -1,6 +1,16 @@
 -- name: CreateNotification :exec
-INSERT INTO notifications (id, user_id, kind, listing_title, order_id, conversation_id)
-VALUES ($1, $2, $3, $4, $5, $6);
+-- Exactly one of the four subject columns is set, enforced by
+-- notifications_one_subject_check: a row the UI cannot route is not worth
+-- writing. listing_title is a snapshot where a listing is involved and null
+-- where none is - a follow has no listing to name.
+INSERT INTO notifications (
+    id, user_id, kind, listing_title, order_id, conversation_id, actor_id, listing_id
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+
+-- name: DeleteNotificationsForListingKind :exec
+DELETE FROM notifications
+WHERE listing_id = $1 AND kind = $2;
 
 -- name: ListNotifications :many
 SELECT * FROM notifications
@@ -15,3 +25,11 @@ UPDATE notifications
 SET read_at = CURRENT_TIMESTAMP
 WHERE user_id = $1
   AND read_at IS NULL;
+
+-- name: ListNotificationsForExport :many
+-- Unpaginated twin of ListNotifications, which takes a LIMIT because the bell
+-- shows a page. An export that silently stopped at that limit would hand
+-- someone part of their data and no way to know it was partial.
+SELECT * FROM notifications
+WHERE user_id = sqlc.arg(user_id)
+ORDER BY created_at, id;

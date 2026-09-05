@@ -15,6 +15,7 @@ import { ContactDetailsSection } from "../components/forms/ContactDetailsSection
 import { ChangePasswordSection } from "../components/forms/ChangePasswordSection.tsx";
 import { BioSection } from "../components/forms/BioSection.tsx";
 import { ApiKeysSection } from "../components/forms/ApiKeysSection.tsx";
+import { DataExportSection } from "../components/forms/DataExportSection.tsx";
 import { BlockedUsersSection } from "../components/forms/BlockedUsersSection";
 import { useEffect, useMemo, useState } from "react";
 import { useModal } from "../providers/modalContext";
@@ -149,6 +150,12 @@ export default function Profile() {
           <div className="space-y-1">
             <h2 className="text-foreground text-section font-bold">{t("pages.profile.apiKeys")}</h2>
             <ApiKeysSection />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-foreground text-section font-bold">
+              {t("pages.profile.yourData")}
+            </h2>
+            <DataExportSection />
           </div>
           {/* NOTE: No backend for these kind of preferences yet. Discussions were held about
               having a setting for showing personal details, but maybe now handled by the friend

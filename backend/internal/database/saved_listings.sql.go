@@ -63,6 +63,40 @@ func (q *Queries) ListSavedListings(ctx context.Context, userID uuid.UUID) ([]Li
 	return items, nil
 }
 
+const listSaversOfListing = `-- name: ListSaversOfListing :many
+SELECT user_id FROM saved_listings
+WHERE listing_id = $1
+  AND user_id <> $2
+`
+
+type ListSaversOfListingParams struct {
+	ListingID  uuid.UUID
+	ExceptUser uuid.UUID
+}
+
+func (q *Queries) ListSaversOfListing(ctx context.Context, arg ListSaversOfListingParams) ([]uuid.UUID, error) {
+	rows, err := q.db.QueryContext(ctx, listSaversOfListing, arg.ListingID, arg.ExceptUser)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var user_id uuid.UUID
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const saveListing = `-- name: SaveListing :exec
 INSERT INTO saved_listings (user_id, listing_id)
 VALUES ($1, $2)

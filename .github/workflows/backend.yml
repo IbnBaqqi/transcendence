@@ -108,10 +108,15 @@ jobs:
         env:
           # Without this the database tests skip; with it they run for real.
           TEST_DB_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
-        # 20m, not Go's 10m default: internal/service alone runs 7-9 minutes and
-        # has hit the default three times without a real failure. Keep in step
-        # with the test targets in backend/Makefile.
-        run: go test -race -cover -timeout 20m ./...
+        # 30m, not Go's 10m default. internal/service is the reason: measured
+        # alone it takes about 16 minutes, because each of its ~230 tests
+        # creates and migrates its own database, so every migration added to
+        # sql/migrations costs all of them. Inside `go test ./...` it runs
+        # alongside auth and handler against one Postgres, and that contention
+        # took it past a 20m ceiling on a developer laptop while passing in
+        # under 6 here. Raised so the local run is not the flakier one.
+        # Keep in step with the test targets in backend/Makefile.
+        run: go test -race -cover -timeout 30m ./...
 
       - name: Install gosec
         # Pinned for the same reason as staticcheck below: a new release can

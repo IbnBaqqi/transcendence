@@ -21,7 +21,7 @@ func (q *Queries) DeleteFollowsForUser(ctx context.Context, followerID uuid.UUID
 	return err
 }
 
-const followUser = `-- name: FollowUser :exec
+const followUser = `-- name: FollowUser :execrows
 INSERT INTO follows (follower_id, followee_id)
 VALUES ($1, $2)
 ON CONFLICT (follower_id, followee_id) DO NOTHING
@@ -32,9 +32,12 @@ type FollowUserParams struct {
 	FolloweeID uuid.UUID
 }
 
-func (q *Queries) FollowUser(ctx context.Context, arg FollowUserParams) error {
-	_, err := q.db.ExecContext(ctx, followUser, arg.FollowerID, arg.FolloweeID)
-	return err
+func (q *Queries) FollowUser(ctx context.Context, arg FollowUserParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, followUser, arg.FollowerID, arg.FolloweeID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const listFollowers = `-- name: ListFollowers :many

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
 	"slices"
 
 	"github.com/google/uuid"
@@ -18,10 +19,10 @@ const (
 )
 
 type FollowService struct {
-	db *database.Queries
+	db *database.DB
 }
 
-func NewFollowService(db *database.Queries) *FollowService {
+func NewFollowService(db *database.DB) *FollowService {
 	return &FollowService{db: db}
 }
 
@@ -30,14 +31,51 @@ func (s *FollowService) Follow(ctx context.Context, followerID, followeeID uuid.
 		return &ValidationError{Message: "You cannot follow yourself"}
 	}
 
-	err := s.db.FollowUser(ctx, database.FollowUserParams{
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			slog.Error("follow transaction rollback failed", "error", err)
+		}
+	}()
+
+	qtx := s.db.Queries.WithTx(tx.Tx)
+
+	inserted, err := qtx.FollowUser(ctx, database.FollowUserParams{
 		FollowerID: followerID,
 		FolloweeID: followeeID,
 	})
 	if isForeignKeyViolation(err, followeeConstraint, followerConstraint) {
 		return &NotFoundError{Message: "User not found"}
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	if inserted == 0 {
+		return nil
+	}
+
+	blocked, err := qtx.BlockExistsBetween(ctx, database.BlockExistsBetweenParams{
+		UserA: followerID,
+		UserB: followeeID,
+	})
+	if err != nil {
+		return err
+	}
+
+	// The follow still succeeds and the notification is what gets dropped.
+	// Refusing here would answer 403 where an unblocked follow answers 204,
+	// which tells the follower they have been blocked - the one thing this
+	// codebase says blocking must never do.
+	if !blocked {
+		if err := recordActorNotification(ctx, qtx, followeeID, notifyKindNewFollower, followerID, sql.NullString{}); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (s *FollowService) Unfollow(ctx context.Context, followerID, followeeID uuid.UUID) error {

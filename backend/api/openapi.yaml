@@ -1299,34 +1299,68 @@ components:
       description: |
         Something that happened to you. `kind` and the ids say what and where;
         the sentence is the client's to write.
-      required: [id, kind, listing_title, order_id, conversation_id, read_at, created_at]
+      required:
+        [id, kind, listing_title, order_id, conversation_id, actor_id,
+         listing_id, read_at, created_at]
       properties:
         id:
           type: string
           format: uuid
         kind:
           type: string
+          description: |
+            **Exactly one of the four subject ids is set**, and which one
+            depends on the kind rather than on what happens to be non-null.
+            Route on `kind`; a kind you do not recognise should render as plain
+            text rather than being guessed at from the ids.
           enum:
             [
               order_placed,
               order_handed_over,
               order_cancelled,
               order_resolved,
+              order_confirmed,
+              order_completed,
               chat_request,
+              review_received,
+              new_follower,
+              listing_removed,
+              saved_listing_gone,
+              saved_listing_deleted,
             ]
         listing_title:
-          type: string
+          type: [string, "null"]
           description: |
             Snapshotted when the notification was written, like the one on an
-            order: the listing can be removed and this still has to read sensibly.
+            order: the listing can be removed and this still has to read
+            sensibly.
+
+            **Null for a kind with no listing.** Always present, so a client
+            tests for null rather than for a missing key.
         order_id:
           type: [string, "null"]
           format: uuid
-          description: Set for the four order kinds, null for `chat_request`.
+          description: Set for the six order kinds.
         conversation_id:
           type: [string, "null"]
           format: uuid
-          description: Set for `chat_request`, null for the order kinds.
+          description: Set for `chat_request`.
+        actor_id:
+          type: [string, "null"]
+          format: uuid
+          description: |
+            The person a notification is about, for kinds whose subject is
+            neither an order nor a conversation: `new_follower` (whoever
+            followed you), `review_received` and `saved_listing_deleted` (you
+            and the seller respectively - it is what the row points *at*, not
+            always who acted).
+        listing_id:
+          type: [string, "null"]
+          format: uuid
+          description: |
+            The listing a notification is about: `listing_removed` and
+            `saved_listing_gone`. Not `saved_listing_deleted` - that listing no
+            longer exists, so the row points at its seller instead.
         read_at:
           type: [string, "null"]
           format: date-time
@@ -1617,6 +1651,87 @@ components:
             This is what the `location` filter on `/listings/search` matches.
           examples: ["Espoo"]
 
+    DataExport:
+      type: object
+      description: |
+        Everything the API tells an account about itself, in one document. Each
+        field is the same shape the endpoint that serves it publishes, so this
+        cannot drift into describing something the API does not send.
+      required:
+        [exported_at, account, oauth_providers, listings, orders,
+         saved_listings, conversations, messages, reviews_written,
+         reviews_received, following, followers, blocks, notifications,
+         api_keys]
+      properties:
+        exported_at:
+          type: string
+          format: date-time
+        account:
+          $ref: "#/components/schemas/OwnProfile"
+        oauth_providers:
+          type: array
+          items: { type: string }
+        listings:
+          type: array
+          description: |
+            Everything this account posted, including sold-out and
+            moderator-removed listings - their own record of what they wrote,
+            not a shop window.
+          items:
+            $ref: "#/components/schemas/Listing"
+        orders:
+          type: array
+          description: Both sides - what they bought and what they sold.
+          items:
+            $ref: "#/components/schemas/Order"
+        saved_listings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Listing"
+        conversations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationListItem"
+        messages:
+          type: array
+          description: |
+            Both sides of every conversation. The other person's text is
+            already readable in the app, so this discloses nothing new - and
+            half a conversation would be worse than none.
+          items:
+            $ref: "#/components/schemas/Message"
+        reviews_written:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+        reviews_received:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+        following:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatUser"
+        followers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatUser"
+        blocks:
+          type: array
+          description: |
+            Who this account has blocked. Who has blocked THEM is absent, and
+            deliberately so.
+          items:
+            $ref: "#/components/schemas/BlockedUser"
+        notifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+        api_keys:
+          type: array
+          description: Metadata only - a key's secret is never stored.
+          items:
+            $ref: "#/components/schemas/APIKey"
     OwnProfile:
       type: object
       description: |
@@ -3344,8 +3459,11 @@ paths:
         sentence. The wording is the client's, so it can be read in the reader's
         language rather than the one the server was written in.
 
-        Exactly one of `order_id` and `conversation_id` is set — the four order
-        kinds point at an order, `chat_request` at a conversation.
+        **Exactly one of the four subject ids is set**, and which one depends
+        on the kind: the six order kinds point at an order, `chat_request` at a
+        conversation, `listing_removed` and `saved_listing_gone` at a listing,
+        and `new_follower`, `review_received` and `saved_listing_deleted` at a
+        person. Route on `kind` rather than on whichever id is non-null.
       responses:
         "200":
           description: Your recent notifications, newest first.
@@ -4171,6 +4289,67 @@ paths:
   # ---------------------------------------------------------------------------
   # me
   # ---------------------------------------------------------------------------
+  /me/export:
+    get:
+      tags: [users]
+      summary: Download everything this account's data
+      operationId: exportMyData
+      description: |
+        Every row the API already tells this account about itself, as one JSON
+        document. `Content-Disposition` marks it as an attachment, so a browser
+        saves it rather than rendering it.
+
+        **Session only.** Like account deletion beside it, this is outside what
+        an API key may do: one response containing everything about a person is
+        exactly what a leaked key must not be able to fetch.
+
+        JSON rather than CSV because the data is relational - orders reference
+        listings, messages reference conversations - and a spreadsheet either
+        flattens that into a lie or becomes a zip with a schema to explain. The
+        field types are the same response shapes the individual endpoints
+        publish.
+
+        **Two things are deliberately absent**, both for reasons that hold
+        elsewhere in this API:
+
+        - **who has blocked this account.** A block is symmetric in its effects
+          precisely so neither side learns who acted, and no endpoint exposes
+          it.
+        - **moderator notes.** They are written for admins about a person
+          rather than for the person, and nothing shows them either.
+
+        The other party's messages and the authors of reviews received ARE
+        included: both are readable in the app already, so exporting them
+        discloses nothing new, and leaving them out would produce half a
+        conversation.
+      responses:
+        "200":
+          description: The document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataExport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: |
+            An API key was used. This endpoint needs a browser session.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: |
+            Exports are limited per account, and far more tightly than the
+            API-wide budget: assembling one reads an entire account history and
+            sends a confirmation email. Three per hour.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /me/api-keys:
     post:
       tags: [me]

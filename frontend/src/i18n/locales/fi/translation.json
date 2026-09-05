@@ -386,7 +386,12 @@
       "password": "Salasana",
       "bio": "Kuvaus",
       "accountManagement": "Tilin hallinta",
-      "apiKeys": "API-avaimet"
+      "apiKeys": "API-avaimet",
+      "yourData": "Omat tietosi",
+      "exportExplainer": "Lataa kaikki tilistäsi tallennetut tiedot JSON-tiedostona. Lähetämme sinulle sähköpostin, kun näin tapahtuu.",
+      "exportDownload": "Lataa omat tietoni",
+      "exportWorking": "Valmistellaan…",
+      "exportFailed": "Latausta ei voitu valmistella."
     },
     "notFound": {
       "title": "404 - Sivua ei löydy",
@@ -606,7 +611,15 @@
       "order_handed_over": "Tilauksesi {{title}} on luovutettu",
       "order_cancelled": "Tilauksesi {{title}} peruttiin",
       "order_resolved": "Tuki ratkaisi tilauksesi {{title}}",
-      "chat_request": "Joku lähetti sinulle viestin tuotteesta {{title}}"
+      "chat_request": "Joku lähetti sinulle viestin tuotteesta {{title}}",
+      "order_confirmed": "Tilauksesi {{title}} on vahvistettu",
+      "order_completed": "Tilauksesi {{title}} on valmis",
+      "review_received": "Sait uuden arvostelun",
+      "new_follower": "Sinulla on uusi seuraaja",
+      "listing_removed": "Moderaattori poisti ilmoituksesi {{title}}",
+      "saved_listing_gone": "Tallentamasi {{title}} on loppuunmyyty",
+      "saved_listing_deleted": "Tallentamasi {{title}} on poistettu",
+      "unknown": "Tililläsi tapahtui jotain"
     }
   },
   "adminUsers": {

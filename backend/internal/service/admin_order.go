@@ -256,10 +256,7 @@ func (s *AdminOrderService) Resolve(
 	}
 
 	if action.restoresStock {
-		if _, err := qtx.IncrementListingQuantity(ctx, database.IncrementListingQuantityParams{
-			ID:       order.ListingID,
-			Quantity: order.Quantity,
-		}); err != nil {
+		if err := restock(ctx, qtx, order.ListingID, order.Quantity); err != nil {
 			return database.Order{}, err
 		}
 	}

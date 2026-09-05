@@ -31,7 +31,7 @@ func newFollowService(t *testing.T) (*FollowService, *database.DB, uuid.UUID, uu
 		return user.ID
 	}
 
-	return NewFollowService(db.Queries), db, mk("aino"), mk("bea")
+	return NewFollowService(db), db, mk("aino"), mk("bea")
 }
 
 func TestFollowIsIdempotent(t *testing.T) {
@@ -237,5 +237,138 @@ func TestDeletingAUserRemovesTheirFollows(t *testing.T) {
 				t.Errorf("follows = %d, want 0 - the edge outlived the user", rows)
 			}
 		})
+	}
+}
+
+func TestFollowingNotifiesTheFolloweeAndNotTheFollower(t *testing.T) {
+	svc, db, aino, bea := newFollowService(t)
+	ctx := context.Background()
+
+	if err := svc.Follow(ctx, aino, bea); err != nil {
+		t.Fatalf("follow: %v", err)
+	}
+
+	got, err := db.ListNotifications(ctx, database.ListNotificationsParams{UserID: bea, Limit: 30})
+	if err != nil {
+		t.Fatalf("bea's notifications: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("bea has %d notifications, want 1", len(got))
+	}
+	if got[0].Kind != notifyKindNewFollower {
+		t.Errorf("kind = %q, want %q", got[0].Kind, notifyKindNewFollower)
+	}
+	// actor_id is the whole subject: without it the inbox has nobody to link to.
+	if !got[0].ActorID.Valid || got[0].ActorID.UUID != aino {
+		t.Errorf("actor = %v, want aino %v", got[0].ActorID, aino)
+	}
+
+	mine, err := db.ListNotifications(ctx, database.ListNotificationsParams{UserID: aino, Limit: 30})
+	if err != nil {
+		t.Fatalf("aino's notifications: %v", err)
+	}
+	if len(mine) != 0 {
+		t.Errorf("the follower was notified about their own follow")
+	}
+}
+
+func TestFollowingAgainNotifiesNobody(t *testing.T) {
+	svc, db, aino, bea := newFollowService(t)
+	ctx := context.Background()
+
+	for i := 0; i < 3; i++ {
+		if err := svc.Follow(ctx, aino, bea); err != nil {
+			t.Fatalf("follow %d: %v", i+1, err)
+		}
+	}
+
+	got, err := db.ListNotifications(ctx, database.ListNotificationsParams{UserID: bea, Limit: 30})
+	if err != nil {
+		t.Fatalf("notifications: %v", err)
+	}
+	if len(got) != 1 {
+		t.Errorf("notifications = %d, want 1 - a repeated follow inserted nothing but told bea anyway", len(got))
+	}
+}
+
+func TestTheFollowRollsBackWhenTheNotificationFails(t *testing.T) {
+	svc, db, aino, bea := newFollowService(t)
+	ctx := context.Background()
+
+	if _, err := db.Exec("ALTER TABLE notifications RENAME TO notifications_hidden"); err != nil {
+		t.Fatalf("hiding the notifications table: %v", err)
+	}
+
+	if err := svc.Follow(ctx, aino, bea); err == nil {
+		t.Fatal("follow succeeded despite the notification write failing")
+	}
+
+	if _, err := db.Exec("ALTER TABLE notifications_hidden RENAME TO notifications"); err != nil {
+		t.Fatalf("restoring the notifications table: %v", err)
+	}
+
+	following, err := db.ListFollowing(ctx, database.ListFollowingParams{ViewerID: aino, SubjectID: aino})
+	if err != nil {
+		t.Fatalf("re-reading the follows: %v", err)
+	}
+	if len(following) != 0 {
+		t.Error("the follow outlived its failed notification")
+	}
+}
+
+// A block must not be discoverable, so the follow still answers 204 and it is
+// the notification that goes. Both halves matter: refusing instead would tell
+// the follower they are blocked, and notifying anyway hands the blocker the
+// contact they blocked to avoid.
+func TestABlockedFollowSucceedsSilently(t *testing.T) {
+	svc, db, aino, bea := newFollowService(t)
+	ctx := context.Background()
+
+	if err := db.BlockUser(ctx, database.BlockUserParams{BlockerID: bea, BlockedID: aino}); err != nil {
+		t.Fatalf("bea blocking aino: %v", err)
+	}
+
+	if err := svc.Follow(ctx, aino, bea); err != nil {
+		t.Fatalf("the follow was refused, which tells aino she is blocked: %v", err)
+	}
+
+	got, err := db.ListNotifications(ctx, database.ListNotificationsParams{UserID: bea, Limit: 30})
+	if err != nil {
+		t.Fatalf("bea's notifications: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("bea was told about a follow from someone she blocked (%d rows)", len(got))
+	}
+
+	// The follow itself is real, so nothing about the block leaked into it.
+	following, err := db.ListFollowing(ctx, database.ListFollowingParams{ViewerID: aino, SubjectID: aino})
+	if err != nil {
+		t.Fatalf("re-reading the follows: %v", err)
+	}
+	if len(following) != 1 {
+		t.Errorf("following = %d, want 1 - the follow should still have happened", len(following))
+	}
+}
+
+// The block is symmetric in its effects: it does not matter which way round it
+// was created.
+func TestBlockingTheOtherWayAlsoSilencesTheFollow(t *testing.T) {
+	svc, db, aino, bea := newFollowService(t)
+	ctx := context.Background()
+
+	if err := db.BlockUser(ctx, database.BlockUserParams{BlockerID: aino, BlockedID: bea}); err != nil {
+		t.Fatalf("aino blocking bea: %v", err)
+	}
+
+	if err := svc.Follow(ctx, aino, bea); err != nil {
+		t.Fatalf("follow: %v", err)
+	}
+
+	got, err := db.ListNotifications(ctx, database.ListNotificationsParams{UserID: bea, Limit: 30})
+	if err != nil {
+		t.Fatalf("notifications: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("a notification crossed a block created the other way (%d rows)", len(got))
 	}
 }

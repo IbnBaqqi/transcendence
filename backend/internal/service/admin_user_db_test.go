@@ -330,12 +330,12 @@ func TestASuspendedUserLeavesTheFollowLists(t *testing.T) {
 	f := newAdminFixture(t)
 	ctx := context.Background()
 
-	if err := f.db.FollowUser(ctx, database.FollowUserParams{
+	if _, err := f.db.FollowUser(ctx, database.FollowUserParams{
 		FollowerID: f.admin, FolloweeID: f.member,
 	}); err != nil {
 		t.Fatalf("following: %v", err)
 	}
-	if err := f.db.FollowUser(ctx, database.FollowUserParams{
+	if _, err := f.db.FollowUser(ctx, database.FollowUserParams{
 		FollowerID: f.member, FolloweeID: f.admin,
 	}); err != nil {
 		t.Fatalf("following back: %v", err)

@@ -94,6 +94,46 @@ func (q *Queries) GetReviewForOrder(ctx context.Context, orderID uuid.UUID) (Rev
 	return i, err
 }
 
+const listReviewsAboutUserForExport = `-- name: ListReviewsAboutUserForExport :many
+SELECT id, order_id, seller_id, reviewer_id, rating, comment, created_at, updated_at FROM reviews
+WHERE seller_id = $1
+ORDER BY created_at
+`
+
+// Unpaginated, for the same reason as the notifications twin: the public
+// profile pages through these, an export must not.
+func (q *Queries) ListReviewsAboutUserForExport(ctx context.Context, sellerID uuid.UUID) ([]Review, error) {
+	rows, err := q.db.QueryContext(ctx, listReviewsAboutUserForExport, sellerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Review
+	for rows.Next() {
+		var i Review
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.SellerID,
+			&i.ReviewerID,
+			&i.Rating,
+			&i.Comment,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listReviewsForSeller = `-- name: ListReviewsForSeller :many
 SELECT
     r.id, r.order_id, r.rating, r.comment, r.created_at, r.updated_at,
@@ -146,6 +186,46 @@ func (q *Queries) ListReviewsForSeller(ctx context.Context, arg ListReviewsForSe
 			&i.ReviewerID,
 			&i.ReviewerUsername,
 			&i.ReviewerDeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReviewsWrittenBy = `-- name: ListReviewsWrittenBy :many
+SELECT id, order_id, seller_id, reviewer_id, rating, comment, created_at, updated_at FROM reviews
+WHERE reviewer_id = $1
+ORDER BY created_at
+`
+
+// The other direction from ListReviewsForSeller: what this account said about
+// other people, which is theirs to take with them.
+func (q *Queries) ListReviewsWrittenBy(ctx context.Context, reviewerID uuid.NullUUID) ([]Review, error) {
+	rows, err := q.db.QueryContext(ctx, listReviewsWrittenBy, reviewerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Review
+	for rows.Next() {
+		var i Review
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.SellerID,
+			&i.ReviewerID,
+			&i.Rating,
+			&i.Comment,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
