@@ -53,21 +53,7 @@ export function Modal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      {/* The role goes on the panel, not on the backdrop: the backdrop is a
-          click target, and naming it the dialog would put the overlay itself
-          into the accessibility tree as the thing you are reading.
-
-          aria-modal tells assistive tech to ignore the page behind. It is a
-          promise the keyboard does not yet keep - focus can still Tab out, so
-          a real trap is still owed. Announcing the dialog is worth having
-          meanwhile; without the role it is not announced as a dialog at all. */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        className={`bg-surface w-full rounded-lg shadow-lg ${className}`}
-      >
-        {children}
-      </div>
+      <div className={`bg-surface w-full rounded-lg shadow-lg ${className}`}>{children}</div>
     </div>,
     document.body,
   );

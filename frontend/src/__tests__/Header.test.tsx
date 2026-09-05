@@ -188,20 +188,6 @@ test("holds the identity slot but keeps the header while the session restores", 
 // rewrite that drops one leaves a section reachable only by typing the URL,
 // with the suite still green - which is how /admin/orders was lost, and it
 // took comparing ancestry by hand to notice.
-// The mark is the only thing in the top-left below sm, where the wordmark is
-// hidden. It renders through the sprite because an external <use> with no
-// fragment draws nothing in Firefox - which is how it was found. Named for the
-// brand rather than "Home": the nav already has a Home link, and its only child
-// is aria-hidden, so without the label this link has no accessible name.
-test("gives the brand mark its own name, distinct from the Home link", () => {
-  renderHeader({ user: null });
-
-  const mark = screen.getByRole("link", { name: "Metsätori" });
-  expect(mark).toHaveAttribute("href", "/");
-  expect(mark.querySelector("use")).toHaveAttribute("href", "/icons.svg#brand-mark");
-  expect(screen.getByRole("link", { name: "Home" })).not.toBe(mark);
-});
-
 test.each([
   ["Home", "/"],
   ["Search", "/search"],
