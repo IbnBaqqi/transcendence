@@ -379,7 +379,12 @@
       "password": "Lösenord",
       "bio": "Bio",
       "accountManagement": "Kontohantering",
-      "apiKeys": "API-nycklar"
+      "apiKeys": "API-nycklar",
+      "yourData": "Dina uppgifter",
+      "exportExplainer": "Ladda ner allt vi har om ditt konto som en JSON-fil. Vi mejlar dig när det sker.",
+      "exportDownload": "Ladda ner mina uppgifter",
+      "exportWorking": "Förbereder…",
+      "exportFailed": "Det gick inte att förbereda nedladdningen."
     },
     "notFound": {
       "title": "404 - Sidan hittades inte",

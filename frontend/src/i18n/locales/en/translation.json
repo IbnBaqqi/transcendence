@@ -379,7 +379,12 @@
       "password": "Password",
       "bio": "Bio",
       "accountManagement": "Account Management",
-      "apiKeys": "API keys"
+      "apiKeys": "API keys",
+      "yourData": "Your data",
+      "exportExplainer": "Download everything we hold about your account as a JSON file. We email you when it happens.",
+      "exportDownload": "Download my data",
+      "exportWorking": "Preparing…",
+      "exportFailed": "Couldn't prepare the download."
     },
     "notFound": {
       "title": "404 - Page not found",

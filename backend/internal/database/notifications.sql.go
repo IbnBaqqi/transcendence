@@ -96,6 +96,49 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 	return items, nil
 }
 
+const listNotificationsForExport = `-- name: ListNotificationsForExport :many
+SELECT id, user_id, kind, listing_title, order_id, conversation_id, read_at, created_at, actor_id, listing_id FROM notifications
+WHERE user_id = $1
+ORDER BY created_at, id
+`
+
+// Unpaginated twin of ListNotifications, which takes a LIMIT because the bell
+// shows a page. An export that silently stopped at that limit would hand
+// someone part of their data and no way to know it was partial.
+func (q *Queries) ListNotificationsForExport(ctx context.Context, userID uuid.UUID) ([]Notification, error) {
+	rows, err := q.db.QueryContext(ctx, listNotificationsForExport, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Notification
+	for rows.Next() {
+		var i Notification
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Kind,
+			&i.ListingTitle,
+			&i.OrderID,
+			&i.ConversationID,
+			&i.ReadAt,
+			&i.CreatedAt,
+			&i.ActorID,
+			&i.ListingID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markNotificationsRead = `-- name: MarkNotificationsRead :execrows
 UPDATE notifications
 SET read_at = CURRENT_TIMESTAMP

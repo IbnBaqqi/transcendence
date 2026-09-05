@@ -70,7 +70,7 @@ func newDeletionFixture(t *testing.T) deletionFixture {
 	t.Cleanup(func() { _ = files.Close() })
 
 	return deletionFixture{
-		users:    NewUserService(db, files),
+		users:    NewUserService(db, files, notify.Disabled{}),
 		listings: NewListingService(db, files),
 		orders:   NewOrderService(db, notify.Disabled{}),
 		chat:     NewConversationService(db, notify.Disabled{}),
@@ -455,5 +455,48 @@ func TestTheScrubStaysScrubbed(t *testing.T) {
 	}
 	if user.ShowOnlineStatus {
 		t.Error("show_online_status survived the scrub")
+	}
+}
+
+// The scrub rewrites users.email, so the recipient has to be read BEFORE the
+// transaction. Look it up afterwards - the way every other notification does -
+// and this arrives at deleted-<id>@example.invalid.
+func TestDeletionEmailsTheAddressTheAccountHadBeforeTheScrub(t *testing.T) {
+	db := testdb.New(t)
+	ctx := context.Background()
+
+	user, err := db.CreateUser(ctx, database.CreateUserParams{
+		ID:       database.NewID(),
+		Username: "departing", Email: "departing@example.test",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("creating the account: %v", err)
+	}
+	if err := db.EnsureProfile(ctx, user.ID); err != nil {
+		t.Fatalf("creating the profile: %v", err)
+	}
+
+	files, err := storage.NewLocal(t.TempDir())
+	if err != nil {
+		t.Fatalf("temporary upload dir: %v", err)
+	}
+	t.Cleanup(func() { _ = files.Close() })
+
+	rec := &recorder{}
+	if err := NewUserService(db, files, rec).DeleteAccount(ctx, user.ID, "departing"); err != nil {
+		t.Fatalf("deleting: %v", err)
+	}
+
+	rec.only(t, notify.KindAccountDeleted, "departing@example.test")
+
+	// And the row really was scrubbed, so the address above could only have
+	// come from before the transaction.
+	after, err := db.GetUser(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("reading the scrubbed row: %v", err)
+	}
+	if after.Email == "departing@example.test" {
+		t.Fatal("the account was not scrubbed, so this proves nothing")
 	}
 }

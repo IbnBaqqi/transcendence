@@ -35,3 +35,13 @@ WHERE (c.buyer_id = sqlc.arg(user_id) OR c.seller_id = sqlc.arg(user_id))
        WHERE blocks.blocker_id = sqlc.arg(user_id)
          AND blocks.blocked_id = m.sender_id
   );
+
+-- name: ListMessagesForExport :many
+-- Every message in every conversation this account is part of - both sides.
+-- The other person's text is already readable in the app, so exporting it
+-- discloses nothing new; omitting it would produce half a conversation.
+SELECT messages.* FROM messages
+JOIN conversations ON conversations.id = messages.conversation_id
+WHERE conversations.buyer_id = sqlc.arg(user_id)
+   OR conversations.seller_id = sqlc.arg(user_id)
+ORDER BY messages.conversation_id, messages.id;

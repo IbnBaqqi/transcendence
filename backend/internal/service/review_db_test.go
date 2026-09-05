@@ -69,7 +69,7 @@ func newReviewFixture(t *testing.T) reviewFixture {
 	return reviewFixture{
 		reviews:  NewReviewService(db.Queries),
 		orders:   NewOrderService(db, notify.Disabled{}),
-		users:    NewUserService(db, files),
+		users:    NewUserService(db, files, notify.Disabled{}),
 		profiles: NewProfileService(db, files),
 		db:       db,
 		seller:   seller,
