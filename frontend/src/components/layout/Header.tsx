@@ -1,5 +1,3 @@
-// Link: normal navigation link (no "am I active?" info)
-// NavLink: a Link that knows if it points to the current page, so you can style the active one differently
 import { useModal } from "../../providers/modalContext";
 import { useAuth } from "../../hooks/useAuth";
 import { useOwnProfile } from "../../api/profile";
@@ -37,13 +35,13 @@ export default function Header() {
             {t("brand")}
           </Link>
         </div>
-        {/* wrap, not hide: an admin gets three text links appended here, and at
-            320px that is 400px of nav in a 320px viewport. Hiding them below sm
-            would leave those sections reachable only by typing the URL - these
-            links are the only navigation into them anywhere in the app. */}
+        {/* wrap, not hide: an admin gets three icon+text links appended here,
+            and at 320px that is ~470px of nav in a 320px viewport. Hiding them
+            below sm would leave those sections reachable only by typing the
+            URL - these links are the only navigation into them anywhere in the
+            app. */}
         <nav className="xs:gap-4 flex flex-wrap items-center justify-end gap-2 text-sm">
           <LanguageSwitcher />
-          {/* {navLinkClass} passes the function itself and React Router calls it and supplies { isActive } */}
           <Link to="/" aria-label={t("nav.home")} className="text-muted hover:text-foreground">
             <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
               <use href="/icons.svg#home-icon" />
@@ -123,39 +121,30 @@ export default function Header() {
             <>
               <Link
                 to="/admin/listings"
-                aria-label={t("nav.admin")}
-                className="text-muted hover:text-foreground"
+                className="text-muted hover:text-foreground inline-flex items-center gap-1"
               >
-                <div className="flex flex-row items-center gap-1">
-                  <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
-                    <use href="/icons.svg#admin-icon" />
-                  </svg>
-                  {t("nav.admin")}
-                </div>
+                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
+                  <use href="/icons.svg#admin-icon" />
+                </svg>
+                {t("nav.admin")}
               </Link>
               <Link
                 to="/admin/users"
-                aria-label={t("nav.adminUsers")}
-                className="text-muted hover:text-foreground"
+                className="text-muted hover:text-foreground inline-flex items-center gap-1"
               >
-                <div className="flex flex-row items-center gap-1">
-                  <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
-                    <use href="/icons.svg#users-admin-icon" />
-                  </svg>
-                  {t("nav.adminUsers")}
-                </div>
+                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
+                  <use href="/icons.svg#users-admin-icon" />
+                </svg>
+                {t("nav.adminUsers")}
               </Link>
               <Link
                 to="/admin/orders"
-                aria-label={t("nav.adminOrders")}
-                className="text-muted hover:text-foreground"
+                className="text-muted hover:text-foreground inline-flex items-center gap-1"
               >
-                <div className="flex flex-row items-center gap-1">
-                  <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
-                    <use href="/icons.svg#orders-admin-icon" />
-                  </svg>
-                  {t("nav.adminOrders")}
-                </div>
+                <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
+                  <use href="/icons.svg#orders-admin-icon" />
+                </svg>
+                {t("nav.adminOrders")}
               </Link>
             </>
           )}

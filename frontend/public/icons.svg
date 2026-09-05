@@ -91,6 +91,7 @@
   </symbol>
 
   <symbol id="following-icon" viewBox="0 0 24 30">
+    <!-- Mushroom stem -->
     <path
       stroke="currentColor"
       stroke-width="1.5"
@@ -101,6 +102,7 @@
          V 19.5"
     />
 
+    <!-- Cap, left curve -->
     <path
       stroke="currentColor"
       stroke-width="1.5"
@@ -110,6 +112,7 @@
       d="M 4.5 18.5 C 4.5 10.5, 8.5 7.5, 11 7.8"
     />
 
+    <!-- Cap, right curve -->
     <path
       stroke="currentColor"
       stroke-width="1.5"
@@ -119,6 +122,7 @@
       d="M 18.5 13.5 C 19.2 15.2, 19.5 16.8, 19.5 18.5"
     />
 
+    <!-- Cap, bottom rim -->
     <path
       stroke="currentColor"
       stroke-width="1.5"
@@ -128,6 +132,7 @@
       d="M 19.5 18.5 Q 12 21, 4.5 18.5"
     />
 
+    <!-- Star -->
     <path
       stroke="currentColor"
       stroke-width="1.5"
@@ -142,6 +147,7 @@
   </symbol>
 
   <symbol id="search-icon" viewBox="0 0 24 30">
+    <!-- Lens glass -->
     <circle
       cx="10.5"
       cy="13"
@@ -153,6 +159,7 @@
       fill="none"
     />
 
+    <!-- Lens reflection highlight -->
     <path
       stroke="currentColor"
       stroke-width="1.5"
@@ -162,6 +169,7 @@
       d="M 7.5 11 C 8.5 9.3, 11 9.3, 12 10"
     />
 
+    <!-- Handle -->
     <path
       stroke="currentColor"
       stroke-width="1.5"
@@ -333,14 +341,15 @@
       d="M 4.5 24.5 C 4.5 18.5, 19.5 18.5, 19.5 24.5"
     />
 
+    <!-- "A" badge - marks this as the admin view of users -->
     <path
       stroke="currentColor"
       stroke-width="1.5"
       stroke-linecap="round"
       stroke-linejoin="round"
       fill="none"
-      d="M 12 10.5 L 8.5 19.5 M 12 10.5 L 15.5 19.5
-         M 9.7 16.5 H 14.3"
+      d="M 19 3 L 16 10 M 19 3 L 22 10
+         M 17.1 7.7 H 20.9"
     />
   </symbol>
 
