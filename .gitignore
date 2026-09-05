@@ -5,6 +5,7 @@ THEORY.md
 AGENTS.md
 opencode.json
 frontend-priorities.txt
+LISTING_EDIT_DELETE_PLAN.md
 
 # --- Environment / secrets ---
 .env
