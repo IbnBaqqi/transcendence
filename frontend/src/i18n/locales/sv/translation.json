@@ -606,6 +606,11 @@
       "chat_request": "Någon skickade ett meddelande om {{title}}",
       "order_confirmed": "Din beställning {{title}} har bekräftats",
       "order_completed": "Din beställning {{title}} är klar",
+      "review_received": "Du fick en ny recension",
+      "new_follower": "Du har en ny följare",
+      "listing_removed": "En moderator tog bort din {{title}}",
+      "saved_listing_gone": "{{title}} som du sparade är slutsåld",
+      "saved_listing_deleted": "{{title}} som du sparade har tagits bort",
       "unknown": "Något hände på ditt konto"
     }
   },

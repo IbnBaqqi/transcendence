@@ -606,6 +606,11 @@
       "chat_request": "Someone messaged you about {{title}}",
       "order_confirmed": "Your {{title}} order was confirmed",
       "order_completed": "Your {{title}} order is complete",
+      "review_received": "You got a new review",
+      "new_follower": "You have a new follower",
+      "listing_removed": "A moderator removed your {{title}}",
+      "saved_listing_gone": "The {{title}} you saved has sold out",
+      "saved_listing_deleted": "The {{title}} you saved was deleted",
       "unknown": "Something happened on your account"
     }
   },
