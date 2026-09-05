@@ -4,15 +4,12 @@ import { useModal } from "../../providers/modalContext";
 import { useAuth } from "../../hooks/useAuth";
 import { useOwnProfile } from "../../api/profile";
 import { deriveInitials } from "../../lib/initials";
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Avatar from "../objects/Avatar.tsx";
 import { LanguageSwitcher } from "../objects/LanguageSwitcher";
 import { NotificationBell } from "../objects/NotificationBell";
 import { Skeleton } from "../objects/Skeleton";
-
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  isActive ? "text-foreground" : "text-muted hover:text-foreground";
 
 export default function Header() {
   const { user, isLoading: authLoading } = useAuth();
@@ -124,15 +121,42 @@ export default function Header() {
           )}
           {user?.role === "ADMIN" && (
             <>
-              <NavLink to="/admin/listings" className={navLinkClass}>
-                {t("nav.admin")}
-              </NavLink>
-              <NavLink to="/admin/users" className={navLinkClass}>
-                {t("nav.adminUsers")}
-              </NavLink>
-              <NavLink to="/admin/orders" className={navLinkClass}>
-                {t("nav.adminOrders")}
-              </NavLink>
+              <Link
+                to="/admin/listings"
+                aria-label={t("nav.admin")}
+                className="text-muted hover:text-foreground"
+              >
+                <div className="flex flex-row items-center gap-1">
+                  <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
+                    <use href="/icons.svg#admin-icon" />
+                  </svg>
+                  {t("nav.admin")}
+                </div>
+              </Link>
+              <Link
+                to="/admin/users"
+                aria-label={t("nav.adminUsers")}
+                className="text-muted hover:text-foreground"
+              >
+                <div className="flex flex-row items-center gap-1">
+                  <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
+                    <use href="/icons.svg#users-admin-icon" />
+                  </svg>
+                  {t("nav.adminUsers")}
+                </div>
+              </Link>
+              <Link
+                to="/admin/orders"
+                aria-label={t("nav.adminOrders")}
+                className="text-muted hover:text-foreground"
+              >
+                <div className="flex flex-row items-center gap-1">
+                  <svg className="xs:h-6 xs:w-5 h-5 w-4" aria-hidden="true">
+                    <use href="/icons.svg#orders-admin-icon" />
+                  </svg>
+                  {t("nav.adminOrders")}
+                </div>
+              </Link>
             </>
           )}
           {/* TODO: add Listing (#20) and auth links (#46) when those pages exist */}
