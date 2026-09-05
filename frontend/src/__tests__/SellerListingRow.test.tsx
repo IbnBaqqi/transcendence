@@ -99,6 +99,18 @@ describe("deleting", () => {
     expect(deleteListing).toHaveBeenCalledWith(makeListing().id);
   });
 
+  // The button the keyboard was standing on is replaced by two others. Without
+  // the handoff focus lands on the body, and the confirm step can only be
+  // reached by tabbing in again from the top of the page.
+  test("moves focus to the confirm button when the step changes", async () => {
+    const user = userEvent.setup();
+    renderRow(3);
+
+    await user.click(screen.getByRole("button", { name: "Delete listing" }));
+
+    expect(screen.getByRole("button", { name: "Delete permanently" })).toHaveFocus();
+  });
+
   // A sale can start between the render and the click, so the client's guess
   // can be stale - the server's answer is the one the seller needs to see.
   test("shows the server's reason when it refuses", async () => {

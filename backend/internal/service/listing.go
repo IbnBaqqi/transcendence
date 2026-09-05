@@ -285,7 +285,7 @@ func (s *ListingService) DeleteListing(ctx context.Context, userID uuid.UUID, li
 		return err
 	}
 	if activeCount > 0 {
-		return &ConflictError{Message: "This listing has a sale in progress. Finish or cancel it before deleting."}
+		return &ConflictError{Message: "This listing has a sale in progress — finish or cancel it before deleting"}
 	}
 
 	filenames, err := qtx.DeleteImagesForListing(ctx, listingID)

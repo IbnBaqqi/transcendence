@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -23,7 +23,7 @@ export function SellerListingRow({
   return (
     // An <article>, not a <Link> around everything: the delete button lives in
     // here now, and interactive content cannot nest inside an anchor.
-    <article className="border-line bg-surface hover:border-accent rounded-lg border p-4 transition-colors">
+    <article className="border-line bg-surface rounded-lg border p-4">
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-foreground text-item-title font-medium">
           <Link
@@ -65,6 +65,14 @@ function DeleteListing({ listing, inFlight }: { listing: Listing; inFlight: bool
   const remove = useDeleteListing();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  // The button the keyboard was standing on is replaced by two others, so
+  // without this focus falls to the body and the confirm step is unreachable
+  // without tabbing back in from the top.
+  useEffect(() => {
+    if (confirming) confirmRef.current?.focus();
+  }, [confirming]);
 
   async function handleDelete() {
     setError(null);
@@ -79,6 +87,9 @@ function DeleteListing({ listing, inFlight }: { listing: Listing; inFlight: bool
     }
   }
 
+  // Above the error on purpose: a refetch landing after a failed delete
+  // replaces the server's 409 with this, which is the same fact in better copy
+  // and takes the button away with it.
   if (inFlight) {
     return <p className="text-muted mt-3 text-sm">{t("pages.dashboard.listing.saleInProgress")}</p>;
   }
@@ -90,6 +101,7 @@ function DeleteListing({ listing, inFlight }: { listing: Listing; inFlight: bool
           <p className="text-muted text-sm">{t("pages.dashboard.listing.deleteWarning")}</p>
           <div className="flex flex-wrap gap-2">
             <Button
+              ref={confirmRef}
               variant="primary"
               disabled={remove.isPending}
               onClick={() => void handleDelete()}
