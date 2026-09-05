@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { passwordSchema } from "./common";
+import { existingPasswordSchema, passwordSchema } from "./common";
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1),
+    currentPassword: existingPasswordSchema,
     newPassword: passwordSchema,
     confirmPassword: passwordSchema,
   })

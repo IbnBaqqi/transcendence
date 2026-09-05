@@ -1,6 +1,7 @@
 import i18next from "../i18n";
 import {
   usernameSchema,
+  existingPasswordSchema,
   passwordSchema,
   phoneSchema,
   emailSchema,
@@ -17,6 +18,7 @@ const cases: [string, Parsable, unknown][] = [
   ["username: spaces", usernameSchema, "two words"],
   ["username: too long", usernameSchema, "x".repeat(51)],
   ["password: too short", passwordSchema, "abc"],
+  ["password: empty", existingPasswordSchema, ""],
   ["password: spaces", passwordSchema, "abc def ghij"],
   ["phone: bad shape", phoneSchema, "!!!"],
   ["email: bad shape", emailSchema, "nope"],

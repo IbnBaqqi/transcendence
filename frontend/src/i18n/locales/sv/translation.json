@@ -514,6 +514,7 @@
     "emailTooLong": "E-postadressen får vara högst 150 tecken",
     "emailInvalid": "Ogiltig e-postadress",
     "nameRequired": "Namn krävs",
+    "passwordRequired": "Lösenord krävs",
     "passwordTooShort": "Lösenordet måste vara minst 8 tecken",
     "passwordTooLongChars": "Lösenordet får vara högst 64 tecken",
     "passwordNoSpaces": "Lösenordet får inte innehålla mellanslag",

@@ -514,6 +514,7 @@
     "emailTooLong": "Email must be less than 150 characters",
     "emailInvalid": "Invalid email address",
     "nameRequired": "Name is required",
+    "passwordRequired": "Password is required",
     "passwordTooShort": "Password must be at least 8 characters long",
     "passwordTooLongChars": "Password must be less than 64 characters",
     "passwordNoSpaces": "Password cannot contain spaces",

@@ -30,13 +30,24 @@ async function fillValidCredentials() {
   return user;
 }
 
-test("starts out disabled until the fields validate", async () => {
+// A short password is a real password here: login checks against a stored one,
+// and the 8-character rule belongs to the forms that create one.
+test("accepts any non-empty password and only objects to an empty one", async () => {
   renderLogin(vi.fn());
+  const user = userEvent.setup();
 
   expect(screen.getByRole("button", { name: "Log In" })).toBeDisabled();
 
-  await fillValidCredentials();
+  await user.type(screen.getByLabelText("Email"), "forager@example.com");
+  await user.type(screen.getByLabelText("Password"), "short");
+
+  expect(screen.queryByText(/at least 8 characters/i)).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Log In" })).toBeEnabled();
+
+  // The control: the field is still validated, just not against a policy.
+  await user.clear(screen.getByLabelText("Password"));
+  expect(await screen.findByText("Password is required")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Log In" })).toBeDisabled();
 });
 
 test("logs in with the typed credentials and closes the modal", async () => {

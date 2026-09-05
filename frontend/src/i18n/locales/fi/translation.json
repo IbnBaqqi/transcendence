@@ -514,6 +514,7 @@
     "emailTooLong": "Sähköposti saa olla enintään 150 merkkiä",
     "emailInvalid": "Virheellinen sähköpostiosoite",
     "nameRequired": "Nimi vaaditaan",
+    "passwordRequired": "Salasana vaaditaan",
     "passwordTooShort": "Salasanan on oltava vähintään 8 merkkiä",
     "passwordTooLongChars": "Salasana saa olla enintään 64 merkkiä",
     "passwordNoSpaces": "Salasanassa ei voi olla välilyöntejä",
