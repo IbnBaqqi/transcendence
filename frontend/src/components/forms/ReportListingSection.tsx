@@ -110,7 +110,7 @@ function ReportForm({ listingId }: { listingId: string }) {
       </div>
 
       {report.isError && !alreadyFiled && (
-        <p role="alert" className="text-berry-500 text-sm">
+        <p role="alert" className="text-danger text-sm">
           {isApiError(report.error) ? report.error.message : t("report.error")}
         </p>
       )}

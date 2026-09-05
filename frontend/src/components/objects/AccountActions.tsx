@@ -223,7 +223,7 @@ export function AccountActions({ account }: { account: AdminUser }) {
           only the server's own message tells them apart. The list refetches
           either way; that is in the mutation. */}
       {failed && (
-        <p role="alert" className="text-berry-500 text-sm">
+        <p role="alert" className="text-danger text-sm">
           {isApiError(error) ? error.message : t("adminUsers.actionFailed")}
         </p>
       )}

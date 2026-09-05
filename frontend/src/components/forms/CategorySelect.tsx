@@ -95,12 +95,12 @@ export function CategorySelect({
       </select>
 
       {empty && (
-        <span id={statusId} role="alert" className="text-berry-500 text-xs">
+        <span id={statusId} role="alert" className="text-danger text-xs">
           {t("forms.category.noCategories")}
         </span>
       )}
       {isError && (
-        <span id={statusId} role="alert" className="text-berry-500 text-xs">
+        <span id={statusId} role="alert" className="text-danger text-xs">
           {t("forms.category.loadError")}{" "}
           <button type="button" className="underline" onClick={() => void refetch()}>
             {t("common.tryAgain")}
@@ -108,7 +108,7 @@ export function CategorySelect({
         </span>
       )}
       {error && (
-        <span id={errorId} role="alert" className="text-berry-500 text-xs">
+        <span id={errorId} role="alert" className="text-danger text-xs">
           {error.message as string}
         </span>
       )}

@@ -67,7 +67,7 @@ export function ApiKeysSection() {
       </form>
 
       {error && (
-        <p role="alert" className="text-berry-500 text-sm">
+        <p role="alert" className="text-danger text-sm">
           {error}
         </p>
       )}
@@ -156,7 +156,7 @@ function ApiKeyRow({ apiKey }: { apiKey: ApiKey }) {
             : t("apiKeys.fields.neverUsed")}
         </p>
         {error && (
-          <p role="alert" className="text-berry-500 mt-1 text-sm">
+          <p role="alert" className="text-danger mt-1 text-sm">
             {error}
           </p>
         )}

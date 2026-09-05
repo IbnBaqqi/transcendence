@@ -80,7 +80,7 @@ export default function Profile() {
           </Button>
         </div>
       ) : error ? (
-        <p className="text-berry-500 text-sm">
+        <p className="text-danger text-sm">
           {isApiError(error) ? error.message : t("common.somethingWentWrong")}
         </p>
       ) : authLoading || isLoading || !profile ? (
@@ -121,7 +121,7 @@ export default function Profile() {
             </div>
           </div>
           {avatarError && (
-            <p role="alert" className="text-berry-500 text-sm">
+            <p role="alert" className="text-danger text-sm">
               {avatarError}
             </p>
           )}

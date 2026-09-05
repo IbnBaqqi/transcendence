@@ -49,7 +49,7 @@ export function ImageUploadSection({ onComplete, onRemove, onClose }: ImageUploa
         thumbnailClassName="h-48 w-48"
         shape="circle"
       />
-      {error && <p className="text-berry-500 text-center text-sm">{error}</p>}
+      {error && <p className="text-danger text-center text-sm">{error}</p>}
       <div className="flex flex-row gap-2">
         <Button variant="primary" type="button" onClick={handleSave} disabled={images.length === 0}>
           {t("common.save")}

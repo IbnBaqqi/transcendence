@@ -66,7 +66,7 @@ export default function User() {
 
   if (error || !profile) {
     return (
-      <p className="text-berry-500 p-8 text-sm">
+      <p className="text-danger p-8 text-sm">
         {isApiError(error) ? error.message : t("pages.user.profileError")}
       </p>
     );

@@ -85,7 +85,7 @@ export function ModerateDialog({ listingId, removed }: { listingId: string; remo
           moderator got there first, or the listing is gone. So the message and
           a refetch, rather than a branch per status. */}
       {moderate.isError && (
-        <p role="alert" className="text-berry-500 mt-2 text-sm">
+        <p role="alert" className="text-danger mt-2 text-sm">
           {isApiError(moderate.error) ? moderate.error.message : t("moderation.decideFailed")}
         </p>
       )}

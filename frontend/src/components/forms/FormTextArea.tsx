@@ -59,7 +59,7 @@ export function FormTextArea({
             <div className="text-muted flex justify-between text-xs">
               <span>
                 {error && error.type === "max" && (
-                  <span className="text-berry-500">{error.message as string}</span>
+                  <span className="text-danger">{error.message as string}</span>
                 )}
               </span>
               {value.length > 0 && (

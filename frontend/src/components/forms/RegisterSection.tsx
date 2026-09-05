@@ -55,7 +55,7 @@ export function RegisterSection({ onClose }: { onClose: () => void }) {
           <FormField label={t("forms.email")} name="email" validateOnChange />
           <FormField label={t("forms.password")} name="password" type="password" validateOnChange />
         </div>
-        {errors.root?.message && <p className="text-berry-500 text-sm">{errors.root.message}</p>}
+        {errors.root?.message && <p className="text-danger text-sm">{errors.root.message}</p>}
         <div className="flex flex-row gap-2">
           <Button variant="primary" type="submit" disabled={!isValid || isSubmitting}>
             {isSubmitting ? t("common.registering") : t("common.register")}

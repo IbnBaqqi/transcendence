@@ -61,7 +61,7 @@ export function FollowButton({ userId }: { userId: string }) {
         {busy ? t("follows.updating") : isFollowing ? t("follows.unfollow") : t("follows.follow")}
       </Button>
       {error && (
-        <p role="alert" className="text-berry-500 text-sm">
+        <p role="alert" className="text-danger text-sm">
           {error}
         </p>
       )}

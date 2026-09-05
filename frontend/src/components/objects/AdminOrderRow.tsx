@@ -53,7 +53,7 @@ export function AdminOrderRow({ order }: { order: AdminOrder }) {
           <OrderStatusPill status={order.status} label={t(`orders.status.${order.status}`)} />
           {/* The reason this screen exists: no party can move this one. */}
           {order.stuck && (
-            <span className="text-berry-500 text-xs font-medium">{t("adminOrders.stuck")}</span>
+            <span className="text-danger text-xs font-medium">{t("adminOrders.stuck")}</span>
           )}
           <span className="text-muted text-xs">
             {t(`adminOrders.handshake.${handshake(order)}`)}

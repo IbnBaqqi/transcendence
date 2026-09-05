@@ -69,7 +69,7 @@ export function FormField({
                 : undefined
             }
           />
-          {error && <span className="text-berry-500 text-xs">{error.message as string}</span>}
+          {error && <span className="text-danger text-xs">{error.message as string}</span>}
         </>
       ) : (
         <span>{value}</span>

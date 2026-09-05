@@ -103,7 +103,7 @@ export default function AdminOrders() {
       </div>
 
       {backwards && (
-        <p role="alert" className="text-berry-500 text-sm">
+        <p role="alert" className="text-danger text-sm">
           {t("adminOrders.rangeBackwards")}
         </p>
       )}

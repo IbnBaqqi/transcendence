@@ -146,7 +146,7 @@ function ReserveForm({ listing }: { listing: Listing }) {
       )}
 
       {error && (
-        <p role="alert" className="text-berry-500 text-sm">
+        <p role="alert" className="text-danger text-sm">
           {error}
         </p>
       )}

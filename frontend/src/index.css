@@ -41,6 +41,7 @@
   --color-foreground: #1c1917; /* primary text */
   --color-muted: #57534e; /* secondary text */
   --color-line: #e7e5e4; /* borders / dividers */
+  --color-danger: #c23b73; /* berry-500 - errors, alerts, anything gone wrong */
   --color-accent: #297244; /* brand-600 */
   --color-accent-contrast: #ffffff; /* text on an accent background */
   --color-accent-hover: #225b39; /* brand-700 */
@@ -125,6 +126,9 @@
     --color-foreground: #f3f4f6;
     --color-muted: #9ca3af;
     --color-line: #2e303a;
+    /* berry-400, not the 500 used in light: 500 on this ground is 3.55:1,
+       under the 4.5:1 floor for body text. 400 is 5.05:1. */
+    --color-danger: #d6608f;
     --color-accent: #5aab77; /* brand-400 — lighter reads better on dark */
     --color-accent-contrast: #16171d; /* off-black */
     --color-accent-hover: #8fc9a3; /* brand-300 */

@@ -51,7 +51,7 @@ export function BlockedUsersSection() {
         ))}
       </ul>
       {unblock.isError && (
-        <p role="alert" className="text-berry-500 text-sm">
+        <p role="alert" className="text-danger text-sm">
           {isApiError(unblock.error) ? unblock.error.message : t("common.somethingWentWrong")}
         </p>
       )}

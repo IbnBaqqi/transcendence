@@ -7,7 +7,7 @@ import type { AdminUser, UserAction } from "../../api/types";
 
 const STATUS_STYLES: Record<AdminUser["status"], string> = {
   active: "text-foreground",
-  suspended: "text-berry-500",
+  suspended: "text-danger",
   // Deleted rows carry no information but do take up space, so they stay
   // legible and quiet rather than being filtered out of the default view.
   deleted: "text-muted",

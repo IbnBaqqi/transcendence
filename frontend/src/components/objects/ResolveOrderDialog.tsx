@@ -105,7 +105,7 @@ export function ResolveOrderDialog({ order }: { order: AdminOrder }) {
           cancelled" - only the server's own message tells them apart. The list
           refetches either way; that is in the mutation. */}
       {resolve.isError && (
-        <p role="alert" className="text-berry-500 mt-2 text-sm">
+        <p role="alert" className="text-danger mt-2 text-sm">
           {isApiError(resolve.error) ? resolve.error.message : t("adminOrders.resolveFailed")}
         </p>
       )}
