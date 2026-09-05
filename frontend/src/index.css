@@ -63,15 +63,22 @@
    * two different ways.
    *
    * Values are what the app already uses, so adopting them is a consistency
-   * change and not a redesign: section is today's text-lg (22 of 25 <h2>s)
-   * and secondary is text-sm. page-title is the exception — <h1> was split
+   * change and not a redesign: section is today's text-lg (22 of 25 <h2>s).
+   * page-title is the exception — <h1> was split
    * 8 pages to 8 between text-3xl and text-2xl, so the larger one is a
    * decision rather than a majority: a page title should outrank a section
    * heading clearly.
    *
    * Three roles rather than a full scale: each one here has call sites, and
    * body and meta sizes arrive when something adopts them. A token nothing
-   * references is dead API.
+   * references is dead API. Plain text-sm is the body/meta default and stays
+   * unnamed - it is the absence of a role, not a role.
+   *
+   * item-title names the third rank, the title of one thing inside a list -
+   * a card, a row, the heading over a sub-list. It is 1rem and not the
+   * 0.875rem three of its call sites used, for the same reason page-title is
+   * the larger of its two candidates: the text under a card title is
+   * text-sm, so at 0.875rem the title outranked its own body by weight alone.
    *
    * These names are claimed in the text-* namespace, which Tailwind also
    * builds from --color-*. Colour wins silently — add --color-section and
@@ -81,8 +88,8 @@
   --text-page-title--line-height: 2.25rem;
   --text-section: 1.125rem;
   --text-section--line-height: 1.75rem;
-  --text-secondary: 0.875rem;
-  --text-secondary--line-height: 1.25rem;
+  --text-item-title: 1rem;
+  --text-item-title--line-height: 1.5rem;
 
   /*
    * Page widths. Same two layers as the colors and the type scale above: a

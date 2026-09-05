@@ -56,7 +56,7 @@ export function NotificationBell() {
           className="border-line bg-surface fixed inset-x-2 top-14 z-20 rounded border shadow-lg sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 sm:w-80"
         >
           <div className="border-line flex items-center justify-between border-b px-3 py-2">
-            <h2 className="text-foreground text-secondary font-bold">{t("nav.notifications")}</h2>
+            <h2 className="text-foreground text-item-title font-bold">{t("nav.notifications")}</h2>
             <MarkAllReadButton unread={unread} className="text-xs" />
           </div>
 

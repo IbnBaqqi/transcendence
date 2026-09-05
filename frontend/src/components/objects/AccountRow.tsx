@@ -95,7 +95,7 @@ export function AccountRow({ account }: { account: AdminUser }) {
 
       {expanded && (
         <div className="border-line mt-3 border-t pt-3">
-          <h3 className="text-foreground text-secondary font-bold">
+          <h3 className="text-foreground text-item-title font-bold">
             {t("adminUsers.historyTitle")}
           </h3>
           {history && history.length > 0 ? (
