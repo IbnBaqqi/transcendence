@@ -19,14 +19,14 @@ export function DataExportSection() {
       const res = await api.get("/me/export");
       const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: "application/json" });
 
-      // Revoked straight after the click: an object URL pins the blob in
-      // memory until it is released, and this blob is the user's whole record.
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `metsatori-data-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch {
       setFailed(true);
     } finally {

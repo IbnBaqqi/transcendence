@@ -9,12 +9,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/google/uuid"
 )
 
 const maxTrackedKeys = 10000
 
 const defaultRateLimitPerMinute = 60
+
+const defaultExportsPerHour = 3
 
 type bucket struct {
 	tokens float64
@@ -82,15 +85,40 @@ func RateLimitByKey(perMinute int) func(http.Handler) http.Handler {
 		perMinute = defaultRateLimitPerMinute
 	}
 
+	return rateLimit(perMinute, time.Minute, apiKeyID)
+}
+
+// RateLimitByUser keys on the session instead of the API key. RateLimitByKey
+// waves through every request that carries no API key, so a session-only route
+// mounted under it alone is not rate limited at all.
+func RateLimitByUser(perHour int) func(http.Handler) http.Handler {
+	if perHour < 1 {
+		slog.Error("a per-user rate limit must be at least 1; using the default instead",
+			"configured", perHour, "using", defaultExportsPerHour)
+		perHour = defaultExportsPerHour
+	}
+
+	return rateLimit(perHour, time.Hour, sessionUserID)
+}
+
+func sessionUserID(ctx context.Context) (uuid.UUID, bool) {
+	user, ok := auth.UserFromContext(ctx)
+	if !ok {
+		return uuid.Nil, false
+	}
+	return user.ID, true
+}
+
+func rateLimit(capacity int, window time.Duration, keyOf func(context.Context) (uuid.UUID, bool)) func(http.Handler) http.Handler {
 	l := &keyLimiter{
-		capacity: float64(perMinute),
-		refill:   float64(perMinute) / 60,
+		capacity: float64(capacity),
+		refill:   float64(capacity) / window.Seconds(),
 		buckets:  make(map[uuid.UUID]*bucket),
 	}
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			id, ok := apiKeyID(r.Context())
+			id, ok := keyOf(r.Context())
 			if !ok {
 				next.ServeHTTP(w, r)
 				return
@@ -98,7 +126,7 @@ func RateLimitByKey(perMinute int) func(http.Handler) http.Handler {
 
 			allowed, remaining, retryAfter := l.allow(id, time.Now())
 
-			w.Header().Set("X-RateLimit-Limit", strconv.Itoa(perMinute))
+			w.Header().Set("X-RateLimit-Limit", strconv.Itoa(capacity))
 			w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(remaining))
 
 			if !allowed {

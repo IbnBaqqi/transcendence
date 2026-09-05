@@ -97,7 +97,7 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 }
 
 const listNotificationsForExport = `-- name: ListNotificationsForExport :many
-SELECT id, user_id, kind, listing_title, order_id, conversation_id, read_at, created_at FROM notifications
+SELECT id, user_id, kind, listing_title, order_id, conversation_id, read_at, created_at, actor_id, listing_id FROM notifications
 WHERE user_id = $1
 ORDER BY created_at, id
 `
@@ -123,6 +123,8 @@ func (q *Queries) ListNotificationsForExport(ctx context.Context, userID uuid.UU
 			&i.ConversationID,
 			&i.ReadAt,
 			&i.CreatedAt,
+			&i.ActorID,
+			&i.ListingID,
 		); err != nil {
 			return nil, err
 		}

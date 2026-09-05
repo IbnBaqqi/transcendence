@@ -4328,7 +4328,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "429":
-          $ref: "#/components/responses/RateLimited"
+          description: |
+            Exports are limited per account, and far more tightly than the
+            API-wide budget: assembling one reads an entire account history and
+            sends a confirmation email. Three per hour.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "500":
           $ref: "#/components/responses/ServerError"
 

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -187,5 +188,147 @@ func TestExportingSendsOneConfirmationWithoutTheData(t *testing.T) {
 	}
 	if !strings.Contains(body, out.Account.Username) {
 		t.Errorf("body = %q, want it addressed to the account", body)
+	}
+}
+
+// The endpoint's purpose is "everything about this person, AND NOTHING ABOUT
+// ANYONE ELSE". Every other test here asserts the first half. This is the
+// second, and it covers all fifteen queries at once: change any WHERE from
+// `= $1` to something wider and a stranger's rows appear in this document.
+//
+// One test rather than fifteen, because a copy-pasted or edited predicate is
+// the failure being guarded against, and it can happen in any of them.
+func TestTheExportContainsNothingBelongingToAnyoneElse(t *testing.T) {
+	f := newExportFixture(t)
+	ctx := context.Background()
+
+	// A whole unrelated account: its own listing, its own order, its own
+	// conversation, its own notification.
+	stranger := f.other
+	strangerListing, err := f.db.CreateListing(ctx, database.CreateListingParams{
+		ID: database.NewID(), SellerID: stranger, Title: "Not yours",
+		Category: "mushrooms", Price: "99.00", Quantity: 5, Unit: "kg",
+	})
+	if err != nil {
+		t.Fatalf("the stranger's listing: %v", err)
+	}
+
+	third, err := f.db.CreateUser(ctx, database.CreateUserParams{
+		ID:       database.NewID(),
+		Username: "third", Email: "third@example.test",
+		Password: sql.NullString{String: "irrelevant", Valid: true},
+	})
+	if err != nil {
+		t.Fatalf("a third account: %v", err)
+	}
+	if err := f.db.EnsureProfile(ctx, third.ID); err != nil {
+		t.Fatalf("the third profile: %v", err)
+	}
+
+	// An order and a conversation between the two OTHER accounts, so neither
+	// side of either is the exporting user.
+	orders := NewOrderService(f.db, notify.Disabled{})
+	strangerOrder, err := orders.CreateOrder(ctx, third.ID, dtos.CreateOrderInput{
+		ListingID: strangerListing.ID, Quantity: 1,
+	})
+	if err != nil {
+		t.Fatalf("the stranger's order: %v", err)
+	}
+
+	chat := NewConversationService(f.db, notify.Disabled{})
+	strangerConv, strangerMsg, err := chat.StartConversation(ctx, third.ID, strangerListing.ID, "mine, not yours")
+	if err != nil {
+		t.Fatalf("the stranger's conversation: %v", err)
+	}
+
+	out := f.export(t)
+
+	// Rendered as JSON and searched by id: a leak through any collection shows
+	// up here even if that collection has no assertion of its own, which is the
+	// point of doing it this way rather than field by field.
+	doc, err := json.Marshal(out)
+	if err != nil {
+		t.Fatalf("marshalling the export: %v", err)
+	}
+
+	for _, forbidden := range []struct {
+		what string
+		id   uuid.UUID
+	}{
+		{"the stranger's listing", strangerListing.ID},
+		{"an order between two other accounts", strangerOrder.ID},
+		{"a conversation between two other accounts", strangerConv.ID},
+		{"a message in it", strangerMsg.ID},
+		{"a third account's id", third.ID},
+	} {
+		if strings.Contains(string(doc), forbidden.id.String()) {
+			t.Errorf("the export contains %s (%s)", forbidden.what, forbidden.id)
+		}
+	}
+
+	// And the guard that stops the above passing vacuously: the caller's own
+	// data IS in there, so the search is looking at a populated document.
+	if !strings.Contains(string(doc), f.me.String()) {
+		t.Fatal("the export does not contain the caller's own id, so finding nothing proves nothing")
+	}
+}
+
+// A notification's subject is the only thing that makes it meaningful, and the
+// export reads the table with SELECT *. When migration 022 added actor_id and
+// listing_id, the generated query kept its old column list and the export
+// silently published null for both - it still compiled, because the row struct
+// has the fields either way. This is what notices.
+func TestTheExportCarriesWhatANotificationIsAbout(t *testing.T) {
+	f := newExportFixture(t)
+	ctx := context.Background()
+
+	listing, err := f.db.CreateListing(ctx, database.CreateListingParams{
+		ID: database.NewID(), SellerID: f.me, Title: "Chanterelles",
+		Category: "mushrooms", Price: "12.00", Quantity: 3, Unit: "kg",
+	})
+	if err != nil {
+		t.Fatalf("a listing: %v", err)
+	}
+
+	if err := f.db.CreateNotification(ctx, database.CreateNotificationParams{
+		ID:        database.NewID(),
+		UserID:    f.me,
+		Kind:      "new_follower",
+		ActorID:   uuid.NullUUID{UUID: f.other, Valid: true},
+		ListingID: uuid.NullUUID{},
+	}); err != nil {
+		t.Fatalf("an actor notification: %v", err)
+	}
+
+	if err := f.db.CreateNotification(ctx, database.CreateNotificationParams{
+		ID:           database.NewID(),
+		UserID:       f.me,
+		Kind:         "listing_removed",
+		ListingTitle: sql.NullString{String: listing.Title, Valid: true},
+		ListingID:    uuid.NullUUID{UUID: listing.ID, Valid: true},
+	}); err != nil {
+		t.Fatalf("a listing notification: %v", err)
+	}
+
+	out := f.export(t)
+
+	if len(out.Notifications) != 2 {
+		t.Fatalf("exported %d notifications, want 2", len(out.Notifications))
+	}
+
+	var sawActor, sawListing bool
+	for _, n := range out.Notifications {
+		if n.ActorID != nil && *n.ActorID == f.other {
+			sawActor = true
+		}
+		if n.ListingID != nil && *n.ListingID == listing.ID {
+			sawListing = true
+		}
+	}
+	if !sawActor {
+		t.Error("the exported notification does not say who acted")
+	}
+	if !sawListing {
+		t.Error("the exported notification does not say which listing it is about")
 	}
 }

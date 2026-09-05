@@ -160,7 +160,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 				// SessionOnly, like account deletion beside it: an endpoint that
 				// answers with everything about a person in one response is
 				// exactly what a leaked API key must not be able to call.
-				r.Get("/me/export", h.ExportMyData)
+				r.With(mw.RateLimitByUser(exportsPerHour)).
+					Get("/me/export", h.ExportMyData)
 
 				r.Delete("/me", h.DeleteAccount)
 				r.Post("/me/password", h.ChangePassword)
@@ -209,6 +210,8 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 // Room above the upload cap for the multipart envelope around a file, so a
 // legal upload meets upload.go's limit rather than this one.
 const uploadHeadroom = 1 << 20
+
+const exportsPerHour = 3
 
 func uploadFileServer(dir string) http.Handler {
 	fs := http.StripPrefix(dtos.UploadURLPrefix, http.FileServer(http.Dir(dir)))

@@ -10,6 +10,8 @@ const createObjectURL = vi.fn(() => "blob:fake");
 const revokeObjectURL = vi.fn();
 
 beforeEach(() => {
+  createObjectURL.mockClear();
+  revokeObjectURL.mockReset();
   Object.assign(URL, { createObjectURL, revokeObjectURL });
 });
 
@@ -48,4 +50,37 @@ test("says so when the download could not be prepared", async () => {
   await user.click(screen.getByRole("button", { name: "Download my data" }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't prepare the download.");
+});
+
+// The two orderings the download depends on, neither of which the tests above
+// could see: the anchor is in the document when it is clicked, and the object
+// URL outlives the tick that clicked it. The microtask marker is what separates
+// them - a synchronous revoke lands before it, a deferred one after.
+test("clicks an anchor that is in the document, and revokes only on a later tick", async () => {
+  const user = userEvent.setup();
+  vi.mocked(api.get).mockResolvedValue({ data: {} });
+
+  const order: string[] = [];
+  let connectedAtClick: boolean | null = null;
+
+  revokeObjectURL.mockImplementation(() => void order.push("revoke"));
+  const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+    this: HTMLAnchorElement,
+  ) {
+    connectedAtClick = this.isConnected;
+    order.push("click");
+    queueMicrotask(() => order.push("tick"));
+  });
+
+  render(<DataExportSection />);
+  await user.click(screen.getByRole("button", { name: "Download my data" }));
+
+  await waitFor(() => expect(click).toHaveBeenCalled());
+  expect(connectedAtClick).toBe(true);
+
+  await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledWith("blob:fake"));
+  expect(order).toEqual(["click", "tick", "revoke"]);
+
+  // Nothing is left behind in the page.
+  expect(document.querySelector("a[download]")).toBeNull();
 });
