@@ -7,6 +7,15 @@ export
 # explicitly instead.
 unexport TEST_DB_URL
 
+# Defaults, because the documented setup never creates backend/.env: `make
+# setup` writes the ROOT .env, and that is the only one the README's quick
+# start mentions. Without these, `-include .env` above leaves them empty and
+# `psql -U  -d ` swallows the flag as its own argument - the database then
+# answers `role "-d" does not exist`, which names neither the problem nor the
+# fix. Values match both .env.example files.
+POSTGRES_USER ?= postgres
+POSTGRES_DB   ?= transcendence
+
 .PHONY: run build test test-db test-race test-coverage clean dev lint sqlc fmt deps \
         migrate-up migrate-down migrate-status seed tag-sweep db-reset demo \
         docker-build docker-up docker-down docker-logs
@@ -136,11 +145,20 @@ db-reset:
 	@$(MAKE) --no-print-directory migrate-up
 	@$(MAKE) --no-print-directory seed
 
-# Fills an empty database with a few users and listings to click around.
-# Truncates first, so it is safe to re-run.
+# Fills the database with an admin, twenty foragers and fifty listings to click
+# around. Truncates first, so it is safe to re-run.
+#
+# Plain SQL through the db container rather than a Go program: it needs no
+# toolchain on the host, which is the difference between working and not on a
+# machine where `go` will not execute. The same file pastes into adminer, or
+# runs through any psql: see the header of sql/seed.sql.
+#
+# User and database are expanded by make on the host, from backend/.env if you
+# have one and the defaults at the top of this file otherwise - Docker never
+# sees the variables, only the finished command.
 seed:
-	$(require-db-url)
-	@go run ./cmd/seed
+	@docker compose exec -T db psql -v ON_ERROR_STOP=1 \
+		-U $(POSTGRES_USER) -d $(POSTGRES_DB) < sql/seed.sql
 
 # Deletes tags no listing uses. Safe against a live database: it takes the
 # advisory lock every tag writer takes, so it cannot delete a tag a concurrent

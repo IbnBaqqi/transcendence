@@ -20,6 +20,10 @@ one-shot (`migrate`) runs `up` before the backend starts, so a fresh database
 gets its schema automatically. `cd backend && make migrate-up` still works for
 manual runs from the host.
 
+The schema arrives empty, so there is nothing to look at until you fill it:
+`cd backend && make seed` gives you an admin, twenty foragers and fifty
+listings. See [Demo data](#demo-data) for the credentials.
+
 **`make setup` before the first `up`, and the order matters.** It creates
 `frontend/node_modules` and `backend/uploads` so that Docker does not. A
 container cannot mount onto a path that does not exist, so the daemon creates
@@ -383,6 +387,46 @@ That drops and recreates the database, applies the migrations and re-seeds.
 Note that `make docker-down` does **not** do this — it deliberately keeps the
 volume, so the old schema comes straight back.
 
+## Demo data
+
+`make seed` fills the database with one admin, twenty foragers and fifty
+listings spread across them, so there is something to click through:
+
+```bash
+cd backend && make seed
+```
+
+| account | password |
+|---|---|
+| `admin@metsatori.com` | `admin123` |
+| `forager01@example.com` … `forager20@example.com` | `admin123` |
+
+One password for every account, deliberately — it is demo data, and remembering
+one credential while clicking between people is the point.
+
+It truncates `listings` and `users` first, so re-running it is safe and
+replaces whatever the last run made.
+
+It is **plain SQL**, not a program, which means it needs no Go toolchain and
+runs three ways. Useful when `go` will not execute on a machine:
+
+```bash
+cd backend && make seed                     # through the db container
+psql "$DB_URL" -f backend/sql/seed.sql      # any psql, against any database
+```
+
+or paste `backend/sql/seed.sql` into adminer, which the dev stack ships behind
+an opt-in profile:
+
+```bash
+docker compose --profile tools up -d adminer   # then http://127.0.0.1:8081
+```
+
+The passwords are real bcrypt hashes rather than placeholders — `crypt()` with
+`gen_salt('bf')` from `pgcrypto`, which produces the same `$2a$` format the
+login path compares against. That is the only reason a seed written in SQL can
+produce accounts you can actually sign in to.
+
 ## Cleaning up unused tags
 
 A tag is created the first time a listing uses it and is not removed when the
@@ -418,8 +462,9 @@ constraint, so a typo is rejected rather than stored:
 ERROR: new row for relation "users" violates check constraint "users_role_check"
 ```
 
-There is no UI for promotion and no seeded admin account. Everyone signs up as
-`USER`; the first admin is made by hand, on purpose:
+There is no UI for promotion. `make seed` creates one admin account for
+demos (below); outside that, everyone signs up as `USER` and the first admin is
+made by hand, on purpose:
 
 ```bash
 docker compose exec db psql -U postgres -d transcendence \
