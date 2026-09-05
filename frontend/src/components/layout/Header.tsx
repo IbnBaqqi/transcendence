@@ -14,7 +14,7 @@ export default function Header() {
 
   return (
     <header className="border-line bg-surface sticky top-0 z-10 border-b">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+      <div className="max-w-wide mx-auto flex items-center justify-between px-4 py-3">
         {/* One link, not two: the mark and the wordmark are the same target
             with the same name, and as separate links they were two tab stops
             announcing "Metsatori" twice. The label is on the link because the

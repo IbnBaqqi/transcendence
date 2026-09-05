@@ -8,7 +8,7 @@ export default function Footer() {
   return (
     <footer className="border-line bg-surface border-t">
       {/* sm is meant for wider screens */}
-      <div className="text-muted mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="text-muted max-w-wide mx-auto flex flex-col gap-2 px-4 py-6 text-sm sm:flex-row sm:items-center sm:justify-between">
         <p>
           © {new Date().getFullYear()} {t("brand")}
         </p>

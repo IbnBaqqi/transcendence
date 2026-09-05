@@ -13,7 +13,7 @@ export default function AdminListings() {
   const { data: queue, isPending, isError, error, refetch } = useReportQueue();
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="max-w-page mx-auto px-4 py-8">
       <h1 className="text-foreground text-page-title font-bold">
         {t("pages.adminListings.title")}
       </h1>

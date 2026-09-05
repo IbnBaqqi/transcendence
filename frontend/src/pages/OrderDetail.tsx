@@ -40,7 +40,7 @@ export default function OrderDetail() {
   // set above - so offer the login rather than a dead error line.
   if (!user) {
     return (
-      <div className="mx-auto max-w-2xl space-y-3 px-4 py-8">
+      <div className="max-w-page mx-auto space-y-3 px-4 py-8">
         <p className="text-muted text-sm">{t("orders.signedOutDetail")}</p>
         <Button variant="primary" onClick={() => openModal("login")}>
           {t("common.logIn")}
@@ -51,7 +51,7 @@ export default function OrderDetail() {
 
   if (error || !order) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
+      <div className="max-w-page mx-auto px-4 py-8">
         <Skeleton
           variant="error"
           className="h-40 w-full"
@@ -65,7 +65,7 @@ export default function OrderDetail() {
   const view = deriveOrderView(order, user?.id);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+    <div className="max-w-page mx-auto space-y-6 px-4 py-8">
       <div>
         <Link to="/orders" className="text-muted text-sm hover:underline">
           {t("orders.allOrders")}

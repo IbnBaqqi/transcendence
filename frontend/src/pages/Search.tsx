@@ -31,7 +31,7 @@ export default function Search() {
   const listings = data?.items;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
+    <div className="max-w-wide mx-auto space-y-4 px-4 py-8">
       <h1 className="text-foreground text-page-title font-bold">{t("pages.search.title")}</h1>
 
       {/* Remounting reseeds the draft inputs when the filters change from

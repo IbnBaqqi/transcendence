@@ -83,6 +83,28 @@
   --text-section--line-height: 1.75rem;
   --text-secondary: 0.875rem;
   --text-secondary--line-height: 1.25rem;
+
+  /*
+   * Page widths. Same two layers as the colors and the type scale above: a
+   * page names the ROLE it plays rather than picking a number, because "how
+   * wide is a page" was being answered four different ways across 16 pages,
+   * with nothing to point at when the fifth answer arrived.
+   *
+   *   wide    the site rail and card grids - header, footer, Home, Search
+   *   page    the default: lists, details, admin tables
+   *   column  one column of prose or form fields - profile, add listing, legal
+   *
+   * Values are Tailwind's own 6xl / 4xl / 3xl, so adopting them is a
+   * consistency change and not a redesign. The split between page and column
+   * is line length: at 56rem a paragraph runs to ~110 characters, past
+   * comfortable reading, and a w-full input stretches to match.
+   *
+   * These land in the max-w-* namespace, which Tailwind also builds from the
+   * spacing scale - so keep the names words, not numbers.
+   */
+  --container-wide: 72rem;
+  --container-page: 56rem;
+  --container-column: 48rem;
 }
 
 /* Dark mode: swap semantic token VALUES based on the OS setting.

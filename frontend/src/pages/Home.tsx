@@ -18,7 +18,7 @@ export default function Home() {
   const categoryName = useLocalizedCategoryNames();
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="max-w-wide mx-auto px-4 py-8">
       <h1 className="text-foreground text-page-title font-bold">{t("pages.home.latestFinds")}</h1>
       {/*
         Live region: always in the DOM so assistive tech has something to

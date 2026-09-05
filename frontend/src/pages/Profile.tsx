@@ -82,7 +82,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
+    <div className="max-w-column mx-auto space-y-5 px-4 py-8">
       <h1 className="text-foreground text-page-title font-bold">{t("pages.profile.title")}</h1>
       {signedOut ? (
         <div className="space-y-3">

@@ -39,7 +39,7 @@ export function LegalDocument({ document }: { document: Document }) {
   const { t } = useTranslation();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="max-w-column mx-auto px-4 py-8">
       <h1 className="text-foreground text-page-title font-bold">{title}</h1>
       <p className="text-muted mt-2 text-sm">{t("legal.lastUpdated", { date: lastUpdated })}</p>
 
