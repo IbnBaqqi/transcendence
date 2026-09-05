@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/IbnBaqqi/transcendence/internal/auth"
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/storage"
@@ -437,5 +438,223 @@ func TestTheHistoryOfAnAccountThatDoesNotExistIsNotFound(t *testing.T) {
 	var notFound *NotFoundError
 	if !errors.As(err, &notFound) {
 		t.Fatalf("err = %v, want NotFoundError", err)
+	}
+}
+
+// The role is read from the database on every request that needs it, not from
+// the token - so this is the whole point of the endpoint: a promotion is live
+// for the session the subject already holds.
+func TestPromotingTakesEffectWithoutANewToken(t *testing.T) {
+	f := newAdminFixture(t)
+	ctx := context.Background()
+
+	if _, err := f.admins.SetRole(ctx, f.admin, f.member, auth.RoleAdmin, "trusted"); err != nil {
+		t.Fatalf("promoting: %v", err)
+	}
+
+	role, err := f.db.GetUserRole(ctx, f.member)
+	if err != nil {
+		t.Fatalf("reading the role back: %v", err)
+	}
+	if role != auth.RoleAdmin {
+		t.Errorf("role = %q, want ADMIN - RequireRole reads this on the next request", role)
+	}
+
+	actions, err := f.admins.History(ctx, f.member)
+	if err != nil {
+		t.Fatalf("reading history: %v", err)
+	}
+	if len(actions) != 1 || actions[0].Action != "promoted" {
+		t.Fatalf("history = %+v, want one 'promoted' row", actions)
+	}
+	if actions[0].Note.String != "trusted" {
+		t.Errorf("note = %q, want the reason given", actions[0].Note.String)
+	}
+}
+
+func TestDemotingIsRecordedAsDemoted(t *testing.T) {
+	f := newAdminFixture(t)
+	ctx := context.Background()
+
+	if _, err := f.admins.SetRole(ctx, f.admin, f.other, auth.RoleUser, ""); err != nil {
+		t.Fatalf("demoting: %v", err)
+	}
+
+	role, _ := f.db.GetUserRole(ctx, f.other)
+	if role != auth.RoleUser {
+		t.Errorf("role = %q, want USER", role)
+	}
+
+	actions, _ := f.admins.History(ctx, f.other)
+	if len(actions) != 1 || actions[0].Action != "demoted" {
+		t.Fatalf("history = %+v, want one 'demoted' row", actions)
+	}
+	// The note is optional here, unlike a suspension's reason: a role change
+	// is not a sanction.
+	if actions[0].Note.Valid {
+		t.Errorf("note = %+v, want null when none was given", actions[0].Note)
+	}
+}
+
+// A promotion that did not happen has no business in the audit trail, and an
+// admin reading a history should not have to tell real events from no-ops.
+func TestSettingTheRoleSomeoneAlreadyHasWritesNoHistory(t *testing.T) {
+	f := newAdminFixture(t)
+	ctx := context.Background()
+
+	user, err := f.admins.SetRole(ctx, f.admin, f.member, auth.RoleUser, "no change")
+	if err != nil {
+		t.Fatalf("setting the role it already has: %v", err)
+	}
+	if user.ID != f.member || user.Role != auth.RoleUser {
+		t.Errorf("returned %+v, want the unchanged account", user)
+	}
+
+	actions, _ := f.admins.History(ctx, f.member)
+	if len(actions) != 0 {
+		t.Errorf("history = %+v, want nothing written", actions)
+	}
+}
+
+func TestAnAdminCannotChangeTheirOwnRole(t *testing.T) {
+	f := newAdminFixture(t)
+
+	_, err := f.admins.SetRole(context.Background(), f.admin, f.admin, auth.RoleUser, "")
+
+	var forbidden *ForbiddenError
+	if !errors.As(err, &forbidden) {
+		t.Fatalf("err = %v, want ForbiddenError - demoting yourself loses the endpoint that undoes it", err)
+	}
+}
+
+func TestTheLastActiveAdminCannotBeDemoted(t *testing.T) {
+	f := newAdminFixture(t)
+	ctx := context.Background()
+
+	// The fixture has two admins. Demote one and the other is alone.
+	if _, err := f.admins.SetRole(ctx, f.admin, f.other, auth.RoleUser, ""); err != nil {
+		t.Fatalf("demoting the second admin: %v", err)
+	}
+
+	// Anyone but themselves has to do the asking - an admin demoting their own
+	// account is refused earlier, by the self-target rule. Authorisation is the
+	// middleware's job, so the service takes whatever id it is given.
+	_, err := f.admins.SetRole(ctx, f.other, f.admin, auth.RoleUser, "")
+
+	var conflict *ConflictError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("err = %v, want ConflictError - this would empty the roster", err)
+	}
+
+	// And the account really is untouched, not merely reported as refused.
+	role, _ := f.db.GetUserRole(ctx, f.admin)
+	if role != auth.RoleAdmin {
+		t.Errorf("role = %q, want the demotion to have been refused, not recorded", role)
+	}
+}
+
+// Promotion cannot leave the instance short of admins, so it must not take the
+// roster lock - guarding it would 409 a legitimate promotion whenever there
+// happened to be exactly one admin.
+func TestPromotionDoesNotWaitForTheAdminRosterLock(t *testing.T) {
+	f := newAdminFixture(t)
+	ctx := context.Background()
+
+	holder, err := f.db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatalf("opening the holding transaction: %v", err)
+	}
+	defer func() { _ = holder.Rollback() }()
+
+	if err := f.db.Queries.WithTx(holder.Tx).LockAdminRoster(ctx); err != nil {
+		t.Fatalf("taking the roster lock: %v", err)
+	}
+
+	timed, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	if _, err := f.admins.SetRole(timed, f.admin, f.member, auth.RoleAdmin, ""); err != nil {
+		t.Errorf("promoting waited for the roster lock: %v", err)
+	}
+}
+
+// The reason guardTarget exists. Two admins demoting each other at once must
+// not both see two admins and both succeed, leaving nobody able to grant the
+// role back - so a demotion has to wait for the roster lock.
+func TestDemotionWaitsForTheAdminRosterLock(t *testing.T) {
+	f := newAdminFixture(t)
+	ctx := context.Background()
+
+	holder, err := f.db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatalf("opening the holding transaction: %v", err)
+	}
+	defer func() { _ = holder.Rollback() }()
+
+	if err := f.db.Queries.WithTx(holder.Tx).LockAdminRoster(ctx); err != nil {
+		t.Fatalf("taking the roster lock: %v", err)
+	}
+
+	timed, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cancel()
+
+	// The driver reports a cancelled statement as its own error rather than
+	// context.DeadlineExceeded, so the deadline itself is what to assert on.
+	if _, err := f.admins.SetRole(timed, f.admin, f.other, auth.RoleUser, ""); err == nil {
+		t.Error("demoting an admin did not wait for the roster lock")
+	} else if timed.Err() == nil {
+		t.Errorf("it failed for some reason other than the wait: %v", err)
+	}
+}
+
+func TestARoleOutsideTheTwoIsRefused(t *testing.T) {
+	f := newAdminFixture(t)
+
+	_, err := f.admins.SetRole(context.Background(), f.admin, f.member, "MODERATOR", "")
+
+	var invalid *ValidationError
+	if !errors.As(err, &invalid) {
+		t.Fatalf("err = %v, want ValidationError", err)
+	}
+}
+
+// Promotion must not take the roster lock. guardTarget skips a non-admin
+// subject, so guarding both directions looks harmless - until the subject
+// already IS an admin, where the count is 1 and the "promotion" that should
+// be a quiet no-op becomes a 409 instead.
+func TestPromotingTheOnlyAdminToAdminIsANoOpNotAConflict(t *testing.T) {
+	f := newAdminFixture(t)
+	ctx := context.Background()
+
+	// Leave exactly one admin.
+	if _, err := f.admins.SetRole(ctx, f.admin, f.other, auth.RoleUser, ""); err != nil {
+		t.Fatalf("demoting the second admin: %v", err)
+	}
+
+	user, err := f.admins.SetRole(ctx, f.other, f.admin, auth.RoleAdmin, "")
+	if err != nil {
+		t.Fatalf("setting ADMIN on the only admin: %v, want an unchanged 200", err)
+	}
+	if user.Role != auth.RoleAdmin {
+		t.Errorf("role = %q, want ADMIN unchanged", user.Role)
+	}
+
+	actions, _ := f.admins.History(ctx, f.admin)
+	if len(actions) != 0 {
+		t.Errorf("history = %+v, want nothing written for a no-op", actions)
+	}
+}
+
+// The self-target rule is not guardTarget's: that one is only consulted for a
+// demotion. On the promotion path this check is the only thing standing
+// between an admin and their own account.
+func TestAnAdminCannotTargetThemselvesOnThePromotionPath(t *testing.T) {
+	f := newAdminFixture(t)
+
+	_, err := f.admins.SetRole(context.Background(), f.admin, f.admin, auth.RoleAdmin, "")
+
+	var forbidden *ForbiddenError
+	if !errors.As(err, &forbidden) {
+		t.Fatalf("err = %v, want ForbiddenError - your own account is off limits in both directions", err)
 	}
 }
