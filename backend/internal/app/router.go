@@ -135,6 +135,7 @@ func NewRouter(log *slog.Logger, appService *api) http.Handler {
 				r.Get("/admin/users/{id}/history", h.GetUserHistory)
 				r.Post("/admin/users/{id}/suspend", h.SuspendUser)
 				r.Post("/admin/users/{id}/reinstate", h.ReinstateUser)
+				r.Patch("/admin/users/{id}/role", h.SetUserRole)
 				r.Delete("/admin/users/{id}", h.DeleteUserAsAdmin)
 			})
 

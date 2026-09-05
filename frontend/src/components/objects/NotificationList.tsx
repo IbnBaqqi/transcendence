@@ -2,7 +2,27 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useModal } from "../../providers/modalContext";
-import type { Notification } from "../../api/types";
+import type { Notification, NotificationKind } from "../../api/types";
+
+// Where a kind sends the reader, declared once. The previous shape inferred it
+// from which id happened to be set, with the else branch assuming a
+// conversation - so a kind carrying neither an order nor a conversation opened
+// the chat panel on `undefined`: no error, no empty state, just the wrong
+// panel. Inference breaks the moment a third subject exists, and the schema
+// now has four.
+type Destination =
+  | { via: "order"; id: (n: Notification) => string | null }
+  | { via: "conversation"; id: (n: Notification) => string | null };
+
+const DESTINATIONS: Record<NotificationKind, Destination> = {
+  order_placed: { via: "order", id: (n) => n.order_id },
+  order_handed_over: { via: "order", id: (n) => n.order_id },
+  order_cancelled: { via: "order", id: (n) => n.order_id },
+  order_resolved: { via: "order", id: (n) => n.order_id },
+  order_confirmed: { via: "order", id: (n) => n.order_id },
+  order_completed: { via: "order", id: (n) => n.order_id },
+  chat_request: { via: "conversation", id: (n) => n.conversation_id },
+};
 
 function Row({
   notification,
@@ -22,15 +42,32 @@ function Row({
         className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${unread ? "bg-accent" : "bg-transparent"}`}
       />
       <span className={`text-sm ${unread ? "text-foreground font-medium" : "text-muted"}`}>
-        {t(`notifications.kind.${notification.kind}`, { title: notification.listing_title })}
+        {/* An unknown kind falls back to the key itself in i18next, which is
+            unreadable, so it gets a sentence of its own. A null title
+            interpolates as the empty string rather than the word "null" - the
+            kinds that have no listing do not mention one. */}
+        {t([`notifications.kind.${notification.kind}`, "notifications.kind.unknown"], {
+          title: notification.listing_title ?? "",
+        })}
       </span>
     </>
   );
   const className = "hover:bg-surface-muted flex w-full gap-2 px-3 py-2 text-left";
 
-  if (notification.order_id) {
+  const destination = DESTINATIONS[notification.kind as NotificationKind] as
+    Destination | undefined;
+  const id = destination?.id(notification) ?? null;
+
+  // A kind this build does not know, or one whose subject is missing, renders
+  // as text and goes nowhere. Guessing a destination is what produced the
+  // empty chat panel; showing nothing at all would hide a real event.
+  if (!destination || id === null) {
+    return <div className={className}>{inner}</div>;
+  }
+
+  if (destination.via === "order") {
     return (
-      <Link to={`/orders/${notification.order_id}`} onClick={onNavigate} className={className}>
+      <Link to={`/orders/${id}`} onClick={onNavigate} className={className}>
         {inner}
       </Link>
     );
@@ -41,7 +78,7 @@ function Row({
     <button
       type="button"
       onClick={() => {
-        openChat(notification.conversation_id ?? undefined);
+        openChat(id);
         onNavigate?.();
       }}
       className={className}

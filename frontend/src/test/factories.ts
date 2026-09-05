@@ -117,6 +117,8 @@ export function makeNotification(overrides: Partial<Notification> = {}): Notific
     listing_title: "Golden Chanterelles",
     order_id: "01a02305-b81c-7dcb-86a0-7f75e33e0af3",
     conversation_id: null,
+    actor_id: null,
+    listing_id: null,
     read_at: null,
     created_at: "1970-01-01T00:00:00Z",
     ...overrides,

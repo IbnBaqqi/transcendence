@@ -61,7 +61,11 @@ export function AccountRow({ account }: { account: AdminUser }) {
           )}
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-1 text-sm">
+        {/* No shrink-0: it made this column refuse to narrow, so the button
+            row inside it never ran out of width and never wrapped. Both halves
+            are needed - flex-wrap on the buttons is inert while the column
+            they sit in cannot give any width back. */}
+        <div className="flex flex-col items-end gap-1 text-sm">
           <span className={STATUS_STYLES[account.status]}>
             {t(`adminUsers.status.${account.status}`)}
           </span>

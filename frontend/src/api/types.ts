@@ -151,14 +151,31 @@ export interface UnreadCount {
 }
 
 export type NotificationKind =
-  "order_placed" | "order_handed_over" | "order_cancelled" | "order_resolved" | "chat_request";
+  | "order_placed"
+  | "order_handed_over"
+  | "order_cancelled"
+  | "order_resolved"
+  | "order_confirmed"
+  | "order_completed"
+  | "chat_request";
 
 export interface Notification {
   id: string;
-  kind: NotificationKind;
-  listing_title: string;
+  // Not closed to NotificationKind: the backend can ship a kind before the
+  // frontend knows it - they live in one repo but not in one PR. `(string & {})`
+  // keeps autocomplete for the known ones while admitting the rest, so an
+  // unrecognised kind is a case to handle rather than a type that cannot exist.
+  kind: NotificationKind | (string & {});
+  // Null for a kind with no listing - a follow has none. Always present, so a
+  // client tests for null rather than for a missing key.
+  listing_title: string | null;
+  // Exactly one of these four is set, and WHICH one depends on the kind. The
+  // database enforces it; the client routes on the kind rather than on which
+  // id happens to be non-null.
   order_id: string | null;
   conversation_id: string | null;
+  actor_id: string | null;
+  listing_id: string | null;
   read_at: Timestamp | null;
   created_at: Timestamp;
 }
@@ -356,7 +373,10 @@ export type AdminUserStatus = "active" | "suspended" | "deleted";
 
 // Past tense: the audit log records what was done. Distinct from the request
 // bodies, which carry no action word at all - the endpoint is the verb.
-export type UserActionKind = "suspended" | "reinstated" | "deleted";
+//
+// Every value here needs a matching adminUsers.action.* string in all three
+// locales, or the history panel renders the raw key at whoever is reading it.
+export type UserActionKind = "suspended" | "reinstated" | "deleted" | "promoted" | "demoted";
 
 // An account as an admin sees it. The only representation in the API carrying
 // `email`, and the only one that shows deleted accounts - both justified by
@@ -407,6 +427,15 @@ export interface SuspendUserInput {
 export interface ReinstateUserInput {
   // Optional here alone: "this was a mistake" needs no justification the way a
   // punishment does.
+  note?: string;
+}
+
+export interface SetRoleInput {
+  // The role the account should end up with, not a direction - so a third role
+  // later is a value rather than another endpoint. Sending the one it already
+  // has is a no-op the server answers 200 to, writing no history.
+  role: AdminUser["role"];
+  // Optional, like a reinstatement's: a role change is not a sanction.
   note?: string;
 }
 

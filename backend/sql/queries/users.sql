@@ -195,3 +195,16 @@ LEFT JOIN (
     GROUP BY seller_id
 ) r ON r.seller_id = users.id
 WHERE users.id = ANY(sqlc.arg(user_ids)::uuid[]);
+
+-- name: SetUserRole :one
+-- The WHERE carries the precondition: no rows means the account already has
+-- this role, which the service reports as an unchanged 200 rather than an
+-- error. Deleted accounts are excluded here as well as in the service, so a
+-- race between the two cannot promote a scrubbed row.
+UPDATE users
+SET role = sqlc.arg(role),
+    updated_at = now()
+WHERE id = sqlc.arg(id)
+  AND role <> sqlc.arg(role)
+  AND deleted_at IS NULL
+RETURNING *;

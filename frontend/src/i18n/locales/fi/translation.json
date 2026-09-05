@@ -603,7 +603,10 @@
       "order_handed_over": "Tilauksesi {{title}} on luovutettu",
       "order_cancelled": "Tilauksesi {{title}} peruttiin",
       "order_resolved": "Tuki ratkaisi tilauksesi {{title}}",
-      "chat_request": "Joku lähetti sinulle viestin tuotteesta {{title}}"
+      "chat_request": "Joku lähetti sinulle viestin tuotteesta {{title}}",
+      "order_confirmed": "Tilauksesi {{title}} on vahvistettu",
+      "order_completed": "Tilauksesi {{title}} on valmis",
+      "unknown": "Tililläsi tapahtui jotain"
     }
   },
   "adminUsers": {
@@ -628,6 +631,10 @@
     },
     "suspend": "Jäädytä",
     "reinstate": "Palauta",
+    "makeAdmin": "Tee ylläpitäjäksi",
+    "removeAdmin": "Poista ylläpito-oikeudet",
+    "makeAdminWarning": "{{username}} voi jatkossa moderoida ilmoituksia, tilauksia ja tilejä.",
+    "removeAdminWarning": "{{username}} menettää pääsyn ylläpito-osioon seuraavalla pyynnöllä.",
     "confirm": "Vahvista",
     "working": "Käsitellään…",
     "reasonForUser": "Syy (näytetään käyttäjälle)",
@@ -646,7 +653,9 @@
     "action": {
       "suspended": "Jäädytetty",
       "reinstated": "Palautettu",
-      "deleted": "Poistettu"
+      "deleted": "Poistettu",
+      "promoted": "Nostettu ylläpitäjäksi",
+      "demoted": "Ylläpito-oikeudet poistettu"
     }
   }
 }
