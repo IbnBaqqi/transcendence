@@ -62,3 +62,12 @@ WHERE (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status)::text)
 
 -- name: GetOrderResolvability :one
 SELECT stuck, stranded FROM admin_orders WHERE id = $1;
+
+-- name: ListActiveOrdersForUser :many
+-- Orders still in flight where this account is either side. Cancelling these on
+-- deletion is what stops the counterparty waiting on a handover that can never
+-- come; finished orders are records and are left alone.
+SELECT * FROM orders
+WHERE (buyer_id = sqlc.arg(user_id) OR seller_id = sqlc.arg(user_id))
+  AND status IN ('pending', 'confirmed')
+FOR UPDATE;

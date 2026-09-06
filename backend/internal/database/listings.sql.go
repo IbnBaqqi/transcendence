@@ -99,6 +99,21 @@ func (q *Queries) DeleteListing(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteListingsForSeller = `-- name: DeleteListingsForSeller :exec
+DELETE FROM listings
+WHERE seller_id = $1 AND removed_at IS NULL
+`
+
+// removed_at IS NULL is the whole point: listing_reports and moderation_actions
+// both CASCADE from listings, so deleting a moderator-removed one takes the
+// report and the record of the decision with it. Account deletion must not be a
+// way to launder a moderation record, and DeleteListing already refuses the same
+// case for the same reason. Those listings are invisible anyway.
+func (q *Queries) DeleteListingsForSeller(ctx context.Context, sellerID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteListingsForSeller, sellerID)
+	return err
+}
+
 const getListing = `-- name: GetListing :one
 SELECT id, seller_id, title, description, category, price, quantity, unit, created_at, updated_at, removed_at FROM listings
 WHERE listings.id = $1
@@ -214,6 +229,39 @@ func (q *Queries) ListListingsForExport(ctx context.Context, sellerID uuid.UUID)
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSellerImageFilenames = `-- name: ListSellerImageFilenames :many
+SELECT i.filename
+FROM listing_images i
+JOIN listings l ON l.id = i.listing_id
+WHERE l.seller_id = $1 AND l.removed_at IS NULL
+`
+
+// Read before the rows go, so the caller can unlink the files after the commit.
+// listing_images CASCADEs from listings, so the rows need no delete of their own
+// - only the files on disk outlive the transaction.
+func (q *Queries) ListSellerImageFilenames(ctx context.Context, sellerID uuid.UUID) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listSellerImageFilenames, sellerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var filename string
+		if err := rows.Scan(&filename); err != nil {
+			return nil, err
+		}
+		items = append(items, filename)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

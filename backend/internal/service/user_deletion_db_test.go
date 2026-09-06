@@ -500,3 +500,158 @@ func TestDeletionEmailsTheAddressTheAccountHadBeforeTheScrub(t *testing.T) {
 		t.Fatal("the account was not scrubbed, so this proves nothing")
 	}
 }
+
+// #274. A departing account used to leave its listings in the table and its
+// orders at pending, with a counterparty waiting on a handover from somebody
+// who no longer exists - and admin_orders.stranded does not catch that, because
+// it needs BOTH sides deleted.
+func TestDeletingASellerCancelsTheirOrdersAndRemovesTheirListings(t *testing.T) {
+	f := newDeletionFixture(t)
+	ctx := context.Background()
+
+	order, err := f.orders.CreateOrder(ctx, f.buyer, dtos.CreateOrderInput{
+		ListingID: f.listing, Quantity: 2,
+	})
+	if err != nil {
+		t.Fatalf("ordering: %v", err)
+	}
+
+	if err := f.users.DeleteAccount(ctx, f.seller, "seller"); err != nil {
+		t.Fatalf("deleting the seller: %v", err)
+	}
+
+	t.Run("the buyer's order is cancelled rather than left pending", func(t *testing.T) {
+		got, err := f.db.GetOrder(ctx, order.ID)
+		if err != nil {
+			t.Fatalf("re-reading the order: %v", err)
+		}
+		if got.Status != "cancelled" {
+			t.Errorf("status = %q, want cancelled", got.Status)
+		}
+	})
+
+	t.Run("and the buyer is told why their order ended", func(t *testing.T) {
+		notes, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{
+			UserID: f.buyer, Limit: 30,
+		})
+		if err != nil {
+			t.Fatalf("reading notifications: %v", err)
+		}
+		var cancelled int
+		for _, n := range notes {
+			if n.Kind == "order_cancelled" {
+				cancelled++
+			}
+		}
+		if cancelled != 1 {
+			t.Errorf("order_cancelled notifications = %d, want 1", cancelled)
+		}
+	})
+
+	t.Run("the listing row is gone, not merely hidden", func(t *testing.T) {
+		if _, err := f.db.GetListing(ctx, f.listing); !errors.Is(err, sql.ErrNoRows) {
+			t.Errorf("GetListing err = %v, want sql.ErrNoRows", err)
+		}
+	})
+
+	// #264: the order keeps its own snapshot, so losing the listing does not
+	// cost the buyer their record of what they bought.
+	t.Run("the buyer keeps their receipt", func(t *testing.T) {
+		got, err := f.db.GetOrder(ctx, order.ID)
+		if err != nil {
+			t.Fatalf("re-reading the order: %v", err)
+		}
+		if got.ListingID.Valid {
+			t.Errorf("listing_id = %v, want null", got.ListingID.UUID)
+		}
+		if got.ListingTitle != "Chanterelles" {
+			t.Errorf("listing_title = %q, want Chanterelles", got.ListingTitle)
+		}
+	})
+}
+
+// The other direction, and the one where the restock is not a wasted write: the
+// seller stays, so their listing has to get its stock back or a departing buyer
+// silently costs them two kilos.
+func TestDeletingABuyerGivesTheSellerTheirStockBack(t *testing.T) {
+	f := newDeletionFixture(t)
+	ctx := context.Background()
+
+	before, err := f.db.GetListing(ctx, f.listing)
+	if err != nil {
+		t.Fatalf("reading the listing: %v", err)
+	}
+
+	if _, err := f.orders.CreateOrder(ctx, f.buyer, dtos.CreateOrderInput{
+		ListingID: f.listing, Quantity: 2,
+	}); err != nil {
+		t.Fatalf("ordering: %v", err)
+	}
+
+	if err := f.users.DeleteAccount(ctx, f.buyer, "buyer"); err != nil {
+		t.Fatalf("deleting the buyer: %v", err)
+	}
+
+	after, err := f.db.GetListing(ctx, f.listing)
+	if err != nil {
+		t.Fatalf("the seller's listing should survive the buyer leaving: %v", err)
+	}
+	if after.Quantity != before.Quantity {
+		t.Errorf("quantity = %d, want %d - the cancelled order's stock was not returned",
+			after.Quantity, before.Quantity)
+	}
+}
+
+// listing_reports and moderation_actions both CASCADE from listings, so
+// deleting a moderator-removed listing takes the report and the record of the
+// decision with it. Deleting an account must not be a way to launder that.
+func TestDeletingAnAccountKeepsAModeratorRemovedListing(t *testing.T) {
+	f := newDeletionFixture(t)
+	ctx := context.Background()
+
+	if _, err := f.db.ExecContext(ctx,
+		`UPDATE listings SET removed_at = now() WHERE id = $1`, f.listing,
+	); err != nil {
+		t.Fatalf("marking the listing removed: %v", err)
+	}
+
+	if err := f.users.DeleteAccount(ctx, f.seller, "seller"); err != nil {
+		t.Fatalf("deleting the seller: %v", err)
+	}
+
+	if _, err := f.db.GetListing(ctx, f.listing); err != nil {
+		t.Errorf("the moderator-removed listing is gone (%v) - its report and the "+
+			"moderation decision cascade with it", err)
+	}
+}
+
+// Finished orders are records. Cancelling one would rewrite history, and it
+// would restock a listing for a sale that actually happened.
+func TestDeletingAnAccountLeavesFinishedOrdersAlone(t *testing.T) {
+	f := newDeletionFixture(t)
+	ctx := context.Background()
+
+	order, err := f.orders.CreateOrder(ctx, f.buyer, dtos.CreateOrderInput{
+		ListingID: f.listing, Quantity: 1,
+	})
+	if err != nil {
+		t.Fatalf("ordering: %v", err)
+	}
+	if _, err := f.db.UpdateOrderStatus(ctx, database.UpdateOrderStatusParams{
+		ID: order.ID, Status: "completed",
+	}); err != nil {
+		t.Fatalf("completing the order: %v", err)
+	}
+
+	if err := f.users.DeleteAccount(ctx, f.seller, "seller"); err != nil {
+		t.Fatalf("deleting the seller: %v", err)
+	}
+
+	got, err := f.db.GetOrder(ctx, order.ID)
+	if err != nil {
+		t.Fatalf("re-reading the order: %v", err)
+	}
+	if got.Status != "completed" {
+		t.Errorf("status = %q, want completed - a finished sale is a record", got.Status)
+	}
+}
