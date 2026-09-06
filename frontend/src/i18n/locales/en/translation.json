@@ -449,6 +449,8 @@
     "send": "Send",
     "sendFailed": "Couldn't send that message.",
     "decideFailed": "Couldn't answer this request.",
+    "viewProfile": "View {{username}}'s profile",
+    "openThread": "Open conversation with {{username}}",
     "status": {
       "pending": "Request pending",
       "accepted": "Accepted",

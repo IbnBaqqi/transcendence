@@ -1,18 +1,21 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 
 import { ConversationList } from "../components/chat/ConversationList";
 import { ModalProvider } from "../providers/ModalProvider";
-import { makeConversationListItem } from "../test/factories";
+import { makeConversationListItem, SELLER_ID } from "../test/factories";
 import type { ConversationListItem } from "../api/types";
 
-// Avatar reaches for useModal even when it isn't editable, so every render
-// here needs the provider.
+// The rows link to /users/:id and Avatar reaches for useModal even when it
+// isn't editable, so every render here needs a router and the provider.
 function renderList(conversations: ConversationListItem[], onSelect = vi.fn()) {
   return render(
-    <ModalProvider>
-      <ConversationList conversations={conversations} onSelect={onSelect} />
-    </ModalProvider>,
+    <MemoryRouter>
+      <ModalProvider>
+        <ConversationList conversations={conversations} onSelect={onSelect} />
+      </ModalProvider>
+    </MemoryRouter>,
   );
 }
 
@@ -34,13 +37,23 @@ describe("ConversationList", () => {
     expect(screen.getByText("Still available?")).toBeInTheDocument();
   });
 
+  test("the avatar and username link to the other user's profile", () => {
+    renderList([makeConversationListItem()]);
+
+    const links = screen.getAllByRole("link", { name: "View oscarroff's profile" });
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link).toHaveAttribute("href", `/users/${SELLER_ID}`);
+    }
+  });
+
   test("selecting a row reports its id", async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
     const item = makeConversationListItem();
     renderList([item], onSelect);
 
-    await user.click(screen.getByRole("button"));
+    await user.click(screen.getByRole("button", { name: /oscarroff/ }));
 
     expect(onSelect).toHaveBeenCalledWith(item.id);
   });

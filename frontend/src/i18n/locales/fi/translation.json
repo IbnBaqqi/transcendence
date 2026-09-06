@@ -449,6 +449,8 @@
     "send": "Lähetä",
     "sendFailed": "Viestin lähettäminen epäonnistui.",
     "decideFailed": "Pyyntöön vastaaminen epäonnistui.",
+    "viewProfile": "Katso käyttäjän {{username}} profiili",
+    "openThread": "Avaa keskustelu käyttäjän {{username}} kanssa",
     "status": {
       "pending": "Pyyntö odottaa",
       "accepted": "Hyväksytty",

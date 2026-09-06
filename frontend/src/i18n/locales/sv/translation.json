@@ -449,6 +449,8 @@
     "send": "Skicka",
     "sendFailed": "Kunde inte skicka meddelandet.",
     "decideFailed": "Kunde inte svara på förfrågan.",
+    "viewProfile": "Visa {{username}}:s profil",
+    "openThread": "Öppna konversationen med {{username}}",
     "status": {
       "pending": "Förfrågan väntar",
       "accepted": "Accepterad",
