@@ -300,7 +300,14 @@ depended on understanding them.
 
 ### Use of AI
 
-<!-- TODO — required by the subject: "a description of how AI was used —
-     specifying for which tasks and which parts of the project". Cover which
-     tools, which parts of the codebase, what kind of work, and what it was not
-     used for. -->
+AI was used extensively for this project in the both the design, build and
+review phases. The team's rationale was based upon a number of benefits
+including the higher speed of work, relative consistency of production code,
+and ability to work effectively across large codebases. A secondary rationale
+was also the desire to learn more about modern AI tools and current programming
+work practices. Despite the large contribution of AI to codebase, early work
+was mostly handwritten in conversation with AI, as opposed to AI generated
+code. This was an important step in learning the languages and tools of the
+tech stack and gave an important familiarity with the architecture of the
+project which became crucial as the codebase grew. AI models used include
+Claude Code Opus 5 and Big Pickle via OpenCode.
