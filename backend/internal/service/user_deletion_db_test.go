@@ -568,10 +568,15 @@ func TestDeletingASellerCancelsItsOrdersAndRemovesItsListings(t *testing.T) {
 	})
 }
 
-// The other direction, and the one where the restock is not a wasted write: the
-// seller stays, so their listing has to get its stock back or a departing buyer
-// silently costs them two kilos.
-func TestDeletingABuyerGivesTheSellerTheirStockBack(t *testing.T) {
+// The other direction. Both halves matter and they fail differently: the stock
+// is the seller's to get back, and the notification is the only thing that
+// tells them why their sale ended.
+//
+// The recipient is worth asserting rather than assuming. Picking the wrong side
+// writes the notice to the departing account's own row, which is anonymised
+// moments later - so the seller is told nothing, silently, which is the exact
+// failure this change exists to fix.
+func TestDeletingABuyerTellsTheSellerAndReturnsTheirStock(t *testing.T) {
 	f := newDeletionFixture(t)
 	ctx := context.Background()
 
@@ -590,14 +595,35 @@ func TestDeletingABuyerGivesTheSellerTheirStockBack(t *testing.T) {
 		t.Fatalf("deleting the buyer: %v", err)
 	}
 
-	after, err := f.db.GetListing(ctx, f.listing)
-	if err != nil {
-		t.Fatalf("the seller's listing should survive the buyer leaving: %v", err)
-	}
-	if after.Quantity != before.Quantity {
-		t.Errorf("quantity = %d, want %d - the cancelled order's stock was not returned",
-			after.Quantity, before.Quantity)
-	}
+	t.Run("the seller gets their stock back", func(t *testing.T) {
+		after, err := f.db.GetListing(ctx, f.listing)
+		if err != nil {
+			t.Fatalf("the seller's listing should survive the buyer leaving: %v", err)
+		}
+		if after.Quantity != before.Quantity {
+			t.Errorf("quantity = %d, want %d - the cancelled order's stock was not returned",
+				after.Quantity, before.Quantity)
+		}
+	})
+
+	t.Run("and is told why the sale ended", func(t *testing.T) {
+		notes, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{
+			UserID: f.seller, Limit: 30,
+		})
+		if err != nil {
+			t.Fatalf("reading the seller's notifications: %v", err)
+		}
+		var cancelled int
+		for _, n := range notes {
+			if n.Kind == "order_cancelled" {
+				cancelled++
+			}
+		}
+		if cancelled != 1 {
+			t.Errorf("the seller has %d order_cancelled notifications, want 1 - "+
+				"a notice sent to the departing buyer reaches nobody", cancelled)
+		}
+	})
 }
 
 // Finished orders are records. Cancelling one would rewrite history, and it
