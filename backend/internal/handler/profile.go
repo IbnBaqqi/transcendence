@@ -66,6 +66,14 @@ func (h *Handler) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 404, not 403: a refusal that names the block announces it. Same shape as
+	// the listing paths, and symmetric - while a block stands neither party can
+	// read the other's profile, and unblocking restores it.
+	if h.blockedBetween(r, viewerID(r), userID) {
+		respondWithError(w, http.StatusNotFound, "User not found")
+		return
+	}
+
 	// Presence is for signed-in callers only. Anonymous ones get the profile
 	// without the field at all, rather than a blanket "offline" that would be
 	// false for every user on the site - and that a client cannot tell apart

@@ -349,6 +349,15 @@ func validateSearchText(values ...string) error {
 	return nil
 }
 
+// uuid.Nil means nobody is signed in, and the empty string is what the builder
+// reads as "no viewer" - a signed-out visitor cannot have blocked anyone.
+func viewerString(id uuid.UUID) string {
+	if id == uuid.Nil {
+		return ""
+	}
+	return id.String()
+}
+
 func (s *ListingService) SearchListings(ctx context.Context, viewerID uuid.UUID, q dtos.ListingSearchQuery) (dtos.PaginatedListings, error) {
 	if err := validateSearchText(q.Keyword, q.Category, q.Tag, q.Location); err != nil {
 		return dtos.PaginatedListings{}, err
@@ -440,6 +449,7 @@ func (s *ListingService) SearchListings(ctx context.Context, viewerID uuid.UUID,
 		Tag:      tag,
 		Location: q.Location,
 		SellerID: q.SellerID,
+		ViewerID: viewerString(viewerID),
 		Sort:     sortKey,
 		Offset:   int32(offset),
 		Limit:    int32(limit),

@@ -53,6 +53,15 @@ func (h *Handler) sellerIsHidden(r *http.Request, sellerID uuid.UUID) bool {
 	return !visible
 }
 
+// blockedFromSeller applies the shared block rule to a listing's seller.
+// Beside sellerIsHidden rather than inside the shared GetListing query, for
+// the same reason given above - and routed through maySeeRemovedListing at the
+// call site, so a seller cannot hide their listings from a moderator by
+// blocking them.
+func (h *Handler) blockedFromSeller(r *http.Request, sellerID uuid.UUID) bool {
+	return h.blockedBetween(r, viewerID(r), sellerID)
+}
+
 func (h *Handler) CreateListing(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserID(r)
 	if err != nil {
@@ -94,7 +103,9 @@ func (h *Handler) GetListing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hidden := listing.RemovedAt.Valid || h.sellerIsHidden(r, listing.SellerID)
+	hidden := listing.RemovedAt.Valid ||
+		h.sellerIsHidden(r, listing.SellerID) ||
+		h.blockedFromSeller(r, listing.SellerID)
 	if hidden && !h.maySeeRemovedListing(r, listing.SellerID) {
 		respondWithError(w, http.StatusNotFound, "Listing not found")
 		return
