@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 import Layout from "../components/layout/Layout";
 import Home from "../pages/Home";
@@ -22,38 +22,38 @@ import AdminUsers from "../pages/AdminUsers";
 import { RequireAdmin } from "../components/layout/RequireAdmin";
 
 export default function AppRouter() {
+  // Routes only, no router: main.tsx owns the single BrowserRouter so the
+  // chat/portal roots rendered beside AppRouter share it.
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Top-level redirect target from the OAuth flow - rendered outside the
-            app shell since it's a transient page, not normal UI. */}
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
-          {/* ":id" is a URL parameter - the page reads it with useParams() */}
-          <Route path="/listings/:id" element={<ListingDetail />} />
-          <Route path="/addlisting" element={<AddListing />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/users/:id" element={<User />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/following" element={<Following />} />
-          <Route path="/orders/:id" element={<OrderDetail />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          {/* Everything below the guard, so a new admin page is one line and
-              cannot forget to check the role. */}
-          <Route element={<RequireAdmin />}>
-            <Route path="/admin/listings" element={<AdminListings />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/orders" element={<AdminOrders />} />
-          </Route>
-          {/* any unmatched URL renders the 404 inside the shell */}
-          <Route path="*" element={<NotFound />} />
+    <Routes>
+      {/* Top-level redirect target from the OAuth flow - rendered outside the
+          app shell since it's a transient page, not normal UI. */}
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route element={<Layout />}>
+        <Route path="/" element={<Home />} />
+        {/* ":id" is a URL parameter - the page reads it with useParams() */}
+        <Route path="/listings/:id" element={<ListingDetail />} />
+        <Route path="/addlisting" element={<AddListing />} />
+        <Route path="/search" element={<Search />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/users/:id" element={<User />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/following" element={<Following />} />
+        <Route path="/orders/:id" element={<OrderDetail />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        {/* Everything below the guard, so a new admin page is one line and
+            cannot forget to check the role. */}
+        <Route element={<RequireAdmin />}>
+          <Route path="/admin/listings" element={<AdminListings />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/orders" element={<AdminOrders />} />
         </Route>
-      </Routes>
-    </BrowserRouter>
+        {/* any unmatched URL renders the 404 inside the shell */}
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
   );
 }

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 
 import { Chat } from "../components/modal/Chat";
@@ -46,11 +47,13 @@ function renderChat(
   };
 
   return render(
-    <AuthContext.Provider value={auth}>
-      <ModalProvider>
-        <Chat />
-      </ModalProvider>
-    </AuthContext.Provider>,
+    <MemoryRouter>
+      <AuthContext.Provider value={auth}>
+        <ModalProvider>
+          <Chat />
+        </ModalProvider>
+      </AuthContext.Provider>
+    </MemoryRouter>,
   );
 }
 

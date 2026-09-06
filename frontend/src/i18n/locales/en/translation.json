@@ -348,7 +348,7 @@
       "myListings": "My listings",
       "needsYou": "Needs you ({{count}})",
       "inProgress": "In progress ({{count}})",
-      "finished": "Finished ({{count}})",
+      "finished": "Orders ({{count}})",
       "noListings": "You haven't posted a listing yet.",
       "addListing": "Post your first listing",
       "noOrders": "No one has ordered from you yet.",
@@ -449,6 +449,8 @@
     "send": "Send",
     "sendFailed": "Couldn't send that message.",
     "decideFailed": "Couldn't answer this request.",
+    "viewProfile": "View {{username}}'s profile",
+    "openThread": "Open conversation with {{username}}",
     "status": {
       "pending": "Request pending",
       "accepted": "Accepted",

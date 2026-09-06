@@ -70,7 +70,7 @@ export function CategorySelect({
       )}
 
       <select
-        className={`focus:shadow-outline ${width} rounded border px-3 py-2 leading-tight shadow focus:outline-none`}
+        className={`focus:shadow-outline border-line bg-surface text-foreground ${width} rounded border px-3 py-2 leading-tight shadow focus:outline-none`}
         id={name}
         aria-label={label ? undefined : ariaLabel}
         aria-invalid={error ? true : undefined}

@@ -348,7 +348,7 @@
       "myListings": "Omat ilmoitukset",
       "needsYou": "Vaatii toimiasi ({{count}})",
       "inProgress": "Käynnissä ({{count}})",
-      "finished": "Valmiit ({{count}})",
+      "finished": "Tilaukset ({{count}})",
       "noListings": "Et ole vielä lisännyt ilmoitusta.",
       "addListing": "Lisää ensimmäinen ilmoituksesi",
       "noOrders": "Kukaan ei ole vielä tilannut sinulta.",
@@ -449,6 +449,8 @@
     "send": "Lähetä",
     "sendFailed": "Viestin lähettäminen epäonnistui.",
     "decideFailed": "Pyyntöön vastaaminen epäonnistui.",
+    "viewProfile": "Katso käyttäjän {{username}} profiili",
+    "openThread": "Avaa keskustelu käyttäjän {{username}} kanssa",
     "status": {
       "pending": "Pyyntö odottaa",
       "accepted": "Hyväksytty",
