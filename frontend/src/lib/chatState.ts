@@ -2,6 +2,9 @@
 // so we don't render a send box or a decision the server will reject.
 import type { Conversation, ConversationStatus } from "../api/types";
 
+// maxMessageLength in that same file.
+export const MAX_MESSAGE_LENGTH = 2000;
+
 export interface ThreadView {
   canSend: boolean;
   // Seller answering a pending request. The buyer never gets this.

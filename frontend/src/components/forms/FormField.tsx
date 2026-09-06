@@ -9,6 +9,7 @@ type FormFieldProps = {
   isEditing?: boolean;
   width?: `max-w-${string}`;
   validateOnChange?: boolean;
+  maxLength?: number;
 };
 
 export function FormField({
@@ -19,6 +20,12 @@ export function FormField({
   isEditing: isEditingProp,
   width: widthProp,
   validateOnChange,
+  // A sanity bound, not the validation. It must stay strictly ABOVE every
+  // schema cap (the highest is search text at 200): set it equal to one and
+  // the field can no longer hold a value that breaks the rule, so zod's error
+  // for it becomes unreachable. What this stops is the field growing without
+  // bound before anything is submitted.
+  maxLength = 512,
 }: FormFieldProps) {
   const {
     register,
@@ -54,9 +61,15 @@ export function FormField({
             className={`focus:shadow-outline ${width} appearance-none rounded border px-3 py-2 leading-tight shadow focus:outline-none`}
             id={name}
             type={type}
+            maxLength={maxLength}
             placeholder={placeholder}
             {...registerRest}
             onChange={(e) => {
+              // The attribute above is ignored on type="number", so cut the
+              // raw value before react-hook-form ever reads it.
+              if (e.target.value.length > maxLength) {
+                e.target.value = e.target.value.slice(0, maxLength);
+              }
               rhfOnChange(e);
               if (validateOnChange) trigger(name);
             }}

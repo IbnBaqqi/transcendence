@@ -13,6 +13,9 @@ import Button from "../objects/Button";
 import { Skeleton } from "../objects/Skeleton";
 import type { Listing } from "../../api/types";
 
+// Quantity is an int32 server-side, which is 10 digits at its widest.
+const QUANTITY_MAX_CHARS = 10;
+
 export function ReserveListingSection({ listingId }: { listingId: string }) {
   const { user, isLoading: authLoading } = useAuth();
   const { t } = useTranslation();
@@ -122,7 +125,7 @@ function ReserveForm({ listing }: { listing: Listing }) {
             min={1}
             max={available}
             value={quantityText}
-            onChange={(e) => setQuantityText(e.target.value)}
+            onChange={(e) => setQuantityText(e.target.value.slice(0, QUANTITY_MAX_CHARS))}
             className="border-line bg-surface text-foreground w-24 rounded-md border px-3 py-2"
           />
         </div>

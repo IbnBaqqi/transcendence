@@ -48,7 +48,7 @@ export function BioSection() {
     <Form form={form} onSubmit={handleSubmit} isEditing={isEditing}>
       <div className="space-y-2">
         <div className="flex flex-row gap-4">
-          <FormTextArea name="bio" validateOnChange />
+          <FormTextArea name="bio" maxLength={1000} validateOnChange />
         </div>
         {errors.root?.message && (
           <p role="alert" className="text-danger text-sm">
