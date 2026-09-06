@@ -19,9 +19,10 @@ export async function logout(): Promise<void> {
   await api.post("/auth/logout", undefined, { withCredentials: true });
 }
 
-// Exchanges the HttpOnly cookie for a fresh session. Used on page load when no
-// access token exists; the 401 interceptor uses its own single-flight version
-// (see client.ts) so concurrent failures don't fire this twice at once.
+// Exchanges the HttpOnly cookie for a fresh session. Used by the OAuth
+// callback, where the cookie is the new identity; the 401 interceptor uses its
+// own single-flight version (see client.ts) so concurrent failures don't fire
+// this twice at once.
 export async function refresh(): Promise<AuthResponse> {
   const res = await api.post<AuthResponse>("/auth/refresh", undefined, { withCredentials: true });
   return res.data;

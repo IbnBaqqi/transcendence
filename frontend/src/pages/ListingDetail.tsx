@@ -29,7 +29,9 @@ export default function ListingDetail() {
           variant="error"
           className="h-40 w-full"
           message={isApiError(error) ? error.message : t("pages.listingDetail.loadError")}
-          onRetry={() => refetch()}
+          // A deleted listing does not come back, so offering the button only
+          // buys another 404.
+          onRetry={isApiError(error) && error.status === 404 ? undefined : () => refetch()}
         />
       ) : (
         <>

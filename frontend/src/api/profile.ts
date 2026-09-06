@@ -10,9 +10,9 @@ import type {
   PublicProfile,
 } from "./types";
 
-// Defaults to enabled: the profile page reads the 401 from this to decide it is
-// signed out. Callers that already know there is no session pass false, so they
-// do not spend a request and a refresh attempt learning it again.
+// Signed-out callers pass false, same contract as useOrders: logout clears the
+// cache while these are still mounted, and an ungated one refetches straight
+// into a 401 and a doomed refresh before the redirect lands.
 export function useOwnProfile(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: keys.me.profile(),

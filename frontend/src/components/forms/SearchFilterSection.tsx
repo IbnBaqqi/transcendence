@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, type DefaultValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 
@@ -9,14 +9,17 @@ import Button from "../objects/Button";
 import { searchFiltersSchema, type SearchFiltersFormValues } from "../../schemas/searchFilters";
 import { SORTS, emptyFilters, type SearchFilters } from "../../lib/searchFilters";
 
-// The form works in numbers, the URL in strings; NaN and "" are the same idea.
-function toFormValues(f: SearchFilters): SearchFiltersFormValues {
+// The form works in numbers, the URL in strings. An unset price is undefined
+// rather than NaN: react-hook-form writes a default straight into the DOM, and
+// "NaN" is not a value type="number" can parse. NaN still means "unset" on the
+// way back out - an emptied number input submits as NaN through valueAsNumber.
+function toFormValues(f: SearchFilters): DefaultValues<SearchFiltersFormValues> {
   return {
     keyword: f.keyword,
     category: f.category,
     location: f.location,
-    min_price: f.min_price === "" ? NaN : Number(f.min_price),
-    max_price: f.max_price === "" ? NaN : Number(f.max_price),
+    min_price: f.min_price === "" ? undefined : Number(f.min_price),
+    max_price: f.max_price === "" ? undefined : Number(f.max_price),
     sort: f.sort,
   };
 }

@@ -120,11 +120,10 @@ test("shows a loading note while the profile is being fetched", () => {
 
 test("greets a signed-out visitor with a way to log in", async () => {
   const user = userEvent.setup();
-  renderPage({
-    data: undefined,
-    isLoading: false,
-    error: { status: 401, message: "authentication required" },
-  });
+  // No user rather than a 401: the query does not run without a session, so
+  // there is no error for the page to read - being signed out is the auth
+  // state itself.
+  renderPage({ data: undefined, isLoading: false, error: null }, null);
   expect(screen.getByText(/You're signed out/, { exact: false })).toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "Log In" }));

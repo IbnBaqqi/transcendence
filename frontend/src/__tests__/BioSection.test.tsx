@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BioSection } from "../components/forms/BioSection";
+import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { useOwnProfile, useUpdateOwnProfile } from "../api/profile";
 import type { OwnProfile } from "../api/types";
 
@@ -11,6 +12,32 @@ vi.mock("../api/profile", () => ({
 
 const mockedProfile = vi.mocked(useOwnProfile);
 const mockedUpdate = vi.mocked(useUpdateOwnProfile);
+
+// BioSection reads the viewer to gate its profile query, the same contract
+// useOrders takes - so it needs a session in context, not just a mocked hook.
+const AUTH_STUB: AuthContextValue = {
+  user: {
+    id: "u1",
+    username: "or99",
+    email: "or99@example.com",
+    role: "USER",
+    has_password: true,
+    providers: [],
+  },
+  isLoading: false,
+  login: vi.fn(),
+  signup: vi.fn(),
+  logout: vi.fn(),
+  restoreSession: vi.fn(),
+};
+
+function renderSection() {
+  return render(
+    <AuthContext.Provider value={AUTH_STUB}>
+      <BioSection />
+    </AuthContext.Provider>,
+  );
+}
 
 const BIO = "Forager of chanterelles.";
 
@@ -42,13 +69,13 @@ beforeEach(() => {
 });
 
 test("shows the saved bio before editing", () => {
-  render(<BioSection />);
+  renderSection();
   expect(screen.getByText(BIO)).toBeInTheDocument();
 });
 
 test("prefills the textarea when entering edit mode", async () => {
   const user = userEvent.setup();
-  render(<BioSection />);
+  renderSection();
 
   await user.click(screen.getByRole("button", { name: "Edit Text" }));
 
@@ -61,7 +88,7 @@ test("saves the edited bio and clears an emptied one", async () => {
     typeof useUpdateOwnProfile
   >);
   const user = userEvent.setup();
-  render(<BioSection />);
+  renderSection();
 
   await user.click(screen.getByRole("button", { name: "Edit Text" }));
   const textarea = screen.getByRole("textbox");
@@ -78,7 +105,7 @@ test("a server error shows inline and keeps edit mode open", async () => {
     mutateAsync: vi.fn().mockRejectedValue({ status: 500, message: "Could not save right now" }),
   } as unknown as ReturnType<typeof useUpdateOwnProfile>);
   const user = userEvent.setup();
-  render(<BioSection />);
+  renderSection();
 
   await user.click(screen.getByRole("button", { name: "Edit Text" }));
   await user.click(screen.getByRole("button", { name: "Save" }));
