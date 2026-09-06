@@ -1,795 +1,285 @@
-# transcendence
+*This project has been created as part of the 42 curriculum by <!-- TODO: login1, login2, login3, login4, login5 -->.*
 
-A marketplace for foraged goods — berries, mushrooms, herbs. Sellers post
-listings, buyers browse and message them, with a simulated order flow and no
-real money. Built for the 42 `ft_transcendence` project.
+# Metsätori
 
-React + TypeScript frontend, Go backend, PostgreSQL, all runnable with
-`docker compose up`.
+A marketplace for foraged goods — berries, mushrooms and herbs.
 
-## Running it
+## Description
+
+Finland's everyman's right lets anyone forage on most land, and people routinely
+end up with more chanterelles than they can eat. Metsätori is where that surplus
+finds a buyer — "tori.fi for forageables".
+
+**No money changes hands on the platform**, by design. An order is a
+*reservation*, completed by a two-sided handshake: the seller marks handover, the
+buyer marks receipt, and the order closes only when both have. Payment and pickup
+are arranged between the two people.
+
+**Key features**
+
+- Listings with photos, categories and tags; search with filters, sorting and pagination
+- Reservations with an audit trail, seller/buyer handshake and admin resolution
+- Direct messaging, gated on the seller accepting the request
+- Follows with online status, blocking, saved listings, seller ratings
+- In-app and email notifications
+- Admin moderation: reports queue, listing moderation, roles, suspensions
+- Public REST API with keys, rate limiting and OpenAPI docs
+- English, Finnish and Swedish; OS-driven light and dark themes
+- GDPR data export and account deletion, both confirmed by email
+
+## Instructions
+
+### Prerequisites
+
+| Tool | Version | Required? |
+|---|---|---|
+| Docker + Compose | any current | yes — the only hard requirement |
+| `make` | any | yes — wraps the compose and database commands |
+| Go | 1.26+ | optional — only to run the backend or its tests on the host |
+| Node | 20+ | optional — only to run the frontend or its tests on the host |
+
+### Configuration
+
+Credentials live in a root `.env`, which is gitignored. `make setup` creates it
+from the committed `.env.example`; the defaults work as-is for local development.
+OAuth and SMTP credentials are blank in the example and optional — sign-in with a
+password and the local mail catcher both work without them.
+
+### Running it
 
 ```bash
-make setup          # .env from the example, and one directory - see below
+make setup          # creates .env from .env.example, plus two directories
 docker compose up
 ```
 
-Then <http://localhost:5173> for the app and <http://localhost:8080/api/docs>
-for the API. `docker compose up` applies the migrations itself: a goose
-one-shot (`migrate`) runs `up` before the backend starts, so a fresh database
-gets its schema automatically. `cd backend && make migrate-up` still works for
-manual runs from the host.
+Frontend at http://localhost:5173, API at http://localhost:8080. Migrations apply
+themselves: a goose one-shot container runs before the backend starts.
 
-The schema arrives empty, so there is nothing to look at until you fill it:
-`cd backend && make seed` gives you an admin, twenty foragers and fifty
-listings. See [Demo data](#demo-data) for the credentials.
+**Run `make setup` before the first `up`.** Docker creates any missing bind-mount
+directory as root inside your working tree, and both `frontend/node_modules` and
+`backend/uploads` are gitignored, so they are absent on a fresh clone. Creating
+them first means Docker mounts over directories that already exist.
 
-**`make setup` before the first `up`, and the order matters.** It creates
-`frontend/node_modules` and `backend/uploads` so that Docker does not. A
-container cannot mount onto a path that does not exist, so the daemon creates
-any missing subdirectory of a bind mount — as **root**, inside your working
-tree. Both directories are gitignored, so both are absent on a fresh clone and
-both get created that way. After that, the next host-side command that writes
-there fails with `EACCES` — `npm ci` for one, `make run` saving an uploaded
-image for the other — with an error that blames permissions and never mentions
-Docker.
+### Running it over HTTPS
 
-**This is a Linux thing.** Docker Desktop for macOS maps bind-mount ownership to
-the host user, so nothing lands root-owned and none of the above happens there —
-measured both ways on both platforms. `make setup` is still the right first
-command everywhere; `mkdir -p` costs nothing.
-
-Already hit it, on Linux? The directories have to go before they can be
-recreated — but **no `sudo` is needed**, because they are empty. Docker's volume
-shadows each one, so everything written there goes into the volume rather than
-the tree, and removing a directory needs write permission on its *parent*, which
-you have:
-
-```bash
-rmdir frontend/node_modules backend/uploads
-make setup && (cd frontend && npm ci)
-```
-
-`rmdir` also fails safely if one of them somehow is not empty, which is the
-point at which `sudo rm -rf` becomes the right tool rather than the reflex.
-
-Running the container as your own user does not help — the daemon prepares the
-mount point before the container starts, so its user is irrelevant.
-
-### The production-shaped stack, over HTTPS
-
-The dev stack above is plain HTTP and reloads on every edit, which is what you
-want while working. To run the thing the way it is meant to be served — both
-images built, no source mounts, no toolchain in the containers, everything on
-**one HTTPS origin**:
+The dev stack above is plain HTTP and reloads on every edit. The
+production-shaped stack builds both images and serves everything from one HTTPS
+origin:
 
 ```bash
 make setup                                        # includes `make certs`
 docker compose -f docker-compose.prod.yml up --build
 ```
 
-Then <https://localhost>. The API is behind the same origin at
-`/api/v1`, so there is no second port and nothing to configure in the browser.
-Migrations run themselves here: a one-shot `migrator` service applies them
-before the backend starts.
+Then https://localhost — the API is behind the same origin at `/api/v1`. The
+certificate is self-signed, so the browser will warn; click through, or run
+`mkcert -install && mkcert localhost` to write a trusted one to the same paths.
 
-**Your browser will warn about the certificate, and that is expected.**
-`make certs` generates a self-signed one — nothing trusts the issuer, because
-there is no issuer. Click through it. If you would rather not, `mkcert -install
-&& mkcert localhost` writes a locally-trusted certificate to the same two paths
-and the warning goes away.
+The refresh cookie is `Secure` here, which is why `http://localhost` redirects
+rather than serving the app: a session started over HTTP could not refresh.
 
-#### Reaching it from another machine
+### Demo data
 
-The certificate covers `localhost` and `127.0.0.1`, and a browser checks the
-host you typed against that list — so a second machine on the same network gets
-a *name mismatch* on top of the untrusted-issuer warning, and strict clients
-like `curl` refuse outright. Reissue with the serving machine's address added:
+The schema arrives empty. `cd backend && make seed` loads one admin, twenty
+foragers and fifty listings.
 
-```bash
-make certs-force CERT_EXTRA_SAN=IP:10.18.185.59      # your LAN address
-docker compose -f docker-compose.prod.yml restart frontend
-```
-
-`CERT_EXTRA_SAN` takes openssl's own syntax, comma-separated, so
-`'IP:10.18.185.59,DNS:metsatori.local'` works too. It only applies when a
-certificate is actually issued: plain `make certs` leaves an existing one
-alone, which is why the reissue is a separate target. The issuer warning
-remains either way — that part is inherent to signing it ourselves.
-
-Nothing else needs configuring. The frontend calls the relative `/api/v1`, so
-it follows whatever origin loaded it, and there is no CORS allowlist to update.
-OAuth is the exception: `docker-compose.prod.yml` pins the redirect URLs to
-`https://localhost`, so sign-in with Google or GitHub only works on the serving
-machine.
-
-Two things follow from having TLS rather than being incidental to it. The
-refresh cookie is `Secure` in this stack, so it is only ever sent over HTTPS —
-which is why plain `http://localhost` redirects instead of serving the app; a
-session started there would fail to refresh with nothing on screen to say why.
-And nginx listens on 8443 inside the container rather than 443, because it runs
-as a non-root user that cannot bind a privileged port — compose publishes it as
-443, so the privileged bind happens in the daemon.
-
-## Modules
-
-The subject requires a written justification for the modules we claim —
-why this one, what was technically hard, and what it adds. One section each.
-
-### Friends system → follows + online status
-
-**What the subject asks for.** Two majors mention it:
-
-> *Allow users to interact* — "A friends system (add/remove friends, see friends list)"
->
-> *Standard user management* — "Users can add other users as friends and see their online status"
-
-**What we built.** A **directed follow graph** rather than mutual friendship:
-`POST`/`DELETE /users/{id}/follow`, `GET /me/following` (the friends list),
-`GET /users/{id}/followers`, each row carrying live online status.
-
-**Why follows rather than mutual friendship.** The subject's module list
-predates the open-ended web-app version of the project — several modules still
-assume a Pong game — so "friends system" is legacy wording for *a social graph
-between users*. Ours is shaped for a marketplace, where the relationship is
-genuinely asymmetric: a buyer follows a seller they bought from, and a seller
-accumulates followers without having to approve anyone. Requiring a mutual
-handshake for that would be worse product design, not better compliance. The
-capabilities the subject names — add, remove, see the list, see online status —
-are all present.
-
-**What was technically interesting.**
-
-- **The data model is the design.** `follows` has no surrogate id and no status
-  column: the composite primary key `(follower_id, followee_id)` is
-  simultaneously the row's identity, the guarantee that you cannot follow
-  someone twice, and the index for "who does this user follow?". A `CHECK`
-  constraint makes self-following impossible at the database level rather than
-  by a handler remembering to look. The reverse question needs its own index,
-  because a composite key can only be searched from its leading column.
-- **Errors are classified rather than leaked.** Following a user who does not
-  exist is a foreign key violation; unhandled, that reaches the client as
-  `500 something went wrong`. We map it to 404, alongside the equivalent
-  handling for duplicate-key violations elsewhere in the codebase.
-- **Online status without WebSockets.** Middleware stamps `last_seen_at` at most
-  once a minute, and a user counts as online if that stamp is inside a two-minute
-  window — twice the write interval, so one missed request doesn't flicker them
-  offline. Users can switch the signal off, and when they do the response is
-  byte-identical to a user who has never been seen: presence is hidden by
-  *absence*, so it cannot be inferred from the shape of the reply.
-
-**What it adds.** Followers are what make a marketplace repeatable rather than
-transactional: a buyer can find the forager they trusted last autumn, and a
-seller can build an audience. It is also the substrate the notification and
-recommendation work builds on later.
-
-### Order lifecycle
-
-**What we built.** A finite state machine over `pending → confirmed →
-completed`, with `cancelled` reachable from the first two, plus a full audit
-trail of every transition.
-
-**Why it isn't a status column with extra steps.** The subject warns that
-trivial implementations of a module are rejected, and "an order has a status
-field" would deserve that. Four things make this a lifecycle:
-
-- **The transition table is the design.** Each action declares what states it
-  may run from, what it moves to, who is allowed to trigger it, and whether it
-  returns stock — as data, in one place, rather than as conditionals scattered
-  across four handlers. Adding a state means adding a row.
-- **Completion needs both parties.** The seller marks handover and the buyer
-  confirms receipt; whichever happens first stamps its own timestamp and leaves
-  the status alone. Only the second one completes the order. One person cannot
-  declare a transaction finished, which is the whole difficulty of an
-  offline-handover marketplace.
-- **Stock is part of the transaction.** Placing an order decrements the
-  listing's quantity in the same transaction that creates the order, with the
-  row locked, so two buyers racing for the last kilo cannot both succeed —
-  the loser gets a 409 rather than an oversold listing. Cancelling puts the
-  stock back, and is refused once either side has marked the handshake.
-- **History is recorded, not inferred.** Every transition writes a row to
-  `order_events` — from, to, who, when — inside the transaction that performs
-  it. A refused transition leaves nothing behind, and a recorded one cannot be
-  a lie. `GET /orders/{id}/events` returns that timeline to the two people
-  involved.
-
-**What was technically interesting.**
-
-- **The two commit points.** A handshake mark that doesn't complete the order
-  commits early. An event write added only to the status-change path would
-  silently lose every "seller marked handover" still waiting on the buyer — so
-  the mark is recorded before the branch, which means two events can share one
-  transaction, and therefore one `created_at`. The timeline query breaks that
-  tie on `id`.
-- **Proving the coupling.** Tests that only check "the event was written" pass
-  even if the write happens *after* the commit. The test that matters renames
-  the events table away, then asserts the **status** didn't change either —
-  which is the only way to distinguish "same transaction" from "next to each
-  other".
-- **Orders outlive what they refer to.** The listing title is snapshotted at
-  purchase, so an order still reads correctly after the listing is edited; the
-  listing itself cannot be deleted while orders reference it; and neither can
-  the buyer or the seller, whose foreign keys are `ON DELETE RESTRICT`. A
-  history that either party can erase is not evidence — and the first draft of
-  that migration silently dropped one of the two keys, so there is a test
-  asserting both deletes are refused.
-
-**What it adds.** Disputes become answerable. "Who cancelled this, and when?"
-has a row to point at rather than a word in a column — which is what a
-marketplace needs the moment two people disagree about what happened.
-
-### OAuth login
-
-**What we built.** Sign in with Google or GitHub via the authorization code
-flow, linking to an existing account when the email matches.
-
-**What was technically interesting.**
-
-- **The account pre-hijacking defence is the whole feature.** Linking on a
-  matching email is the obvious design and it is a takeover: signup does not
-  verify addresses, so an attacker registers `victim@gmail.com` with a password
-  of their choosing, and when the victim later signs in with Google they are
-  silently dropped into the attacker's account. Auto-linking is therefore
-  limited to *password-less* rows, which can only have come from this flow;
-  anything else is refused and told to sign in with its password first. The
-  branch review found this, and the test that pins it is the most valuable one
-  in the feature.
-- **Emails are only trusted when the provider says they are verified.** GitHub
-  lets anyone add any address to their account, so an unverified one proves
-  nothing. With no verified address the sign-in is refused rather than
-  inventing one, because `users.email` is `NOT NULL` and a synthesised row
-  outlives the mistake.
-- **`SameSite=Lax` on the state cookie is load-bearing, not a default.**
-  `Strict` is the instinct for a CSRF token and it breaks the flow 100% of the
-  time: the callback is a top-level cross-site navigation from the provider,
-  which is exactly the case `Strict` suppresses. It would fail every sign-in
-  with nothing in the logs — so the server now refuses to boot if `PUBLIC_URL`
-  and `FRONTEND_URL` cannot deliver that cookie.
-- **No access token in the redirect.** A browser redirect can only carry data
-  in the URL, and an access token there lands in history, proxy logs and the
-  next `Referer`. The callback sets only the refresh cookie and the SPA calls
-  the existing `POST /auth/refresh`.
-- **One dependency, not two.** Only the root `golang.org/x/oauth2` is imported;
-  `oauth2/google` exists mostly for GCE service-account credentials and would
-  pull in `cloud.google.com/go`, so the two endpoint URLs are declared by hand.
-
-**PKCE is deliberately not implemented.** It is the first thing an
-OAuth-familiar reader looks for, so: PKCE exists to protect *public* clients —
-mobile apps and SPAs that cannot hold a secret — where an intercepted
-authorization code can be redeemed by whoever intercepts it. This is a
-confidential client: the code is exchanged server-to-server with a
-`client_secret` the browser never sees, so a stolen code is useless without it.
-CSRF, the other thing PKCE is sometimes pressed into covering, is handled by
-the `state` cookie. Adding PKCE would not be wrong, and it is what we would add
-first if the frontend ever exchanged codes itself — it simply is not what
-protects this flow today.
-
-**What it adds.** One fewer password for the user, and one fewer password for
-us to store. It also makes `users.password` nullable, which is what lets an
-account exist without one at all.
-
-### The backend framework
-
-**What the subject asks for.** The Web category names two separate minors — a
-frontend framework and a backend one — and defines a framework as a structured
-architecture with conventions, built-in features for common tasks such as
-routing, and an ecosystem of tools around it. Its examples are "Express,
-Fastify, NestJS, Django, Flask, Ruby on Rails".
-
-**The objection, first.** chi's own README calls it a *router*, and the same
-page of the subject lists jQuery and Axios as things that are **not**
-frameworks. Anyone who reads one line of chi's documentation has a fair
-question, and this section exists to answer it rather than hope it is not
-asked.
-
-**Why we claim it anyway.** Express is on the subject's own list, and Express is
-a router plus a middleware pipeline over Node's `http`. chi is a router plus a
-middleware pipeline over Go's `net/http` — the same relationship, to the same
-kind of standard library, solving the same problem. If Express is a framework,
-the structural argument that chi is not becomes hard to state.
-
-The definition the subject gives is about **how the application is organised**,
-not about what a dependency calls itself. On that reading:
-
-- **Routing with per-group middleware.** `backend/internal/app/router.go` is one
-  table: an `/api/v1` route with three groups nested inside it — authenticated,
-  then admin-only and session-only within that. Thirteen `r.Use` declarations,
-  and a route's protection is a property of where it sits rather than of what
-  its handler remembers to check.
-- **Built-ins used as built-ins.** Request ids and client-IP extraction come
-  from chi itself, which is the "built-in features for common tasks" half of
-  the definition doing its job rather than something we had to write.
-- **Our own middleware on the same seam**, seven files in
-  `backend/internal/middleware/`: structured logging, panic recovery, JWT and
-  API-key authentication, role and suspension checks, presence stamping, rate
-  limiting and a request-body cap — each written against chi's interface and
-  mounted the same way its own are.
-- **Layering as a convention, not a suggestion.** Fourteen packages under
-  `internal/`, with handler → service → database strictly one-directional:
-  handlers parse and respond, services own the rules and the transactions, and
-  nothing above `database/` writes SQL.
-- **Codegen and migrations as the data-access convention** — sqlc generates the
-  query layer from `sql/queries/`, goose versions the schema, and the generated
-  Go is never hand-edited.
-- **The contract is enforced, not documented.** `backend/api/openapi.yaml` is
-  hand-written and embedded in the binary, and a test walks chi's own route
-  table against it, failing when a route is in one and not the other.
-
-**Where the line actually is.** jQuery and Axios are libraries you *call* from
-code organised some other way — remove Axios and you change call sites. chi is
-what the code is organised *inside*: removing it means rewriting the routing
-table, re-deriving every group's middleware chain by hand, and finding a new
-home for the guarantees that currently come from where a route is declared.
-That is the difference the subject's definition is pointing at, and it is the
-test we would want applied to any candidate.
-
-**What it adds.** Honestly: no user-visible feature. What it buys is that
-adding an endpoint is a one-line declaration in a table whose surrounding group
-already decides who may reach it — which is why "is this route inside the
-`RequiredAuth` group?" is a question a test can ask, and does.
-
-## API documentation
-
-The API describes itself. With the stack up (`docker compose up`):
-
-- **<http://localhost:8080/api/docs>** — Swagger UI: every endpoint, its
-  request and response shapes, and a "Try it out" button that issues real
-  requests. Paste an access token from `POST /auth/login` into **Authorize**
-  to call the endpoints that need one.
-- **<http://localhost:8080/api/openapi.yaml>** — the raw OpenAPI 3.1 document,
-  if you'd rather point a client generator or another tool at it.
-
-Both are served straight out of the binary — the spec and Swagger UI's assets
-are embedded with `go:embed`, so there is nothing to install and no CDN
-involved.
-
-### Keeping it honest
-
-The spec is hand-written and lives at `backend/api/openapi.yaml`, so **it is
-part of the change, not a follow-up**: adding an endpoint means adding it there
-in the same pull request.
-
-That isn't left to memory. `TestSpecMatchesRouter` asks chi for its real route
-table and compares it against the spec, failing when an endpoint is in one and
-not the other. It checks **method and path only** — the request and response
-schemas are still on you to keep true:
-
-```
-routed but not documented: GET /api/v1/me/profile (add it to api/openapi.yaml)
-documented but not routed: PUT /api/v1/me/settings (stale entry in api/openapi.yaml)
-```
-
-It needs no database, so `make test` and CI both run it.
-
-Note that `go:embed` bakes the spec in **at build time** — after editing the
-YAML, rebuild (`docker compose up --build`) before the change shows up at
-`/api/docs`.
-
-## After the id migration — recreate your database
-
-The migration history was replaced with a single baseline
-(`001_initial_schema.sql`) and every id became a uuid. goose tracks versions by
-number, so a database already at version 21 sees one file, decides it is
-applied, and reports:
-
-```
-goose: no migrations to run. current version: 21
-```
-
-That leaves the old integer schema in place while the code sends uuids, and the
-app half-works before failing on the first listing insert. Recreate it once:
-
-```bash
-cd backend && make db-reset
-```
-
-That drops and recreates the database, applies the migrations and re-seeds.
-Note that `make docker-down` does **not** do this — it deliberately keeps the
-volume, so the old schema comes straight back.
-
-## Demo data
-
-`make seed` fills the database with one admin, twenty foragers and fifty
-listings spread across them, so there is something to click through:
-
-```bash
-cd backend && make seed
-```
-
-| account | password |
+| Account | Password |
 |---|---|
 | `admin@metsatori.com` | `admin123` |
 | `forager01@example.com` … `forager20@example.com` | `admin123` |
 
-One password for every account, deliberately — it is demo data, and remembering
-one credential while clicking between people is the point.
-
-It truncates `listings` and `users` first, so re-running it is safe and
-replaces whatever the last run made.
-
-It is **plain SQL**, not a program, which means it needs no Go toolchain and
-runs three ways. Useful when `go` will not execute on a machine:
+### Other commands
 
 ```bash
-cd backend && make seed                     # through the db container
-psql "$DB_URL" -f backend/sql/seed.sql      # any psql, against any database
+cd backend  && make test | test-db | migrate-status | db-reset
+cd frontend && npm run test | lint | format:check | build
+docker compose --profile tools up      # adds Adminer at http://localhost:8081
 ```
 
-or paste `backend/sql/seed.sql` into adminer, which the dev stack ships behind
-an opt-in profile:
+Mailpit catches all outgoing mail at http://localhost:8025. Nothing leaves your
+machine.
 
-```bash
-docker compose --profile tools up -d adminer   # then http://127.0.0.1:8081
-```
+## Team Information
 
-The passwords are real bcrypt hashes rather than placeholders — `crypt()` with
-`gen_salt('bf')` from `pgcrypto`, which produces the same `$2a$` format the
-login path compares against. That is the only reason a seed written in SQL can
-produce accounts you can actually sign in to.
+<!-- TODO — one row per member: 42 login, role(s) (PO / PM / Tech Lead /
+     Developer), and a brief description of their responsibilities. -->
 
-## Cleaning up unused tags
+| Member | 42 login | Role(s) | Responsibilities |
+|---|---|---|---|
+| | | | |
+| | | | |
+| | | | |
+| | | | |
+| | | | |
 
-A tag is created the first time a listing uses it and is not removed when the
-last listing drops it, so the table grows with every new name anyone types.
-Collecting the unused ones is a deliberate command rather than something the
-listing write path does:
+## Project Management
 
-```bash
-cd backend && make tag-sweep
-```
+**How the work was organised.** Every change lands as a pull request against
+`main`; nobody commits to `main` directly. Work is tracked as GitHub Issues with
+a `Backend:` / `Frontend:` / `DevOps:` / `Full-stack:` prefix, and features are
+deliberately split into separate backend and frontend issues so two people can
+work them in parallel. GitHub Actions runs per-area checks on every PR: frontend
+format, lint, i18n and build; backend `gofmt`, `go vet` and the test suite.
 
-Nothing schedules it, so tags accumulate until someone runs it.
+<!-- TODO — the subject also asks for:
+     - meeting cadence / how tasks were distributed between people
+     - communication channels used (Discord, Slack, etc.) -->
 
-It is safe against a live database in the sense that matters: it takes the same
-advisory lock every tag write takes, so it cannot collect a tag a listing is
-being saved with — a sweep without that lock deletes the tag *and* the new
-listing's link to it, and neither side reports an error.
+## Technical Stack
 
-It is not free, though. That lock is exclusive and is held for the whole scan,
-so every listing save that touches tags waits for the sweep to finish. The scan
-is a full pass over `tags`, which is the table that grows without bound — so
-this is a maintenance window, not a background job. Run it when a short stall on
-listing saves does not matter, and if the table ever gets big enough for that to
-hurt, batch the delete with a `LIMIT` and re-take the lock per batch rather than
-running the whole thing more often.
+### Frontend
 
-## Roles and the first admin
+React 19 with TypeScript, built by Vite. React Router v7 for routing, TanStack
+Query for server state, React Hook Form with Zod for forms and validation,
+Tailwind CSS v4 for styling, i18next for translations, Axios as the HTTP client.
+Tested with Vitest and Testing Library.
 
-Accounts are `USER` or `ADMIN` — those two values only, enforced by a `CHECK`
-constraint, so a typo is rejected rather than stored:
+### Backend
 
-```
-ERROR: new row for relation "users" violates check constraint "users_role_check"
-```
+Go 1.26 with the chi v5 router and its middleware chain. Queries are written by
+hand and compiled to type-safe Go by sqlc; schema changes are versioned goose
+migrations. Authentication is JWT access tokens plus rotating refresh tokens
+stored hashed, with bcrypt for passwords. Logging is `log/slog`. The OpenAPI spec
+is served by swgui.
 
-There is no UI for promotion. `make seed` creates one admin account for
-demos (below); outside that, everyone signs up as `USER` and the first admin is
-made by hand, on purpose:
+### Database — PostgreSQL 16
 
-```bash
-docker compose exec db psql -U postgres -d transcendence \
-  -c "UPDATE users SET role = 'ADMIN' WHERE email = 'you@example.test';"
-```
+Chosen because the data is relational and the invariants are the interesting
+part, and we wanted them enforced by the database rather than by application
+code: `CHECK` constraints as the real floor under stock levels, composite and
+partial indexes for the search and feed queries, a generated column for "deleted
+or suspended", and `uuid` v7 primary keys that sort by creation time so message
+history paginates on the primary key with no extra index.
 
-`UPDATE 1` means it worked; `UPDATE 0` means no account has that email. Adjust
-`-U` and `-d` if you changed `POSTGRES_USER` / `POSTGRES_DB` in `.env`.
+### Justification for the major technical choices
 
-**This is for the *first* admin only.** After that,
-`PATCH /api/v1/admin/users/{id}/role` promotes and demotes from the admin
-console, writing a `promoted` or `demoted` row to the account's history. The
-psql route stays documented because the bootstrap problem is real: the endpoint
-requires an admin, so the very first one has nobody to grant it.
+- **Go over Node** — static typing and a standard library covering HTTP, crypto
+  and TLS without dependencies, which keeps the dependency surface small.
+- **sqlc over an ORM** — the SQL is the source of truth and a wrong column name
+  is a compile error rather than a runtime one. We do not claim the ORM module.
+- **`text` + `CHECK` over native Postgres enums** — adding a value to a native
+  enum is a migration that cannot run inside a transaction.
+- **`numeric` for money, never a float** — binary floating point cannot represent
+  decimal currency exactly.
+- **Tailwind with semantic tokens** (`bg-surface`, `text-muted`) rather than raw
+  colours, so light and dark themes both work from one class.
 
-Two refusals are worth knowing. You cannot change your own role — an admin who
-demotes themselves loses the endpoint that would undo it. And the last active
-admin cannot be demoted: the check takes the roster lock in the same
-transaction as the write, so two admins demoting each other at the same moment
-cannot both succeed and leave the instance with none.
+## Database Schema
 
-The role is read from the database on every request that needs it, not from the
-token, so **promotion and demotion take effect on the next request** — no
-logging out and back in. That is also what makes revoking an admin meaningful:
-were the role taken from the JWT, a demoted admin would keep their powers until
-the token expired.
+24 tables. Every table has a `uuid` v7 primary key and `created_at timestamptz`;
+foreign keys cascade on delete.
 
-### Protecting a route
-
-```go
-r.Group(func(r chi.Router) {
-	r.Use(mw.RequiredAuth)                                       // 401 if not logged in
-	r.Use(mw.RequireRole(appService.DB.Queries, auth.RoleAdmin)) // 403 if not an admin
-	// admin routes here
-})
-```
-
-Order matters: `RequiredAuth` first, so "not logged in" answers 401 and "logged
-in, wrong role" answers 403.
-
-Roles are matched exactly, not ranked — an `ADMIN` does **not** satisfy
-`RequireRole(auth.RoleUser)`. For "any logged-in user", `RequiredAuth` alone is
-the check.
-
-## API keys and rate limiting
-
-Machine clients authenticate with a key instead of a login. Create one while
-logged in:
-
-```bash
-curl -X POST http://localhost:8080/api/v1/me/api-keys \
-  -H "Authorization: Bearer <access token>" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "ci pipeline"}'
-```
-
-The response contains the key **once**:
-
-```json
-{ "id": 1, "name": "ci pipeline", "key_prefix": "fk_live_a3f9",
-  "key": "fk_live_a3f9c2...", "created_at": "..." }
-```
-
-Only a SHA-256 hash is stored, so nothing can show it again — if it is lost,
-revoke it and create another. Then use it:
-
-```bash
-curl http://localhost:8080/api/v1/listings -H "X-API-Key: fk_live_a3f9c2..."
-```
-
-A key **acts as its owner**: same permissions, same ownership checks. It cannot
-manage keys, though — creating, listing and revoking need a session, so a
-leaked key cannot mint a replacement and survive its own revocation.
-
-Revocation takes effect on the next request; the key is looked up every time,
-so there is no cache to wait out.
-
-`make demo` (from `backend/`) runs all of this end to end against a running
-stack: signup, key creation, the four verbs, the 403 a key gets when it tries
-to mint another key, the 429, and the 401 after revocation. It needs a limit
-above 6 to reach the throttling section — start the backend with
-`RATE_LIMIT_PER_MINUTE=10 docker compose up -d backend` to see it trip
-quickly. A value below 1 is refused and the default is used instead — it would
-mean "no requests at all", not "unlimited".
-
-### Limits
-
-Key-authenticated requests are limited to `RATE_LIMIT_PER_MINUTE` (default 60)
-per key — per **key**, not per IP, so one noisy client cannot throttle everyone
-behind the same NAT. Browser sessions are not limited as a group.
-
-**One route is limited per account instead:** `GET /me/export`, at three per
-hour. It is session-only, so the key limiter never sees it, and one call reads
-an entire account history and queues an email — the same limiter keyed on the
-session rather than the key.
-
-A limited response carries `X-RateLimit-Limit` and `X-RateLimit-Remaining`; a
-refusal is a **429** with `Retry-After` in seconds. Session requests carry
-neither unless they went through a per-account limit, since nothing else counts
-them.
-
-**The counters live in memory.** They reset when the API restarts, and each
-instance counts separately — two instances behind a load balancer give one key
-double its limit. That is fine for this project, and a shared store is what
-production would need instead.
-
-## Notifications
-
-The app emails people when something happens to them: signup, an order placed,
-handed over or cancelled, and a new chat request. Nothing else — emailing on
-every create/update/delete would be spam, and it is how a sending domain gets
-blacklisted.
-
-### Nothing leaves your machine
-
-`docker compose up` starts [Mailpit](https://mailpit.axllent.org/), which
-accepts mail and shows it in a browser instead of delivering it. Read what was
-"sent" at **http://localhost:8025**.
-
-Leave `SMTP_HOST` empty and notifications are logged instead, so nobody needs a
-mail server to place an order.
-
-### How it works, and what it does not guarantee
-
-Sending happens **after** the database transaction commits, on a worker
-goroutine. Two consequences worth knowing:
-
-- **An email failure never fails the action.** The order is what the user asked
-  for; the email is a courtesy. A dead relay is a log line.
-- **Delivery is at-most-once.** The database and the mail server are two
-  systems with no shared transaction, so "row written" and "mail sent" cannot
-  be atomic. If the process dies between them the mail is lost — nobody is ever
-  emailed about something that did not happen, but a notification can go
-  missing. The upgrade path is an outbox table; it is not built, because a
-  missed "your order shipped" is a nuisance and an outbox is a table, a worker
-  and a migration.
-
-A full queue drops rather than blocks, for the same reason: blocking would put
-the mail server back on the request path.
-
-### Why the inbox has more kinds than the mail
-
-The in-app inbox **is** the notification system; email is a courtesy on top of
-it. So the inbox grows as the app grows a new thing worth knowing, and the set
-of things that send mail does not.
-
-That is deliberate rather than unfinished. Emailing on every action is how a
-sending domain gets blacklisted, and most of what belongs in an inbox does not
-belong in someone's mail: an order you confirmed, an order that completed.
-
-Two things are absent from the inbox as well, and for the same kind of reason —
-the app already tells you, better:
-
-- **A suspension** reaches you as a 403 carrying its reason on your very next
-  request. A row saying the same thing is a second, worse copy.
-- **A reply in a conversation you already have open** shows as an unread count
-  in the chat list, which is where you are looking.
-
-### What the inbox covers
-
-The **Notification system** minor asks for "a complete notification system for
-all creation, update, and deletion actions". The inbox is that system, and this
-is its coverage — every row written inside the transaction that made the change,
-so a notification cannot describe something that did not happen:
-
-| You are told | when | it takes you to |
+| Area | Tables | Key fields and relationships |
 |---|---|---|
-| `order_placed` | someone orders your listing | the order |
-| `order_confirmed` | the seller accepts your order | the order |
-| `order_handed_over` | the goods change hands | the order |
-| `order_completed` | the order finishes | the order |
-| `order_cancelled` | either side cancels | the order |
-| `order_resolved` | support settles a dispute | the order |
-| `chat_request` | someone opens a conversation | the chat |
-| `review_received` | a review lands on you | your profile, where it is |
-| `new_follower` | someone follows you | their profile |
-| `listing_removed` | a moderator removes your listing | the listing |
-| `saved_listing_gone` | a listing you saved sells out | the listing |
-| `saved_listing_deleted` | a listing you saved is deleted | the seller |
+| **Identity** | `users`, `profiles`, `addresses` | `users`: `email citext UNIQUE`, `username`, `password text NULL` (null for OAuth-only accounts), `role`, `deleted_at`, `suspended_at`, `is_visible` (generated). `profiles` 1:1 → `users`; `addresses` N:1 → `users` |
+| **Auth** | `refresh_tokens`, `oauth_identities`, `password_reset_tokens`, `api_keys` | All N:1 → `users`. Tokens stored as hashes with `expires_at` / `revoked_at`; `oauth_identities` unique on (`provider`, `provider_user_id`) |
+| **Catalog** | `listings`, `listing_images`, `categories`, `tags`, `listing_tags` | `listings`: `title varchar(100)`, `description text`, `price numeric(10,2)`, `quantity integer CHECK (>= 0)`, `unit varchar(20)`, N:1 → `users`. `listing_images` N:1 → `listings`, ordered by `position`. `categories` is a self-referencing tree; `listing_tags` is an N:M join |
+| **Trade** | `orders`, `order_events`, `reviews` | `orders`: `quantity CHECK (> 0)`, `status`, `handed_over_at`, `received_at`, `cancelled_at`; N:1 → `listings` and → `users` (buyer). `order_events` N:1 → `orders`, append-only. `reviews` 1:1 → `orders` with `rating CHECK (1..5)` |
+| **Social** | `follows`, `blocks`, `conversations`, `messages`, `saved_listings`, `notifications` | `follows` and `blocks` are unique directed pairs of `users`. `conversations` is one per (`listing`, buyer) with a `status` gating messages; `messages` N:1 → `conversations`, body `varchar(2000)`. `notifications` denormalises `listing_title` so a deleted listing still reads sensibly |
+| **Moderation** | `listing_reports`, `moderation_actions`, `user_actions` | `listing_reports` N:1 → `listings` with reason, detail `varchar(500)` and resolution. `moderation_actions` and `user_actions` record one row per admin action with its actor and note |
 
-Creation, update and deletion are all represented: an order placed, an order
-moving through its states, and a saved listing disappearing.
+## Features List
 
-The last two are one event with two rows because they cannot share a subject.
-`notifications.listing_id` is a foreign key that cascades, so a row pointing at
-a listing being deleted is erased by that same delete — the row has to point at
-the seller instead, who survives. A sold-out listing still exists, so that one
-points at the listing.
+<!-- TODO: fill the "Built by" column. -->
 
-## Hot reload
+| Feature | What it does | Built by |
+|---|---|---|
+| Authentication | Signup, login, JWT access tokens, rotating refresh tokens in an HttpOnly cookie, password reset by email | |
+| OAuth login | Google and GitHub, linking to an existing account by verified email | |
+| Profiles | Bio, contact details, avatar upload with an initials fallback, public profile pages | |
+| Listings | Create, edit, delete; photos with drag-to-reorder; categories and tags | |
+| Search | Keyword, category, location and price filters; five sort orders; pagination | |
+| Orders | Reserve stock, seller handover, buyer receipt, cancellation, full event trail | |
+| Messaging | Per-listing threads, seller accepts or declines, unread counts | |
+| Follows and presence | Follow sellers, followers and following lists, online status | |
+| Blocking | Hides both parties from each other and stops new orders between them | |
+| Saved listings | Wishlist with a dedicated page | |
+| Reviews | Per-order seller ratings — API complete, not surfaced in the UI | |
+| Notifications | In-app inbox with an unread badge, plus email for the events that matter | |
+| Admin | Reports queue, listing moderation, roles, suspensions, stuck-order resolution | |
+| Public API | API keys, per-key rate limits, OpenAPI spec served from the app | |
+| GDPR | JSON data export and account deletion, both confirmed by email | |
+| Internationalisation | English, Finnish and Swedish with a language switcher | |
+| Design system | 29 reusable components, semantic colour tokens, OS-driven dark mode | |
 
-Both halves of the stack pick up edits without a restart, whichever way you
-started it:
+## Modules
 
-```bash
-docker compose up        # frontend via Vite, backend via air
-cd backend && make dev   # backend only, on the host
-```
+**19 points claimed** — 4 Major (2 pts each) + 11 Minor (1 pt each). 14 required.
 
-Save a `.go` file and the backend rebuilds in a few seconds. `api/openapi.yaml`
-counts too — it is `go:embed`-ed into the binary, so editing the spec without
-watching it would leave `/api/docs` serving a stale copy with nothing to say
-why.
+| Module | Pts | How it was implemented | Built by |
+|---|---|---|---|
+| Standard user management | 2 | Profile editing, avatar upload with an initials fallback, follows with online status, public profile pages | <!-- TODO --> |
+| User interaction | 2 | Per-listing chat gated on the seller accepting; profile system; follows with both lists; blocking | <!-- TODO --> |
+| Advanced permissions | 2 | `RequireRole` middleware, admin user CRUD, role changes, suspensions, role-gated views | <!-- TODO --> |
+| Public API | 2 | Hashed API keys, per-key rate limiting, OpenAPI spec at `/api/docs`, GET/POST/PUT/DELETE | <!-- TODO --> |
+| Frontend framework | 1 | React 19 + TypeScript + Vite + React Router v7 | <!-- TODO --> |
+| Backend framework | 1 | chi v5 — routing plus a composable middleware chain (see below) | <!-- TODO --> |
+| Advanced search | 1 | Keyword, category, location and price filters; five sort orders; pagination, all driven from the URL | <!-- TODO --> |
+| File upload | 1 | Images with client and server validation, progress indicators, drag-to-reorder, deletion, access control | <!-- TODO --> |
+| Notification system | 1 | In-app inbox plus email, covering creation, update and deletion events | <!-- TODO --> |
+| OAuth 2.0 | 1 | Google and GitHub, linking to an existing account by verified email | <!-- TODO --> |
+| Multiple languages | 1 | English, Finnish and Swedish; switcher in the UI; CI fails on hardcoded strings | <!-- TODO --> |
+| Custom design system | 1 | 29 reusable components, semantic colour tokens, typography scale, icon sprite | <!-- TODO --> |
+| Additional browsers | 1 | Chrome, Firefox and Brave, driven with Playwright at two viewports, signed in and out. Minimum versions are set by Tailwind v4: Chrome/Brave/Edge 111, Firefox 128 | <!-- TODO --> |
+| GDPR compliance | 1 | Data request, JSON export, deletion with confirmation, confirmation emails for both | <!-- TODO --> |
+| **Order lifecycle** (module of choice) | 1 | Two-sided handshake with an append-only audit trail (see below) | <!-- TODO --> |
 
-Two things worth knowing. The **first `docker compose up` after pulling this
-builds an image** rather than pulling one, because the backend now runs a `dev`
-stage from `backend/Dockerfile`; later ups hit the layer cache. And **air is
-pinned to one version** in both the Dockerfile and the Makefile, so the
-container and the host behave identically — `make dev` runs it through `go run`
-rather than from your `PATH`, so there is nothing to install.
+### Backend framework: why chi counts
 
-The build output goes to `/tmp/air`, deliberately outside the repository: under
-compose the source is a bind mount, so a binary written into the tree would
-appear on your machine owned by the container's user.
+The subject lists Express as a backend framework. Express is a minimal router plus
+a middleware chain — no ORM, no templating, no scaffolding — and chi is the same
+shape in Go. What we use it for is that chain: request IDs, structured logging,
+panic recovery, a global request-body cap, JWT and API-key authentication,
+per-user and per-key rate limiting, role enforcement and last-seen tracking,
+composed per route group so `/admin/*` inherits the auth chain and adds a role
+check in one line.
 
-## Browser support
+### Order lifecycle: justification (module of choice)
 
-Chrome, Brave and Firefox. Brave is Chromium like Chrome, and the subject's own
-list counts Edge, which is also Chromium — so a second Chromium browser is a
-browser rather than a reskin. What it adds here is **Shields**, whose cookie and
-storage blocking is the most likely thing in these three to break a real flow.
+**Why we chose it.** The project handles no money by design, so "the order is
+complete" cannot be settled by a payment gateway — it has to be modelled.
 
-### Minimum versions
+**What technical challenges it addresses.** Both parties hold half the truth: the
+seller knows they handed over, the buyer knows they received. Either alone is a
+claim. So an order closes only when both timestamps are set, every transition is
+appended to `order_events` with its actor, and an admin can resolve a stuck order
+with the reason recorded. Reserving stock is a genuine race as well — a
+`SELECT … FOR UPDATE` and a conditional `UPDATE … WHERE quantity >= $2`, with
+`CHECK (quantity >= 0)` underneath, and a test that fires two buyers at the last
+unit and asserts exactly one wins.
 
-Set by Tailwind CSS v4, which compiles to `@property` and `color-mix()`:
+**How it adds value.** It is the trust model the whole marketplace hangs off:
+without a payment to settle the transaction, the handshake and its audit trail are
+what make a reservation mean anything.
 
-| Browser | Minimum |
-|---|---|
-| Chrome / Brave / Edge | **111** (March 2023) |
-| Firefox | **128** (July 2024) |
-| Safari | **16.4** (March 2023) — see below |
+**Why Minor.** It is one coherent subsystem rather than a cross-cutting feature
+set, so we claim it at 1 point rather than arguing for 2.
 
-**Safari is not claimed.** Nobody on the team runs macOS, so it has never been
-opened; the row is Tailwind's floor, not a result.
+## Individual Contributions
 
-### What was tested, and how
+<!-- TODO — one subsection per member. `git shortlog -sne --all` gives the commit
+     split, but several people have more than one identity in the history, so
+     collapse by person before quoting numbers. -->
 
-Driven with Playwright at 1280x1000 and 320x700, signed out and signed in, on
-**Firefox 155**, **Chromium 153** and **Brave 152** — the last being a real
-Brave install, confirmed through `navigator.brave`. Chrome itself is the
-day-to-day development browser and shares Brave's and Chromium's engine, but it
-is not installed on the machine this pass ran on and was not driven here.
+### <!-- Member -->
 
-Every check below produced **identical results in all three**, which is the
-claim the "consistent UI/UX" requirement is really about:
+**Implemented:** <!-- specific features, modules or components -->
 
-| Check | Result |
-|---|---|
-| Sign up, then delete the access token and reload | Session returns through the refresh cookie |
-| Modal opens with `role="dialog"` and `aria-modal` | Present |
-| Description box grows as you type | 42px to 162px |
-| Drag a file onto the photo dropzone | Photo added |
-| Brand mark paints in the header | 24x32 box |
-| Dark mode through `prefers-color-scheme` | `rgb(22, 23, 29)` |
-| Header at 320px, signed out, signed in, as admin | No horizontal overflow |
-| Console errors | None |
+**Challenges:** <!-- what was hard, and how it was overcome -->
 
-**Brave was tested with Shields both ways.** Playwright launches Chromium
-browsers with `--disable-extensions`, and Shields is an extension — so the
-default run may not exercise it at all. Repeating the sign-up and refresh-cookie
-flow with extensions kept gives the same result: the `refresh_token` cookie is
-set `SameSite=Lax`, path-scoped to `/api/v1/auth`, and survives.
+## Resources
 
-### Known limitations
+- [React](https://react.dev/), [React Router](https://reactrouter.com/) and [TanStack Query](https://tanstack.com/query/latest) documentation
+- [chi](https://github.com/go-chi/chi) and Go's `net/http` documentation
+- [sqlc](https://docs.sqlc.dev/) and [goose](https://github.com/pressly/goose)
+- [PostgreSQL 16 manual](https://www.postgresql.org/docs/16/) — constraints, indexes, `FOR UPDATE`
+- [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) (OAuth 2.0) and [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519) (JWT)
+- [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/) — authentication, session management, file upload
+- [Tailwind CSS v4](https://tailwindcss.com/docs) and [i18next](https://www.i18next.com/)
 
-- **Auto-growing text boxes need a 2026 browser.** The bio and description
-  fields use `field-sizing: content`, which MDN puts at Baseline June 2026.
-  Below that they fall back to a three-row box with a scrollbar — nothing is
-  lost but the growing.
-- **Number inputs look different.** Firefox draws the spinner arrows on the
-  price fields permanently; Chromium reveals them on hover. Cosmetic, and not
-  worth overriding a platform control to hide.
-- **Modals do not trap focus.** Tab moves out of an open dialog into the page
-  behind it, in every browser. `aria-modal` says otherwise, which is a promise
-  the keyboard does not yet keep. Escape and the backdrop both close them.
+### Use of AI
 
-### Two bugs this found
-
-- **The brand mark did not render in Firefox at all.** It was referenced as
-  `<use href="/favicon.svg">` with no fragment, which asks for the target
-  document's root element — Chromium supports that, Firefox does not. Below
-  `sm` the wordmark is hidden, so on a phone in Firefox the top-left corner was
-  empty. The mark now lives in the icon sprite and is referenced by id, like
-  every other icon. `iconSprite.test.ts` fails on any fragment-less reference.
-- **Modals were not announced as dialogs.** No `role`, no `aria-modal` — found
-  because a test driver could not locate the dialog it had just opened.
-
-## Running the tests
-
-```bash
-cd backend
-make test        # everything that runs without a database
-make test-db     # the above, plus the tests that talk to Postgres
-make test-race   # test-db with the race detector, which is what CI runs
-make lint        # what CI's style and security checks run
-```
-
-**Run `make lint` before pushing.** It is the one that catches the failure
-you cannot see locally otherwise: `go build` does not compile test files, so a
-call site left stale by a merge builds fine and fails CI. `go vet` compiles
-them, and `make lint` runs it alongside `gofmt`, `staticcheck` and `gosec`.
-
-Nothing to install — the two linters run through `go run` at the versions
-pinned in the Makefile, which are the versions CI uses. An installed binary
-would be whatever you happened to install, and a local pass would stop meaning
-a CI pass. The first run downloads and builds them, so give it a minute; after
-that it is seconds.
-
-`make test-db` needs the database up:
-
-```bash
-docker compose up -d db
-```
-
-**Tests that need Postgres are skipped unless `TEST_DB_URL` is set.** That keeps
-`make test` green on a machine without Docker, but it means a skipped test still
-prints `ok` — so use `make test-db` when you want to know the database paths
-actually pass. It reads `TEST_DB_URL` from `backend/.env` (copy
-`backend/.env.example`) and fails with a clear message if it isn't set.
-
-Each of those tests gets **its own database**, created fresh, migrated from
-`sql/migrations`, and dropped when the test finishes. Nothing is shared between
-tests, and the schema is always whatever the migrations produce rather than a
-separate copy that can drift.
-
-For that reason `TEST_DB_URL` points at the `postgres` maintenance database and
-**must never point at a database you develop against** — the harness creates and
-drops databases through it.
+<!-- TODO — required by the subject: "a description of how AI was used —
+     specifying for which tasks and which parts of the project". Cover which
+     tools, which parts of the codebase, what kind of work, and what it was not
+     used for. -->
