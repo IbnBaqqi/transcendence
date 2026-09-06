@@ -13,6 +13,8 @@ import Button from "./Button";
 import type { AdminUser } from "../../api/types";
 
 const REASON_MAX = 500;
+// usernameSchema in src/schemas/common.ts.
+const USERNAME_MAX = 50;
 
 export function AccountActions({ account }: { account: AdminUser }) {
   const { t } = useTranslation();
@@ -193,6 +195,7 @@ export function AccountActions({ account }: { account: AdminUser }) {
             id={`confirm-${account.id}`}
             value={typedName}
             onChange={(event) => setTypedName(event.target.value)}
+            maxLength={USERNAME_MAX}
             className="border-line bg-surface text-foreground w-full rounded border p-2 text-sm"
           />
 

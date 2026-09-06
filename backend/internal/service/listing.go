@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"math"
 	"slices"
@@ -33,15 +34,31 @@ func normaliseCategory(category string) string {
 	return strings.ToLower(strings.TrimSpace(category))
 }
 
-func validateListingInput(title, category, unit string, price float64, quantity int32) error {
+// Rune-counted below, since varchar(20) counts characters rather than bytes.
+const (
+	maxUnitLength        = 20
+	maxDescriptionLength = 1024 // mirrors descriptionSchema; the column is bare text
+)
+
+func validateListingInput(title, description, category, unit string, price float64, quantity int32) error {
 	if title == "" || len(title) > 100 {
 		return &ValidationError{Message: "Title is required and must be under 100 characters"}
+	}
+	// The column is bare text, so without this the only bound on a description
+	// is the request body cap.
+	if utf8.RuneCountInString(description) > maxDescriptionLength {
+		return &ValidationError{
+			Message: fmt.Sprintf("Description must be under %d characters", maxDescriptionLength),
+		}
 	}
 	if category == "" {
 		return &ValidationError{Message: "Category is required"}
 	}
-	if unit == "" {
-		return &ValidationError{Message: "Unit is required"}
+	// Over the varchar(20) column a unit reached Postgres and came back a 500.
+	if unit == "" || utf8.RuneCountInString(unit) > maxUnitLength {
+		return &ValidationError{
+			Message: fmt.Sprintf("Unit is required and must be under %d characters", maxUnitLength),
+		}
 	}
 	if price <= 0 {
 		return &ValidationError{Message: "Price must be greater than 0"}
@@ -117,7 +134,7 @@ func applyTags(ctx context.Context, qtx *database.Queries, listingID uuid.UUID, 
 func (s *ListingService) CreateListing(ctx context.Context, sellerID uuid.UUID, input dtos.CreateListingInput) (database.Listing, error) {
 	category := normaliseCategory(input.Category)
 
-	if err := validateListingInput(input.Title, category, input.Unit, input.Price, input.Quantity); err != nil {
+	if err := validateListingInput(input.Title, input.Description, category, input.Unit, input.Price, input.Quantity); err != nil {
 		return database.Listing{}, err
 	}
 
@@ -181,7 +198,7 @@ func (s *ListingService) GetListing(ctx context.Context, id uuid.UUID) (database
 func (s *ListingService) UpdateListing(ctx context.Context, userID uuid.UUID, listingID uuid.UUID, input dtos.UpdateListingInput) (database.Listing, error) {
 	category := normaliseCategory(input.Category)
 
-	if err := validateListingInput(input.Title, category, input.Unit, input.Price, input.Quantity); err != nil {
+	if err := validateListingInput(input.Title, input.Description, category, input.Unit, input.Price, input.Quantity); err != nil {
 		return database.Listing{}, err
 	}
 

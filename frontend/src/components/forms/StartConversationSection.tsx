@@ -6,6 +6,7 @@ import { useStartConversation } from "../../api/conversations";
 import { isApiError } from "../../api/client";
 import { useAuth } from "../../hooks/useAuth";
 import { useModal } from "../../providers/modalContext";
+import { MAX_MESSAGE_LENGTH } from "../../lib/chatState";
 import Button from "../objects/Button";
 import type { Listing } from "../../api/types";
 
@@ -87,6 +88,7 @@ function StartConversationForm({ listing }: { listing: Listing }) {
         rows={3}
         value={body}
         onChange={(e) => setBody(e.target.value)}
+        maxLength={MAX_MESSAGE_LENGTH}
         placeholder={t("chat.start.placeholder")}
         className="border-line bg-surface text-foreground w-full rounded-md border px-3 py-2"
       />

@@ -157,3 +157,32 @@ func TestNormaliseTagsRejects(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateListingInput(t *testing.T) {
+	tests := []struct {
+		name        string
+		description string
+		unit        string
+		want        bool
+	}{
+		{"valid", "Fresh from the forest", "kg", false},
+		{"description at the limit", strings.Repeat("a", maxDescriptionLength), "kg", false},
+		{"description over the limit", strings.Repeat("a", maxDescriptionLength+1), "kg", true},
+		{"no description", "", "kg", false},
+		{"unit at the limit", "", strings.Repeat("a", maxUnitLength), false},
+		{"unit over the limit", "", strings.Repeat("a", maxUnitLength+1), true},
+		// varchar(20) counts characters, so the rune count is what the column sees.
+		{"non-ASCII unit over the limit", "", strings.Repeat("ä", maxUnitLength+1), true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateListingInput("Chanterelles", tt.description, "mushrooms", tt.unit, 18, 4)
+
+			var validation *ValidationError
+			if got := errors.As(err, &validation); got != tt.want {
+				t.Fatalf("rejected = %v, want %v (err = %v)", got, tt.want, err)
+			}
+		})
+	}
+}

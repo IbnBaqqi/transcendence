@@ -65,7 +65,8 @@ export const titleSchema = z
   .refine((t) => new TextEncoder().encode(t).length <= 100, {
     params: { i18n: "validation.titleTooLongBytes" },
   });
-// NOTE: Backend imposes no length limit on description; 1024 here is a UI-only cap
+// NOTE: Backend caps description at 1024 runes (maxDescriptionLength in
+// service/listing.go); this mirrors it.
 export const descriptionSchema = z.string().trim().max(1024, msg("validation.descriptionTooLong"));
 export const categorySchema = z.string().trim().min(1, msg("validation.categoryRequired"));
 export const priceSchema = z.number().positive(msg("validation.priceInvalid"));

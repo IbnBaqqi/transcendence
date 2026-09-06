@@ -110,6 +110,21 @@ describe("AddListingSection", () => {
     expect(select).toHaveValue("chanterelles");
   });
 
+  // The guard inside FormField, not the maxLength attribute: browsers ignore
+  // maxLength on type="number", so a pasted number is bounded by nothing else.
+  test("caps a pasted number at the field's maxLength", () => {
+    mockCategories(TREE);
+    renderSection();
+
+    const price = document.getElementById("price") as HTMLInputElement;
+    // A long decimal rather than the long integer a real paste produces:
+    // jsdom blanks a number input whose value is not a finite float, so an
+    // integer this wide never survives to reach the guard. "0.111..." does.
+    fireEvent.change(price, { target: { value: "0." + "1".repeat(600) } });
+
+    expect(price.value).toHaveLength(512);
+  });
+
   // Fills the form well enough for zod to allow submitting.
   async function fillAndSubmit({ photos = 0 } = {}) {
     mockCategories(TREE);

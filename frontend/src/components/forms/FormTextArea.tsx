@@ -14,6 +14,10 @@ export function FormTextArea({
   label,
   name,
   placeholder,
+  // Unlike FormField, this bound is meant to EQUAL the schema cap: the live
+  // n / max counter is the explanation a silent hard stop otherwise lacks.
+  // The schema message then only guards a value seeded from the server, which
+  // maxLength does not truncate.
   maxLength = 1024,
   isEditing: isEditingProp,
   validateOnChange,
