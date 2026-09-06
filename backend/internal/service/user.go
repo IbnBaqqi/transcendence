@@ -49,7 +49,7 @@ func (s *UserService) SetShowOnlineStatus(ctx context.Context, userID uuid.UUID,
 // scrubAccount is shared by self-deletion and admin deletion on purpose: an
 // account has to end up in the same state either way, and two copies would
 // drift into scrubbing different things.
-// scrubbedFiles is what the scrub orphaned on disk. The caller unlinks these
+// scrubbedFiles is what the scrub orphaned on disk. Unlinked by the caller
 // after the commit: doing it inside the transaction would leave the files gone
 // if it rolled back, and a missing file cannot be put back.
 type scrubbedFiles struct {
@@ -63,11 +63,11 @@ func scrubAccount(ctx context.Context, qtx *database.Queries, userID uuid.UUID) 
 		return scrubbedFiles{}, err
 	}
 
-	// Before the listings go, and before the anonymise below: cancelling
-	// restocks, and restocking a listing this is about to delete is a wasted
-	// write rather than a wrong one. The other order is not harmless - a buyer
-	// leaving must give the seller's stock back, and by then the listing has to
-	// still be there.
+	// Cancel before deleting the listings, and delete the listings before the
+	// anonymise: pressing delete ends everything this account owns, then ends
+	// the account. The order inside that is not arbitrary - cancelling restocks,
+	// and restocking a listing about to be deleted is a wasted write, while the
+	// reverse order would cost a departing buyer's seller their stock.
 	if err := cancelOrdersOnDeparture(ctx, qtx, userID); err != nil {
 		return scrubbedFiles{}, err
 	}
@@ -164,15 +164,18 @@ func (s *UserService) DeleteAccount(ctx context.Context, userID uuid.UUID, confi
 }
 
 // cancelOrdersOnDeparture ends every sale this account still has in flight.
-// Without it the counterparty is left at pending waiting on a handover from
-// somebody who no longer exists - and admin_orders.stranded does not catch it,
-// because that needs BOTH sides deleted.
+// Without it the counterparty sits at pending waiting on a handover from a
+// person who no longer exists.
+//
+// This is what makes admin_orders.stranded unreachable from here: that needs
+// both parties gone with the order still open, and the first departure now
+// closes it. The condition still describes rows written before this change.
 //
 // The same three steps a normal cancellation takes, through the same helpers:
 // the status, the stock, and telling the other party. Reusing them is what
 // keeps this from becoming a second, quieter kind of cancellation.
 func cancelOrdersOnDeparture(ctx context.Context, qtx *database.Queries, userID uuid.UUID) error {
-	orders, err := qtx.ListActiveOrdersForUser(ctx, userID)
+	orders, err := qtx.ListOrdersToCancelOnDeparture(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -186,8 +189,9 @@ func cancelOrdersOnDeparture(ctx context.Context, qtx *database.Queries, userID 
 			return err
 		}
 
-		// Valid: #264 made listing_id nullable, so an order can outlive the
-		// listing it was placed on.
+		// Valid: #264 made listing_id nullable, so an order outlives the
+		// listing it was placed on - which is what lets the listings below be
+		// deleted without costing the buyer their receipt.
 		if order.ListingID.Valid {
 			if err := restock(ctx, qtx, order.ListingID.UUID, order.Quantity); err != nil {
 				return err

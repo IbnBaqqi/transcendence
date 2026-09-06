@@ -167,53 +167,6 @@ func (q *Queries) GetOrderResolvability(ctx context.Context, id uuid.UUID) (GetO
 	return i, err
 }
 
-const listActiveOrdersForUser = `-- name: ListActiveOrdersForUser :many
-SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title FROM orders
-WHERE (buyer_id = $1 OR seller_id = $1)
-  AND status IN ('pending', 'confirmed')
-FOR UPDATE
-`
-
-// Orders still in flight where this account is either side. Cancelling these on
-// deletion is what stops the counterparty waiting on a handover that can never
-// come; finished orders are records and are left alone.
-func (q *Queries) ListActiveOrdersForUser(ctx context.Context, userID uuid.UUID) ([]Order, error) {
-	rows, err := q.db.QueryContext(ctx, listActiveOrdersForUser, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Order
-	for rows.Next() {
-		var i Order
-		if err := rows.Scan(
-			&i.ID,
-			&i.ListingID,
-			&i.BuyerID,
-			&i.SellerID,
-			&i.Quantity,
-			&i.UnitPrice,
-			&i.TotalPrice,
-			&i.Status,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.SellerHandedOverAt,
-			&i.BuyerReceivedAt,
-			&i.ListingTitle,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listOrdersForAdmin = `-- name: ListOrdersForAdmin :many
 SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title, handshake_stuck, stranded, stuck FROM admin_orders
 WHERE ($1::text IS NULL OR status = $1::text)
@@ -288,6 +241,56 @@ ORDER BY created_at DESC
 
 func (q *Queries) ListOrdersForUser(ctx context.Context, buyerID uuid.UUID) ([]Order, error) {
 	rows, err := q.db.QueryContext(ctx, listOrdersForUser, buyerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Order
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.ListingID,
+			&i.BuyerID,
+			&i.SellerID,
+			&i.Quantity,
+			&i.UnitPrice,
+			&i.TotalPrice,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.SellerHandedOverAt,
+			&i.BuyerReceivedAt,
+			&i.ListingTitle,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOrdersToCancelOnDeparture = `-- name: ListOrdersToCancelOnDeparture :many
+SELECT id, listing_id, buyer_id, seller_id, quantity, unit_price, total_price, status, created_at, updated_at, seller_handed_over_at, buyer_received_at, listing_title FROM orders
+WHERE (buyer_id = $1 OR seller_id = $1)
+  AND status IN ('pending', 'confirmed')
+FOR UPDATE
+`
+
+// Every order this account still has in flight, either side.
+//
+// Deleting an account now ends its sales, so admin_orders.stranded - which
+// needs BOTH parties gone with the order still open - can no longer be reached
+// by anybody leaving. It still describes rows that predate this change; nothing
+// new arrives there.
+func (q *Queries) ListOrdersToCancelOnDeparture(ctx context.Context, userID uuid.UUID) ([]Order, error) {
+	rows, err := q.db.QueryContext(ctx, listOrdersToCancelOnDeparture, userID)
 	if err != nil {
 		return nil, err
 	}

@@ -195,6 +195,24 @@ func TestADepartedSellersListingIsHiddenFromEveryoneButAdmins(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = files.Close() })
 
+	// A second listing, removed by a moderator before the seller left. Since
+	// #274 an account takes its listings with it - except this one, because
+	// listing_reports and moderation_actions cascade from listings and the
+	// record of a decision already taken has to survive the seller.
+	removed, err := db.CreateListing(ctx, database.CreateListingParams{
+		ID:       database.NewID(),
+		SellerID: seller, Title: "Morels", Category: "mushrooms",
+		Price: "32.00", Quantity: 2, Unit: "kg",
+	})
+	if err != nil {
+		t.Fatalf("creating the removed listing: %v", err)
+	}
+	if _, err := db.ExecContext(ctx,
+		`UPDATE listings SET removed_at = now() WHERE id = $1`, removed.ID,
+	); err != nil {
+		t.Fatalf("marking it removed: %v", err)
+	}
+
 	if err := service.NewUserService(db, files, notify.Disabled{}).DeleteAccount(ctx, seller, "seller"); err != nil {
 		t.Fatalf("deleting the seller: %v", err)
 	}
@@ -212,10 +230,27 @@ func TestADepartedSellersListingIsHiddenFromEveryoneButAdmins(t *testing.T) {
 		}
 	})
 
-	t.Run("an admin can still open it to judge a report", func(t *testing.T) {
+	// The ordinary listing left with its seller, so there is nothing for
+	// anybody to open - a pending report against an account that no longer
+	// exists cannot be actioned anyway.
+	t.Run("and so does an admin, since the listing went with the seller", func(t *testing.T) {
 		viewer := auth.User{ID: admin, Role: auth.RoleAdmin}
-		if code := fetchListingAs(t, h, listing.ID, &viewer).Code; code != http.StatusOK {
+		if code := fetchListingAs(t, h, listing.ID, &viewer).Code; code != http.StatusNotFound {
+			t.Errorf("status = %d, want 404", code)
+		}
+	})
+
+	t.Run("but a moderator-removed one is still there to judge", func(t *testing.T) {
+		viewer := auth.User{ID: admin, Role: auth.RoleAdmin}
+		if code := fetchListingAs(t, h, removed.ID, &viewer).Code; code != http.StatusOK {
 			t.Errorf("status = %d, want 200 - moderation cannot judge what it cannot open", code)
+		}
+	})
+
+	t.Run("and a stranger still cannot see that one", func(t *testing.T) {
+		viewer := auth.User{ID: stranger, Role: auth.RoleUser}
+		if code := fetchListingAs(t, h, removed.ID, &viewer).Code; code != http.StatusNotFound {
+			t.Errorf("status = %d, want 404", code)
 		}
 	})
 }

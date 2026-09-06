@@ -280,12 +280,12 @@ func TestADeletedSellersListingsLeaveEveryReadPath(t *testing.T) {
 		}
 	}
 
-	// GetListing deliberately still returns it. Every service reads through
-	// that query, and filtering it would 404 a reported listing for the admin
-	// judging the report. Public visibility is enforced at the handler - see
-	// TestADepartedSellersListingIsHiddenFromEveryoneButAdmins.
-	if _, err := f.listings.GetListing(ctx, f.listing); err != nil {
-		t.Errorf("the shared getter should still resolve it for moderation: %v", err)
+	// Since #274 the listing goes with the account rather than lingering
+	// invisibly. A moderator-removed one is the exception, because its report
+	// and the record of the decision cascade with it - see
+	// TestDeletingAnAccountKeepsAModeratorRemovedListing.
+	if _, err := f.listings.GetListing(ctx, f.listing); err == nil {
+		t.Error("a deleted seller's listing is still in the table")
 	}
 
 	if _, err := f.profiles.Get(ctx, f.seller); err == nil {
@@ -501,11 +501,9 @@ func TestDeletionEmailsTheAddressTheAccountHadBeforeTheScrub(t *testing.T) {
 	}
 }
 
-// #274. A departing account used to leave its listings in the table and its
-// orders at pending, with a counterparty waiting on a handover from somebody
-// who no longer exists - and admin_orders.stranded does not catch that, because
-// it needs BOTH sides deleted.
-func TestDeletingASellerCancelsTheirOrdersAndRemovesTheirListings(t *testing.T) {
+// #274. A departing account used to leave its orders at pending, with the
+// counterparty waiting on a handover from somebody who no longer exists.
+func TestDeletingASellerCancelsItsOrdersAndRemovesItsListings(t *testing.T) {
 	f := newDeletionFixture(t)
 	ctx := context.Background()
 
@@ -530,7 +528,7 @@ func TestDeletingASellerCancelsTheirOrdersAndRemovesTheirListings(t *testing.T) 
 		}
 	})
 
-	t.Run("and the buyer is told why their order ended", func(t *testing.T) {
+	t.Run("and the buyer is told why it ended", func(t *testing.T) {
 		notes, err := f.db.ListNotifications(ctx, database.ListNotificationsParams{
 			UserID: f.buyer, Limit: 30,
 		})
@@ -549,8 +547,8 @@ func TestDeletingASellerCancelsTheirOrdersAndRemovesTheirListings(t *testing.T) 
 	})
 
 	t.Run("the listing row is gone, not merely hidden", func(t *testing.T) {
-		if _, err := f.db.GetListing(ctx, f.listing); !errors.Is(err, sql.ErrNoRows) {
-			t.Errorf("GetListing err = %v, want sql.ErrNoRows", err)
+		if _, err := f.listings.GetListing(ctx, f.listing); err == nil {
+			t.Error("the departed seller's listing is still there")
 		}
 	})
 
@@ -602,29 +600,6 @@ func TestDeletingABuyerGivesTheSellerTheirStockBack(t *testing.T) {
 	}
 }
 
-// listing_reports and moderation_actions both CASCADE from listings, so
-// deleting a moderator-removed listing takes the report and the record of the
-// decision with it. Deleting an account must not be a way to launder that.
-func TestDeletingAnAccountKeepsAModeratorRemovedListing(t *testing.T) {
-	f := newDeletionFixture(t)
-	ctx := context.Background()
-
-	if _, err := f.db.ExecContext(ctx,
-		`UPDATE listings SET removed_at = now() WHERE id = $1`, f.listing,
-	); err != nil {
-		t.Fatalf("marking the listing removed: %v", err)
-	}
-
-	if err := f.users.DeleteAccount(ctx, f.seller, "seller"); err != nil {
-		t.Fatalf("deleting the seller: %v", err)
-	}
-
-	if _, err := f.db.GetListing(ctx, f.listing); err != nil {
-		t.Errorf("the moderator-removed listing is gone (%v) - its report and the "+
-			"moderation decision cascade with it", err)
-	}
-}
-
 // Finished orders are records. Cancelling one would rewrite history, and it
 // would restock a listing for a sale that actually happened.
 func TestDeletingAnAccountLeavesFinishedOrdersAlone(t *testing.T) {
@@ -653,5 +628,30 @@ func TestDeletingAnAccountLeavesFinishedOrdersAlone(t *testing.T) {
 	}
 	if got.Status != "completed" {
 		t.Errorf("status = %q, want completed - a finished sale is a record", got.Status)
+	}
+}
+
+// The one listing a departing account does not take with it. listing_reports
+// and moderation_actions both CASCADE from listings, so deleting a
+// moderator-removed one erases the report and the record of the decision -
+// which would make leaving a way to launder a moderation record. DeleteListing
+// already refuses the same case for the same reason.
+func TestDeletingAnAccountKeepsAModeratorRemovedListing(t *testing.T) {
+	f := newDeletionFixture(t)
+	ctx := context.Background()
+
+	if _, err := f.db.ExecContext(ctx,
+		`UPDATE listings SET removed_at = now() WHERE id = $1`, f.listing,
+	); err != nil {
+		t.Fatalf("marking the listing removed: %v", err)
+	}
+
+	if err := f.users.DeleteAccount(ctx, f.seller, "seller"); err != nil {
+		t.Fatalf("deleting the seller: %v", err)
+	}
+
+	if _, err := f.db.GetListing(ctx, f.listing); err != nil {
+		t.Errorf("the moderator-removed listing is gone (%v) - its report and the "+
+			"moderation decision cascade with it", err)
 	}
 }

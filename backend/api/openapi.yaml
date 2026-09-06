@@ -5373,6 +5373,11 @@ paths:
         order against somebody who cannot act on it, with nothing to tell them
         why.
 
+        One consequence worth knowing: `stuck` in the admin order list has a
+        `stranded` arm for orders whose buyer *and* seller have both gone.
+        Because the first departure now closes the order, nothing new arrives
+        there — the arm still describes rows written before this change.
+
         If the other party has already deleted their account, nobody is left who
         can end the order at all. It is still not unwound here — it becomes
         resolvable by an admin instead, described on `OrderStatus`.

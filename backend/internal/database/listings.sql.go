@@ -104,11 +104,11 @@ DELETE FROM listings
 WHERE seller_id = $1 AND removed_at IS NULL
 `
 
-// removed_at IS NULL is the whole point: listing_reports and moderation_actions
-// both CASCADE from listings, so deleting a moderator-removed one takes the
-// report and the record of the decision with it. Account deletion must not be a
-// way to launder a moderation record, and DeleteListing already refuses the same
-// case for the same reason. Those listings are invisible anyway.
+// removed_at IS NULL is the exception, and it is about the audit trail rather
+// than the listing: listing_reports and moderation_actions both CASCADE from
+// listings, so deleting a moderator-removed one erases the report and the record
+// of the decision. Leaving an account must not launder a moderation record, and
+// DeleteListing already refuses the same case for the same reason.
 func (q *Queries) DeleteListingsForSeller(ctx context.Context, sellerID uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteListingsForSeller, sellerID)
 	return err
@@ -247,8 +247,8 @@ WHERE l.seller_id = $1 AND l.removed_at IS NULL
 `
 
 // Read before the rows go, so the caller can unlink the files after the commit.
-// listing_images CASCADEs from listings, so the rows need no delete of their own
-// - only the files on disk outlive the transaction.
+// listing_images CASCADEs from listings, so only the files on disk outlive the
+// transaction.
 func (q *Queries) ListSellerImageFilenames(ctx context.Context, sellerID uuid.UUID) ([]string, error) {
 	rows, err := q.db.QueryContext(ctx, listSellerImageFilenames, sellerID)
 	if err != nil {

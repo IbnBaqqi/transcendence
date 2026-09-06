@@ -63,10 +63,13 @@ WHERE (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status)::text)
 -- name: GetOrderResolvability :one
 SELECT stuck, stranded FROM admin_orders WHERE id = $1;
 
--- name: ListActiveOrdersForUser :many
--- Orders still in flight where this account is either side. Cancelling these on
--- deletion is what stops the counterparty waiting on a handover that can never
--- come; finished orders are records and are left alone.
+-- name: ListOrdersToCancelOnDeparture :many
+-- Every order this account still has in flight, either side.
+--
+-- Deleting an account now ends its sales, so admin_orders.stranded - which
+-- needs BOTH parties gone with the order still open - can no longer be reached
+-- by anybody leaving. It still describes rows that predate this change; nothing
+-- new arrives there.
 SELECT * FROM orders
 WHERE (buyer_id = sqlc.arg(user_id) OR seller_id = sqlc.arg(user_id))
   AND status IN ('pending', 'confirmed')

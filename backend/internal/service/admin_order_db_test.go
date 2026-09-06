@@ -14,7 +14,6 @@ import (
 	"github.com/IbnBaqqi/transcendence/internal/database"
 	"github.com/IbnBaqqi/transcendence/internal/dtos"
 	"github.com/IbnBaqqi/transcendence/internal/notify"
-	"github.com/IbnBaqqi/transcendence/internal/storage"
 )
 
 type adminOrderFixture struct {
@@ -541,22 +540,21 @@ func TestAReasonIsStrippedOfControlCharacters(t *testing.T) {
 	}
 }
 
-func (f adminOrderFixture) deleteAccount(t *testing.T, id uuid.UUID, username string) {
+// abandonAccount marks a user gone without going through DeleteAccount.
+//
+// It used to call the service, but since #274 deleting an account cancels its
+// orders in flight - so the very state these tests need can no longer be
+// produced that way. The stranded condition and the admin resolution it gates
+// are still real and still reachable for rows that predate that change, so the
+// fixture writes the state directly instead of testing a route to it that no
+// longer exists.
+func (f adminOrderFixture) abandonAccount(t *testing.T, id uuid.UUID, username string) {
 	t.Helper()
-	ctx := context.Background()
 
-	if err := f.db.EnsureProfile(ctx, id); err != nil {
-		t.Fatalf("creating %s's profile: %v", username, err)
-	}
-
-	files, err := storage.NewLocal(t.TempDir())
-	if err != nil {
-		t.Fatalf("temporary upload dir: %v", err)
-	}
-	t.Cleanup(func() { _ = files.Close() })
-
-	if err := NewUserService(f.db, files, notify.Disabled{}).DeleteAccount(ctx, id, username); err != nil {
-		t.Fatalf("deleting %s: %v", username, err)
+	if _, err := f.db.ExecContext(context.Background(),
+		`UPDATE users SET deleted_at = now() WHERE id = $1`, id,
+	); err != nil {
+		t.Fatalf("marking %s deleted: %v", username, err)
 	}
 }
 
@@ -574,8 +572,8 @@ func TestAnOrderBothPartiesAbandonedIsStuckImmediately(t *testing.T) {
 				}
 			}
 
-			f.deleteAccount(t, f.buyer, "buyer")
-			f.deleteAccount(t, f.seller, "seller")
+			f.abandonAccount(t, f.buyer, "buyer")
+			f.abandonAccount(t, f.seller, "seller")
 
 			order, err := f.db.GetOrder(ctx, f.order.ID)
 			if err != nil {
@@ -615,8 +613,8 @@ func TestAStrandedOrderResolvesToCancelledAndReturnsStock(t *testing.T) {
 	f := newAdminOrderFixture(t)
 	ctx := context.Background()
 
-	f.deleteAccount(t, f.buyer, "buyer")
-	f.deleteAccount(t, f.seller, "seller")
+	f.abandonAccount(t, f.buyer, "buyer")
+	f.abandonAccount(t, f.seller, "seller")
 
 	resolved, err := f.admins.Resolve(ctx, f.admin, f.order.ID, "cancelled", "both parties deleted their accounts")
 	if err != nil {
@@ -639,8 +637,8 @@ func TestAStrandedOrderCannotBeResolvedAsCompleted(t *testing.T) {
 	f := newAdminOrderFixture(t)
 	ctx := context.Background()
 
-	f.deleteAccount(t, f.buyer, "buyer")
-	f.deleteAccount(t, f.seller, "seller")
+	f.abandonAccount(t, f.buyer, "buyer")
+	f.abandonAccount(t, f.seller, "seller")
 
 	for _, outcome := range []string{"completed", "refunded"} {
 		_, err := f.admins.Resolve(ctx, f.admin, f.order.ID, outcome, "a reason")
@@ -670,7 +668,7 @@ func TestOneDeletedPartyDoesNotStrandAnOrder(t *testing.T) {
 			if gone == "seller" {
 				leaving = f.seller
 			}
-			f.deleteAccount(t, leaving, gone)
+			f.abandonAccount(t, leaving, gone)
 
 			resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
 			if err != nil {
@@ -712,8 +710,8 @@ func TestAMarkedOrderIsNotStrandedWhenBothPartiesLeave(t *testing.T) {
 				}
 			}
 
-			f.deleteAccount(t, f.buyer, "buyer")
-			f.deleteAccount(t, f.seller, "seller")
+			f.abandonAccount(t, f.buyer, "buyer")
+			f.abandonAccount(t, f.seller, "seller")
 
 			resolvable, err := f.db.GetOrderResolvability(ctx, f.order.ID)
 			if err != nil {
@@ -754,8 +752,8 @@ func TestATerminalOrderIsNeverStuck(t *testing.T) {
 				}
 			}
 
-			f.deleteAccount(t, f.buyer, "buyer")
-			f.deleteAccount(t, f.seller, "seller")
+			f.abandonAccount(t, f.buyer, "buyer")
+			f.abandonAccount(t, f.seller, "seller")
 
 			order, err := f.db.GetOrder(ctx, f.order.ID)
 			if err != nil {
