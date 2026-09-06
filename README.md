@@ -102,16 +102,11 @@ machine.
 
 ## Team Information
 
-<!-- TODO — one row per member: 42 login, role(s) (PO / PM / Tech Lead /
-     Developer), and a brief description of their responsibilities. -->
-
 | Member | 42 login | Role(s) | Responsibilities |
 |---|---|---|---|
-| | | | |
-| | | | |
-| | | | |
-| | | | |
-| | | | |
+| Anton Kiiski | `akiiski` | Product Owner | Scope and product direction. Frontend: components, pages, internationalisation and the API client |
+| Kristian Repo | `krepo` | Project Manager | Planning, issue tracking and review cadence. Backend: services, handlers, queries and migrations, plus much of the test suite |
+| Thomas Black-Roff | `thblack-` | Tech Lead | Technical direction and architecture. Frontend: components, pages, form schemas, providers and hooks |
 
 ## Project Management
 
@@ -122,9 +117,14 @@ deliberately split into separate backend and frontend issues so two people can
 work them in parallel. GitHub Actions runs per-area checks on every PR: frontend
 format, lint, i18n and build; backend `gofmt`, `go vet` and the test suite.
 
-<!-- TODO — the subject also asks for:
-     - meeting cadence / how tasks were distributed between people
-     - communication channels used (Discord, Slack, etc.) -->
+**Meetings.** A dedicated team meeting every two to three weeks, with work
+distributed from it as GitHub Issues that people then picked up.
+
+**Tools.** GitHub Issues for tracking, GitHub Projects and pull requests for
+review, GitHub Actions for CI.
+
+**Communication.** Discord for day-to-day, face to face at campus, and GitHub
+itself for anything tied to a change — issue threads and PR review comments.
 
 ## Technical Stack
 
@@ -181,27 +181,25 @@ foreign keys cascade on delete.
 
 ## Features List
 
-<!-- TODO: fill the "Built by" column. -->
-
 | Feature | What it does | Built by |
 |---|---|---|
-| Authentication | Signup, login, JWT access tokens, rotating refresh tokens in an HttpOnly cookie, password reset by email | |
-| OAuth login | Google and GitHub, linking to an existing account by verified email | |
-| Profiles | Bio, contact details, avatar upload with an initials fallback, public profile pages | |
-| Listings | Create, edit, delete; photos with drag-to-reorder; categories and tags | |
-| Search | Keyword, category, location and price filters; five sort orders; pagination | |
-| Orders | Reserve stock, seller handover, buyer receipt, cancellation, full event trail | |
-| Messaging | Per-listing threads, seller accepts or declines, unread counts | |
-| Follows and presence | Follow sellers, followers and following lists, online status | |
-| Blocking | Hides both parties from each other and stops new orders between them | |
-| Saved listings | Wishlist with a dedicated page | |
-| Reviews | Per-order seller ratings — API complete, not surfaced in the UI | |
-| Notifications | In-app inbox with an unread badge, plus email for the events that matter | |
-| Admin | Reports queue, listing moderation, roles, suspensions, stuck-order resolution | |
-| Public API | API keys, per-key rate limits, OpenAPI spec served from the app | |
-| GDPR | JSON data export and account deletion, both confirmed by email | |
-| Internationalisation | English, Finnish and Swedish with a language switcher | |
-| Design system | 29 reusable components, semantic colour tokens, OS-driven dark mode | |
+| Authentication | Signup, login, JWT access tokens, rotating refresh tokens in an HttpOnly cookie, password reset by email | akiiski, krepo, thblack- |
+| OAuth login | Google and GitHub, linking to an existing account by verified email | akiiski, krepo, thblack- |
+| Profiles | Bio, contact details, avatar upload with an initials fallback, public profile pages | akiiski, krepo, thblack- |
+| Listings | Create, edit, delete; photos with drag-to-reorder; categories and tags | akiiski, krepo, thblack- |
+| Search | Keyword, category, location and price filters; five sort orders; pagination | akiiski, krepo, thblack- |
+| Orders | Reserve stock, seller handover, buyer receipt, cancellation, full event trail | akiiski, krepo, thblack- |
+| Messaging | Per-listing threads, seller accepts or declines, unread counts | akiiski, krepo, thblack- |
+| Follows and presence | Follow sellers, followers and following lists, online status | akiiski, krepo, thblack- |
+| Blocking | Hides both parties from each other and stops new orders between them | akiiski, krepo, thblack- |
+| Saved listings | Wishlist with a dedicated page | akiiski, krepo, thblack- |
+| Reviews | Per-order seller ratings — API complete, not surfaced in the UI | akiiski, krepo, thblack- |
+| Notifications | In-app inbox with an unread badge, plus email for the events that matter | akiiski, krepo, thblack- |
+| Admin | Reports queue, listing moderation, roles, suspensions, stuck-order resolution | akiiski, krepo, thblack- |
+| Public API | API keys, per-key rate limits, OpenAPI spec served from the app | akiiski, krepo, thblack- |
+| GDPR | JSON data export and account deletion, both confirmed by email | akiiski, krepo, thblack- |
+| Internationalisation | English, Finnish and Swedish with a language switcher | akiiski, krepo, thblack- |
+| Design system | 29 reusable components, semantic colour tokens, OS-driven dark mode | akiiski, krepo, thblack- |
 
 ## Modules
 
@@ -209,21 +207,21 @@ foreign keys cascade on delete.
 
 | Module | Pts | How it was implemented | Built by |
 |---|---|---|---|
-| Standard user management | 2 | Profile editing, avatar upload with an initials fallback, follows with online status, public profile pages | <!-- TODO --> |
-| User interaction | 2 | Per-listing chat gated on the seller accepting; profile system; follows with both lists; blocking | <!-- TODO --> |
-| Advanced permissions | 2 | `RequireRole` middleware, admin user CRUD, role changes, suspensions, role-gated views | <!-- TODO --> |
-| Public API | 2 | Hashed API keys, per-key rate limiting, OpenAPI spec at `/api/docs`, GET/POST/PUT/DELETE | <!-- TODO --> |
-| Frontend framework | 1 | React 19 + TypeScript + Vite + React Router v7 | <!-- TODO --> |
-| Backend framework | 1 | chi v5 — routing plus a composable middleware chain (see below) | <!-- TODO --> |
-| Advanced search | 1 | Keyword, category, location and price filters; five sort orders; pagination, all driven from the URL | <!-- TODO --> |
-| File upload | 1 | Images with client and server validation, progress indicators, drag-to-reorder, deletion, access control | <!-- TODO --> |
-| Notification system | 1 | In-app inbox plus email, covering creation, update and deletion events | <!-- TODO --> |
-| OAuth 2.0 | 1 | Google and GitHub, linking to an existing account by verified email | <!-- TODO --> |
-| Multiple languages | 1 | English, Finnish and Swedish; switcher in the UI; CI fails on hardcoded strings | <!-- TODO --> |
-| Custom design system | 1 | 29 reusable components, semantic colour tokens, typography scale, icon sprite | <!-- TODO --> |
-| Additional browsers | 1 | Chrome, Firefox and Brave, driven with Playwright at two viewports, signed in and out. Minimum versions are set by Tailwind v4: Chrome/Brave/Edge 111, Firefox 128 | <!-- TODO --> |
-| GDPR compliance | 1 | Data request, JSON export, deletion with confirmation, confirmation emails for both | <!-- TODO --> |
-| **Order lifecycle** (module of choice) | 1 | Two-sided handshake with an append-only audit trail (see below) | <!-- TODO --> |
+| Standard user management | 2 | Profile editing, avatar upload with an initials fallback, follows with online status, public profile pages | akiiski, krepo, thblack- |
+| User interaction | 2 | Per-listing chat gated on the seller accepting; profile system; follows with both lists; blocking | akiiski, krepo, thblack- |
+| Advanced permissions | 2 | `RequireRole` middleware, admin user CRUD, role changes, suspensions, role-gated views | akiiski, krepo, thblack- |
+| Public API | 2 | Hashed API keys, per-key rate limiting, OpenAPI spec at `/api/docs`, GET/POST/PUT/DELETE | akiiski, krepo, thblack- |
+| Frontend framework | 1 | React 19 + TypeScript + Vite + React Router v7 | akiiski, krepo, thblack- |
+| Backend framework | 1 | chi v5 — routing plus a composable middleware chain (see below) | akiiski, krepo, thblack- |
+| Advanced search | 1 | Keyword, category, location and price filters; five sort orders; pagination, all driven from the URL | akiiski, krepo, thblack- |
+| File upload | 1 | Images with client and server validation, progress indicators, drag-to-reorder, deletion, access control | akiiski, krepo, thblack- |
+| Notification system | 1 | In-app inbox plus email, covering creation, update and deletion events | akiiski, krepo, thblack- |
+| OAuth 2.0 | 1 | Google and GitHub, linking to an existing account by verified email | akiiski, krepo, thblack- |
+| Multiple languages | 1 | English, Finnish and Swedish; switcher in the UI; CI fails on hardcoded strings | akiiski, krepo, thblack- |
+| Custom design system | 1 | 29 reusable components, semantic colour tokens, typography scale, icon sprite | akiiski, krepo, thblack- |
+| Additional browsers | 1 | Chrome, Firefox and Brave, driven with Playwright at two viewports, signed in and out. Minimum versions are set by Tailwind v4: Chrome/Brave/Edge 111, Firefox 128 | akiiski, krepo, thblack- |
+| GDPR compliance | 1 | Data request, JSON export, deletion with confirmation, confirmation emails for both | akiiski, krepo, thblack- |
+| **Order lifecycle** (module of choice) | 1 | Two-sided handshake with an append-only audit trail (see below) | akiiski, krepo, thblack- |
 
 ### Backend framework: why chi counts
 
@@ -258,15 +256,37 @@ set, so we claim it at 1 point rather than arguing for 2.
 
 ## Individual Contributions
 
-<!-- TODO — one subsection per member. `git shortlog -sne --all` gives the commit
-     split, but several people have more than one identity in the history, so
-     collapse by person before quoting numbers. -->
+**As a team.** We started as a group of five and finished as three. Losing two
+people mid-project meant redistributing whole areas of the work between those
+left and pushing considerably harder than planned to land the modules we had
+committed to.
 
-### <!-- Member -->
+### akiiski — Anton Kiiski
 
-**Implemented:** <!-- specific features, modules or components -->
+**Implemented:** a large share of the frontend — components, pages, the API
+client and the internationalisation layer — alongside pull request review across
+the project.
 
-**Challenges:** <!-- what was hard, and how it was overcome -->
+**Challenges:** the volume of code review. Keeping up with pull requests across
+both sides of the stack, and giving useful feedback on code somebody else wrote,
+was a workload of its own on top of building features.
+
+### krepo — Kristian Repo
+
+**Implemented:** mainly the backend — services, HTTP handlers, the sqlc query
+layer and the database migrations — plus much of the test suite on both sides.
+
+**Challenges:** getting used to Go, which was a new language at the start of the
+project. Building the backend out end to end is where most of that happened.
+
+### thblack- — Thomas Black-Roff
+
+**Implemented:** a large share of the design decisions, and frontend work across
+components, pages, form schemas, providers and hooks.
+
+**Challenges:** getting the hang of modern web programming — the component model,
+hooks and client-side state — while building the parts of the frontend that
+depended on understanding them.
 
 ## Resources
 
