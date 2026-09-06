@@ -51,7 +51,7 @@ export function FormField({
             </label>
           )}
           <input
-            className={`focus:shadow-outline ${width} appearance-none rounded border px-3 py-2 leading-tight shadow focus:outline-none`}
+            className={`focus:shadow-outline border-line bg-surface text-foreground ${width} appearance-none rounded border px-3 py-2 leading-tight shadow focus:outline-none`}
             id={name}
             type={type}
             placeholder={placeholder}

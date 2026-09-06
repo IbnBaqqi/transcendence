@@ -39,7 +39,7 @@ export function FormTextArea({
         <>
           {label && <label htmlFor={name}>{label}</label>}
           <textarea
-            className="m-0 field-sizing-content w-full min-w-64 resize-none overflow-y-auto rounded border p-2 shadow focus:outline-none"
+            className="border-line bg-surface text-foreground m-0 field-sizing-content w-full min-w-64 resize-none overflow-y-auto rounded border p-2 shadow focus:outline-none"
             id={name}
             // field-sizing overrides rows where it is supported, so this is
             // invisible on a current browser. It is the fallback that matters:
