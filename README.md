@@ -100,6 +100,10 @@ foragers and fifty listings.
 cd backend  && make test | test-db | migrate-status | db-reset
 cd frontend && npm run test | lint | format:check | build
 docker compose --profile tools up      # adds Adminer at http://localhost:8081
+docker compose -f docker-compose.prod.yml exec db \
+  psql -U postgres -d transcendence \
+  -c "UPDATE users SET role = 'ADMIN' WHERE email = 'bob@bob.com';"     
+UPDATE 1
 ```
 
 Mailpit catches all outgoing mail at http://localhost:8025. Nothing leaves your
