@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by <!-- TODO: login1, login2, login3, login4, login5 -->.*
+*This project has been created as part of the 42 curriculum by akiiski, krepo and thblack-*
 
 # Metsätori
 
@@ -43,7 +43,8 @@ are arranged between the two people.
 Credentials live in a root `.env`, which is gitignored. `make setup` creates it
 from the committed `.env.example`; the defaults work as-is for local development.
 OAuth and SMTP credentials are blank in the example and optional — sign-in with a
-password and the local mail catcher both work without them.
+password and the local mail catcher both work without them. The project team can
+provide OAuth credentials if required.
 
 ### Running it
 
