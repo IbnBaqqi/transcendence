@@ -72,12 +72,17 @@ make setup                                        # includes `make certs`
 docker compose -f docker-compose.prod.yml up --build
 ```
 
-Then https://localhost — the API is behind the same origin at `/api/v1`. The
-certificate is self-signed, so the browser will warn; click through, or run
+Then https://localhost:8443 — the API is behind the same origin at `/api/v1`.
+The certificate is self-signed, so the browser will warn; click through, or run
 `mkcert -install && mkcert localhost` to write a trusted one to the same paths.
 
-The refresh cookie is `Secure` here, which is why `http://localhost` redirects
-rather than serving the app: a session started over HTTP could not refresh.
+The host ports are unprivileged (8443/8081) so the stack runs under rootless
+Docker, but it can still share the machine with the dev stack at the same time:
+8443 and 8081 don't collide with the dev stack's 8080 or 5173.
+
+The refresh cookie is `Secure` here, which is why `http://localhost:8081` (and
+`http://localhost:8443`) redirects rather than serving the app: a session
+started over HTTP could not refresh.
 
 ### Demo data
 
@@ -95,6 +100,10 @@ foragers and fifty listings.
 cd backend  && make test | test-db | migrate-status | db-reset
 cd frontend && npm run test | lint | format:check | build
 docker compose --profile tools up      # adds Adminer at http://localhost:8081
+docker compose -f docker-compose.prod.yml exec db \
+  psql -U postgres -d transcendence \
+  -c "UPDATE users SET role = 'ADMIN' WHERE email = 'bob@bob.com';"     
+UPDATE 1
 ```
 
 Mailpit catches all outgoing mail at http://localhost:8025. Nothing leaves your
