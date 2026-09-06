@@ -3224,6 +3224,9 @@ paths:
             whether fetched directly or through search.
           * **New orders** are refused, with the same 404 a removed listing
             gives.
+          * **Follow lists** drop each other, and a listing saved before the
+            block leaves the saved list. The follow and the save are only
+            filtered, never deleted.
 
           Refusals are 404 rather than 403 throughout: one that names the block
           announces it, and the blocked party should not be able to tell a block

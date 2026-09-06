@@ -46,23 +46,28 @@ SELECT
     users.username,
     users.last_seen_at,
     profiles.avatar_filename,
-    -- Same rule as the inbox: a block in either direction hides presence.
-    COALESCE(users.show_online_status AND NOT EXISTS (
-        SELECT 1 FROM blocks b
-        WHERE (b.blocker_id = $1 AND b.blocked_id = users.id)
-           OR (b.blocker_id = users.id AND b.blocked_id = $1)
-    ), false)::boolean AS show_online_status
+    -- Plain, because the WHERE below now drops a blocked person from the list
+    -- outright: hiding their presence was the older, narrower rule.
+    users.show_online_status
 FROM follows
 JOIN users ON users.id = follows.follower_id
 LEFT JOIN profiles ON profiles.id = users.id
-WHERE follows.followee_id = $2
+WHERE follows.followee_id = $1
   AND users.is_visible
+  -- Symmetric, and it removes the row rather than dimming it: a block hides
+  -- the two of you from each other everywhere else, and a name left in a list
+  -- you cannot open is the inconsistency.
+  AND NOT EXISTS (
+      SELECT 1 FROM blocks b
+      WHERE (b.blocker_id = $2 AND b.blocked_id = users.id)
+         OR (b.blocker_id = users.id AND b.blocked_id = $2)
+  )
 ORDER BY users.username
 `
 
 type ListFollowersParams struct {
-	ViewerID  uuid.UUID
 	SubjectID uuid.UUID
+	ViewerID  uuid.UUID
 }
 
 type ListFollowersRow struct {
@@ -75,7 +80,7 @@ type ListFollowersRow struct {
 
 // LEFT: an inner join would silently drop anyone without a profile row.
 func (q *Queries) ListFollowers(ctx context.Context, arg ListFollowersParams) ([]ListFollowersRow, error) {
-	rows, err := q.db.QueryContext(ctx, listFollowers, arg.ViewerID, arg.SubjectID)
+	rows, err := q.db.QueryContext(ctx, listFollowers, arg.SubjectID, arg.ViewerID)
 	if err != nil {
 		return nil, err
 	}
@@ -109,23 +114,28 @@ SELECT
     users.username,
     users.last_seen_at,
     profiles.avatar_filename,
-    -- Same rule as the inbox: a block in either direction hides presence.
-    COALESCE(users.show_online_status AND NOT EXISTS (
-        SELECT 1 FROM blocks b
-        WHERE (b.blocker_id = $1 AND b.blocked_id = users.id)
-           OR (b.blocker_id = users.id AND b.blocked_id = $1)
-    ), false)::boolean AS show_online_status
+    -- Plain, because the WHERE below now drops a blocked person from the list
+    -- outright: hiding their presence was the older, narrower rule.
+    users.show_online_status
 FROM follows
 JOIN users ON users.id = follows.followee_id
 LEFT JOIN profiles ON profiles.id = users.id
-WHERE follows.follower_id = $2
+WHERE follows.follower_id = $1
   AND users.is_visible
+  -- Symmetric, and it removes the row rather than dimming it: a block hides
+  -- the two of you from each other everywhere else, and a name left in a list
+  -- you cannot open is the inconsistency.
+  AND NOT EXISTS (
+      SELECT 1 FROM blocks b
+      WHERE (b.blocker_id = $2 AND b.blocked_id = users.id)
+         OR (b.blocker_id = users.id AND b.blocked_id = $2)
+  )
 ORDER BY users.username
 `
 
 type ListFollowingParams struct {
-	ViewerID  uuid.UUID
 	SubjectID uuid.UUID
+	ViewerID  uuid.UUID
 }
 
 type ListFollowingRow struct {
@@ -138,7 +148,7 @@ type ListFollowingRow struct {
 
 // LEFT: an inner join would silently drop anyone without a profile row.
 func (q *Queries) ListFollowing(ctx context.Context, arg ListFollowingParams) ([]ListFollowingRow, error) {
-	rows, err := q.db.QueryContext(ctx, listFollowing, arg.ViewerID, arg.SubjectID)
+	rows, err := q.db.QueryContext(ctx, listFollowing, arg.SubjectID, arg.ViewerID)
 	if err != nil {
 		return nil, err
 	}
