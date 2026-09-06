@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
 import AppRouter from "../routes";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
@@ -22,7 +23,6 @@ function makeUser(role: UserRole): User {
 
 beforeEach(() => {
   vi.mocked(useOwnProfile).mockReturnValue({ data: undefined } as ReturnType<typeof useOwnProfile>);
-  window.history.pushState({}, "", "/admin/listings");
 });
 
 function renderApp(user: User | null) {
@@ -36,13 +36,16 @@ function renderApp(user: User | null) {
   };
 
   render(
-    <QueryClientProvider client={new QueryClient()}>
-      <AuthContext.Provider value={value}>
-        <ModalProvider>
-          <AppRouter />
-        </ModalProvider>
-      </AuthContext.Provider>
-    </QueryClientProvider>,
+    // AppRouter no longer owns a router (main.tsx does); MemoryRouter stands in.
+    <MemoryRouter initialEntries={["/admin/listings"]}>
+      <QueryClientProvider client={new QueryClient()}>
+        <AuthContext.Provider value={value}>
+          <ModalProvider>
+            <AppRouter />
+          </ModalProvider>
+        </AuthContext.Provider>
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
 }
 

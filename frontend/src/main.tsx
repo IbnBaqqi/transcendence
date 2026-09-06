@@ -3,6 +3,7 @@ import "./i18n";
 
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 
@@ -21,9 +22,15 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ModalProvider>
-            <AppRouter />
-            <ChatRoot />
-            <ModalRoot />
+            {/* One router for the whole tree: ChatRoot is a sibling of
+                AppRouter, not a child, yet its content links to /users/:id -
+                put the router above both so portalled overlays can navigate.
+                See the regression test in main.test.tsx. */}
+            <BrowserRouter>
+              <AppRouter />
+              <ChatRoot />
+              <ModalRoot />
+            </BrowserRouter>
           </ModalProvider>
         </AuthProvider>
       </QueryClientProvider>
