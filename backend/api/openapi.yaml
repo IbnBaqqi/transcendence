@@ -5094,7 +5094,9 @@ paths:
         *after* the password check passes, so the endpoint never reveals an
         account's state to someone who cannot get into it.
 
-        Their listings stop appearing anywhere, exactly as a deleted user's do.
+        Their listings are deleted and their orders still in flight are
+        cancelled, exactly as a self-deletion does it — `scrubAccount` is the
+        one path for both, so the two cannot drift.
 
         One transaction: set the state and write the audit row, or neither.
       requestBody:
@@ -5350,15 +5352,31 @@ paths:
         "Deleted user", and they can no longer message you. Reports you filed
         and moderation actions you took survive with your id detached.
 
-        Your listings stop appearing anywhere and can no longer be bought.
+        **Your listings are deleted**, not merely hidden — with one exception:
+        a listing a moderator removed stays. `listing_reports` and
+        `moderation_actions` both cascade from `listings`, so deleting one
+        would take the report and the record of the decision with it, and
+        leaving an account must not be a way to launder a moderation record.
+        Those listings are invisible either way.
 
-        **Orders already in flight are not blocked or unwound.** You can delete
-        with a pending order, and the other party is left able to cancel it and
-        nothing else — they cannot message you, and you can no longer confirm or
-        hand over. That is deliberate: an order is a record of what happened, so
-        it is never destroyed, and refusing deletion until every order settles
-        would let one counterparty hold an account open indefinitely. Cancel
-        what is outstanding first if you would rather not leave it to them.
+        **Orders still in flight are cancelled**, on both sides, and the other
+        party is notified and gets any reserved stock back. Finished orders —
+        completed, cancelled, refunded — are records and are untouched.
+
+        The two constraints that shaped the old behaviour still hold. An order
+        is never *destroyed*: cancelling moves it to a terminal state it could
+        already reach, and it keeps its own snapshot of the title and prices
+        (see `DELETE /listings/{id}`), so the counterparty keeps their receipt.
+        And deletion is still never refused — waiting for every order to settle
+        would let one counterparty hold an account open indefinitely. What
+        changed is that the counterparty is no longer left holding a `pending`
+        order against somebody who cannot act on it, with nothing to tell them
+        why.
+
+        One consequence worth knowing: `stuck` in the admin order list has a
+        `stranded` arm for orders whose buyer *and* seller have both gone.
+        Because the first departure now closes the order, nothing new arrives
+        there — the arm still describes rows written before this change.
 
         If the other party has already deleted their account, nobody is left who
         can end the order at all. It is still not unwound here — it becomes
