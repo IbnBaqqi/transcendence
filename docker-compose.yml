@@ -2,7 +2,10 @@ services:
   # --- database ---
   db:
     image: postgres:16-alpine
-    env_file: .env                                              # loads POSTGRES_* from .env
+    # No env_file: the three variables below are the only ones this image reads,
+    # and .env carries JWT_SECRET and the SMTP credentials too - there is no
+    # reason for the database container to hold the application's secrets.
+    # prod has always done it this way.
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -11,11 +14,15 @@ services:
       - "5432:5432"                                             # expose to host
     volumes:
       - postgres_data:/var/lib/postgresql/data                  # data survives restarts
-    healthcheck:                                                # lets backend wait until db is ready
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+    # -d, not just -U: without it this asks whether the server answers, not
+    # whether the application's database is there. migrate waits on this
+    # condition, so "ready" has to mean the database it is about to migrate.
+    # Same shape as docker-compose.prod.yml - the two must not drift.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   # --- adminer (browser UI for the database, dev only) ---
   adminer:
@@ -42,6 +49,11 @@ services:
       - "127.0.0.1:8025:8025"        # web UI, where you read what was sent
 
   # --- migrations (goose one-shot, mirrors prod) ---
+  #
+  # No restart policy here on purpose: this is a one-shot that must run to
+  # completion. A restart would relaunch it after it exits 0, and backend's
+  # service_completed_successfully would never settle - mailpit above carries
+  # `restart: unless-stopped`, so the wrong thing to copy is two services away.
   migrate:
     # The migrator stage: the pinned goose plus a copy of sql/migrations. The
     # read-only bind mount below shadows that copy, so a new migration applies
