@@ -72,12 +72,17 @@ make setup                                        # includes `make certs`
 docker compose -f docker-compose.prod.yml up --build
 ```
 
-Then https://localhost — the API is behind the same origin at `/api/v1`. The
-certificate is self-signed, so the browser will warn; click through, or run
+Then https://localhost:8443 — the API is behind the same origin at `/api/v1`.
+The certificate is self-signed, so the browser will warn; click through, or run
 `mkcert -install && mkcert localhost` to write a trusted one to the same paths.
 
-The refresh cookie is `Secure` here, which is why `http://localhost` redirects
-rather than serving the app: a session started over HTTP could not refresh.
+The host ports are unprivileged (8443/8081) so the stack runs under rootless
+Docker, but it can still share the machine with the dev stack at the same time:
+8443 and 8081 don't collide with the dev stack's 8080 or 5173.
+
+The refresh cookie is `Secure` here, which is why `http://localhost:8081` (and
+`http://localhost:8443`) redirects rather than serving the app: a session
+started over HTTP could not refresh.
 
 ### Demo data
 
