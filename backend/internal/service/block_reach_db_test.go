@@ -128,30 +128,25 @@ func TestABlockHidesListingsFromSearchBothWays(t *testing.T) {
 	})
 }
 
-// The two places a blocked person could still surface after the profile,
-// listing and order paths were closed: a listing saved before the block, and a
-// name in a follow list. Both left a row you could see but not open.
-func TestABlockClearsTheFollowListAndSavedListings(t *testing.T) {
+// A listing saved before the block has to go with the seller, or the saved
+// list is a row you can see and not open.
+//
+// The follow list deliberately does NOT do this. Hiding a followee there means
+// someone reading their own list watches a person they just followed vanish,
+// which announces the block louder than a refusal would - and follow.go goes
+// out of its way to let a blocked follow succeed silently for exactly that
+// reason. A listing leaving a saved list is unremarkable, because listings
+// sell out and get deleted all the time; a person leaving your own follow list
+// is not.
+func TestABlockHidesASavedListing(t *testing.T) {
 	f := newBlockFixture(t)
-	follows := NewFollowService(f.db)
 	saved := NewSavedListingService(f.db.Queries)
 	ctx := context.Background()
 
-	if err := follows.Follow(ctx, f.buyer, f.seller); err != nil {
-		t.Fatalf("following: %v", err)
-	}
 	if err := saved.SaveListing(ctx, f.buyer, f.listing); err != nil {
 		t.Fatalf("saving: %v", err)
 	}
 
-	following := func(t *testing.T) int {
-		t.Helper()
-		rows, err := follows.ListFollowing(ctx, f.buyer, f.buyer)
-		if err != nil {
-			t.Fatalf("listing following: %v", err)
-		}
-		return len(rows)
-	}
 	savedCount := func(t *testing.T) int {
 		t.Helper()
 		rows, err := saved.ListSaved(ctx, f.buyer)
@@ -161,36 +156,22 @@ func TestABlockClearsTheFollowListAndSavedListings(t *testing.T) {
 		return len(rows)
 	}
 
-	if following(t) != 1 || savedCount(t) != 1 {
-		t.Fatalf("the control failed: following=%d saved=%d, want 1 and 1", following(t), savedCount(t))
+	if savedCount(t) != 1 {
+		t.Fatal("the control failed: the listing is not saved before any block")
 	}
 
 	if err := f.blocks.Block(ctx, f.seller, f.buyer); err != nil {
 		t.Fatalf("blocking: %v", err)
 	}
+	if n := savedCount(t); n != 0 {
+		t.Errorf("saved = %d, want 0 - the seller is hidden, so their listing must be too", n)
+	}
 
-	t.Run("the blocked person leaves the follow list", func(t *testing.T) {
-		if n := following(t); n != 0 {
-			t.Errorf("following = %d, want 0 - a name you cannot open should not be listed", n)
-		}
-	})
-
-	t.Run("and their listing leaves the saved list", func(t *testing.T) {
-		if n := savedCount(t); n != 0 {
-			t.Errorf("saved = %d, want 0", n)
-		}
-	})
-
-	// The follow and the save are only filtered, never deleted.
-	t.Run("unblocking restores both", func(t *testing.T) {
-		if err := f.blocks.Unblock(ctx, f.seller, f.buyer); err != nil {
-			t.Fatalf("unblocking: %v", err)
-		}
-		if n := following(t); n != 1 {
-			t.Errorf("following = %d after unblocking, want 1 - the follow was deleted, not hidden", n)
-		}
-		if n := savedCount(t); n != 1 {
-			t.Errorf("saved = %d after unblocking, want 1 - the save was deleted, not hidden", n)
-		}
-	})
+	// Filtered, never deleted.
+	if err := f.blocks.Unblock(ctx, f.seller, f.buyer); err != nil {
+		t.Fatalf("unblocking: %v", err)
+	}
+	if n := savedCount(t); n != 1 {
+		t.Errorf("saved = %d after unblocking, want 1 - the save was deleted, not hidden", n)
+	}
 }

@@ -3224,15 +3224,21 @@ paths:
             whether fetched directly or through search.
           * **New orders** are refused, with the same 404 a removed listing
             gives.
-          * **Follow lists** drop each other, and a listing saved before the
-            block leaves the saved list. The follow and the save are only
-            filtered, never deleted.
+          * **Saved listings** lose a listing saved before the block, since its
+            seller is hidden. The save is filtered, never deleted.
 
           Refusals are 404 rather than 403 throughout: one that names the block
           announces it, and the blocked party should not be able to tell a block
           apart from a listing that was taken down.
 
           Idempotent — blocking someone already blocked is still a 204.
+
+          Follow lists are the deliberate exception: you still appear in each
+          other's, with presence hidden as before. Dropping the row would mean
+          someone reading their own list watches a person they just followed
+          vanish, which announces the block louder than refusing the follow
+          would — and the follow is allowed to succeed silently for exactly
+          that reason.
 
           A block does **not** remove a follow, and it does **not** touch an
           order already placed. `confirm`, `handover` and `receive` keep working
