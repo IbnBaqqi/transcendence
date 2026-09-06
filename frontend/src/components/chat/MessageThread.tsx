@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -11,7 +12,10 @@ import {
 } from "../../api/conversations";
 import { isApiError } from "../../api/client";
 import { deriveThreadView, MAX_MESSAGE_LENGTH } from "../../lib/chatState";
+import { deriveInitials } from "../../lib/initials";
 import { useAuth } from "../../hooks/useAuth";
+import { useModal } from "../../providers/modalContext";
+import Avatar from "../objects/Avatar";
 import Button from "../objects/Button";
 import { Skeleton } from "../objects/Skeleton";
 import type { Message } from "../../api/types";
@@ -25,6 +29,7 @@ export function MessageThread({
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { closeChat } = useModal();
   const { data: conversation, isPending, isError, refetch } = useConversation(conversationId);
   const { data: messages } = useMessages(conversationId);
 
@@ -94,13 +99,35 @@ export function MessageThread({
         <Button variant="tertiary" onClick={onBack}>
           {t("chat.back")}
         </Button>
+        {/* Closing the chat first: it floats over the page, and a profile opened
+            underneath it would stay half-hidden. */}
+        <Link
+          to={`/users/${other.id}`}
+          onClick={closeChat}
+          aria-label={t("chat.viewProfile", { username: other.username })}
+          title={t("chat.viewProfile", { username: other.username })}
+          className="focus:ring-line shrink-0 rounded-full focus:ring-2 focus:ring-offset-2 focus:outline-none"
+        >
+          <Avatar
+            size="sm"
+            initials={deriveInitials(other.username)}
+            imageUrl={other.avatar_url ?? undefined}
+            interactive
+          />
+        </Link>
         <div className="min-w-0">
-          <p className="text-foreground truncate font-medium">
+          <Link
+            to={`/users/${other.id}`}
+            onClick={closeChat}
+            aria-label={t("chat.viewProfile", { username: other.username })}
+            title={t("chat.viewProfile", { username: other.username })}
+            className="text-foreground focus:ring-accent block truncate font-medium hover:underline focus:ring-2 focus:ring-offset-2 focus:outline-none"
+          >
             {other.username}
             {other.presence.is_online && (
               <span className="text-muted text-sm"> · {t("chat.online")}</span>
             )}
-          </p>
+          </Link>
           <p className="text-muted truncate text-sm">{conversation.listing_title}</p>
         </div>
       </div>

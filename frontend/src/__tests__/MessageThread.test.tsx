@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 
 import { MessageThread } from "../components/chat/MessageThread";
@@ -11,6 +12,7 @@ import {
   useSendMessage,
 } from "../api/conversations";
 import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
+import { ModalProvider } from "../providers/ModalProvider";
 import { makeConversation, BUYER_ID, SELLER_ID } from "../test/factories";
 import type { Conversation, Message, User } from "../api/types";
 
@@ -80,10 +82,15 @@ function renderThread(conversation: Conversation, messages: Message[] = [], view
     restoreSession: vi.fn(),
   };
 
+  // The header links to /users/:id and closeChat needs the modal provider.
   return render(
-    <AuthContext.Provider value={auth}>
-      <MessageThread conversationId={conversation.id} onBack={vi.fn()} />
-    </AuthContext.Provider>,
+    <MemoryRouter>
+      <ModalProvider>
+        <AuthContext.Provider value={auth}>
+          <MessageThread conversationId={conversation.id} onBack={vi.fn()} />
+        </AuthContext.Provider>
+      </ModalProvider>
+    </MemoryRouter>,
   );
 }
 
@@ -158,6 +165,16 @@ describe("MessageThread", () => {
     const conversation = makeConversation({ status: "accepted" });
     renderThread(conversation);
     expect(calls.markRead).toHaveBeenCalledWith(conversation.id);
+  });
+
+  test("the header avatar and username link to the other user's profile", () => {
+    renderThread(makeConversation({ status: "accepted" }));
+
+    const links = screen.getAllByRole("link", { name: "View oscarroff's profile" });
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link).toHaveAttribute("href", `/users/${SELLER_ID}`);
+    }
   });
 
   test("a rejected send shows the server's reason", async () => {

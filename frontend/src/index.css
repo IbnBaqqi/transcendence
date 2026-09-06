@@ -160,6 +160,21 @@
  */
 :root {
   --skeleton-shimmer: rgb(255 255 255 / 0.45);
+  /* Native form controls - <select> popups, date pickers, autofill - follow
+     the OS colour scheme, so they are painted dark in dark mode just like the
+     semantic tokens above. Without this Chrome keeps them light and their text
+     (inherit = foreground, a light value in dark mode) becomes invisible. */
+  color-scheme: light dark;
+}
+
+/* Chrome repaints an autofilled input with its own white background and black
+   text, ignoring class tokens; the login/register email field was the visible
+   symptom. Boxing the field back into the surface token - which swaps under
+   the media query above - restores the authored look in both schemes. */
+input:-webkit-autofill {
+  -webkit-text-fill-color: var(--color-foreground);
+  box-shadow: inset 0 0 0 1000px var(--color-surface);
+  transition: background-color 9999s;
 }
 
 @keyframes skeleton-shimmer {

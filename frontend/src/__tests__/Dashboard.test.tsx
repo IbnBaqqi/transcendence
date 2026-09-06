@@ -121,7 +121,7 @@ describe("Dashboard", () => {
       ],
     });
     expect(screen.getByText("Needs you (1)")).toBeInTheDocument();
-    expect(screen.getByText("Finished (1)")).toBeInTheDocument();
+    expect(screen.getByText("Orders (1)")).toBeInTheDocument();
   });
 
   // A seller with more than one page's worth used to see the first 50 and a

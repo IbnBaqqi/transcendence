@@ -74,7 +74,7 @@ export function SearchFilterSection({ initial, onApply, onClear }: SearchFilterS
           </label>
           <select
             id="sort"
-            className="focus:shadow-outline w-full rounded border px-3 py-2 leading-tight shadow focus:outline-none"
+            className="focus:shadow-outline border-line bg-surface text-foreground w-full rounded border px-3 py-2 leading-tight shadow focus:outline-none"
             {...form.register("sort")}
           >
             {SORTS.map((option) => (
