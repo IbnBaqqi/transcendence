@@ -17,6 +17,10 @@ type SearchListingsParams struct {
 	MaxPrice string
 	Location string
 	SellerID string
+	// Empty for a signed-out visitor, who cannot have blocked anybody. When
+	// set, listings are hidden in BOTH directions: a block conceals each party
+	// from the other until it is lifted.
+	ViewerID string
 	Sort     string
 	Offset   int32
 	Limit    int32
@@ -110,6 +114,18 @@ func buildSearchListingsQuery(arg SearchListingsParams, countOnly bool) (string,
 
 	b.WriteString(" AND listings.removed_at IS NULL" +
 		" AND EXISTS (SELECT 1 FROM users u WHERE u.id = listings.seller_id AND u.is_visible)")
+
+	// Beside the visibility rules above rather than in a filter below, because
+	// it is one: a blocked seller's listings are not a narrower search, they
+	// are not there. Above the countOnly split for the same reason SellerID is
+	// - otherwise the rows would exclude them while the total still counted
+	// them, and every page would come up short.
+	if arg.ViewerID != "" {
+		p := next(arg.ViewerID)
+		b.WriteString(" AND NOT EXISTS (SELECT 1 FROM blocks b" +
+			" WHERE (b.blocker_id = " + p + "::uuid AND b.blocked_id = listings.seller_id)" +
+			"    OR (b.blocker_id = listings.seller_id AND b.blocked_id = " + p + "::uuid))")
+	}
 
 	if !arg.IncludeSoldOut {
 		b.WriteString(" AND listings.quantity > 0")

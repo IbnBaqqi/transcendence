@@ -141,6 +141,29 @@ func (h *Handler) presenceHidden(r *http.Request, viewer, otherID uuid.UUID) boo
 	return blocked
 }
 
+// blockedBetween reports whether a block stands between two people, in either
+// direction. Distinct from presenceHidden above, which treats an anonymous
+// viewer as blocked: nobody signed out can have blocked anyone, and the pages
+// this guards are public, so hiding them from visitors would be wrong.
+//
+// Fails closed and logs, matching sellerIsHidden. A wrong "blocked" hides a
+// public page during an outage; a wrong "not blocked" hands someone the
+// profile and listings of a person who blocked them, which is the failure the
+// feature exists to prevent.
+func (h *Handler) blockedBetween(r *http.Request, viewer, otherID uuid.UUID) bool {
+	if viewer == uuid.Nil || viewer == otherID {
+		return false
+	}
+
+	blocked, err := h.Block.ExistsBetween(r.Context(), viewer, otherID)
+	if err != nil {
+		slog.Error("block check failed, hiding the page",
+			"other_id", otherID, "request_id", middleware.GetReqID(r.Context()), "error", err)
+		return true
+	}
+	return blocked
+}
+
 // viewerName is the authenticated caller's username, for a response that
 // echoes back something they authored. Empty when nobody is signed in.
 func viewerName(r *http.Request) string {
