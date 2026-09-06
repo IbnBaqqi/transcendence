@@ -348,7 +348,7 @@
       "myListings": "Mina annonser",
       "needsYou": "Kräver din åtgärd ({{count}})",
       "inProgress": "Pågående ({{count}})",
-      "finished": "Avslutade ({{count}})",
+      "finished": "Beställningar ({{count}})",
       "noListings": "Du har inte lagt upp någon annons än.",
       "addListing": "Lägg upp din första annons",
       "noOrders": "Ingen har beställt av dig än.",

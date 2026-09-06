@@ -348,7 +348,7 @@
       "myListings": "Omat ilmoitukset",
       "needsYou": "Vaatii toimiasi ({{count}})",
       "inProgress": "Käynnissä ({{count}})",
-      "finished": "Valmiit ({{count}})",
+      "finished": "Tilaukset ({{count}})",
       "noListings": "Et ole vielä lisännyt ilmoitusta.",
       "addListing": "Lisää ensimmäinen ilmoituksesi",
       "noOrders": "Kukaan ei ole vielä tilannut sinulta.",
