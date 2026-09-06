@@ -17,9 +17,7 @@ export const queryClient = new QueryClient({
       // session is over), so asking again returns the same status and logs a
       // second console line for it.
       retry: (failureCount, error) =>
-        isApiError(error) && error.status >= 400 && error.status < 500
-          ? false
-          : failureCount < 1,
+        isApiError(error) && error.status >= 400 && error.status < 500 ? false : failureCount < 1,
 
       // React Query refetches by default when the browser tab regains focus
       // turned off to avoid surprise refetches during development

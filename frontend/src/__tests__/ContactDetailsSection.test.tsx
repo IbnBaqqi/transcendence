@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ContactDetailsSection } from "../components/forms/ContactDetailsSection";
+import { AuthContext, type AuthContextValue } from "../providers/AuthContext";
 import { useOwnProfile, useUpdateOwnProfile } from "../api/profile";
 import type { OwnProfile } from "../api/types";
 
@@ -13,6 +14,32 @@ vi.mock("../api/profile", () => ({
 
 const mockedProfile = vi.mocked(useOwnProfile);
 const mockedUpdate = vi.mocked(useUpdateOwnProfile);
+
+// ContactDetailsSection reads the viewer to gate its profile query, the same contract
+// useOrders takes - so it needs a session in context, not just a mocked hook.
+const AUTH_STUB: AuthContextValue = {
+  user: {
+    id: "u1",
+    username: "or99",
+    email: "or99@example.com",
+    role: "USER",
+    has_password: true,
+    providers: [],
+  },
+  isLoading: false,
+  login: vi.fn(),
+  signup: vi.fn(),
+  logout: vi.fn(),
+  restoreSession: vi.fn(),
+};
+
+function renderSection() {
+  return render(
+    <AuthContext.Provider value={AUTH_STUB}>
+      <ContactDetailsSection />
+    </AuthContext.Provider>,
+  );
+}
 
 const PROFILE: OwnProfile = {
   id: "u1",
@@ -42,7 +69,7 @@ beforeEach(() => {
 });
 
 test("shows the saved details before editing", () => {
-  const { container } = render(<ContactDetailsSection />);
+  const { container } = renderSection();
 
   expect(screen.getByText("Oscar")).toBeInTheDocument();
   expect(screen.getByText("+358 123456")).toBeInTheDocument();
@@ -55,7 +82,7 @@ test("shows the saved details before editing", () => {
 
 test("prefills the inputs when entering edit mode", async () => {
   const user = userEvent.setup();
-  render(<ContactDetailsSection />);
+  renderSection();
 
   await user.click(screen.getByRole("button", { name: "Edit Details" }));
 
@@ -71,7 +98,7 @@ test("saves merged values and leaves edit mode", async () => {
     typeof useUpdateOwnProfile
   >);
   const user = userEvent.setup();
-  render(<ContactDetailsSection />);
+  renderSection();
 
   await user.click(screen.getByRole("button", { name: "Edit Details" }));
   const firstName = screen.getByLabelText("First name");
@@ -96,7 +123,7 @@ test("a server error shows inline and keeps edit mode open", async () => {
     mutateAsync: vi.fn().mockRejectedValue({ status: 400, message: "Location too long" }),
   } as unknown as ReturnType<typeof useUpdateOwnProfile>);
   const user = userEvent.setup();
-  render(<ContactDetailsSection />);
+  renderSection();
 
   await user.click(screen.getByRole("button", { name: "Edit Details" }));
   await user.click(screen.getByRole("button", { name: "Save" }));
@@ -111,7 +138,7 @@ test("cancel discards edits instead of saving them", async () => {
     typeof useUpdateOwnProfile
   >);
   const user = userEvent.setup();
-  render(<ContactDetailsSection />);
+  renderSection();
 
   await user.click(screen.getByRole("button", { name: "Edit Details" }));
   const firstName = screen.getByLabelText("First name");

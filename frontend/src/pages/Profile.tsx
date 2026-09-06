@@ -30,7 +30,7 @@ export default function Profile() {
   const { openModal } = useModal();
   const { user, isLoading: authLoading } = useAuth();
 
-  const { data: profile, isLoading, error } = useOwnProfile();
+  const { data: profile, isLoading, error } = useOwnProfile({ enabled: Boolean(user) });
 
   // Auth state, not a failed request: the query no longer runs while signed
   // out, so there is no 401 left to read - and asking the server who we are

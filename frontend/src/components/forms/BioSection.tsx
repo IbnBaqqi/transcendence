@@ -8,11 +8,13 @@ import Button from "../objects/Button.tsx";
 import { useEffect, useState } from "react";
 import { useOwnProfile, useUpdateOwnProfile } from "../../api/profile";
 import { isApiError } from "../../api/client";
+import { useAuth } from "../../hooks/useAuth";
 
 export function BioSection() {
   const { t } = useTranslation();
   const [isEditing, setEditing] = useState(false);
-  const { data: profile } = useOwnProfile();
+  const { user } = useAuth();
+  const { data: profile } = useOwnProfile({ enabled: Boolean(user) });
   const update = useUpdateOwnProfile();
 
   const form = useForm<BioFormValues>({

@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tansta
 
 import { api, apiPath } from "./client";
 import { keys } from "./queryKeys";
-import { useAuth } from "../hooks/useAuth";
 import type {
   AvatarResponse,
   ChangePasswordInput,
@@ -11,17 +10,14 @@ import type {
   PublicProfile,
 } from "./types";
 
-// Never runs without a session. The endpoint is authenticated by definition, so
-// the rule belongs here rather than at each call site - and logout clears the
-// cache while these are still mounted, which refetched every one of them into a
-// 401 and a doomed refresh before the redirect landed.
+// Signed-out callers pass false, same contract as useOrders: logout clears the
+// cache while these are still mounted, and an ungated one refetches straight
+// into a 401 and a doomed refresh before the redirect lands.
 export function useOwnProfile(options: { enabled?: boolean } = {}) {
-  const { user } = useAuth();
-
   return useQuery({
     queryKey: keys.me.profile(),
     queryFn: async () => (await api.get<OwnProfile>("/me/profile")).data,
-    enabled: (options.enabled ?? true) && Boolean(user),
+    enabled: options.enabled ?? true,
   });
 }
 
