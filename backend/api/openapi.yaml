@@ -3220,8 +3220,12 @@ paths:
 
           * **Messaging** stops both ways: neither can start a conversation nor
             send into an existing one.
-          * **Profiles** answer 404 to each other, and so do **listings**,
-            whether fetched directly or through search.
+          * **Profiles** answer 404 to each other, along with the **reviews**
+            that render on them, and so do **listings** — whether fetched
+            directly, through search, or by asking for their **images**. The
+            listing and its images have to agree: a removed listing 404s on
+            both, so an endpoint left open would separate "blocked" from
+            "taken down".
           * **New orders** are refused, with the same 404 a removed listing
             gives.
           * **Saved listings** lose a listing saved before the block, since its

@@ -54,7 +54,13 @@ func (h *Handler) GetListingImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hidden := listing.RemovedAt.Valid || h.sellerIsHidden(r, listing.SellerID)
+	// The same three terms as GetListing. These two guards have to move
+	// together: a removed listing 404s on both, so if only one of them knows
+	// about blocks, the pair of answers tells a blocked viewer which of the two
+	// they are looking at.
+	hidden := listing.RemovedAt.Valid ||
+		h.sellerIsHidden(r, listing.SellerID) ||
+		h.blockedFromSeller(r, listing.SellerID)
 	if hidden && !h.maySeeRemovedListing(r, listing.SellerID) {
 		respondWithError(w, http.StatusNotFound, "Listing not found")
 		return
