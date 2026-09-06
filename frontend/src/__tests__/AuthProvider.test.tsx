@@ -98,9 +98,20 @@ function renderAppStrictMode() {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
-  // No token yet: restoreSession falls through to a refresh attempt, which
-  // has nothing to recover on a clean slate.
+  // No token, so restoreSession now stops without a request. The forced
+  // restores below reach refresh anyway, and this is the answer they get.
   mockedAuthApi.refresh.mockRejectedValue({ status: 401, message: "no session" });
+});
+
+test("a signed-out first load asks the server nothing", async () => {
+  renderApp();
+
+  // Waited for, not asserted immediately: restoreOnMount is async, so an
+  // instant check would pass even with a request already in flight.
+  await waitFor(() => expect(screen.getByText("signed-out")).toBeInTheDocument());
+
+  expect(mockedAuthApi.refresh).not.toHaveBeenCalled();
+  expect(mockedAuthApi.getCurrentUser).not.toHaveBeenCalled();
 });
 
 test("a successful login drops every cached query so mounted pages refetch", async () => {

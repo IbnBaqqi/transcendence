@@ -56,8 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // live access token, or exchange the refresh cookie for a fresh one. Resolves
   // true when a user is now signed in.
   //
-  // Mount: cheap /auth/me fast path when a token exists, refresh cookie
-  // otherwise.
+  // Mount: cheap /auth/me fast path when a token exists, and nothing at all
+  // when one does not.
   // OAuth callback (force): the cookie is the authoritative new identity, so a
   // stale token must not win. Clear it first, then always exchange the cookie -
   // if that fails, the stale session is already gone and we stay signed out.
@@ -84,8 +84,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!mountedRef.current) return false;
           setUser(await getCurrentUser());
         } else {
-          // No token, but a valid refresh cookie may still be sitting there.
-          storeSession(await refreshApi());
+          // No token means no session to revive. It is only ever removed when
+          // one ends - logout, or a refresh that already failed - so its
+          // absence stands in for the HttpOnly refresh cookie, which scripts
+          // cannot read. Asking anyway costs a 401 on every signed-out load,
+          // and the browser logs that before our code can handle it.
+          //
+          // Below the force branch on purpose: the OAuth callback arrives with
+          // a brand-new cookie and no token yet, and must not stop here.
+          return false;
         }
         return true;
       } catch {
