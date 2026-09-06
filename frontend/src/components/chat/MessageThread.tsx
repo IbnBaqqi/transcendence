@@ -10,7 +10,7 @@ import {
   useSendMessage,
 } from "../../api/conversations";
 import { isApiError } from "../../api/client";
-import { deriveThreadView } from "../../lib/chatState";
+import { deriveThreadView, MAX_MESSAGE_LENGTH } from "../../lib/chatState";
 import { useAuth } from "../../hooks/useAuth";
 import Button from "../objects/Button";
 import { Skeleton } from "../objects/Skeleton";
@@ -148,6 +148,7 @@ export function MessageThread({
               aria-label={t("chat.messageLabel")}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
+              maxLength={MAX_MESSAGE_LENGTH}
               placeholder={t("chat.placeholder")}
               className="border-line bg-surface text-foreground flex-1 rounded-md border px-3 py-2"
             />
