@@ -48,36 +48,53 @@ func TestTwoBuyersCannotTakeTheSameLastUnit(t *testing.T) {
 
 	orders := NewOrderService(db, notify.Disabled{})
 
-	// Both goroutines wait on the same gate, so they enter CreateOrder together
+	// Both goroutines park on the same gate so they enter CreateOrder together
 	// rather than one simply finishing first.
-	var gate sync.WaitGroup
+	//
+	// ready is what makes that true. Opening the gate straight after spawning
+	// would not: nothing says either goroutine has reached Wait yet, so the
+	// gate could be a no-op and the two calls could run one after the other -
+	// which still passes, because the plain check at order.go:86 refuses the
+	// second. The test would look green while never racing anything.
+	var ready, gate sync.WaitGroup
+	ready.Add(2)
 	gate.Add(1)
-	results := make(chan error, 2)
+
+	type attempt struct {
+		buyer uuid.UUID
+		err   error
+	}
+	results := make(chan attempt, 2)
 
 	var runners sync.WaitGroup
 	for _, buyer := range []uuid.UUID{alice, bob} {
 		runners.Add(1)
 		go func(buyer uuid.UUID) {
 			defer runners.Done()
+			ready.Done()
 			gate.Wait()
 			_, err := orders.CreateOrder(ctx, buyer, dtos.CreateOrderInput{
 				ListingID: listing.ID, Quantity: 1,
 			})
-			results <- err
+			results <- attempt{buyer: buyer, err: err}
 		}(buyer)
 	}
+
+	ready.Wait() // both are at the gate
 	gate.Done()
 	runners.Wait()
 	close(results)
 
+	var winner uuid.UUID
 	var won int
 	var refusals []error
-	for err := range results {
-		if err == nil {
+	for got := range results {
+		if got.err == nil {
 			won++
+			winner = got.buyer
 			continue
 		}
-		refusals = append(refusals, err)
+		refusals = append(refusals, got.err)
 	}
 
 	if won != 1 {
@@ -99,13 +116,36 @@ func TestTwoBuyersCannotTakeTheSameLastUnit(t *testing.T) {
 		t.Errorf("quantity = %d, want 0 - the stock did not balance", after.Quantity)
 	}
 
-	var placed int
-	if err := db.QueryRow(
-		`SELECT count(*) FROM orders WHERE listing_id = $1`, listing.ID,
-	).Scan(&placed); err != nil {
+	// Raw SQL rather than a sql/queries entry: this asks a question only the
+	// test has, and a generated query existing solely for one assertion is the
+	// worse trade.
+	//
+	// The buyer ids, not a count: how many rows there are and who owns them are
+	// the same question here, and one row proves a single sale happened rather
+	// than that it belongs to the caller who got nil back.
+	rows, err := db.Query(`SELECT buyer_id FROM orders WHERE listing_id = $1`, listing.ID)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if placed != 1 {
-		t.Errorf("%d orders exist for one unit of stock", placed)
+	defer rows.Close()
+
+	var owners []uuid.UUID
+	for rows.Next() {
+		var owner uuid.UUID
+		if err := rows.Scan(&owner); err != nil {
+			t.Fatal(err)
+		}
+		owners = append(owners, owner)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(owners) != 1 {
+		t.Fatalf("%d orders exist for one unit of stock", len(owners))
+	}
+	if won == 1 && owners[0] != winner {
+		t.Errorf("the order belongs to %s but %s is the buyer whose call succeeded",
+			owners[0], winner)
 	}
 }
