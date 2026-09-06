@@ -270,7 +270,7 @@ func (s *AdminUserService) Delete(ctx context.Context, adminID, subjectID uuid.U
 		return &ValidationError{Message: "Type the account's username exactly to confirm"}
 	}
 
-	avatar, err := scrubAccount(ctx, qtx, subjectID)
+	scrubbed, err := scrubAccount(ctx, qtx, subjectID)
 	if err != nil {
 		return err
 	}
@@ -283,12 +283,7 @@ func (s *AdminUserService) Delete(ctx context.Context, adminID, subjectID uuid.U
 		return err
 	}
 
-	if avatar.Valid {
-		if err := s.files.Delete(avatar.String); err != nil {
-			slog.Error("could not delete a deleted user's avatar",
-				"user_id", subjectID, "filename", avatar.String, "error", err)
-		}
-	}
+	deleteScrubbedFiles(s.files, subjectID, scrubbed)
 
 	return nil
 }

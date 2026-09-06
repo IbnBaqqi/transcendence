@@ -68,6 +68,14 @@ func (h *Handler) GetSellerReviews(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// These are what renders on the seller's profile, which a block already
+	// answers with 404 - leaving them readable by user id would hand a blocked
+	// viewer the reputation and the review text off the page they cannot open.
+	if h.blockedBetween(r, viewerID(r), sellerID) {
+		respondWithError(w, http.StatusNotFound, "User not found")
+		return
+	}
+
 	q := r.URL.Query()
 
 	page, err := h.Review.ListForSeller(r.Context(), sellerID, dtos.ReviewQuery{

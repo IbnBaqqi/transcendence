@@ -63,6 +63,23 @@ func (s *OrderService) CreateOrder(ctx context.Context, buyerID uuid.UUID, input
 		return database.Order{}, &NotFoundError{Message: "Listing not found"}
 	}
 
+	// 404 rather than 403, matching the invisible-seller case above: a refusal
+	// that names the block tells the blocked party they were blocked. The check
+	// is symmetric, so neither side can buy from the other.
+	//
+	// Only the creation of an order. confirm, handover and receive stay open on
+	// purpose - blocking someone mid-sale must not strand the sale.
+	blocked, err := qtx.BlockExistsBetween(ctx, database.BlockExistsBetweenParams{
+		UserA: buyerID,
+		UserB: listing.SellerID,
+	})
+	if err != nil {
+		return database.Order{}, err
+	}
+	if blocked {
+		return database.Order{}, &NotFoundError{Message: "Listing not found"}
+	}
+
 	if listing.SellerID == buyerID {
 		return database.Order{}, &ValidationError{Message: "You cannot order your own listing"}
 	}
