@@ -20,11 +20,12 @@ export function FormField({
   isEditing: isEditingProp,
   width: widthProp,
   validateOnChange,
-  // A sanity bound, not the validation. It must stay strictly ABOVE every
-  // schema cap (the highest is search text at 200): set it equal to one and
-  // the field can no longer hold a value that breaks the rule, so zod's error
-  // for it becomes unreachable. What this stops is the field growing without
-  // bound before anything is submitted.
+  // A sanity bound, not the validation. For a single-line input it must stay
+  // strictly ABOVE every schema cap (the highest is search text at 200): the
+  // field just stops accepting characters with nothing to say why, so zod has
+  // to be the one that explains. FormTextArea deliberately does the opposite -
+  // see the note there. What this stops is the field growing without bound
+  // before anything is submitted.
   maxLength = 512,
 }: FormFieldProps) {
   const {
