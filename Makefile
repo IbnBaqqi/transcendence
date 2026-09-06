@@ -23,6 +23,7 @@
 setup: certs
 	@mkdir -p frontend/node_modules backend/uploads
 	@test -f .env || cp .env.example .env
+	@test -f backend/.env || cp .env.example backend/.env
 	@echo "✓ ready: run 'docker compose up'"
 
 # A literal comma cannot appear inside $(if ...) - commas separate a function's
