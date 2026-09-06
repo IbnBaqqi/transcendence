@@ -32,7 +32,10 @@ export default function Profile() {
 
   const { data: profile, isLoading, error } = useOwnProfile();
 
-  const signedOut = isApiError(error) && error.status === 401;
+  // Auth state, not a failed request: the query no longer runs while signed
+  // out, so there is no 401 left to read - and asking the server who we are
+  // when the client already knows is what put one in the console.
+  const signedOut = !authLoading && !user;
 
   const uploadAvatar = useUploadAvatar(profile?.id);
   const deleteAvatar = useDeleteAvatar(profile?.id);
